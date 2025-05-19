@@ -1,0 +1,5 @@
+{
+    "name" : "Layer Surfer",
+    "version" : "1.4",
+    "dependencies" : ["Points"]
+}
