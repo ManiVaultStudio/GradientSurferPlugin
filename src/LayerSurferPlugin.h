@@ -9,6 +9,8 @@
 
 #include <QWidget>
 
+#include "SettingsAction.h"
+
 /** All plugin related classes are in the ManiVault plugin namespace */
 using namespace mv::plugin;
 
@@ -58,11 +60,22 @@ public:
      */
     void onDataEvent(mv::DatasetEvent* dataEvent);
 
+public: // Serialization
+
+    /**
+     * Load widget action from variant map
+     * @param Variant map representation of the widget action
+     */
+    void fromVariantMap(const QVariantMap& variantMap) override;
+
+    /**
+     * Save widget action to variant map
+     * @return Variant map representation of the widget action
+     */
+    QVariantMap toVariantMap() const override;
+
 protected:
-    DropWidget*             _dropWidget;                /** Widget for drag and drop behavior */
-    mv::Dataset<Points>     _points;                    /** Points smart pointer */
-    QString                 _currentDatasetName;        /** Name of the current dataset */
-    QLabel*                 _currentDatasetNameLabel;   /** Label that show the current dataset name */
+    SettingsAction            _settingsAction;     
 };
 
 /**

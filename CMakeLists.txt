@@ -26,7 +26,7 @@ endif(MSVC)
 # -----------------------------------------------------------------------------
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
 
-find_package(ManiVault COMPONENTS Core PointData CONFIG QUIET)
+find_package(ManiVault COMPONENTS Core PointData ClusterData CONFIG QUIET)
 
 # -----------------------------------------------------------------------------
 # Source files
@@ -35,6 +35,8 @@ find_package(ManiVault COMPONENTS Core PointData CONFIG QUIET)
 set(PLUGIN_SOURCES
     src/LayerSurferPlugin.h
     src/LayerSurferPlugin.cpp
+    src/SettingsAction.h
+    src/SettingsAction.cpp
     src/LayerSurferPlugin.json
 )
 
@@ -77,6 +79,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::WebEngineWidgets)
 # Link to ManiVault and data plugins
 target_link_libraries(${PROJECT_NAME} PRIVATE ManiVault::Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE ManiVault::PointData)
+target_link_libraries(${PROJECT_NAME} PRIVATE ManiVault::ClusterData)
 
 # -----------------------------------------------------------------------------
 # Target installation
