@@ -75,10 +75,6 @@ public: // Serialization
     QVariantMap toVariantMap() const override;
 
 protected:
-    DropWidget*             _dropWidget;                /** Widget for drag and drop behavior */
-    mv::Dataset<Points>     _points;                    /** Points smart pointer */
-    QString                 _currentDatasetName;        /** Name of the current dataset */
-    QLabel*                 _currentDatasetNameLabel;   /** Label that show the current dataset name */
     SettingsAction            _settingsAction;     
 };
 

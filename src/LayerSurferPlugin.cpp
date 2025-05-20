@@ -13,101 +13,36 @@ using namespace mv;
 
 LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
     ViewPlugin(factory),
-    _dropWidget(nullptr),
-    _points(),
-    _currentDatasetName(),
-    _currentDatasetNameLabel(new QLabel()),
     _settingsAction(*this, _core)
 {
-    // This line is mandatory if drag and drop behavior is required
-    _currentDatasetNameLabel->setAcceptDrops(true);
-
-    // Align text in the center
-    _currentDatasetNameLabel->setAlignment(Qt::AlignCenter);
 
     getLearningCenterAction().addVideos(QStringList({ "Practitioner", "Developer" }));
 }
 
 void LayerSurferPlugin::init()
 {
-    // Create layout
-    auto layout = new QVBoxLayout();
+    auto* mainLayout = new QVBoxLayout(&getWidget());
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
 
-    layout->setContentsMargins(0, 0, 0, 0);
+    // Add settings to layout
+    mainLayout->addWidget(_settingsAction.getSettingsHolder().createWidget(&getWidget()));
 
-    layout->addWidget(_currentDatasetNameLabel);
+    // Add table to layout
+    mainLayout->addWidget(_settingsAction.getTableViewAction(),90);
+
+    // Add compute and status to layout
+    auto* computeStatusLayout = new QHBoxLayout();
+    computeStatusLayout->setContentsMargins(0, 0, 0, 0);
+    computeStatusLayout->setSpacing(0);
+    computeStatusLayout->addWidget(_settingsAction.getComputeHolder().getStatusBarAction(),90);
+    computeStatusLayout->addWidget(_settingsAction.getComputeHolder().createWidget(&getWidget()));
+    
+
+    mainLayout->addLayout(computeStatusLayout);
 
     // Apply the layout
-    getWidget().setLayout(layout);
-
-    // Instantiate new drop widget
-    _dropWidget = new DropWidget(_currentDatasetNameLabel);
-
-    // Set the drop indicator widget (the widget that indicates that the view is eligible for data dropping)
-    _dropWidget->setDropIndicatorWidget(new DropWidget::DropIndicatorWidget(&getWidget(), "No data loaded", "Drag an item from the data hierarchy and drop it here to visualize data..."));
-
-    // Initialize the drop regions
-    _dropWidget->initialize([this](const QMimeData* mimeData) -> DropWidget::DropRegions {
-        // A drop widget can contain zero or more drop regions
-        DropWidget::DropRegions dropRegions;
-
-        const auto datasetsMimeData = dynamic_cast<const DatasetsMimeData*>(mimeData);
-
-        if (datasetsMimeData == nullptr)
-            return dropRegions;
-
-        if (datasetsMimeData->getDatasets().count() > 1)
-            return dropRegions;
-
-        // Gather information to generate appropriate drop regions
-        const auto dataset = datasetsMimeData->getDatasets().first();
-        const auto datasetGuiName = dataset->getGuiName();
-        const auto datasetId = dataset->getId();
-        const auto dataType = dataset->getDataType();
-        const auto dataTypes = DataTypes({ PointType });
-
-        // Visually indicate if the dataset is of the wrong data type and thus cannot be dropped
-        if (!dataTypes.contains(dataType)) {
-            dropRegions << new DropWidget::DropRegion(this, "Incompatible data", "This type of data is not supported", "exclamation-circle", false);
-        }
-        else {
-
-            // Get points dataset from the core
-            auto candidateDataset = mv::data().getDataset<Points>(datasetId);
-
-            // Accept points datasets drag and drop
-            if (dataType == PointType) {
-                const auto description = QString("Load %1 into layer surfer view").arg(datasetGuiName);
-
-                if (_points == candidateDataset) {
-
-                    // Dataset cannot be dropped because it is already loaded
-                    dropRegions << new DropWidget::DropRegion(this, "Warning", "Data already loaded", "exclamation-circle", false);
-                }
-                else {
-
-                    // Dataset can be dropped
-                    dropRegions << new DropWidget::DropRegion(this, "Points", description, "map-marker-alt", true, [this, candidateDataset]() {
-                        _points = candidateDataset;
-                    });
-                }
-            }
-        }
-
-        return dropRegions;
-    });
-
-    // Respond when the name of the dataset in the dataset reference changes
-    connect(&_points, &Dataset<Points>::guiNameChanged, this, [this]() {
-
-        auto newDatasetName = _points->getGuiName();
-
-        // Update the current dataset name label
-        _currentDatasetNameLabel->setText(QString("Current points dataset: %1").arg(newDatasetName));
-
-        // Only show the drop indicator when nothing is loaded in the dataset reference
-        _dropWidget->setShowDropIndicator(newDatasetName.isEmpty());
-    });
+    getWidget().setLayout(mainLayout);
 
     // Alternatively, classes which derive from hdsp::EventListener (all plugins do) can also respond to events
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
@@ -216,7 +151,7 @@ mv::DataTypes LayerSurferPluginFactory::supportedDataTypes() const
 mv::gui::PluginTriggerActions LayerSurferPluginFactory::getPluginTriggerActions(const mv::Datasets& datasets) const
 {
     PluginTriggerActions pluginTriggerActions;
-
+/*
     const auto getPluginInstance = [this]() -> LayerSurferPlugin* {
         return dynamic_cast<LayerSurferPlugin*>(plugins().requestViewPlugin(getKind()));
     };
@@ -231,7 +166,7 @@ mv::gui::PluginTriggerActions LayerSurferPluginFactory::getPluginTriggerActions(
 
         pluginTriggerActions << pluginTriggerAction;
     }
-
+    */
     return pluginTriggerActions;
 }
 void LayerSurferPlugin::fromVariantMap(const QVariantMap& variantMap)

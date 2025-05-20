@@ -36,6 +36,8 @@
 #include <set>
 #include <actions/HorizontalToolbarAction.h>
 #include <actions/VerticalToolbarAction.h>
+#include "QStatusBar"
+
 
 using namespace mv::gui;
 class QMenu;
@@ -59,7 +61,7 @@ class SettingsAction : public WidgetAction
 {
 public:
 
-    class SettingsHolder : public VerticalGroupAction
+    class SettingsHolder : public HorizontalGroupAction
     {
     public:
         SettingsHolder(SettingsAction& settingsAction);
@@ -77,26 +79,52 @@ public:
         const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
+        const StringAction& getStatusColorAction() const { return _statusColorAction; }
+        StringAction& getStatusColorAction() { return _statusColorAction; }
+
     protected:
         SettingsAction& _settingsOptions;
         DatasetPickerAction        _clusterDatasetAction;
         DatasetPickerAction        _pointDatasetAction;
         OptionsAction              _clusterSelectionAction;
         DimensionPickerAction      _geneSelectionAction;
+        StringAction               _statusColorAction;
     };
 
+    class ComputeHolder : public HorizontalGroupAction
+    {
+    public:
+        ComputeHolder(SettingsAction& settingsAction);
+
+        const QStatusBar& getStatusBarAction() const { return *_statusBarAction; }
+        QStatusBar* getStatusBarAction() { return _statusBarAction; }
+        
+        const TriggerAction& getComputeAction() const { return _computeAction; }
+        TriggerAction& getComputeAction() { return _computeAction; }
+
+    protected:
+        SettingsAction& _settingsOptions;
+        QStatusBar*                 _statusBarAction;
+        TriggerAction              _computeAction;
+    };
 
 public:
     SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInterface* core);
+    ComputeHolder& getComputeHolder() { return _computeHolder; }
     SettingsHolder& getSettingsHolder() { return _settingsHolder; }
 
 public: // Serialization
     void fromVariantMap(const QVariantMap& variantMap) override;
     QVariantMap toVariantMap() const override;
 
+    QTableView* getTableViewAction() { return _tableViewAction; }
+
+
 protected:
     LayerSurferPlugin& _viewerPlugin;
     mv::CoreInterface* _core;
     SettingsHolder              _settingsHolder;
+    ComputeHolder               _computeHolder;
+    QTableView*                 _tableViewAction;
     friend class ChannelAction;
 };
