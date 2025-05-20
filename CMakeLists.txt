@@ -35,6 +35,8 @@ find_package(ManiVault COMPONENTS Core PointData CONFIG QUIET)
 set(PLUGIN_SOURCES
     src/LayerSurferPlugin.h
     src/LayerSurferPlugin.cpp
+    src/SettingsAction.h
+    src/SettingsAction.cpp
     src/LayerSurferPlugin.json
 )
 

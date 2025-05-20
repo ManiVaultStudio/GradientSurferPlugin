@@ -16,7 +16,8 @@ LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
     _dropWidget(nullptr),
     _points(),
     _currentDatasetName(),
-    _currentDatasetNameLabel(new QLabel())
+    _currentDatasetNameLabel(new QLabel()),
+    _settingsAction(*this, _core)
 {
     // This line is mandatory if drag and drop behavior is required
     _currentDatasetNameLabel->setAcceptDrops(true);
@@ -189,9 +190,6 @@ LayerSurferPluginFactory::LayerSurferPluginFactory()
     getPluginMetadata().setSummary("This plugin shows layer surfer plugin in ManiVault Studio.");
     getPluginMetadata().setCopyrightHolder({ "BioVault (Biomedical Visual Analytics Unit LUMC - TU Delft)" });
     getPluginMetadata().setAuthors({
-        { "A. Vieth", { "Plugin developer", "Maintainer" }, { "LUMC", "TU Delft" } },
-    	{ "T. Kroes", { "Lead software architect" }, { "LUMC" } },
-        { "J. Thijssen", { "Software architect" }, { "LUMC", "TU Delft" } }
 	});
     getPluginMetadata().setOrganizations({
         { "LUMC", "Leiden University Medical Center", "https://www.lumc.nl/en/" },
@@ -235,4 +233,18 @@ mv::gui::PluginTriggerActions LayerSurferPluginFactory::getPluginTriggerActions(
     }
 
     return pluginTriggerActions;
+}
+void LayerSurferPlugin::fromVariantMap(const QVariantMap& variantMap)
+{
+    ViewPlugin::fromVariantMap(variantMap);
+    mv::util::variantMapMustContain(variantMap, "LayerSurfer:Settings");
+    _settingsAction.fromVariantMap(variantMap["LayerSurfer:Settings"].toMap());
+}
+
+QVariantMap LayerSurferPlugin::toVariantMap() const
+{
+    QVariantMap variantMap = ViewPlugin::toVariantMap();
+
+    _settingsAction.insertIntoVariantMap(variantMap);
+    return variantMap;
 }
