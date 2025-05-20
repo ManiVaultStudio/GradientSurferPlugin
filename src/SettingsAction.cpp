@@ -7,7 +7,7 @@
 #include <QFileDialog>
 #include <QPageLayout>
 #include <QWebEngineView>
-#include <string>
+#include <chrono>
 #include <typeinfo>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -88,7 +88,60 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     //only highlight multiple rows if shiuft is pressed
     _tableViewAction->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-    
+    const auto updateStatus = [this]() -> void {
+
+        auto string = _settingsHolder.getStatusColorAction().getString();
+        QString labelText = "";
+        QString backgroundColor = "none";
+        /*
+        if (string == "C")
+        {
+            _computeHolder.getComputeAction().setDisabled(true);
+            //if (_popupMessageInit->isVisible())
+            //{
+                //_popupMessageInit->hide();
+            //}
+        }
+        else
+        {
+            _computeHolder.getComputeAction().setDisabled(false);
+        }
+        */
+
+        if (string == "C") {
+            labelText = "Updated";
+            backgroundColor = "#28a745"; // Green
+
+        }
+        else if (string == "M") {
+            labelText = "Outdated";
+            backgroundColor = "#ffc107"; // Gold
+
+        }
+        else if (string == "E") {
+            labelText = "Error";
+            backgroundColor = "#dc3545"; // Red
+        }
+        else if (string == "R")
+        {
+            labelText = "Processing";
+            backgroundColor = "#007bff"; // Blue
+        }
+        else {
+            labelText = "Unknown";
+            backgroundColor = "#6c757d"; // Grey
+        }
+
+
+
+
+        // Update the _statusBarActionWidget with the new label text and background color
+        _computeHolder.getStatusBarAction()->showMessage("Status: " + labelText);
+        _computeHolder.getStatusBarAction()->setStyleSheet("QStatusBar{padding-left:8px;background:" + backgroundColor + ";color:white;}");
+
+
+        };
+    connect(&_settingsHolder.getStatusColorAction(), &StringAction::stringChanged, this, updateStatus);
 
 
     _settingsHolder.getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
@@ -119,7 +172,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
         {
             _settingsHolder.getClusterSelectionAction().setOptions({});
         }
-
+        _settingsHolder.getStatusColorAction().setString("M");
         };
 
     connect(&_settingsHolder.getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset);
@@ -127,13 +180,24 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     const auto updatePointDataset = [this]() -> void {
         if (_settingsHolder.getPointDatasetAction().getCurrentDataset().isValid())
         {
-            _settingsHolder.getGeneSelectionAction().setPointsDataset(_settingsHolder.getPointDatasetAction().getCurrentDataset());
+            auto dataset = mv::data().getDataset<Points>(_settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
+            if (dataset.isValid())
+            {
+                _settingsHolder.getGeneSelectionAction().setPointsDataset(dataset);
+
+                connect(&dataset, &Dataset<Points>::dataSelectionChanged, this,
+                    [this]() {
+                        _settingsHolder.getStatusColorAction().setString("M");
+                    });
+            }
+
+
         }
         else
         {
             _settingsHolder.getGeneSelectionAction().setPointsDataset({});
         }
-        
+        _settingsHolder.getStatusColorAction().setString("M");
         };
 
     connect(&_settingsHolder.getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset);
@@ -142,11 +206,24 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
 
     const auto computeInfo = [this]() -> void {
 
-        Computation();
+        _settingsHolder.getStatusColorAction().setString("R");
+        _computeHolder.getComputeAction().setDisabled(true);
+        QApplication::processEvents();
 
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        
+        
+        Computation();
+        _settingsHolder.getStatusColorAction().setString("C");
+        _computeHolder.getComputeAction().setDisabled(false);
         };
 
     connect(&_computeHolder.getComputeAction(), &TriggerAction::triggered, this, computeInfo);
+
+
+
+
 
 }
 
