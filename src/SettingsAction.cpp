@@ -137,6 +137,17 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
         };
 
     connect(&_settingsHolder.getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset);
+
+
+
+    const auto computeInfo = [this]() -> void {
+
+        Computation();
+
+        };
+
+    connect(&_computeHolder.getComputeAction(), &TriggerAction::triggered, this, computeInfo);
+
 }
 
 inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAction) :
@@ -177,7 +188,88 @@ inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsActi
     _statusBarAction->setSizeGripEnabled(false);
     
 }
+void SettingsAction::Computation()
+{
+    std::vector<int> filteredCellIndices = filterCellsByCellType();
 
+    std::vector<int> XYCoordinates = getXYCordinates(filteredCellIndices);
+    float angle = 0.0;
+    std::vector<int> rotatedXYCordinates= rotateAxis(XYCoordinates,angle);
+
+
+    std::vector<int> yCoordinates = getCoordinatesOfCells(rotatedXYCordinates,"Y");
+
+
+    std::vector<int> sortedGeneIndices = getSortedGeneIndices(yCoordinates);
+
+    std::vector<float> cellbygenematrix;
+
+    for (int i = 0; i < 100; i++)
+    {
+        cellbygenematrix.push_back(0.0);
+    }
+    std::vector<int> correlationMatrix = computeCorrelation(cellbygenematrix);
+
+
+    QStringList topGenes = filterTopNGenesByCorrelation(correlationMatrix, 10); 
+
+
+}
+
+// Filters cells by cell type and returns their indices
+std::vector<int> SettingsAction::filterCellsByCellType() {
+    std::vector<int> indices;
+
+    return indices;
+}
+
+// Gets XY coordinates for the given cell indices
+std::vector<int> SettingsAction::getXYCordinates(const std::vector<int>& cellIndices) {
+    std::vector<int> coordinates;
+
+    return coordinates;
+}
+
+// Rotates the XY coordinates by a given angle
+std::vector<int> SettingsAction::rotateAxis(const std::vector<int>& xyCoordinates, float angle) {
+    std::vector<int> rotated;
+
+    return rotated;
+}
+
+// Extracts either X or Y coordinates from the rotated coordinates
+std::vector<int> SettingsAction::getCoordinatesOfCells(const std::vector<int>& rotatedXYCoordinates, const std::string& axis) {
+    std::vector<int> coords;
+    int offset = (axis == "Y") ? 1 : 0;
+    for (size_t i = offset; i < rotatedXYCoordinates.size(); i += 2) {
+        coords.push_back(rotatedXYCoordinates[i]);
+    }
+    return coords;
+}
+
+// Sorts gene indices based on the provided Y coordinates
+std::vector<int> SettingsAction::getSortedGeneIndices(const std::vector<int>& yCoordinates) {
+    std::vector<int> indices(yCoordinates.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [&](int a, int b) {
+        return yCoordinates[a] < yCoordinates[b];
+        });
+    return indices;
+}
+
+// Computes a correlation matrix from a cell-by-gene matrix
+std::vector<int> SettingsAction::computeCorrelation(const std::vector<float>& cellbygenematrix) {
+    std::vector<int> correlation;
+
+    return correlation;
+}
+
+// Filters the top N genes by correlation
+QStringList SettingsAction::filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N) {
+    QStringList topGenes;
+
+    return topGenes;
+}
 
 void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
 {
