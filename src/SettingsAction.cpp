@@ -267,6 +267,12 @@ inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsActi
 }
 void SettingsAction::Computation()
 {
+
+    if (_tableViewAction->model()) {
+        _tableViewAction->model()->removeRows(0, _tableViewAction->model()->rowCount());
+    }
+    QApplication::processEvents();
+
     std::vector<int> filteredCellIndices = filterCellsByCellType();
 
     std::vector<int> XYCoordinates = getXYCordinates(filteredCellIndices);
@@ -290,6 +296,18 @@ void SettingsAction::Computation()
 
     QStringList topGenes = filterTopNGenesByCorrelation(correlationMatrix, 10); 
 
+    //populate table
+    QStandardItemModel* model = new QStandardItemModel(0, 1, _tableViewAction);
+    model->setHorizontalHeaderLabels(QStringList() << "Gene");
+    for (int i = 0; i < topGenes.size(); i++)
+    {
+        QStandardItem* geneItem = new QStandardItem(topGenes.at(i));
+        model->setItem(i, 0, geneItem);
+    }
+    _tableViewAction->setModel(model);
+    _tableViewAction->resizeColumnsToContents();
+    _tableViewAction->resizeRowsToContents();
+    _tableViewAction->setColumnWidth(0, 200);
 
 }
 
