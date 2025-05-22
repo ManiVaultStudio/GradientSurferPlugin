@@ -553,7 +553,7 @@ void SettingsAction::Computation()
 
 // Rotates the XY coordinates by a given angle
 std::vector<float> SettingsAction::rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue) {
-    std::vector<float> rotated(xyCoordinates.size()); // <-- FIXED
+    std::vector<float> rotated(xyCoordinates.size());
     const double angle = degreeValue * M_PI / 180.0;
     const double cosAngle = std::cos(angle);
     const double sinAngle = std::sin(angle);
