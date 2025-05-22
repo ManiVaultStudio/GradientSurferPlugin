@@ -28,12 +28,14 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     setSerializationName("LayerSurfer:Settings");
     _settingsHolder.getClusterDatasetAction().setSerializationName("LayerSurfer:Clusterdataset");
     _settingsHolder.getPointDatasetAction().setSerializationName("LayerSurfer:PointDataset");
+    _settingsHolder.getEmbeddingDatasetAction().setSerializationName("LayerSurfer:EmbeddingDataset");
     _settingsHolder.getClusterSelectionAction().setSerializationName("LayerSurfer:ClusterSelection");
     _settingsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
 
 
     _settingsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
     _settingsHolder.getPointDatasetAction().setToolTip("Point Dataset");
+    _settingsHolder.getEmbeddingDatasetAction().setToolTip("Embedding Dataset");
     _settingsHolder.getClusterSelectionAction().setToolTip("Cluster Selection");
     _settingsHolder.getGeneSelectionAction().setToolTip("Gene Selection");
     _settingsHolder.getStatusColorAction().setToolTip("Status Color");
@@ -41,6 +43,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
 
     _settingsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _settingsHolder.getEmbeddingDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getClusterSelectionAction().setDefaultWidgetFlags(OptionsAction::ComboBox);
     _settingsHolder.getGeneSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getStatusColorAction().setDefaultWidgetFlags(StringAction::Label);
@@ -150,6 +153,9 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     _settingsHolder.getPointDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         return dataset->getDataType() == PointType;
         });
+    _settingsHolder.getEmbeddingDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        return dataset->getDataType() == PointType;
+        });
 
     const auto updateClusterDataset = [this]() -> void {
         if (_settingsHolder.getClusterDatasetAction().getCurrentDataset().isValid())
@@ -185,10 +191,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
             {
                 _settingsHolder.getGeneSelectionAction().setPointsDataset(dataset);
 
-                connect(&dataset, &Dataset<Points>::dataSelectionChanged, this,
-                    [this]() {
-                        _settingsHolder.getStatusColorAction().setString("M");
-                    });
             }
 
 
@@ -201,6 +203,26 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
         };
 
     connect(&_settingsHolder.getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset);
+
+    const auto updateEmbeddingDataset = [this]() -> void {
+        if (_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().isValid())
+        {
+            auto dataset = mv::data().getDataset<Points>(_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+            if (dataset.isValid())
+            {
+
+                connect(&dataset, &Dataset<Points>::dataSelectionChanged, this,
+                    [this]() {
+                        _settingsHolder.getStatusColorAction().setString("M");
+                    });
+            }
+
+
+        }
+        _settingsHolder.getStatusColorAction().setString("M");
+        };
+
+    connect(&_settingsHolder.getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset);
 
 
 
@@ -232,6 +254,7 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     _settingsOptions(settingsAction),
     _clusterDatasetAction(this, "Cluster dataset"),
     _pointDatasetAction(this, "Point dataset"),
+    _embeddingDatasetAction(this, "Embedding dataset"),
     _clusterSelectionAction(this, "Cluster selection"),
     _geneSelectionAction(this, "Gene selection"),
     _statusColorAction(this, "Status color")
@@ -241,6 +264,7 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     setPopupSizeHint(QSize(500, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_pointDatasetAction);
+    addAction(&_embeddingDatasetAction);
     addAction(&_clusterDatasetAction);
     addAction(&_clusterSelectionAction);
     addAction(&_geneSelectionAction);
@@ -372,6 +396,7 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
 
     _settingsHolder.getClusterDatasetAction().fromParentVariantMap(variantMap);
     _settingsHolder.getPointDatasetAction().fromParentVariantMap(variantMap);
+    _settingsHolder.getEmbeddingDatasetAction().fromParentVariantMap(variantMap);
     _settingsHolder.getClusterSelectionAction().fromParentVariantMap(variantMap);
     _settingsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
 
@@ -383,6 +408,7 @@ QVariantMap SettingsAction::toVariantMap() const
 
     _settingsHolder.getClusterDatasetAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getPointDatasetAction().insertIntoVariantMap(variantMap);
+    _settingsHolder.getEmbeddingDatasetAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getClusterSelectionAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
 

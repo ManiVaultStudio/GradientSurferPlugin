@@ -73,6 +73,9 @@ public:
         const DatasetPickerAction& getPointDatasetAction() const { return _pointDatasetAction; }
         DatasetPickerAction& getPointDatasetAction() { return _pointDatasetAction; }
 
+        const DatasetPickerAction& getEmbeddingDatasetAction() const { return _embeddingDatasetAction; }
+        DatasetPickerAction& getEmbeddingDatasetAction() { return _embeddingDatasetAction; }
+
         const OptionsAction& getClusterSelectionAction() const { return _clusterSelectionAction; }
         OptionsAction& getClusterSelectionAction() { return _clusterSelectionAction; }
 
@@ -86,6 +89,7 @@ public:
         SettingsAction& _settingsOptions;
         DatasetPickerAction        _clusterDatasetAction;
         DatasetPickerAction        _pointDatasetAction;
+        DatasetPickerAction        _embeddingDatasetAction;
         OptionsAction              _clusterSelectionAction;
         DimensionPickerAction      _geneSelectionAction;
         StringAction               _statusColorAction;
