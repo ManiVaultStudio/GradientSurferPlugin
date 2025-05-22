@@ -250,10 +250,18 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
 
 
     const auto updateGeneSelection= [this]() -> void {
+        if (_settingsHolder.getGeneSelectionAction().getCurrentDimensionIndex()==-1)
+        {
+            qDebug() << "No gene selected";
+            _settingsHolder.getDeSelectRowAction().setEnabled(false);
+            return;
+        }
+        
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
         mv::gui::DatasetPickerAction* pointDatasetPickerAction;
         //mv::gui::ViewPluginSamplerAction* samplerActionAction;
+        _settingsHolder.getDeSelectRowAction().setEnabled(true);
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
@@ -368,6 +376,20 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
 
 
     const auto deselectRow = [this]() -> void {
+        //deselect the current row selection from the table view
+        auto selectedIndex = _tableViewAction->currentIndex();
+        if (selectedIndex.isValid())
+        {
+            _tableViewAction->selectionModel()->clearSelection();
+            _tableViewAction->setCurrentIndex(QModelIndex());
+            _settingsHolder.getGeneSelectionAction().setCurrentDimensionName("");
+        }
+        else
+        {
+            qDebug() << "No row selected";
+        }
+        _settingsHolder.getDeSelectRowAction().setEnabled(false);
+        _settingsHolder.getGeneSelectionAction().setCurrentDimensionIndex(-1);
 
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
@@ -379,6 +401,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
             {
                 if (plugin->getGuiName() == _settingsHolder.getScatterplotViewSelectionAction().getCurrentText())
                 {
+                    plugin->printChildren();
                     pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
                     if (pointDatasetPickerAction)
                     {
