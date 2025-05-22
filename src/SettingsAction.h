@@ -73,6 +73,9 @@ public:
         const DatasetPickerAction& getPointDatasetAction() const { return _pointDatasetAction; }
         DatasetPickerAction& getPointDatasetAction() { return _pointDatasetAction; }
 
+        const DatasetPickerAction& getEmbeddingDatasetAction() const { return _embeddingDatasetAction; }
+        DatasetPickerAction& getEmbeddingDatasetAction() { return _embeddingDatasetAction; }
+
         const OptionsAction& getClusterSelectionAction() const { return _clusterSelectionAction; }
         OptionsAction& getClusterSelectionAction() { return _clusterSelectionAction; }
 
@@ -82,10 +85,15 @@ public:
         const StringAction& getStatusColorAction() const { return _statusColorAction; }
         StringAction& getStatusColorAction() { return _statusColorAction; }
 
+        const OptionAction& getScatterplotViewSelectionAction() const { return _scatterplotViewSelectionAction; }
+        OptionAction& getScatterplotViewSelectionAction() { return _scatterplotViewSelectionAction; }
+
     protected:
         SettingsAction& _settingsOptions;
         DatasetPickerAction        _clusterDatasetAction;
         DatasetPickerAction        _pointDatasetAction;
+        DatasetPickerAction        _embeddingDatasetAction;
+        OptionAction               _scatterplotViewSelectionAction;
         OptionsAction              _clusterSelectionAction;
         DimensionPickerAction      _geneSelectionAction;
         StringAction               _statusColorAction;
@@ -113,11 +121,9 @@ public:
     ComputeHolder& getComputeHolder() { return _computeHolder; }
     SettingsHolder& getSettingsHolder() { return _settingsHolder; }
 private:
-    std::vector<int> filterCellsByCellType();
-    std::vector<int> getXYCordinates(const std::vector<int>& cellIndices);
-    std::vector<int> rotateAxis(const std::vector<int>& xyCoordinates, float angle);
-    std::vector<int> getCoordinatesOfCells(const std::vector<int>& rotatedXYCoordinates, const std::string& axis);
-    std::vector<int> getSortedGeneIndices(const std::vector<int>& yCoordinates);
+    std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float angle);
+    std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
+    std::vector<int> getSortedGeneIndices(const std::vector<float>& yCoordinates);
     std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix);
     QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N);
     void Computation();
