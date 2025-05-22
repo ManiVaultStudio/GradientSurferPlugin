@@ -91,6 +91,9 @@ public:
         const IntegralAction& getTopNAction() const { return _topNAction; }
         IntegralAction& getTopNAction() { return _topNAction; }
 
+        const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
+        TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
+
     protected:
         SettingsAction& _settingsOptions;
         DatasetPickerAction        _clusterDatasetAction;
@@ -101,6 +104,7 @@ public:
         DimensionPickerAction      _geneSelectionAction;
         StringAction               _statusColorAction;
         IntegralAction              _topNAction;
+        TriggerAction                _deSelectRowAction;
     };
 
     class ComputeHolder : public HorizontalGroupAction
