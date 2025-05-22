@@ -31,6 +31,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     _settingsHolder.getEmbeddingDatasetAction().setSerializationName("LayerSurfer:EmbeddingDataset");
     _settingsHolder.getClusterSelectionAction().setSerializationName("LayerSurfer:ClusterSelection");
     _settingsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
+    _settingsHolder.getScatterplotViewSelectionAction().setSerializationName("LayerSurfer:ScatterplotViewSelection");
 
 
     _settingsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
@@ -40,6 +41,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     _settingsHolder.getGeneSelectionAction().setToolTip("Gene Selection");
     _settingsHolder.getStatusColorAction().setToolTip("Status Color");
     _computeHolder.getComputeAction().setToolTip("Compute Action");
+    _computeHolder.getStatusBarAction()->setToolTip("Status Bar Action");
+    _settingsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
 
     _settingsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -50,6 +53,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     _computeHolder.getComputeAction().setDefaultWidgetFlags(TriggerAction::IconText);
     _computeHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
     _computeHolder.getComputeAction().setText("Compute");
+    _settingsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
     _tableViewAction = new QTableView();
     _tableViewAction->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -145,7 +149,37 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
 
         };
     connect(&_settingsHolder.getStatusColorAction(), &StringAction::stringChanged, this, updateStatus);
+    const auto scatterplotSelection = [this]() -> void
+        {
+            QStringList scatterplotNames = {};
+            QString selectedCurrentText = _settingsHolder.getScatterplotViewSelectionAction().getCurrentText();
 
+            auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+            if (scatterplotViewFactory)
+            {
+
+                for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+                {
+                    scatterplotNames.append(plugin->getGuiName());
+                }
+            }
+            //check if the current text is in the scatterplotNames
+            if (!scatterplotNames.contains(selectedCurrentText))
+            {
+                selectedCurrentText = "";
+                if (scatterplotNames.size() > 0)
+                {
+                    selectedCurrentText = scatterplotNames[0];
+                }
+            }
+
+            _settingsHolder.getScatterplotViewSelectionAction().setOptions(scatterplotNames);
+            _settingsHolder.getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText);
+
+
+        };
+
+    connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, scatterplotSelection);
 
     _settingsHolder.getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         return dataset->getDataType() == ClusterType;
@@ -240,7 +274,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
         
         
         Computation();
-        _settingsHolder.getStatusColorAction().setString("C");
+
         _computeHolder.getComputeAction().setDisabled(false);
         };
 
@@ -260,7 +294,8 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     _embeddingDatasetAction(this, "Embedding dataset"),
     _clusterSelectionAction(this, "Cluster selection"),
     _geneSelectionAction(this, "Gene selection"),
-    _statusColorAction(this, "Status color")
+    _statusColorAction(this, "Status color"),
+    _scatterplotViewSelectionAction(this, "Scatterplot view selection")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
@@ -271,6 +306,7 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     addAction(&_clusterDatasetAction);
     addAction(&_clusterSelectionAction);
     addAction(&_geneSelectionAction);
+    addAction(&_scatterplotViewSelectionAction);
 }
 inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsAction) :
     HorizontalGroupAction(&settingsAction, "Compute options"),
@@ -305,6 +341,8 @@ void SettingsAction::Computation()
     auto fullPointDataset = mv::data().getDataset<Points>(_settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
     auto fullClusterDataset = mv::data().getDataset<Clusters>(_settingsHolder.getClusterDatasetAction().getCurrentDataset().getDatasetId());
 
+
+
     if (!fullEmbeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid() )
     {
         qDebug() << "Invalid datasets";
@@ -330,7 +368,13 @@ void SettingsAction::Computation()
         return;
     }
 
-
+    auto scatterplotViewName = _settingsHolder.getScatterplotViewSelectionAction().getCurrentText();
+    if (scatterplotViewName.isEmpty())
+    {
+        qDebug() << "No scatterplot view selected";
+        _settingsHolder.getStatusColorAction().setString("E");
+        return;
+    }
 
 
     std::sort(selectedIndices.begin(), selectedIndices.end());
@@ -360,6 +404,8 @@ void SettingsAction::Computation()
 
 
     // Gets XY coordinates for the given cell indices
+
+
     //std::vector<int> XYCoordinates(2 * filteredSelectionIndices.size(), 0);
     //for (const auto& index : filteredSelectionIndices)
     //{
@@ -368,17 +414,44 @@ void SettingsAction::Computation()
     //}
     std::vector<float> XYCoordinates(filteredSelectionIndices.size() * 2);
 
-    std::vector<int> preComputedEmbeddingColumnIndices(2);
+    std::vector<int> preComputedEmbeddingColumnIndices({0,1});
 
     std::vector<std::seed_seq::result_type>_selectedIndicesFromStorage;
 
     fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, filteredSelectionIndices);
+    float rotationAngle = 0.0;
+    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+    if (scatterplotViewFactory)
+    {
+        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+        {
+            if (plugin->getGuiName() == scatterplotViewName)
+            {
+                mv::gui::DecimalAction* angleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Line angle"));
+                if (angleAction)
+                {
+                    rotationAngle = angleAction->getValue();
+                }
+                else
+                {
+                    qDebug() << "Angle action not found";
+
+                    _settingsHolder.getStatusColorAction().setString("E");
+                    return;
+                }
+            }
+
+        }
+    }
+    else
+    {
+        qDebug() << "Scatterplot view factory not found";
+        _settingsHolder.getStatusColorAction().setString("E");
+        return;
+    }
 
 
-
-
-    float angle = 0.0;
-    std::vector<int> rotatedXYCordinates= rotateAxis(XYCoordinates,angle);
+    std::vector<int> rotatedXYCordinates= rotateAxis(XYCoordinates, rotationAngle);
 
 
     std::vector<int> yCoordinates = getCoordinatesOfCells(rotatedXYCordinates,"Y");
@@ -409,7 +482,7 @@ void SettingsAction::Computation()
     _tableViewAction->resizeColumnsToContents();
     _tableViewAction->resizeRowsToContents();
     _tableViewAction->setColumnWidth(0, 200);
-
+    _settingsHolder.getStatusColorAction().setString("C");
 }
 
 
@@ -464,7 +537,7 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _settingsHolder.getEmbeddingDatasetAction().fromParentVariantMap(variantMap);
     _settingsHolder.getClusterSelectionAction().fromParentVariantMap(variantMap);
     _settingsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
-
+    _settingsHolder.getScatterplotViewSelectionAction().fromParentVariantMap(variantMap);
 }
 
 QVariantMap SettingsAction::toVariantMap() const
@@ -476,6 +549,7 @@ QVariantMap SettingsAction::toVariantMap() const
     _settingsHolder.getEmbeddingDatasetAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getClusterSelectionAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
+    _settingsHolder.getScatterplotViewSelectionAction().insertIntoVariantMap(variantMap);
 
     return variantMap;
 }

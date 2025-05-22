@@ -85,11 +85,15 @@ public:
         const StringAction& getStatusColorAction() const { return _statusColorAction; }
         StringAction& getStatusColorAction() { return _statusColorAction; }
 
+        const OptionAction& getScatterplotViewSelectionAction() const { return _scatterplotViewSelectionAction; }
+        OptionAction& getScatterplotViewSelectionAction() { return _scatterplotViewSelectionAction; }
+
     protected:
         SettingsAction& _settingsOptions;
         DatasetPickerAction        _clusterDatasetAction;
         DatasetPickerAction        _pointDatasetAction;
         DatasetPickerAction        _embeddingDatasetAction;
+        OptionAction               _scatterplotViewSelectionAction;
         OptionsAction              _clusterSelectionAction;
         DimensionPickerAction      _geneSelectionAction;
         StringAction               _statusColorAction;
