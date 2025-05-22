@@ -499,7 +499,7 @@ void SettingsAction::Computation()
 
         std::vector<int> correlationMatrix;
         try {
-            correlationMatrix = computeCorrelation(cellbygenematrix);
+            correlationMatrix = computeCorrelation(cellbygenematrix, filteredSelectionIndices.size(), noOfDimensions);
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in computeCorrelation:" << ex.what();
@@ -615,7 +615,7 @@ std::vector<int> SettingsAction::getSortedGeneIndices(const std::vector<float>& 
 }
 
 // Computes a correlation matrix from a cell-by-gene matrix
-std::vector<int> SettingsAction::computeCorrelation(const std::vector<float>& cellbygenematrix) {
+std::vector<int> SettingsAction::computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols) {
     std::vector<int> correlation;
 
     return correlation;

@@ -124,7 +124,7 @@ private:
     std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float angle);
     std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
     std::vector<int> getSortedGeneIndices(const std::vector<float>& yCoordinates);
-    std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix);
+    std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols);
     QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N);
     void Computation();
 
