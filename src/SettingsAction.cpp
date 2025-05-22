@@ -480,6 +480,7 @@ void SettingsAction::Computation()
         }
 
         auto noOfDimensions = fullPointDataset->getNumDimensions();
+        auto dimensionNames = fullPointDataset->getDimensionNames();
         std::vector<int> columnIndices;
         for (int i = 0; i < noOfDimensions; i++)
         {
@@ -509,7 +510,7 @@ void SettingsAction::Computation()
 
         QStringList topGenes;
         try {
-            topGenes = filterTopNGenesByCorrelation(correlationMatrix, 10);
+            topGenes = filterTopNGenesByCorrelation(correlationMatrix, 10, dimensionNames);
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -616,14 +617,85 @@ std::vector<int> SettingsAction::getSortedGeneIndices(const std::vector<float>& 
 
 // Computes a correlation matrix from a cell-by-gene matrix
 std::vector<int> SettingsAction::computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols) {
-    std::vector<int> correlation;
+    // Pearson correlation between each gene (column)
+    // Output: vector of correlation scores (e.g., sum of absolute correlations for each gene)
+    // The result is a vector<int> for compatibility with downstream code, so we will scale and cast the float scores.
+
+    std::vector<float> means(noOfCols, 0.0f);
+    std::vector<float> stddevs(noOfCols, 0.0f);
+
+    // Compute mean for each gene
+    for (int col = 0; col < noOfCols; ++col) {
+        float sum = 0.0f;
+        for (int row = 0; row < numOfRows; ++row) {
+            sum += cellbygenematrix[row * noOfCols + col];
+        }
+        means[col] = sum / static_cast<float>(numOfRows);
+    }
+
+    // Compute stddev for each gene
+    for (int col = 0; col < noOfCols; ++col) {
+        float sumSq = 0.0f;
+        for (int row = 0; row < numOfRows; ++row) {
+            float v = cellbygenematrix[row * noOfCols + col] - means[col];
+            sumSq += v * v;
+        }
+        stddevs[col] = std::sqrt(sumSq / static_cast<float>(numOfRows));
+        if (stddevs[col] == 0.0f) stddevs[col] = 1.0f; // Prevent division by zero
+    }
+
+    // For each gene, compute the sum of absolute Pearson correlations with all other genes
+    std::vector<float> geneCorrSum(noOfCols, 0.0f);
+
+    for (int i = 0; i < noOfCols; ++i) {
+        for (int j = 0; j < noOfCols; ++j) {
+            if (i == j) continue;
+            float num = 0.0f;
+            for (int row = 0; row < numOfRows; ++row) {
+                float xi = cellbygenematrix[row * noOfCols + i];
+                float xj = cellbygenematrix[row * noOfCols + j];
+                num += (xi - means[i]) * (xj - means[j]);
+            }
+            float denom = static_cast<float>(numOfRows) * stddevs[i] * stddevs[j];
+            float corr = (denom != 0.0f) ? (num / denom) : 0.0f;
+            geneCorrSum[i] += std::abs(corr);
+        }
+    }
+
+    // Convert to int vector (e.g., scale by 1000 for ranking)
+    std::vector<int> correlation(noOfCols, 0);
+    for (int i = 0; i < noOfCols; ++i) {
+        correlation[i] = static_cast<int>(geneCorrSum[i] * 1000.0f);
+    }
 
     return correlation;
 }
 
 // Filters the top N genes by correlation
-QStringList SettingsAction::filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N) {
+QStringList SettingsAction::filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString>  geneNameOrdered) {
     QStringList topGenes;
+
+
+    // Defensive: correlationMatrix and geneNames should have the same size
+    int count = std::min<int>(std::min<int>(N, static_cast<int>(correlationMatrix.size())), geneNameOrdered.size());
+    if (count == 0) return topGenes;
+
+    // Create a vector of indices
+    std::vector<int> indices(correlationMatrix.size());
+    std::iota(indices.begin(), indices.end(), 0);
+
+    // Sort indices by descending correlation value
+    std::partial_sort(
+        indices.begin(), indices.begin() + count, indices.end(),
+        [&](int a, int b) { return correlationMatrix[a] > correlationMatrix[b]; }
+    );
+
+    // Map top indices to gene names
+    for (int i = 0; i < count; ++i) {
+        int idx = indices[i];
+        if (idx >= 0 && idx < geneNameOrdered.size())
+            topGenes << geneNameOrdered[idx];
+    }
 
     return topGenes;
 }
