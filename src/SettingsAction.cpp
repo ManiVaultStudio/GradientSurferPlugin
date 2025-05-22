@@ -207,14 +207,17 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     const auto updateEmbeddingDataset = [this]() -> void {
         if (_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().isValid())
         {
-            auto dataset = mv::data().getDataset<Points>(_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-            if (dataset.isValid())
+
+            auto fullDataset = mv::data().getDataset<Points>(_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+            if (fullDataset.isValid())
             {
 
-                connect(&dataset, &Dataset<Points>::dataSelectionChanged, this,
-                    [this]() {
-                        _settingsHolder.getStatusColorAction().setString("M");
-                    });
+                const auto mainSelectionChanged = [this]() -> void {
+                    _settingsHolder.getStatusColorAction().setString("M");
+                    qDebug() << "Main selection changed";
+                    };
+                connect(&fullDataset, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged);
+
             }
 
 
@@ -292,14 +295,88 @@ inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsActi
 void SettingsAction::Computation()
 {
 
+
     if (_tableViewAction->model()) {
         _tableViewAction->model()->removeRows(0, _tableViewAction->model()->rowCount());
     }
     QApplication::processEvents();
 
-    std::vector<int> filteredCellIndices = filterCellsByCellType();
+    auto fullEmbeddingDataset = mv::data().getDataset<Points>(_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+    auto fullPointDataset = mv::data().getDataset<Points>(_settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
+    auto fullClusterDataset = mv::data().getDataset<Clusters>(_settingsHolder.getClusterDatasetAction().getCurrentDataset().getDatasetId());
 
-    std::vector<int> XYCoordinates = getXYCordinates(filteredCellIndices);
+    if (!fullEmbeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid() )
+    {
+        qDebug() << "Invalid datasets";
+        _settingsHolder.getStatusColorAction().setString("E");
+        return;
+    }
+
+    auto selectedIndices = fullEmbeddingDataset->getSelectionIndices();
+    
+    if (!selectedIndices.size()>0)
+    {
+        qDebug() << "No selected indices";
+        _settingsHolder.getStatusColorAction().setString("E");
+        return;
+    }
+
+    auto selectedClusterValues = _settingsHolder.getClusterSelectionAction().getSelectedOptions();
+
+    if (selectedClusterValues.isEmpty())
+    {
+        qDebug() << "No selected cluster values";
+        _settingsHolder.getStatusColorAction().setString("E");
+        return;
+    }
+
+
+
+
+    std::sort(selectedIndices.begin(), selectedIndices.end());
+    auto clusterValues = fullClusterDataset->getClusters();
+
+
+
+    // Filters cells by cell type and returns their indices
+
+    std::vector<std::seed_seq::result_type> filteredSelectionIndices;
+    for (const auto& cluster : clusterValues)
+    {
+        auto clusterName = cluster.getName();
+        auto clusterIndices = cluster.getIndices();
+        auto sortedIndices = clusterIndices;
+        std::sort(sortedIndices.begin(), sortedIndices.end());
+        std::vector<int> intersection;
+        std::set_intersection(
+            selectedIndices.begin(), selectedIndices.end(),
+            sortedIndices.begin(), sortedIndices.end(),
+            std::back_inserter(intersection)
+        );
+        filteredSelectionIndices.insert(filteredSelectionIndices.end(), intersection.begin(), intersection.end());
+    }
+    
+
+
+
+    // Gets XY coordinates for the given cell indices
+    //std::vector<int> XYCoordinates(2 * filteredSelectionIndices.size(), 0);
+    //for (const auto& index : filteredSelectionIndices)
+    //{
+    //    auto xCoordinate = fullEmbeddingDataset->getValueAt(2 * index);
+    //    auto yCoordinate = fullEmbeddingDataset->getValueAt(2 * index + 1);
+    //}
+    std::vector<float> XYCoordinates(filteredSelectionIndices.size() * 2);
+
+    std::vector<int> preComputedEmbeddingColumnIndices(2);
+
+    std::vector<std::seed_seq::result_type>_selectedIndicesFromStorage;
+
+    fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, filteredSelectionIndices);
+
+
+
+
     float angle = 0.0;
     std::vector<int> rotatedXYCordinates= rotateAxis(XYCoordinates,angle);
 
@@ -335,22 +412,10 @@ void SettingsAction::Computation()
 
 }
 
-// Filters cells by cell type and returns their indices
-std::vector<int> SettingsAction::filterCellsByCellType() {
-    std::vector<int> indices;
 
-    return indices;
-}
-
-// Gets XY coordinates for the given cell indices
-std::vector<int> SettingsAction::getXYCordinates(const std::vector<int>& cellIndices) {
-    std::vector<int> coordinates;
-
-    return coordinates;
-}
 
 // Rotates the XY coordinates by a given angle
-std::vector<int> SettingsAction::rotateAxis(const std::vector<int>& xyCoordinates, float angle) {
+std::vector<int> SettingsAction::rotateAxis(const std::vector<float>& xyCoordinates, float angle) {
     std::vector<int> rotated;
 
     return rotated;

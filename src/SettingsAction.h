@@ -117,9 +117,7 @@ public:
     ComputeHolder& getComputeHolder() { return _computeHolder; }
     SettingsHolder& getSettingsHolder() { return _settingsHolder; }
 private:
-    std::vector<int> filterCellsByCellType();
-    std::vector<int> getXYCordinates(const std::vector<int>& cellIndices);
-    std::vector<int> rotateAxis(const std::vector<int>& xyCoordinates, float angle);
+    std::vector<int> rotateAxis(const std::vector<float>& xyCoordinates, float angle);
     std::vector<int> getCoordinatesOfCells(const std::vector<int>& rotatedXYCoordinates, const std::string& axis);
     std::vector<int> getSortedGeneIndices(const std::vector<int>& yCoordinates);
     std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix);
