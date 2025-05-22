@@ -45,6 +45,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     _computeHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _settingsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
     _settingsHolder.getTopNAction().setToolTip("Top N Action");
+    _settingsHolder.getDeSelectRowAction().setToolTip("DeSelect Row Action");
 
     _settingsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -56,10 +57,11 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     _computeHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
     _computeHolder.getComputeAction().setText("Compute");
     _settingsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _settingsHolder.getTopNAction().setDefaultWidgetFlags(IntegralAction::Slider || IntegralAction::SpinBox);
+    _settingsHolder.getTopNAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _settingsHolder.getTopNAction().setValue(10);
     _settingsHolder.getTopNAction().setMinimum(1);
     _settingsHolder.getTopNAction().setMaximum(10000);
+    _settingsHolder.getDeSelectRowAction().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
 
     _tableViewAction = new QTableView();
     _tableViewAction->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -245,6 +247,111 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
 
     connect(&_settingsHolder.getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset);
 
+
+
+    const auto updateGeneSelection= [this]() -> void {
+        if (_settingsHolder.getGeneSelectionAction().getCurrentDimensionIndex()==-1)
+        {
+            qDebug() << "No gene selected";
+            _settingsHolder.getDeSelectRowAction().setEnabled(false);
+            return;
+        }
+
+        auto selectedGene = _settingsHolder.getGeneSelectionAction().getCurrentDimensionName();
+        if (selectedGene =="")
+        {
+            qDebug() << "No gene selected";
+            _settingsHolder.getDeSelectRowAction().setEnabled(false);
+            return;
+        }
+        
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+        //mv::gui::ViewPluginSamplerAction* samplerActionAction;
+        DimensionPickerAction* geneSelectionAction;
+        _settingsHolder.getDeSelectRowAction().setEnabled(true);
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == _settingsHolder.getScatterplotViewSelectionAction().getCurrentText())
+                {
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset = mv::data().getDataset<Points>(_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            {
+                                auto dataset = mv::data().getDataset<Points>(_settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
+                                if (dataset.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset);
+                                }
+
+                            }
+                            geneSelectionAction = dynamic_cast<DimensionPickerAction*>(plugin->findChildByPath("Settings/Coloring/Dimension"));
+                            if (geneSelectionAction)
+                            {
+                                //qDebug() << "Gene selection action found";
+                                geneSelectionAction->setCurrentDimensionName(selectedGene);
+                            }
+                            else
+                            {
+                                qDebug() << "Gene selection action not found";
+                            }
+
+                            //samplerActionAction = plugin->findChildByPath<mv::gui::ViewPluginSamplerAction>("Sampler");
+                            /*overlayopacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                            if (overlayopacityAction)
+                            {
+                                //qDebug() << "Overlay opacity action found";
+                                if (_toggleScatterplotSelection.isChecked())
+                                {
+                                    overlayopacityAction->setValue(100.0);
+                                }
+                                else
+                                {
+                                    overlayopacityAction->setValue(0.0);
+                                }
+                            }
+                            overlayscaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
+                            if (overlayscaleAction)
+                            {
+                                //qDebug() << "Overlay opacity action found";
+                                if (_toggleScatterplotSelection.isChecked())
+                                {
+                                    overlayscaleAction->setValue(200.0);
+                                }
+                                else
+                                {
+                                    overlayscaleAction->setValue(100.0);
+                                }
+                            }*/
+                        }
+
+
+
+                    }
+
+                }
+            }
+        }
+        };
+
+    connect(&_settingsHolder.getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection);
+
+
     const auto updateEmbeddingDataset = [this]() -> void {
         if (_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().isValid())
         {
@@ -288,7 +395,71 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     connect(&_computeHolder.getComputeAction(), &TriggerAction::triggered, this, computeInfo);
 
 
+    const auto deselectRow = [this]() -> void {
+        //deselect the current row selection from the table view
+        auto selectedIndex = _tableViewAction->currentIndex();
+        if (selectedIndex.isValid())
+        {
+            _tableViewAction->selectionModel()->clearSelection();
+            _tableViewAction->setCurrentIndex(QModelIndex());
+            _settingsHolder.getGeneSelectionAction().setCurrentDimensionName("");
+        }
+        else
+        {
+            qDebug() << "No row selected";
+        }
+        _settingsHolder.getDeSelectRowAction().setEnabled(false);
+        _settingsHolder.getGeneSelectionAction().setCurrentDimensionIndex(-1);
 
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+        //mv::gui::ViewPluginSamplerAction* samplerActionAction;
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == _settingsHolder.getScatterplotViewSelectionAction().getCurrentText())
+                {
+                    plugin->printChildren();
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset = mv::data().getDataset<Points>(_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            { 
+                                auto dataset = mv::data().getDataset<Points>(_settingsHolder.getClusterDatasetAction().getCurrentDataset().getDatasetId());
+                                if (dataset.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset);
+                                    qDebug() << "Setting dataset to color dataset";
+                                }
+                                
+                            }
+                            //samplerActionAction = plugin->findChildByPath<mv::gui::ViewPluginSamplerAction>("Sampler");
+                        }
+                            
+                            
+                        
+                    }
+
+                }
+            }
+        }
+
+        };
+
+    connect(&_settingsHolder.getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow);
 
 
 }
@@ -303,7 +474,8 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     _geneSelectionAction(this, "Gene selection"),
     _statusColorAction(this, "Status color"),
     _scatterplotViewSelectionAction(this, "Scatterplot view selection"),
-    _topNAction(this, "Top N")
+    _topNAction(this, "Top N"),
+    _deSelectRowAction(this, "DeSelect Row")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
@@ -313,9 +485,11 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     addAction(&_embeddingDatasetAction);
     addAction(&_clusterDatasetAction);
     addAction(&_clusterSelectionAction);
-    addAction(&_geneSelectionAction);
+    //addAction(&_geneSelectionAction);
     addAction(&_scatterplotViewSelectionAction);
     addAction(&_topNAction);
+    //addAction(&_statusColorAction);
+    addAction(&_deSelectRowAction);
 }
 inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsAction) :
     HorizontalGroupAction(&settingsAction, "Compute options"),
@@ -545,13 +719,35 @@ void SettingsAction::Computation()
         _tableViewAction->resizeRowsToContents();
         _tableViewAction->setColumnWidth(0, 200);
 
-        connect(_tableViewAction, &QTableView::clicked, this, [this](const QModelIndex& index) {
+        /*connect(_tableViewAction, &QTableView::clicked, this, [this](const QModelIndex& index) {
             if (!index.isValid()) return;
             auto model = _tableViewAction->model();
             if (!model) return;
             QString value = model->data(index, Qt::DisplayRole).toString();
+
+
+
+
             _settingsHolder.getGeneSelectionAction().setCurrentDimensionName(value);
-            });
+            });*/
+
+        disconnect(_tableViewAction->selectionModel(), nullptr, this, nullptr);
+
+        connect(
+            _tableViewAction->selectionModel(),
+            &QItemSelectionModel::selectionChanged,
+            this,
+            [this](const QItemSelection& selected, const QItemSelection&) {
+                auto model = _tableViewAction->model();
+                if (!model) return;
+                QModelIndexList selectedIndexes = _tableViewAction->selectionModel()->selectedIndexes();
+                if (selectedIndexes.isEmpty()) return;
+                const QModelIndex& index = selectedIndexes.first();
+                if (!index.isValid()) return;
+                QString value = model->data(index, Qt::DisplayRole).toString();
+                _settingsHolder.getGeneSelectionAction().setCurrentDimensionName(value);
+            }
+        );
 
         _settingsHolder.getStatusColorAction().setString("C");
     }
