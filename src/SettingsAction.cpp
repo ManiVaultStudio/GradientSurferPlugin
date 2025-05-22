@@ -719,7 +719,7 @@ void SettingsAction::Computation()
         _tableViewAction->resizeRowsToContents();
         _tableViewAction->setColumnWidth(0, 200);
 
-        connect(_tableViewAction, &QTableView::clicked, this, [this](const QModelIndex& index) {
+        /*connect(_tableViewAction, &QTableView::clicked, this, [this](const QModelIndex& index) {
             if (!index.isValid()) return;
             auto model = _tableViewAction->model();
             if (!model) return;
@@ -729,7 +729,25 @@ void SettingsAction::Computation()
 
 
             _settingsHolder.getGeneSelectionAction().setCurrentDimensionName(value);
-            });
+            });*/
+
+        disconnect(_tableViewAction->selectionModel(), nullptr, this, nullptr);
+
+        connect(
+            _tableViewAction->selectionModel(),
+            &QItemSelectionModel::selectionChanged,
+            this,
+            [this](const QItemSelection& selected, const QItemSelection&) {
+                auto model = _tableViewAction->model();
+                if (!model) return;
+                QModelIndexList selectedIndexes = _tableViewAction->selectionModel()->selectedIndexes();
+                if (selectedIndexes.isEmpty()) return;
+                const QModelIndex& index = selectedIndexes.first();
+                if (!index.isValid()) return;
+                QString value = model->data(index, Qt::DisplayRole).toString();
+                _settingsHolder.getGeneSelectionAction().setCurrentDimensionName(value);
+            }
+        );
 
         _settingsHolder.getStatusColorAction().setString("C");
     }
