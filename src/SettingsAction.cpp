@@ -416,8 +416,6 @@ void SettingsAction::Computation()
 
     std::vector<int> preComputedEmbeddingColumnIndices({0,1});
 
-    std::vector<std::seed_seq::result_type>_selectedIndicesFromStorage;
-
     fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, filteredSelectionIndices);
     float rotationAngle = 0.0;
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -451,20 +449,30 @@ void SettingsAction::Computation()
     }
 
 
-    std::vector<int> rotatedXYCordinates= rotateAxis(XYCoordinates, rotationAngle);
+    std::vector<float> rotatedXYCordinates= rotateAxis(XYCoordinates, rotationAngle);
 
 
-    std::vector<int> yCoordinates = getCoordinatesOfCells(rotatedXYCordinates,"Y");
+    std::vector<float> yCoordinates = getCoordinatesOfCells(rotatedXYCordinates,"Y");
 
 
     std::vector<int> sortedGeneIndices = getSortedGeneIndices(yCoordinates);
 
-    std::vector<float> cellbygenematrix;
 
-    for (int i = 0; i < 100; i++)
+    // coorelation 
+    auto noOfDimensions = fullPointDataset->getNumDimensions();
+    std::vector<int> columnIndices;
+    for (int i = 0; i < noOfDimensions; i++)
     {
-        cellbygenematrix.push_back(0.0);
+        columnIndices.push_back(i);
     }
+
+    std::vector<float> cellbygenematrix(filteredSelectionIndices.size() * columnIndices.size());
+
+
+
+    fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, filteredSelectionIndices);
+
+
     std::vector<int> correlationMatrix = computeCorrelation(cellbygenematrix);
 
 
@@ -488,15 +496,52 @@ void SettingsAction::Computation()
 
 
 // Rotates the XY coordinates by a given angle
-std::vector<int> SettingsAction::rotateAxis(const std::vector<float>& xyCoordinates, float angle) {
-    std::vector<int> rotated;
+std::vector<float> SettingsAction::rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue) {
+    std::vector<float> rotated;
+    const double angle = degreeValue * M_PI / 180.0;
+    const double cosAngle = std::cos(angle);
+    const double sinAngle = std::sin(angle);
+
+    if (xyCoordinates.size() % 2 != 0) {
+        throw std::invalid_argument("xyCoordinates vector must have an even number of elements (x, y pairs).");
+    }
+
+    // Calculate initial bounding rectangle
+    float minX = xyCoordinates[0], maxX = xyCoordinates[0];
+    float minY = xyCoordinates[1], maxY = xyCoordinates[1];
+    for (std::size_t i = 0; i < xyCoordinates.size(); i += 2) {
+        minX = std::min(minX, xyCoordinates[i]);
+        maxX = std::max(maxX, xyCoordinates[i]);
+        minY = std::min(minY, xyCoordinates[i + 1]);
+        maxY = std::max(maxY, xyCoordinates[i + 1]);
+    }
+
+    // Calculate centroid
+    const double centerX = (minX + maxX) / 2.0;
+    const double centerY = (minY + maxY) / 2.0;
+
+    // Rotate each point
+    for (std::size_t i = 0; i < xyCoordinates.size(); i += 2) {
+        const double originalX = xyCoordinates[i];
+        const double originalY = xyCoordinates[i + 1];
+
+        // Translate to origin and rotate
+        const double x = originalX - centerX;
+        const double y = originalY - centerY;
+        const double rotatedX = x * cosAngle - y * sinAngle;
+        const double rotatedY = x * sinAngle + y * cosAngle;
+
+        // Translate back to original center
+        rotated[i] = static_cast<float>(rotatedX + centerX);
+        rotated[i + 1] = static_cast<float>(rotatedY + centerY);
+    }
 
     return rotated;
 }
 
 // Extracts either X or Y coordinates from the rotated coordinates
-std::vector<int> SettingsAction::getCoordinatesOfCells(const std::vector<int>& rotatedXYCoordinates, const std::string& axis) {
-    std::vector<int> coords;
+std::vector<float> SettingsAction::getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis) {
+    std::vector<float> coords;
     int offset = (axis == "Y") ? 1 : 0;
     for (size_t i = offset; i < rotatedXYCoordinates.size(); i += 2) {
         coords.push_back(rotatedXYCoordinates[i]);
@@ -505,7 +550,7 @@ std::vector<int> SettingsAction::getCoordinatesOfCells(const std::vector<int>& r
 }
 
 // Sorts gene indices based on the provided Y coordinates
-std::vector<int> SettingsAction::getSortedGeneIndices(const std::vector<int>& yCoordinates) {
+std::vector<int> SettingsAction::getSortedGeneIndices(const std::vector<float>& yCoordinates) {
     std::vector<int> indices(yCoordinates.size());
     std::iota(indices.begin(), indices.end(), 0);
     std::sort(indices.begin(), indices.end(), [&](int a, int b) {
