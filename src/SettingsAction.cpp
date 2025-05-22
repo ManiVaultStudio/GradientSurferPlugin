@@ -525,7 +525,7 @@ void SettingsAction::Computation()
 
         QStringList topGenes;
         try {
-            topGenes = filterTopNGenesByCorrelation(correlationMatrix, 10, dimensionNames);
+            topGenes = filterTopNGenesByCorrelation(correlationMatrix, topN, dimensionNames);
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
