@@ -330,174 +330,230 @@ inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsActi
 }
 void SettingsAction::Computation()
 {
-
-
-    if (_tableViewAction->model()) {
-        _tableViewAction->model()->removeRows(0, _tableViewAction->model()->rowCount());
-    }
-    QApplication::processEvents();
-
-    auto fullEmbeddingDataset = mv::data().getDataset<Points>(_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-    auto fullPointDataset = mv::data().getDataset<Points>(_settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
-    auto fullClusterDataset = mv::data().getDataset<Clusters>(_settingsHolder.getClusterDatasetAction().getCurrentDataset().getDatasetId());
-
-
-
-    if (!fullEmbeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid() )
+    try
     {
-        qDebug() << "Invalid datasets";
-        _settingsHolder.getStatusColorAction().setString("E");
-        return;
-    }
+        if (_tableViewAction->model()) {
+            _tableViewAction->model()->removeRows(0, _tableViewAction->model()->rowCount());
+        }
+        QApplication::processEvents();
 
-    auto selectedIndices = fullEmbeddingDataset->getSelectionIndices();
-    
-    if (!selectedIndices.size()>0)
-    {
-        qDebug() << "No selected indices";
-        _settingsHolder.getStatusColorAction().setString("E");
-        return;
-    }
+        auto fullEmbeddingDataset = mv::data().getDataset<Points>(_settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+        auto fullPointDataset = mv::data().getDataset<Points>(_settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
+        auto fullClusterDataset = mv::data().getDataset<Clusters>(_settingsHolder.getClusterDatasetAction().getCurrentDataset().getDatasetId());
 
-    auto selectedClusterValues = _settingsHolder.getClusterSelectionAction().getSelectedOptions();
-
-    if (selectedClusterValues.isEmpty())
-    {
-        qDebug() << "No selected cluster values";
-        _settingsHolder.getStatusColorAction().setString("E");
-        return;
-    }
-
-    auto scatterplotViewName = _settingsHolder.getScatterplotViewSelectionAction().getCurrentText();
-    if (scatterplotViewName.isEmpty())
-    {
-        qDebug() << "No scatterplot view selected";
-        _settingsHolder.getStatusColorAction().setString("E");
-        return;
-    }
-
-
-    std::sort(selectedIndices.begin(), selectedIndices.end());
-    auto clusterValues = fullClusterDataset->getClusters();
-
-
-
-    // Filters cells by cell type and returns their indices
-
-    std::vector<std::seed_seq::result_type> filteredSelectionIndices;
-    for (const auto& cluster : clusterValues)
-    {
-        auto clusterName = cluster.getName();
-        auto clusterIndices = cluster.getIndices();
-        auto sortedIndices = clusterIndices;
-        std::sort(sortedIndices.begin(), sortedIndices.end());
-        std::vector<int> intersection;
-        std::set_intersection(
-            selectedIndices.begin(), selectedIndices.end(),
-            sortedIndices.begin(), sortedIndices.end(),
-            std::back_inserter(intersection)
-        );
-        filteredSelectionIndices.insert(filteredSelectionIndices.end(), intersection.begin(), intersection.end());
-    }
-    
-
-
-
-    // Gets XY coordinates for the given cell indices
-
-
-    //std::vector<int> XYCoordinates(2 * filteredSelectionIndices.size(), 0);
-    //for (const auto& index : filteredSelectionIndices)
-    //{
-    //    auto xCoordinate = fullEmbeddingDataset->getValueAt(2 * index);
-    //    auto yCoordinate = fullEmbeddingDataset->getValueAt(2 * index + 1);
-    //}
-    std::vector<float> XYCoordinates(filteredSelectionIndices.size() * 2);
-
-    std::vector<int> preComputedEmbeddingColumnIndices({0,1});
-
-    fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, filteredSelectionIndices);
-    float rotationAngle = 0.0;
-    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-    if (scatterplotViewFactory)
-    {
-        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+        if (!fullEmbeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid())
         {
-            if (plugin->getGuiName() == scatterplotViewName)
-            {
-                mv::gui::DecimalAction* angleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Line angle"));
-                if (angleAction)
-                {
-                    rotationAngle = angleAction->getValue();
-                }
-                else
-                {
-                    qDebug() << "Angle action not found";
+            qDebug() << "Invalid datasets";
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
 
-                    _settingsHolder.getStatusColorAction().setString("E");
-                    return;
+        auto selectedIndices = fullEmbeddingDataset->getSelectionIndices();
+
+        if (!(selectedIndices.size() > 0))
+        {
+            qDebug() << "No selected indices";
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        auto selectedClusterValues = _settingsHolder.getClusterSelectionAction().getSelectedOptions();
+
+        if (selectedClusterValues.isEmpty())
+        {
+            qDebug() << "No selected cluster values";
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        auto scatterplotViewName = _settingsHolder.getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotViewName.isEmpty())
+        {
+            qDebug() << "No scatterplot view selected";
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        std::sort(selectedIndices.begin(), selectedIndices.end());
+        auto clusterValues = fullClusterDataset->getClusters();
+
+        std::vector<std::seed_seq::result_type> filteredSelectionIndices;
+        for (const auto& cluster : clusterValues)
+        {
+            auto clusterName = cluster.getName();
+            auto clusterIndices = cluster.getIndices();
+            auto sortedIndices = clusterIndices;
+            std::sort(sortedIndices.begin(), sortedIndices.end());
+            std::vector<int> intersection;
+            std::set_intersection(
+                selectedIndices.begin(), selectedIndices.end(),
+                sortedIndices.begin(), sortedIndices.end(),
+                std::back_inserter(intersection)
+            );
+            filteredSelectionIndices.insert(filteredSelectionIndices.end(), intersection.begin(), intersection.end());
+        }
+
+        if (filteredSelectionIndices.empty())
+        {
+            qDebug() << "No filtered selection indices";
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        std::vector<float> XYCoordinates(filteredSelectionIndices.size() * 2);
+        std::vector<int> preComputedEmbeddingColumnIndices({ 0, 1 });
+
+        if (XYCoordinates.size() != filteredSelectionIndices.size() * 2)
+        {
+            qDebug() << "XYCoordinates size mismatch";
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, filteredSelectionIndices);
+
+        float rotationAngle = 0.0;
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            bool foundPlugin = false;
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotViewName)
+                {
+                    foundPlugin = true;
+                    mv::gui::DecimalAction* angleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Line angle"));
+                    if (angleAction)
+                    {
+                        rotationAngle = angleAction->getValue();
+                    }
+                    else
+                    {
+                        qDebug() << "Angle action not found";
+                        _settingsHolder.getStatusColorAction().setString("E");
+                        return;
+                    }
                 }
             }
-
+            if (!foundPlugin)
+            {
+                qDebug() << "Scatterplot plugin not found";
+                _settingsHolder.getStatusColorAction().setString("E");
+                return;
+            }
         }
+        else
+        {
+            qDebug() << "Scatterplot view factory not found";
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        std::vector<float> rotatedXYCordinates;
+        try {
+            rotatedXYCordinates = rotateAxis(XYCoordinates, rotationAngle);
+        }
+        catch (const std::exception& ex) {
+            qDebug() << "Exception in rotateAxis:" << ex.what();
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        std::vector<float> yCoordinates;
+        try {
+            yCoordinates = getCoordinatesOfCells(rotatedXYCordinates, "Y");
+        }
+        catch (const std::exception& ex) {
+            qDebug() << "Exception in getCoordinatesOfCells:" << ex.what();
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        std::vector<int> sortedGeneIndices;
+        try {
+            sortedGeneIndices = getSortedGeneIndices(yCoordinates);
+        }
+        catch (const std::exception& ex) {
+            qDebug() << "Exception in getSortedGeneIndices:" << ex.what();
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        auto noOfDimensions = fullPointDataset->getNumDimensions();
+        std::vector<int> columnIndices;
+        for (int i = 0; i < noOfDimensions; i++)
+        {
+            columnIndices.push_back(i);
+        }
+
+        std::vector<float> cellbygenematrix(filteredSelectionIndices.size() * columnIndices.size());
+
+        try {
+            fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, filteredSelectionIndices);
+        }
+        catch (const std::exception& ex) {
+            qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        std::vector<int> correlationMatrix;
+        try {
+            correlationMatrix = computeCorrelation(cellbygenematrix);
+        }
+        catch (const std::exception& ex) {
+            qDebug() << "Exception in computeCorrelation:" << ex.what();
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        QStringList topGenes;
+        try {
+            topGenes = filterTopNGenesByCorrelation(correlationMatrix, 10);
+        }
+        catch (const std::exception& ex) {
+            qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
+
+        QStandardItemModel* model = new QStandardItemModel(0, 1, _tableViewAction);
+        model->setHorizontalHeaderLabels(QStringList() << "Gene");
+        for (int i = 0; i < topGenes.size(); i++)
+        {
+            QStandardItem* geneItem = new QStandardItem(topGenes.at(i));
+            model->setItem(i, 0, geneItem);
+        }
+        _tableViewAction->setModel(model);
+        _tableViewAction->resizeColumnsToContents();
+        _tableViewAction->resizeRowsToContents();
+        _tableViewAction->setColumnWidth(0, 200);
+
+        connect(_tableViewAction, &QTableView::clicked, this, [this](const QModelIndex& index) {
+            if (!index.isValid()) return;
+            auto model = _tableViewAction->model();
+            if (!model) return;
+            QString value = model->data(index, Qt::DisplayRole).toString();
+            _settingsHolder.getGeneSelectionAction().setCurrentDimensionName(value);
+            });
+
+        _settingsHolder.getStatusColorAction().setString("C");
     }
-    else
+    catch (const std::exception& ex)
     {
-        qDebug() << "Scatterplot view factory not found";
+        qDebug() << "Exception in Computation:" << ex.what();
         _settingsHolder.getStatusColorAction().setString("E");
-        return;
     }
-
-
-    std::vector<float> rotatedXYCordinates= rotateAxis(XYCoordinates, rotationAngle);
-
-
-    std::vector<float> yCoordinates = getCoordinatesOfCells(rotatedXYCordinates,"Y");
-
-
-    std::vector<int> sortedGeneIndices = getSortedGeneIndices(yCoordinates);
-
-
-    // coorelation 
-    auto noOfDimensions = fullPointDataset->getNumDimensions();
-    std::vector<int> columnIndices;
-    for (int i = 0; i < noOfDimensions; i++)
+    catch (...)
     {
-        columnIndices.push_back(i);
+        qDebug() << "Unknown exception in Computation";
+        _settingsHolder.getStatusColorAction().setString("E");
     }
-
-    std::vector<float> cellbygenematrix(filteredSelectionIndices.size() * columnIndices.size());
-
-
-
-    fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, filteredSelectionIndices);
-
-
-    std::vector<int> correlationMatrix = computeCorrelation(cellbygenematrix);
-
-
-    QStringList topGenes = filterTopNGenesByCorrelation(correlationMatrix, 10); 
-
-    //populate table
-    QStandardItemModel* model = new QStandardItemModel(0, 1, _tableViewAction);
-    model->setHorizontalHeaderLabels(QStringList() << "Gene");
-    for (int i = 0; i < topGenes.size(); i++)
-    {
-        QStandardItem* geneItem = new QStandardItem(topGenes.at(i));
-        model->setItem(i, 0, geneItem);
-    }
-    _tableViewAction->setModel(model);
-    _tableViewAction->resizeColumnsToContents();
-    _tableViewAction->resizeRowsToContents();
-    _tableViewAction->setColumnWidth(0, 200);
-    _settingsHolder.getStatusColorAction().setString("C");
 }
-
-
 
 // Rotates the XY coordinates by a given angle
 std::vector<float> SettingsAction::rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue) {
-    std::vector<float> rotated;
+    std::vector<float> rotated(xyCoordinates.size()); // <-- FIXED
     const double angle = degreeValue * M_PI / 180.0;
     const double cosAngle = std::cos(angle);
     const double sinAngle = std::sin(angle);
@@ -538,7 +594,6 @@ std::vector<float> SettingsAction::rotateAxis(const std::vector<float>& xyCoordi
 
     return rotated;
 }
-
 // Extracts either X or Y coordinates from the rotated coordinates
 std::vector<float> SettingsAction::getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis) {
     std::vector<float> coords;
