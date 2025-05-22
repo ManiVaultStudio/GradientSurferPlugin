@@ -88,6 +88,9 @@ public:
         const OptionAction& getScatterplotViewSelectionAction() const { return _scatterplotViewSelectionAction; }
         OptionAction& getScatterplotViewSelectionAction() { return _scatterplotViewSelectionAction; }
 
+        const IntegralAction& getTopNAction() const { return _topNAction; }
+        IntegralAction& getTopNAction() { return _topNAction; }
+
     protected:
         SettingsAction& _settingsOptions;
         DatasetPickerAction        _clusterDatasetAction;
@@ -97,6 +100,7 @@ public:
         OptionsAction              _clusterSelectionAction;
         DimensionPickerAction      _geneSelectionAction;
         StringAction               _statusColorAction;
+        IntegralAction              _topNAction;
     };
 
     class ComputeHolder : public HorizontalGroupAction

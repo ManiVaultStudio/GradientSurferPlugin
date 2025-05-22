@@ -32,6 +32,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     _settingsHolder.getClusterSelectionAction().setSerializationName("LayerSurfer:ClusterSelection");
     _settingsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
     _settingsHolder.getScatterplotViewSelectionAction().setSerializationName("LayerSurfer:ScatterplotViewSelection");
+    _settingsHolder.getTopNAction().setSerializationName("LayerSurfer:TopNAction");
 
 
     _settingsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
@@ -43,6 +44,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     _computeHolder.getComputeAction().setToolTip("Compute Action");
     _computeHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _settingsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
+    _settingsHolder.getTopNAction().setToolTip("Top N Action");
 
     _settingsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -54,6 +56,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
     _computeHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
     _computeHolder.getComputeAction().setText("Compute");
     _settingsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _settingsHolder.getTopNAction().setDefaultWidgetFlags(IntegralAction::Slider || IntegralAction::SpinBox);
+    _settingsHolder.getTopNAction().setValue(10);
+    _settingsHolder.getTopNAction().setMinimum(1);
+    _settingsHolder.getTopNAction().setMaximum(10000);
 
     _tableViewAction = new QTableView();
     _tableViewAction->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -224,7 +230,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
             if (dataset.isValid())
             {
                 _settingsHolder.getGeneSelectionAction().setPointsDataset(dataset);
-
+                auto dimensions = dataset->getNumDimensions();
+                _settingsHolder.getTopNAction().setMaximum(dimensions);
             }
 
 
@@ -295,7 +302,8 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     _clusterSelectionAction(this, "Cluster selection"),
     _geneSelectionAction(this, "Gene selection"),
     _statusColorAction(this, "Status color"),
-    _scatterplotViewSelectionAction(this, "Scatterplot view selection")
+    _scatterplotViewSelectionAction(this, "Scatterplot view selection"),
+    _topNAction(this, "Top N")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
@@ -307,6 +315,7 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     addAction(&_clusterSelectionAction);
     addAction(&_geneSelectionAction);
     addAction(&_scatterplotViewSelectionAction);
+    addAction(&_topNAction);
 }
 inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsAction) :
     HorizontalGroupAction(&settingsAction, "Compute options"),
@@ -409,7 +418,13 @@ void SettingsAction::Computation()
             _settingsHolder.getStatusColorAction().setString("E");
             return;
         }
-
+        auto topN = _settingsHolder.getTopNAction().getValue();
+        if (topN <= 0)
+        {
+            qDebug() << "Top N value is not valid";
+            _settingsHolder.getStatusColorAction().setString("E");
+            return;
+        }
         fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, filteredSelectionIndices);
 
         float rotationAngle = 0.0;
@@ -510,7 +525,7 @@ void SettingsAction::Computation()
 
         QStringList topGenes;
         try {
-            topGenes = filterTopNGenesByCorrelation(correlationMatrix, 10, dimensionNames);
+            topGenes = filterTopNGenesByCorrelation(correlationMatrix, topN, dimensionNames);
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -710,6 +725,7 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _settingsHolder.getClusterSelectionAction().fromParentVariantMap(variantMap);
     _settingsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _settingsHolder.getScatterplotViewSelectionAction().fromParentVariantMap(variantMap);
+    _settingsHolder.getTopNAction().fromParentVariantMap(variantMap);
 }
 
 QVariantMap SettingsAction::toVariantMap() const
@@ -722,6 +738,7 @@ QVariantMap SettingsAction::toVariantMap() const
     _settingsHolder.getClusterSelectionAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getScatterplotViewSelectionAction().insertIntoVariantMap(variantMap);
+    _settingsHolder.getTopNAction().insertIntoVariantMap(variantMap);
 
     return variantMap;
 }
