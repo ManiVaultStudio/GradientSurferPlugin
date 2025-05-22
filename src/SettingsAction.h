@@ -9,6 +9,7 @@
 #include "PointData/PointData.h"
 #include <actions/ToggleAction.h>
 #include "actions/DatasetPickerAction.h"
+#include <PointData/DimensionPickerAction.h>
 #include "event/EventListener.h"
 #include "actions/Actions.h"
 #include "Plugin.h"

@@ -256,11 +256,20 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
             _settingsHolder.getDeSelectRowAction().setEnabled(false);
             return;
         }
+
+        auto selectedGene = _settingsHolder.getGeneSelectionAction().getCurrentDimensionName();
+        if (selectedGene =="")
+        {
+            qDebug() << "No gene selected";
+            _settingsHolder.getDeSelectRowAction().setEnabled(false);
+            return;
+        }
         
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
         mv::gui::DatasetPickerAction* pointDatasetPickerAction;
         //mv::gui::ViewPluginSamplerAction* samplerActionAction;
+        DimensionPickerAction* geneSelectionAction;
         _settingsHolder.getDeSelectRowAction().setEnabled(true);
         if (scatterplotViewFactory)
         {
@@ -291,6 +300,17 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInt
                                 }
 
                             }
+                            geneSelectionAction = dynamic_cast<DimensionPickerAction*>(plugin->findChildByPath("Settings/Coloring/Dimension"));
+                            if (geneSelectionAction)
+                            {
+                                //qDebug() << "Gene selection action found";
+                                geneSelectionAction->setCurrentDimensionName(selectedGene);
+                            }
+                            else
+                            {
+                                qDebug() << "Gene selection action not found";
+                            }
+
                             //samplerActionAction = plugin->findChildByPath<mv::gui::ViewPluginSamplerAction>("Sampler");
                             /*overlayopacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
                             if (overlayopacityAction)
