@@ -483,12 +483,12 @@ void Computation::Compute()
             return;
         }
 
-        std::vector<int> sortedGeneIndices;
+        std::vector<int> sortedCellIndices;
         try {
-            sortedGeneIndices = getSortedGeneIndices(yCoordinates);
+            sortedCellIndices = getSortedCellIndices(yCoordinates);
         }
         catch (const std::exception& ex) {
-            qDebug() << "Exception in getSortedGeneIndices:" << ex.what();
+            qDebug() << "Exception in getSortedCellIndices:" << ex.what();
             _settingsAction.getSettingsHolder().getStatusColorAction().setString("E");
             return;
         }
@@ -631,7 +631,7 @@ std::vector<float> Computation::getCoordinatesOfCells(const std::vector<float>& 
 }
 
 // Sorts gene indices based on the provided Y coordinates
-std::vector<int> Computation::getSortedGeneIndices(const std::vector<float>& yCoordinates) {
+std::vector<int> Computation::getSortedCellIndices(const std::vector<float>& yCoordinates) {
     std::vector<int> indices(yCoordinates.size());
     std::iota(indices.begin(), indices.end(), 0);
     std::sort(indices.begin(), indices.end(), [&](int a, int b) {
