@@ -13,7 +13,8 @@ using namespace mv;
 
 LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
     ViewPlugin(factory),
-    _settingsAction(*this, _core)
+    _settingsAction(*this),
+    _computation(*this, _settingsAction)
 {
 
     getLearningCenterAction().addVideos(QStringList({ "Practitioner", "Developer" }));

@@ -10,6 +10,7 @@
 #include <QWidget>
 
 #include "SettingsAction.h"
+#include "Computation.h"
 
 /** All plugin related classes are in the ManiVault plugin namespace */
 using namespace mv::plugin;
@@ -74,8 +75,12 @@ public: // Serialization
      */
     QVariantMap toVariantMap() const override;
 
+public:
+    //SettingsAction& getSettingsAction() const { return _settingsAction; }
+
 protected:
-    SettingsAction            _settingsAction;     
+    SettingsAction        _settingsAction;
+    Computation        _computation;
 };
 
 /**
