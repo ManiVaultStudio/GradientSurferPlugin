@@ -24,7 +24,7 @@ endif(MSVC)
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
-find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
+find_package(Qt6 COMPONENTS Widgets WebEngineWidgets Concurrent REQUIRED)
 find_package(ManiVault COMPONENTS Core PointData ClusterData CONFIG QUIET)
 
 # -----------------------------------------------------------------------------
@@ -73,6 +73,7 @@ endif()
 # -----------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::WebEngineWidgets)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Concurrent )
 target_link_libraries(${PROJECT_NAME} PRIVATE ManiVault::Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE ManiVault::PointData)
 target_link_libraries(${PROJECT_NAME} PRIVATE ManiVault::ClusterData)
