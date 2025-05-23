@@ -499,15 +499,7 @@ void Computation::Compute()
             _settingsAction.getSettingsHolder().getStatusColorAction().setString("E");
             return;
         }
-        //removeDatasets();
-        //create derived dataset for debugging
-        mv::Dataset<Points> rotatedSelectedEmbeddingDataset = mv::data().createDerivedDataset("Selected Rotated Embedding Data", fullEmbeddingDataset, fullEmbeddingDataset);
-        rotatedSelectedEmbeddingDataset->setGroupIndex(666);
-        mv::events().notifyDatasetAdded(rotatedSelectedEmbeddingDataset);
 
-        rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), filteredSelectionIndices.size(), 2);
-        rotatedSelectedEmbeddingDataset->setDimensionNames({ "X","Y" });
-        mv::events().notifyDatasetDataChanged(rotatedSelectedEmbeddingDataset);
 
 
         std::vector<float> yCoordinates;
@@ -549,15 +541,31 @@ void Computation::Compute()
             return;
         }
 
-        //std::vector<int> correlationMatrix;
-        //try {
-        //    correlationMatrix = computeCorrelation(cellbygenematrix, filteredSelectionIndices.size(), noOfDimensions);
-        //}
-        //catch (const std::exception& ex) {
-        //    qDebug() << "Exception in computeCorrelation:" << ex.what();
-        //    _settingsAction.getSettingsHolder().getStatusColorAction().setString("E");
-        //    return;
-        //}
+
+
+
+
+
+        //removeDatasets();
+        //create derived dataset for debugging
+
+        mv::Dataset<Points> selectedPointDataset = mv::data().createDataset("Points", "Selected Point Data");
+        selectedPointDataset->setGroupIndex(666);
+        mv::events().notifyDatasetAdded(selectedPointDataset);
+
+        mv::Dataset<Points> rotatedSelectedEmbeddingDataset = mv::data().createDerivedDataset("Selected Rotated Embedding Data", selectedPointDataset, selectedPointDataset);
+        rotatedSelectedEmbeddingDataset->setGroupIndex(666);
+        mv::events().notifyDatasetAdded(rotatedSelectedEmbeddingDataset);
+
+        selectedPointDataset->setData(cellbygenematrix.data(), filteredSelectionIndices.size(), noOfDimensions);
+        selectedPointDataset->setDimensionNames(dimensionNames);
+        mv::events().notifyDatasetDataChanged(selectedPointDataset);
+
+        rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), filteredSelectionIndices.size(), 2);
+        rotatedSelectedEmbeddingDataset->setDimensionNames({ "X","Y" });
+        mv::events().notifyDatasetDataChanged(rotatedSelectedEmbeddingDataset);
+
+
 
 
         // output min and max of rotated xy coordinates
