@@ -546,7 +546,7 @@ void Computation::Compute()
 
 
 
-        removeDatasets();
+        //removeDatasets();
         //create derived dataset for debugging
 
         mv::Dataset<Points> selectedPointDataset = mv::data().createDataset("Points", "Selected Point Data");
