@@ -16,7 +16,8 @@
 #include <QStringList>
 #include <QSet>
 #include <QJsonValue>
-
+#include <Eigen/Dense>
+#include <QtConcurrent>
 using namespace mv;
 using namespace mv::gui;
 
@@ -337,6 +338,31 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 }
 
+void Computation::removeDatasets()
+{
+    const std::vector<int>& groupIds = { 666 };
+    auto allDatasets = mv::data().getAllDatasets();
+
+    Datasets datasetsFilteredAndSorted;
+
+    for (int groupId : groupIds) {
+        std::copy_if(allDatasets.begin(), allDatasets.end(), std::back_inserter(datasetsFilteredAndSorted), [groupId](Dataset<DatasetImpl> dataset) {
+            return dataset->getGroupIndex() == groupId;
+            });
+    }
+
+    std::sort(datasetsFilteredAndSorted.begin(), datasetsFilteredAndSorted.end(), [](Dataset<DatasetImpl> lhs, Dataset<DatasetImpl> rhs) -> bool {
+        return rhs->getDataHierarchyItem().getDepth() < lhs->getDataHierarchyItem().getDepth();
+        });
+
+    for (auto dataset : datasetsFilteredAndSorted)
+    {
+        if (dataset.isValid())
+            mv::data().removeDataset(dataset);
+    }
+}
+
+
 void Computation::Compute()
 {
     try
@@ -473,6 +499,16 @@ void Computation::Compute()
             _settingsAction.getSettingsHolder().getStatusColorAction().setString("E");
             return;
         }
+        //removeDatasets();
+        //create derived dataset for debugging
+        mv::Dataset<Points> rotatedSelectedEmbeddingDataset = mv::data().createDerivedDataset("Selected Rotated Embedding Data", fullEmbeddingDataset, fullEmbeddingDataset);
+        rotatedSelectedEmbeddingDataset->setGroupIndex(666);
+        mv::events().notifyDatasetAdded(rotatedSelectedEmbeddingDataset);
+
+        rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), filteredSelectionIndices.size(), 2);
+        rotatedSelectedEmbeddingDataset->setDimensionNames({ "X","Y" });
+        mv::events().notifyDatasetDataChanged(rotatedSelectedEmbeddingDataset);
+
 
         std::vector<float> yCoordinates;
         try {
@@ -591,6 +627,7 @@ void Computation::Compute()
         _settingsAction.getSettingsHolder().getStatusColorAction().setString("E");
     }
 }
+
 
 // Rotates the XY coordinates by a given angle
 std::vector<float> Computation::rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue) {
