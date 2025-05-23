@@ -513,19 +513,33 @@ void Computation::Compute()
             return;
         }
 
-        std::vector<int> correlationMatrix;
-        try {
-            correlationMatrix = computeCorrelation(cellbygenematrix, filteredSelectionIndices.size(), noOfDimensions);
-        }
-        catch (const std::exception& ex) {
-            qDebug() << "Exception in computeCorrelation:" << ex.what();
-            _settingsAction.getSettingsHolder().getStatusColorAction().setString("E");
-            return;
-        }
+        //std::vector<int> correlationMatrix;
+        //try {
+        //    correlationMatrix = computeCorrelation(cellbygenematrix, filteredSelectionIndices.size(), noOfDimensions);
+        //}
+        //catch (const std::exception& ex) {
+        //    qDebug() << "Exception in computeCorrelation:" << ex.what();
+        //    _settingsAction.getSettingsHolder().getStatusColorAction().setString("E");
+        //    return;
+        //}
+
+
+        // output min and max of rotated xy coordinates
+        auto xCoordinates = getCoordinatesOfCells(rotatedXYCordinates, "X");
+        float minX = *std::min_element(xCoordinates.begin(), xCoordinates.end());
+        float maxX = *std::max_element(xCoordinates.begin(), xCoordinates.end());
+        float minY = *std::min_element(yCoordinates.begin(), yCoordinates.end());
+        float maxY = *std::max_element(yCoordinates.begin(), yCoordinates.end());
+        qDebug() << "Rotated XY Coordinates minX:" << minX << "maxX:" << maxX << "minY:" << minY << "maxY:" << maxY;
+        qDebug() << "Rotated XY Coordinates size:" << rotatedXYCordinates.size() << "filteredSelectionIndices size:" << filteredSelectionIndices.size() << "yCoordinates size:" << yCoordinates.size();
+        // compute correlation between gene and selected y coordinates
+        std::vector<float> corrGeneCoords;
+        computeCorrelationGeneCoords(filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
+
 
         QStringList topGenes;
         try {
-            topGenes = filterTopNGenesByCorrelation(correlationMatrix, topN, dimensionNames);
+            topGenes = filterTopNGenesByCorrelation(corrGeneCoords, topN, dimensionNames);
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -697,23 +711,115 @@ std::vector<int> Computation::computeCorrelation(const std::vector<float>& cellb
     return correlation;
 }
 
+void Computation::computeCorrelationGeneCoords(const std::vector<std::seed_seq::result_type>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector)
+{
+    const int numGenes = dataset->getNumDimensions();
+    const int numCells = cellIndices.size();
+    const int numCoords = coords.size();
+    qDebug()<< "Number of genes:" << numGenes << "Number of cells:" << numCells << "Number of coordinates:" << numCoords;
+    assert(numCells == numCoords);
+
+
+    // sort filteredSelectionIndices based on yCoordinates
+    std::vector<std::pair<float, int>> coordIndexPairs;
+    for (size_t i = 0; i < cellIndices.size(); ++i) {
+        coordIndexPairs.emplace_back(coords[i], cellIndices[i]);
+    }
+
+    // Sort by coordinate (first of the pair)
+    std::sort(coordIndexPairs.begin(), coordIndexPairs.end());
+
+    // Rebuild sorted vectors
+    std::vector<int> sortedCellIndices;
+    std::vector<float> sortedCoords;
+    sortedCellIndices.reserve(cellIndices.size());
+    sortedCoords.reserve(coords.size());
+
+    for (const auto& pair : coordIndexPairs) {
+        sortedCoords.push_back(pair.first);
+        sortedCellIndices.push_back(pair.second);
+    }
+
+
+    // start compute corr
+    float meanCoord = 0.0f;
+    for (float val : sortedCoords)
+        meanCoord += val;
+    meanCoord /= numCells;
+
+    std::vector<float> centeredCoords(numCells);
+    float normCoord = 0.0f;
+    for (int i = 0; i < numCells; ++i) {
+        float c = sortedCoords[i] - meanCoord;
+        centeredCoords[i] = c;
+        normCoord += c * c;
+    }
+
+    corrVector.clear();
+    corrVector.resize(numGenes);
+
+#pragma omp parallel for
+    for (int geneIdx = 0; geneIdx < numGenes; ++geneIdx) {
+        std::vector<float> geneVals(numCells);
+        float meanGene = 0.0f;
+
+        for (int i = 0; i < numCells; ++i) {
+            int rowIdx = sortedCellIndices[i];
+            float val = dataset->getValueAt(rowIdx * numGenes + geneIdx);
+            geneVals[i] = val;
+            meanGene += val;
+        }
+        meanGene /= numCells;
+
+        float normGene = 0.0f;
+        float dotProd = 0.0f;
+        for (int i = 0; i < numCells; ++i) {
+            float centered = geneVals[i] - meanGene;
+            normGene += centered * centered;
+            dotProd += centered * centeredCoords[i];
+        }
+
+        float corr = (normGene > 0.0f && normCoord > 0.0f)
+            ? (dotProd / std::sqrt(normGene * normCoord))
+            : 0.0f;
+
+        if (std::isnan(corr)) corr = 0.0f;
+        corrVector[geneIdx] = corr;
+    }
+
+    qDebug() << "Correlation computation completed";
+    qDebug() << "corrVector size" << corrVector.size() << corrVector[0] << corrVector[1] << corrVector[2];
+    // output the highest correlation gene symbol
+    std::vector<std::pair<float, int>> geneCorrPairs(numGenes);
+    for (int i = 0; i < numGenes; ++i) {
+        geneCorrPairs[i] = std::make_pair(corrVector[i], i);
+    }
+    std::sort(geneCorrPairs.begin(), geneCorrPairs.end(), std::greater<std::pair<float, int>>());
+    qDebug() << "Top 5 genes with highest correlation:";
+    for (int i = 0; i < 5 && i < numGenes; ++i) {
+        int geneIdx = geneCorrPairs[i].second;
+        QString geneSymbol = dataset->getDimensionNames()[geneIdx];
+        qDebug() << "Gene:" << geneSymbol << "Correlation:" << geneCorrPairs[i].first;
+    }
+}
+
 // Filters the top N genes by correlation
-QStringList Computation::filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString>  geneNameOrdered) {
+QStringList Computation::filterTopNGenesByCorrelation(const std::vector<float>& correlationVector, int N, std::vector<QString>  geneNameOrdered) {
     QStringList topGenes;
 
 
     // Defensive: correlationMatrix and geneNames should have the same size
-    int count = std::min<int>(std::min<int>(N, static_cast<int>(correlationMatrix.size())), geneNameOrdered.size());
+    int count = std::min<int>(std::min<int>(N, static_cast<int>(correlationVector.size())), geneNameOrdered.size());
     if (count == 0) return topGenes;
 
     // Create a vector of indices
-    std::vector<int> indices(correlationMatrix.size());
+    std::vector<int> indices(correlationVector.size());
     std::iota(indices.begin(), indices.end(), 0);
 
     // Sort indices by descending correlation value
     std::partial_sort(
         indices.begin(), indices.begin() + count, indices.end(),
-        [&](int a, int b) { return correlationMatrix[a] > correlationMatrix[b]; }
+        [&](int a, int b) { return correlationVector[a] > correlationVector[b]; }
     );
 
     // Map top indices to gene names

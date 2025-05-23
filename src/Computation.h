@@ -62,7 +62,11 @@ private:
     std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
     std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
     std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols);
-    QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString> geneNameOrdered);
+
+    void computeCorrelationGeneCoords(const std::vector<std::seed_seq::result_type>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
+
+    //QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString> geneNameOrdered);
+    QStringList filterTopNGenesByCorrelation(const std::vector<float>& correlationVector, int N, std::vector<QString> geneNameOrdered);
     void Compute();
 
 
