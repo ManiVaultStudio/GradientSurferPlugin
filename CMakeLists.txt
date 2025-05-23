@@ -37,6 +37,8 @@ set(PLUGIN_SOURCES
     src/LayerSurferPlugin.cpp
     src/SettingsAction.h
     src/SettingsAction.cpp
+    src/Computation.h
+    src/Computation.cpp
     src/LayerSurferPlugin.json
 )
 

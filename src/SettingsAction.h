@@ -96,7 +96,7 @@ public:
         TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
 
     protected:
-        SettingsAction& _settingsOptions;
+        SettingsAction&             _settingsOptions;
         DatasetPickerAction        _clusterDatasetAction;
         DatasetPickerAction        _pointDatasetAction;
         DatasetPickerAction        _embeddingDatasetAction;
@@ -126,16 +126,10 @@ public:
     };
 
 public:
-    SettingsAction(LayerSurferPlugin& LayerSurferPlugin, mv::CoreInterface* core);
+    SettingsAction(LayerSurferPlugin& LayerSurferPlugin);
+
     ComputeHolder& getComputeHolder() { return _computeHolder; }
     SettingsHolder& getSettingsHolder() { return _settingsHolder; }
-private:
-    std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float angle);
-    std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
-    std::vector<int> getSortedGeneIndices(const std::vector<float>& yCoordinates);
-    std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols);
-    QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString> geneNameOrdered);
-    void Computation();
 
 public: // Serialization
     void fromVariantMap(const QVariantMap& variantMap) override;
