@@ -845,7 +845,9 @@ void Computation::computeCorrelationGeneCoords(const std::vector<std::seed_seq::
             : 0.0f;
 
         if (std::isnan(corr)) corr = 0.0f;
-        corrVector[geneIdx] = corr;
+
+        //corrVector[geneIdx] = corr;
+        corrVector[geneIdx] = std::abs(corr); // Use absolute correlation for ranking
     }
 
     qDebug() << "Correlation computation completed";
