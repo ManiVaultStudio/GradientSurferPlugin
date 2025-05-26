@@ -95,6 +95,12 @@ public:
         const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
         TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
 
+        const DimensionPickerAction& getEmbeddingDimensionXAction() const { return _embeddingDimensionXAction; }
+        DimensionPickerAction& getEmbeddingDimensionXAction() { return _embeddingDimensionXAction; }
+
+        const DimensionPickerAction& getEmbeddingDimensionYAction() const { return _embeddingDimensionYAction; }
+        DimensionPickerAction& getEmbeddingDimensionYAction() { return _embeddingDimensionYAction; }
+
     protected:
         SettingsAction&             _settingsOptions;
         DatasetPickerAction        _clusterDatasetAction;
@@ -106,6 +112,9 @@ public:
         StringAction               _statusColorAction;
         IntegralAction              _topNAction;
         TriggerAction                _deSelectRowAction;
+        DimensionPickerAction                _embeddingDimensionXAction;
+        DimensionPickerAction                _embeddingDimensionYAction;
+
     };
 
     class ComputeHolder : public HorizontalGroupAction
