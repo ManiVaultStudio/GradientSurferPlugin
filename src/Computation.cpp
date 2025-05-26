@@ -238,7 +238,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             auto fullDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
             if (fullDataset.isValid())
             {
-
+                _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().setPointsDataset(fullDataset);
+                _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().setPointsDataset(fullDataset);
                 const auto mainSelectionChanged = [this]() -> void {
                     _settingsAction.getSettingsHolder().getStatusColorAction().setString("M");
                     qDebug() << "Main selection changed";
@@ -383,7 +384,17 @@ void Computation::Compute()
             return;
         }
 
+        if(_settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().getCurrentDimensionIndex() == -1 || _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().getCurrentDimensionIndex() == -1)
+        {
+            qDebug() << "No embedding dimensions selected";
+            _settingsAction.getSettingsHolder().getStatusColorAction().setString("E");
+            return;
+        }
+
+
         auto selectedIndices = fullEmbeddingDataset->getSelectionIndices();
+
+
 
         if (!(selectedIndices.size() > 0))
         {
@@ -436,7 +447,12 @@ void Computation::Compute()
         }
 
         std::vector<float> XYCoordinates(filteredSelectionIndices.size() * 2);
-        std::vector<int> preComputedEmbeddingColumnIndices({ 0, 1 });
+
+        int xEmbeddingIndex = _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().getCurrentDimensionIndex();
+        int yEmbeddingIndex = _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().getCurrentDimensionIndex();
+
+
+        std::vector<int> preComputedEmbeddingColumnIndices({ xEmbeddingIndex, yEmbeddingIndex });
 
         if (XYCoordinates.size() != filteredSelectionIndices.size() * 2)
         {

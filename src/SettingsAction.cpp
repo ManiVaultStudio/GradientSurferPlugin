@@ -32,6 +32,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
     _settingsHolder.getScatterplotViewSelectionAction().setSerializationName("LayerSurfer:ScatterplotViewSelection");
     _settingsHolder.getTopNAction().setSerializationName("LayerSurfer:TopNAction");
+    _settingsHolder.getEmbeddingDimensionXAction().setSerializationName("LayerSurfer:EmbeddingDimensionX");
+    _settingsHolder.getEmbeddingDimensionYAction().setSerializationName("LayerSurfer:EmbeddingDimensionY");
 
 
     _settingsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
@@ -51,6 +53,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getEmbeddingDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getClusterSelectionAction().setDefaultWidgetFlags(OptionsAction::ComboBox);
     _settingsHolder.getGeneSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _settingsHolder.getEmbeddingDimensionXAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _settingsHolder.getEmbeddingDimensionYAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getStatusColorAction().setDefaultWidgetFlags(StringAction::Label);
     _computeHolder.getComputeAction().setDefaultWidgetFlags(TriggerAction::IconText);
     _computeHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
@@ -115,7 +119,9 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     _statusColorAction(this, "Status color"),
     _scatterplotViewSelectionAction(this, "Scatterplot view selection"),
     _topNAction(this, "Top N"),
-    _deSelectRowAction(this, "DeSelect Row")
+    _deSelectRowAction(this, "DeSelect Row"),
+    _embeddingDimensionXAction(this, "Embedding Dimension X"),
+    _embeddingDimensionYAction(this, "Embedding Dimension Y")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
@@ -128,6 +134,8 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     //addAction(&_geneSelectionAction);
     addAction(&_scatterplotViewSelectionAction);
     addAction(&_topNAction);
+    addAction(&_embeddingDimensionXAction);
+    addAction(&_embeddingDimensionYAction);
     //addAction(&_statusColorAction);
     addAction(&_deSelectRowAction);
 }
@@ -163,6 +171,8 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _settingsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _settingsHolder.getScatterplotViewSelectionAction().fromParentVariantMap(variantMap);
     _settingsHolder.getTopNAction().fromParentVariantMap(variantMap);
+    _settingsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
+    _settingsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
 }
 
 QVariantMap SettingsAction::toVariantMap() const
@@ -176,6 +186,8 @@ QVariantMap SettingsAction::toVariantMap() const
     _settingsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getScatterplotViewSelectionAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getTopNAction().insertIntoVariantMap(variantMap);
+    _settingsHolder.getEmbeddingDimensionXAction().insertIntoVariantMap(variantMap);
+    _settingsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
 
     return variantMap;
 }
