@@ -27,8 +27,8 @@ void LayerSurferPlugin::init()
     mainLayout->setSpacing(0);
 
     // Add settings to layout
-    mainLayout->addWidget(_settingsAction.getSettingsHolder().createWidget(&getWidget()));
-
+    //mainLayout->addWidget(_settingsAction.getSettingsHolder().createWidget(&getWidget()));
+    addDockingAction(&_settingsAction.getSettingsHolder(), nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
     // Add table to layout
     mainLayout->addWidget(_settingsAction.getTableViewAction(),90);
 

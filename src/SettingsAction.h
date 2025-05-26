@@ -62,7 +62,7 @@ class SettingsAction : public WidgetAction
 {
 public:
 
-    class SettingsHolder : public HorizontalGroupAction
+    class SettingsHolder : public VerticalGroupAction
     {
     public:
         SettingsHolder(SettingsAction& settingsAction);
