@@ -109,7 +109,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 }
 
 inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAction) :
-    HorizontalGroupAction(&settingsAction, "Settings options"),
+    VerticalGroupAction(&settingsAction, "Settings options"),
     _settingsOptions(settingsAction),
     _clusterDatasetAction(this, "Cluster dataset"),
     _pointDatasetAction(this, "Point dataset"),
