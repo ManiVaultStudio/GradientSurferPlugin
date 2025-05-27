@@ -83,8 +83,8 @@ public:
         const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
-        const StringAction& getStatusColorAction() const { return _statusColorAction; }
-        StringAction& getStatusColorAction() { return _statusColorAction; }
+        const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
+        StringAction& getStatusMessageAction() { return _statusMessageAction; }
 
         const OptionAction& getScatterplotViewSelectionAction() const { return _scatterplotViewSelectionAction; }
         OptionAction& getScatterplotViewSelectionAction() { return _scatterplotViewSelectionAction; }
@@ -109,7 +109,7 @@ public:
         OptionAction               _scatterplotViewSelectionAction;
         OptionsAction              _clusterSelectionAction;
         DimensionPickerAction      _geneSelectionAction;
-        StringAction               _statusColorAction;
+        StringAction               _statusMessageAction;
         IntegralAction              _topNAction;
         TriggerAction                _deSelectRowAction;
         DimensionPickerAction                _embeddingDimensionXAction;
