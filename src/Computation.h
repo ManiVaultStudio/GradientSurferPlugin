@@ -70,9 +70,35 @@ private:
     void ManualCompute();
     void AutoCompute();
     void removeDatasets();
-    
 
-    
+    // Helper functions for AutoCompute refactor
+    bool validateAndRetrieveDatasets(
+        mv::Dataset<Points>& fullPointDataset,
+        mv::Dataset<Clusters>& fullClusterDataset,
+        int& xEmbeddingIndex,
+        int& yEmbeddingIndex,
+        std::vector<int>& selectedIndices,
+        QString& scatterplotViewName,
+        int& topN);
+
+    bool createDatasetsIfNeeded();
+
+    bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
+
+    bool populateEmbeddingCoordinates(
+        int xEmbeddingIndex, int yEmbeddingIndex,
+        std::vector<float>& XYCoordinates);
+
+    bool populateAndUpdateDatasets(
+        mv::Dataset<Points>& fullPointDataset,
+        const std::vector<float>& rotatedXYCordinates,
+        int noOfDimensions,
+        const std::vector<int>& columnIndices,
+        const std::vector<QString>& dimensionNames);
+
+    bool setupAndTriggerPCA(int noOfDimensions);
+
+    void setupTableModelAndSelection(const QStringList& topGenes);
 
 protected:
     LayerSurferPlugin&          _viewerPlugin;
