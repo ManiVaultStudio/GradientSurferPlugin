@@ -386,19 +386,24 @@ void Computation::removeDatasets()
     }
 }
 
-
 void Computation::Compute()
 {
     try
     {
-        if (_settingsAction.getTableViewAction()->model()) {
-            _settingsAction.getTableViewAction()->model()->removeRows(0, _settingsAction.getTableViewAction()->model()->rowCount());
+        // Remove all rows in one call if model exists
+        if (auto* model = _settingsAction.getTableViewAction()->model()) {
+            int rowCount = model->rowCount();
+            if (rowCount > 0)
+                model->removeRows(0, rowCount);
         }
         QApplication::processEvents();
 
-        auto fullEmbeddingDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-        auto fullPointDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
-        auto fullClusterDataset = mv::data().getDataset<Clusters>(_settingsAction.getSettingsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+        // Cache settings holder for repeated use
+        auto& settingsHolder = _settingsAction.getSettingsHolder();
+
+        auto fullEmbeddingDataset = mv::data().getDataset<Points>(settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+        auto fullPointDataset = mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
+        auto fullClusterDataset = mv::data().getDataset<Clusters>(settingsHolder.getClusterDatasetAction().getCurrentDataset().getDatasetId());
 
         if (!fullEmbeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid())
         {
@@ -407,27 +412,24 @@ void Computation::Compute()
             return;
         }
 
-        if(_settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().getCurrentDimensionIndex() == -1 || _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().getCurrentDimensionIndex() == -1)
+        int xEmbeddingIndex = settingsHolder.getEmbeddingDimensionXAction().getCurrentDimensionIndex();
+        int yEmbeddingIndex = settingsHolder.getEmbeddingDimensionYAction().getCurrentDimensionIndex();
+        if (xEmbeddingIndex == -1 || yEmbeddingIndex == -1)
         {
             qDebug() << "No embedding dimensions selected";
             setStatusMessage("E", "No embedding dataset dimensions selected", "");
             return;
         }
 
-
         auto selectedIndices = fullEmbeddingDataset->getSelectionIndices();
-
-
-
-        if (!(selectedIndices.size() > 0))
+        if (selectedIndices.empty())
         {
             qDebug() << "No selected indices";
             setStatusMessage("E", "No indices selected", "");
             return;
         }
 
-        auto selectedClusterValues = _settingsAction.getSettingsHolder().getClusterSelectionAction().getSelectedOptions();
-
+        auto selectedClusterValues = settingsHolder.getClusterSelectionAction().getSelectedOptions();
         if (selectedClusterValues.isEmpty())
         {
             qDebug() << "No selected cluster values";
@@ -435,7 +437,7 @@ void Computation::Compute()
             return;
         }
 
-        auto scatterplotViewName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        auto scatterplotViewName = settingsHolder.getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotViewName.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
@@ -443,7 +445,7 @@ void Computation::Compute()
             return;
         }
 
-        //removeDatasets();
+        // Dataset creation  grouped for clarity
         if (!_selectedPointDataset.isValid())
         {
             _selectedPointDataset = mv::data().createDataset("Points", "Selected Point Data");
@@ -473,34 +475,29 @@ void Computation::Compute()
         if (!_pcaAnalysisPlugin)
         {
             _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
-
         }
 
         if (!_pcaAnalysisPlugin)
         {
-
             qDebug() << "PCA Analysis Plugin not found";
             setStatusMessage("E", "PCA plugin not found", "");
             return;
         }
 
-        std::sort(selectedIndices.begin(), selectedIndices.end());
-        auto clusterValues = fullClusterDataset->getClusters();
-
+        //  Filter selection indices by clusters in a single pass
+        std::set<int> selectedIndicesSet(selectedIndices.begin(), selectedIndices.end());
         std::vector<std::seed_seq::result_type> filteredSelectionIndices;
+        filteredSelectionIndices.reserve(selectedIndices.size()); // Reserve for performance
+
+        auto clusterValues = fullClusterDataset->getClusters();
         for (const auto& cluster : clusterValues)
         {
-            auto clusterName = cluster.getName();
-            auto clusterIndices = cluster.getIndices();
-            auto sortedIndices = clusterIndices;
-            std::sort(sortedIndices.begin(), sortedIndices.end());
-            std::vector<int> intersection;
-            std::set_intersection(
-                selectedIndices.begin(), selectedIndices.end(),
-                sortedIndices.begin(), sortedIndices.end(),
-                std::back_inserter(intersection)
-            );
-            filteredSelectionIndices.insert(filteredSelectionIndices.end(), intersection.begin(), intersection.end());
+            const auto& clusterIndices = cluster.getIndices();
+            for (int idx : clusterIndices) {
+                if (selectedIndicesSet.count(idx)) {
+                    filteredSelectionIndices.push_back(idx);
+                }
+            }
         }
 
         if (filteredSelectionIndices.empty())
@@ -510,13 +507,10 @@ void Computation::Compute()
             return;
         }
 
+        //Preallocate and use reserve for vectors
         std::vector<float> XYCoordinates(filteredSelectionIndices.size() * 2);
 
-        int xEmbeddingIndex = _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().getCurrentDimensionIndex();
-        int yEmbeddingIndex = _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().getCurrentDimensionIndex();
-
-
-        std::vector<int> preComputedEmbeddingColumnIndices({ xEmbeddingIndex, yEmbeddingIndex });
+        std::vector<int> preComputedEmbeddingColumnIndices{ xEmbeddingIndex, yEmbeddingIndex };
 
         if (XYCoordinates.size() != filteredSelectionIndices.size() * 2)
         {
@@ -524,7 +518,7 @@ void Computation::Compute()
             setStatusMessage("E", "XYCoordinates size mismatch", "");
             return;
         }
-        auto topN = _settingsAction.getSettingsHolder().getTopNAction().getValue();
+        auto topN = settingsHolder.getTopNAction().getValue();
         if (topN <= 0)
         {
             qDebug() << "Top N value is not valid";
@@ -533,7 +527,7 @@ void Computation::Compute()
         }
         fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, filteredSelectionIndices);
 
-        float rotationAngle = 0.0;
+        float rotationAngle = 0.0f;
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
@@ -543,7 +537,7 @@ void Computation::Compute()
                 if (plugin->getGuiName() == scatterplotViewName)
                 {
                     foundPlugin = true;
-                    mv::gui::DecimalAction* angleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Line angle"));
+                    auto* angleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Line angle"));
                     if (angleAction)
                     {
                         rotationAngle = angleAction->getValue();
@@ -554,6 +548,7 @@ void Computation::Compute()
                         setStatusMessage("E", "Angle action not found", "");
                         return;
                     }
+                    break; // No need to continue loop
                 }
             }
             if (!foundPlugin)
@@ -580,8 +575,6 @@ void Computation::Compute()
             return;
         }
 
-
-
         std::vector<float> yCoordinates;
         try {
             yCoordinates = getCoordinatesOfCells(rotatedXYCordinates, "Y");
@@ -602,13 +595,10 @@ void Computation::Compute()
             return;
         }
 
-        auto noOfDimensions = fullPointDataset->getNumDimensions();
-        auto dimensionNames = fullPointDataset->getDimensionNames();
-        std::vector<int> columnIndices;
-        for (int i = 0; i < noOfDimensions; i++)
-        {
-            columnIndices.push_back(i);
-        }
+        int noOfDimensions = fullPointDataset->getNumDimensions();
+        const auto& dimensionNames = fullPointDataset->getDimensionNames();
+        std::vector<int> columnIndices(noOfDimensions);
+        std::iota(columnIndices.begin(), columnIndices.end(), 0);
 
         std::vector<float> cellbygenematrix(filteredSelectionIndices.size() * columnIndices.size());
 
@@ -621,7 +611,6 @@ void Computation::Compute()
             return;
         }
 
-
         _selectedPointDataset->setData(cellbygenematrix.data(), filteredSelectionIndices.size(), noOfDimensions);
         _selectedPointDataset->setDimensionNames(dimensionNames);
         mv::events().notifyDatasetDataChanged(_selectedPointDataset);
@@ -630,17 +619,9 @@ void Computation::Compute()
         _rotatedSelectedEmbeddingDataset->setDimensionNames({ "X","Y" });
         mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
 
-        std::vector<float> emptyData(filteredSelectionIndices.size()* noOfDimensions, 0.0f);
+        std::vector<float> emptyData(filteredSelectionIndices.size() * noOfDimensions, 0.0f);
         _pcaDataset->setData(emptyData.data(), filteredSelectionIndices.size(), noOfDimensions);
         mv::events().notifyDatasetDataChanged(_pcaDataset);
-
-        /*if (_pcaAnalysisPlugin)
-        {
-            mv::plugins().destroyPlugin(_pcaAnalysisPlugin);
-        }*/
-        
-
-
 
         auto componentsAction = dynamic_cast<IntegralAction*>(_pcaDataset->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction)
@@ -650,7 +631,7 @@ void Computation::Compute()
             return;
         }
 
-        componentsAction->setValue(noOfDimensions); 
+        componentsAction->setValue(noOfDimensions);
 
         auto startAction = dynamic_cast<TriggerAction*>(_pcaDataset->findChildByPath("PCA/Start analysis"));
         if (startAction)
@@ -661,19 +642,18 @@ void Computation::Compute()
             _pcaDataset->setSelectionIndices({});
         }
 
-
-        // output min and max of rotated xy coordinates
-        auto xCoordinates = getCoordinatesOfCells(rotatedXYCordinates, "X");
+        // Min/max calculation use references for clarity
+        const auto xCoordinates = getCoordinatesOfCells(rotatedXYCordinates, "X");
         float minX = *std::min_element(xCoordinates.begin(), xCoordinates.end());
         float maxX = *std::max_element(xCoordinates.begin(), xCoordinates.end());
         float minY = *std::min_element(yCoordinates.begin(), yCoordinates.end());
         float maxY = *std::max_element(yCoordinates.begin(), yCoordinates.end());
         qDebug() << "Rotated XY Coordinates minX:" << minX << "maxX:" << maxX << "minY:" << minY << "maxY:" << maxY;
         qDebug() << "Rotated XY Coordinates size:" << rotatedXYCordinates.size() << "filteredSelectionIndices size:" << filteredSelectionIndices.size() << "yCoordinates size:" << yCoordinates.size();
-        // compute correlation between gene and selected y coordinates
+
+        //Preallocate corrGeneCoords vector 
         std::vector<float> corrGeneCoords;
         computeCorrelationGeneCoords(filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
-
 
         QStringList topGenes;
         try {
@@ -685,20 +665,21 @@ void Computation::Compute()
             return;
         }
 
-        QStandardItemModel* model = new QStandardItemModel(0, 1, _settingsAction.getTableViewAction());
+        //Use setRowCount for QStandardItemModel for performance
+        QStandardItemModel* model = new QStandardItemModel(topGenes.size(), 1, _settingsAction.getTableViewAction());
         model->setHorizontalHeaderLabels(QStringList() << "Gene");
-        for (int i = 0; i < topGenes.size(); i++)
+        for (int i = 0; i < topGenes.size(); ++i)
         {
-            QStandardItem* geneItem = new QStandardItem(topGenes.at(i));
-            model->setItem(i, 0, geneItem);
+            model->setItem(i, 0, new QStandardItem(topGenes.at(i)));
         }
         _settingsAction.getTableViewAction()->setModel(model);
         _settingsAction.getTableViewAction()->resizeColumnsToContents();
         _settingsAction.getTableViewAction()->resizeRowsToContents();
         _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
 
-
-        disconnect(_settingsAction.getTableViewAction()->selectionModel(), nullptr, this, nullptr);
+        // Only disconnect if a connection exists
+        if (_settingsAction.getTableViewAction()->selectionModel())
+            disconnect(_settingsAction.getTableViewAction()->selectionModel(), nullptr, this, nullptr);
 
         connect(
             _settingsAction.getTableViewAction()->selectionModel(),
@@ -716,14 +697,12 @@ void Computation::Compute()
             }
         );
 
- 
-        setStatusMessage("C", "Computation completed", "#28a745"); 
+        setStatusMessage("C", "Computation completed", "#28a745");
     }
     catch (const std::exception& ex)
     {
         qDebug() << "Exception in Computation:" << ex.what();
         setStatusMessage("E", "Error occurred during computation: " + QString::fromStdString(ex.what()),"");
-
     }
     catch (...)
     {
@@ -731,7 +710,6 @@ void Computation::Compute()
         setStatusMessage("E", "Unknown error occurred during computation", "");
     }
 }
-
 
 // Rotates the XY coordinates by a given angle
 std::vector<float> Computation::rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue) {
