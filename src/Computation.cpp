@@ -620,21 +620,24 @@ void Computation::Compute()
         _pcaDataset->setData(emptyData.data(), filteredSelectionIndices.size(), noOfDimensions);
         mv::events().notifyDatasetDataChanged(_pcaDataset);
 
-
-
+        /*if (_pcaAnalysisPlugin)
+        {
+            mv::plugins().destroyPlugin(_pcaAnalysisPlugin);
+        }*/
+        
 
         if (!_pcaAnalysisPlugin)
         {
             _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
-            
-        }
-        if (!_pcaAnalysisPlugin)
-        {
+            if (!_pcaAnalysisPlugin)
+            {
 
-            qDebug() << "PCA Analysis Plugin not found";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,PCA plugin not found");
-            return;
+                qDebug() << "PCA Analysis Plugin not found";
+                _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,PCA plugin not found");
+                return;
+            }
         }
+
 
         auto componentsAction = dynamic_cast<IntegralAction*>(_pcaDataset->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction)
