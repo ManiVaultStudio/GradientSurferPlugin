@@ -80,6 +80,7 @@ protected:
     mv::Dataset<Points>         _pcaDataset= nullptr;
     mv::Dataset<Points>         _selectedPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
+    mv::Dataset<Points>         _embeddingDataset = nullptr;
     std::vector<int>          _filteredSelectionIndices;
     friend class ChannelAction;
 };

@@ -391,15 +391,72 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         if (_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid())
         {
 
-            auto fullDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-            if (fullDataset.isValid())
+            
+            _embeddingDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+            
+            if (_embeddingDataset.isValid())
             {
-                _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().setPointsDataset(fullDataset);
-                _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().setPointsDataset(fullDataset);
+                _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
+                _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().setPointsDataset(_embeddingDataset);
                 const auto mainSelectionChanged = [this]() -> void {
+                    qDebug() << "Main selection changed in fullEmbeddingDataset";
                     setStatusMessage("M", "Selected indices changed", "");
+                    auto fullDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+                    auto fullclusterDataset = mv::data().getDataset<Clusters>(_settingsAction.getSettingsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+                    if (fullclusterDataset.isValid() && fullDataset.isValid())
+                    {
+                        auto clusters = fullclusterDataset->getClusters();
+                        auto selectedClusters = _settingsAction.getSettingsHolder().getClusterSelectionAction().getSelectedOptions();
+                        auto selectedIndices = fullDataset->getSelectionIndices();
+                        if (!selectedClusters.isEmpty())
+                        {
+                            auto selectedIndices = fullDataset->getSelectionIndices();
+                            for (const auto& cluster : clusters)
+                            {
+                                if (!selectedClusters.contains(cluster.getName()))
+                                {
+
+                                    auto clusterindices = cluster.getIndices();
+
+                                    selectedIndices.erase(std::remove_if(selectedIndices.begin(), selectedIndices.end(),
+                                        [&clusterindices](int index) {
+                                            return std::find(clusterindices.begin(), clusterindices.end(), index) != clusterindices.end();
+                                        }), selectedIndices.end());
+
+
+                                }
+                            }
+                            //_filteredSelectionIndices.clear();
+                            //_filteredSelectionIndices.reserve(selectedIndices.size());
+                            //for (const auto& index : selectedIndices)
+                            //{
+                            //    _filteredSelectionIndices.push_back(index);
+                           // }
+                            fullDataset->setSelectionIndices(selectedIndices);
+                        }
+                        else
+                        {
+                            qDebug() << "No clusters selected, clearing selection indices";
+                            fullDataset->setSelectionIndices({});
+                        }
+
+                    }
+                    else
+                    {
+                        qDebug() << "No cluster dataset selected or invalid cluster dataset";
+                        fullDataset->setSelectionIndices({});
+                    }
+
+
+
                     };
-                connect(&fullDataset, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged);
+
+                
+                bool ok= connect(&_embeddingDataset, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged);
+                if (!ok)
+                {
+                    qDebug() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
+                }
 
             }
 
