@@ -397,7 +397,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         }
                         else
                         {
-                            pointSelectionScaleAction->setValue(160.0);
+                            pointSelectionScaleAction->setValue(135.0);
                         }
                         
                     }
@@ -815,7 +815,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     if (pointSelectionScaleAction)
                     {
 
-                        pointSelectionScaleAction->setValue(160.0);
+                        pointSelectionScaleAction->setValue(135.0);
 
                     }
                     else
