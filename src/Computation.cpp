@@ -18,10 +18,19 @@
 #include <QJsonValue>
 #include <Eigen/Dense>
 #include <QtConcurrent>
+#include <QColor>
+
 using namespace mv;
 using namespace mv::gui;
 
-
+// Add this helper function at file scope (above Computation constructor or in an anonymous namespace)
+static QString getContrastingTextColor(const QString& bgColor) {
+    QColor color(bgColor);
+    if (!color.isValid()) return "white";
+    // Calculate luminance (perceived brightness)
+    double luminance = (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255.0;
+    return (luminance > 0.5) ? "black" : "white";
+}
 
 Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& SettingsAction)
     : WidgetAction(&LayerSurferPlugin, "Computation"),
@@ -30,58 +39,54 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 {
  
     const auto updateStatus = [this]() -> void {
-
         auto stringFull = _settingsAction.getSettingsHolder().getStatusMessageAction().getString();
-        auto string = stringFull.split(",").first().trimmed();
-        auto message = stringFull.split(",").last().trimmed();
-        QString labelText = "";
-        if (!message.isEmpty()) {
-            labelText = message;
+
+        QJsonParseError parseError;
+        QJsonDocument doc = QJsonDocument::fromJson(stringFull.toUtf8(), &parseError);
+        QString status, message; QColor color = "#6c757d";
+        if (!doc.isNull() && doc.isObject()) {
+            QJsonObject obj = doc.object();
+            status = obj.value("status").toString();
+            message = obj.value("message").toString();
+            color = obj.value("color").toString();
+        }
+        else {
+            // fallback for legacy comma-separated string
+            status = stringFull.split(",").first().trimmed();
+            message = stringFull.split(",").last().trimmed();
         }
 
+        QString labelText = message.isEmpty() ? "" : message;
         QString backgroundColor = "none";
 
-        if (string == "C") {
-            if (labelText.isEmpty()) {
-                labelText = "Updated";
-            }
+        if (status == "C") {
+            if (labelText.isEmpty()) labelText = "Updated";
             backgroundColor = "#28a745"; // Green
-
         }
-        else if (string == "M") {
-            if (labelText.isEmpty()) {
-                labelText = "Outdated";
-            }
-            
+        else if (status == "M") {
+            if (labelText.isEmpty()) labelText = "Outdated";
             backgroundColor = "#ffc107"; // Gold
-
         }
-        else if (string == "E") {
-            if (labelText.isEmpty()) {
-                labelText = "Error";
-            }
+        else if (status == "E") {
+            if (labelText.isEmpty()) labelText = "Error";
             backgroundColor = "#dc3545"; // Red
         }
-        else if (string == "R")
-        {
-            if (labelText.isEmpty()) {
-                labelText = "Processing";
-            }
-            
+        else if (status == "R") {
+            if (labelText.isEmpty()) labelText = "Processing";
             backgroundColor = "#007bff"; // Blue
         }
         else {
-            if (labelText.isEmpty()) {
-                labelText = "Unknown";
-            }
+            if (labelText.isEmpty()) labelText = "Unknown";
             backgroundColor = "#6c757d"; // Grey
         }
 
+        QString textColor = getContrastingTextColor(backgroundColor);
+
         _settingsAction.getComputeHolder().getStatusBarAction()->showMessage("Status: " + labelText);
-        _settingsAction.getComputeHolder().getStatusBarAction()->setStyleSheet("QStatusBar{padding-left:8px;background:" + backgroundColor + ";color:white;}");
-
-
-        };
+        _settingsAction.getComputeHolder().getStatusBarAction()->setStyleSheet(
+            "QStatusBar{padding-left:8px;background:" + backgroundColor + ";color:" + textColor + ";}"
+        );
+    };
     connect(&_settingsAction.getSettingsHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
     const auto scatterplotSelection = [this]() -> void
         {
@@ -146,7 +151,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             _settingsAction.getSettingsHolder().getClusterSelectionAction().setOptions({});
         }
-        _settingsAction.getSettingsHolder().getStatusMessageAction().setString("M,Cluster dataset updated");
+        setStatusMessage("M", "Cluster dataset updated", "");
         };
 
     connect(&_settingsAction.getSettingsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset);
@@ -168,7 +173,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             _settingsAction.getSettingsHolder().getGeneSelectionAction().setPointsDataset({});
         }
-        _settingsAction.getSettingsHolder().getStatusMessageAction().setString("M,Point dataset updated");
+        setStatusMessage("M", "Point dataset updated", "");
         };
 
     connect(&_settingsAction.getSettingsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset);
@@ -259,8 +264,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().setPointsDataset(fullDataset);
                 _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().setPointsDataset(fullDataset);
                 const auto mainSelectionChanged = [this]() -> void {
-                    _settingsAction.getSettingsHolder().getStatusMessageAction().setString("M,Selected indices changed");
-                    qDebug() << "Main selection changed";
+                    setStatusMessage("M", "Selected indices changed", "");
                     };
                 connect(&fullDataset, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged);
 
@@ -268,7 +272,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
         }
-        _settingsAction.getSettingsHolder().getStatusMessageAction().setString("M,Embedding dataset updated");
+
+        setStatusMessage("M", "Embedding dataset updated", "");
         };
 
     connect(&_settingsAction.getSettingsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset);
@@ -277,7 +282,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto computeInfo = [this]() -> void {
 
-        _settingsAction.getSettingsHolder().getStatusMessageAction().setString("R,Computation in progress");
+        setStatusMessage("R", "Computation in progress", "");
         _settingsAction.getComputeHolder().getComputeAction().setDisabled(true);
         QApplication::processEvents();
         
@@ -398,14 +403,14 @@ void Computation::Compute()
         if (!fullEmbeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid())
         {
             qDebug() << "Invalid datasets";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Error occured during dataset creation");
+            setStatusMessage("E", "Error occured during dataset creation", "");
             return;
         }
 
         if(_settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().getCurrentDimensionIndex() == -1 || _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().getCurrentDimensionIndex() == -1)
         {
             qDebug() << "No embedding dimensions selected";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,No embedding dataset dimensions selected");
+            setStatusMessage("E", "No embedding dataset dimensions selected", "");
             return;
         }
 
@@ -417,7 +422,7 @@ void Computation::Compute()
         if (!(selectedIndices.size() > 0))
         {
             qDebug() << "No selected indices";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,No indices selected");
+            setStatusMessage("E", "No indices selected", "");
             return;
         }
 
@@ -426,7 +431,7 @@ void Computation::Compute()
         if (selectedClusterValues.isEmpty())
         {
             qDebug() << "No selected cluster values";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,No clusters selected");
+            setStatusMessage("E", "No clusters selected", "");
             return;
         }
 
@@ -434,9 +439,38 @@ void Computation::Compute()
         if (scatterplotViewName.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,No scatterplot view selected");
+            setStatusMessage("E", "No scatterplot view selected", "");
             return;
         }
+
+        //removeDatasets();
+        if (!_selectedPointDataset.isValid())
+        {
+            _selectedPointDataset = mv::data().createDataset("Points", "Selected Point Data");
+            _selectedPointDataset->setGroupIndex(666);
+            mv::events().notifyDatasetAdded(_selectedPointDataset);
+        }
+        if (!_rotatedSelectedEmbeddingDataset.isValid())
+        {
+            _rotatedSelectedEmbeddingDataset = mv::data().createDataset("Points", "Selected Rotated Embedding Data", _selectedPointDataset);
+            _rotatedSelectedEmbeddingDataset->setGroupIndex(666);
+            mv::events().notifyDatasetAdded(_rotatedSelectedEmbeddingDataset);
+        }
+        if (!_pcaDataset.isValid())
+        {
+            _pcaDataset = mv::data().createDataset("Points", "PCA Data");
+            _pcaDataset->setGroupIndex(666);
+            mv::events().notifyDatasetAdded(_pcaDataset);
+        }
+
+        if (!_pcaDataset.isValid() || !_rotatedSelectedEmbeddingDataset.isValid() || !_selectedPointDataset.isValid())
+        {
+            qDebug() << "Failed to create datasets";
+            setStatusMessage("E", "Error occurred during dataset creation", "");
+            return;
+        }
+
+
 
         std::sort(selectedIndices.begin(), selectedIndices.end());
         auto clusterValues = fullClusterDataset->getClusters();
@@ -460,7 +494,7 @@ void Computation::Compute()
         if (filteredSelectionIndices.empty())
         {
             qDebug() << "No filtered selection indices";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,No indices selected");
+            setStatusMessage("E", "No indices selected", "");
             return;
         }
 
@@ -475,14 +509,14 @@ void Computation::Compute()
         if (XYCoordinates.size() != filteredSelectionIndices.size() * 2)
         {
             qDebug() << "XYCoordinates size mismatch";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,XYCoordinates size mismatch");
+            setStatusMessage("E", "XYCoordinates size mismatch", "");
             return;
         }
         auto topN = _settingsAction.getSettingsHolder().getTopNAction().getValue();
         if (topN <= 0)
         {
             qDebug() << "Top N value is not valid";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Top N value is not valid");
+            setStatusMessage("E", "Top N value is not valid", "");
             return;
         }
         fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, filteredSelectionIndices);
@@ -505,7 +539,7 @@ void Computation::Compute()
                     else
                     {
                         qDebug() << "Angle action not found";
-                        _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Angle action not found");
+                        setStatusMessage("E", "Angle action not found", "");
                         return;
                     }
                 }
@@ -513,14 +547,14 @@ void Computation::Compute()
             if (!foundPlugin)
             {
                 qDebug() << "Scatterplot plugin not found";
-                _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Scatterplot plugin not found");
+                setStatusMessage("E", "Scatterplot plugin not found", "");
                 return;
             }
         }
         else
         {
             qDebug() << "Scatterplot view factory not found";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Scatterplot view factory not found");
+            setStatusMessage("E", "Scatterplot view factory not found", "");
             return;
         }
 
@@ -530,7 +564,7 @@ void Computation::Compute()
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in rotateAxis:" << ex.what();
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Error occurred during point rotation");
+            setStatusMessage("E", "Error occurred during point rotation", "");
             return;
         }
 
@@ -542,7 +576,7 @@ void Computation::Compute()
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in getCoordinatesOfCells:" << ex.what();
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Error occurred during fetching coordinates");
+            setStatusMessage("E", "Error occurred during fetching coordinates", "");
             return;
         }
 
@@ -552,7 +586,7 @@ void Computation::Compute()
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in getSortedCellIndices:" << ex.what();
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Error occurred during sorting indices");
+            setStatusMessage("E", "Error occurred during sorting indices", "");
             return;
         }
 
@@ -571,42 +605,10 @@ void Computation::Compute()
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in populateDataForDimensions:" << ex.what();
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Error occurred during populating filtered data");
+            setStatusMessage("E", "Error occurred during populating filtered data", "");
             return;
         }
 
-
-
-
-
-
-        //removeDatasets();
-        //create derived dataset for debugging
-        if (!_selectedPointDataset.isValid())
-        {
-            _selectedPointDataset = mv::data().createDataset("Points", "Selected Point Data");
-            _selectedPointDataset->setGroupIndex(666);
-            mv::events().notifyDatasetAdded(_selectedPointDataset);
-        }
-        if (!_rotatedSelectedEmbeddingDataset.isValid())
-        {
-            _rotatedSelectedEmbeddingDataset = mv::data().createDataset("Points", "Selected Rotated Embedding Data", _selectedPointDataset);
-            _rotatedSelectedEmbeddingDataset->setGroupIndex(666);
-            mv::events().notifyDatasetAdded(_rotatedSelectedEmbeddingDataset);
-        }
-        if (!_pcaDataset.isValid())
-        {
-            _pcaDataset = mv::data().createDataset("Points", "PCA Data");
-            _pcaDataset->setGroupIndex(666);
-            mv::events().notifyDatasetAdded(_pcaDataset);
-        }
-
-        if (!_pcaDataset.isValid() || !_rotatedSelectedEmbeddingDataset.isValid() || !_selectedPointDataset.isValid())
-        {
-            qDebug() << "Failed to create datasets";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Error occurred during dataset creation");
-            return;
-        }
 
         _selectedPointDataset->setData(cellbygenematrix.data(), filteredSelectionIndices.size(), noOfDimensions);
         _selectedPointDataset->setDimensionNames(dimensionNames);
@@ -629,21 +631,22 @@ void Computation::Compute()
         if (!_pcaAnalysisPlugin)
         {
             _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
-            if (!_pcaAnalysisPlugin)
-            {
 
-                qDebug() << "PCA Analysis Plugin not found";
-                _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,PCA plugin not found");
-                return;
-            }
         }
 
+        if (!_pcaAnalysisPlugin)
+        {
+
+            qDebug() << "PCA Analysis Plugin not found";
+            setStatusMessage("E", "PCA plugin not found", "");
+            return;
+        }
 
         auto componentsAction = dynamic_cast<IntegralAction*>(_pcaDataset->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction)
         {
             qDebug() << "Number of PCA components action not found";
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,PCA components action not found");
+            setStatusMessage("E", "PCA components action not found", "");
             return;
         }
 
@@ -678,7 +681,7 @@ void Computation::Compute()
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
-            _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Error occurred during filtering top "+ QString::number(topN) +" genes");
+            setStatusMessage("E", "Error occurred during filtering top "+ QString::number(topN) +" genes", "");
             return;
         }
 
@@ -713,17 +716,19 @@ void Computation::Compute()
             }
         );
 
-        _settingsAction.getSettingsHolder().getStatusMessageAction().setString("C,Computation completed");
+ 
+        setStatusMessage("C", "Computation completed", "#28a745"); 
     }
     catch (const std::exception& ex)
     {
         qDebug() << "Exception in Computation:" << ex.what();
-        _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Error occurred during computation");
+        setStatusMessage("E", "Error occurred during computation: " + QString::fromStdString(ex.what()),"");
+
     }
     catch (...)
     {
         qDebug() << "Unknown exception in Computation";
-        _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,Error occurred during computation");
+        setStatusMessage("E", "Unknown error occurred during computation", "");
     }
 }
 
@@ -970,3 +975,20 @@ QStringList Computation::filterTopNGenesByCorrelation(const std::vector<float>& 
     return topGenes;
 }
 
+
+
+void Computation::setStatusMessage(const QString& status, const QString& message, const QString& color) {
+    QString resolvedColor = color;
+    if (resolvedColor.isEmpty()) {
+        if (status == "C") resolvedColor = "#28a745";      // Green
+        else if (status == "M") resolvedColor = "#ffc107"; // Gold
+        else if (status == "E") resolvedColor = "#dc3545"; // Red
+        else if (status == "R") resolvedColor = "#007bff"; // Blue
+        else resolvedColor = "#6c757d";                    // Grey
+    }
+    QJsonObject obj;
+    obj["status"] = status;
+    obj["message"] = message;
+    obj["color"] = resolvedColor;
+    _settingsAction.getSettingsHolder().getStatusMessageAction().setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+}
