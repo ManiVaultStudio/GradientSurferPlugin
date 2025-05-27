@@ -22,9 +22,91 @@
 #include "util/StyledIcon.h"
 #include <QLabel>
 #include <QStatusBar>
-
+#include <QStyledItemDelegate>
+#include <QPainter>
+#include <QApplication>
+#include <QToolTip>
 using namespace mv;
 using namespace mv::gui;
+
+
+class CorrelationBarDelegate : public QStyledItemDelegate {
+public:
+    CorrelationBarDelegate(float minCorr, float maxCorr, QObject* parent = nullptr)
+        : QStyledItemDelegate(parent), minValue(minCorr), maxValue(maxCorr) {
+    }
+
+    void paint(QPainter* painter, const QStyleOptionViewItem& option,
+        const QModelIndex& index) const override {
+        if (index.column() == 1) { // Correlation column
+            float value = index.data(Qt::UserRole + 1).toFloat();
+            float norm = (maxValue > minValue) ? (value - minValue) / (maxValue - minValue) : 0.0f;
+            int barWidth = static_cast<int>(norm * (option.rect.width() - 8));
+            // Make the bar taller by reducing the vertical margins (e.g., 4px top/bottom)
+            QRect barRect = option.rect.adjusted(4, 4, -4, -4);
+
+            painter->save();
+            painter->setRenderHint(QPainter::Antialiasing, true);
+
+            // Draw selection or normal background
+            QColor bgColor;
+            if (option.state & QStyle::State_Selected) {
+                bgColor = option.palette.color(QPalette::Highlight);
+            }
+            else {
+                bgColor = option.palette.color(QPalette::Base);
+            }
+            painter->fillRect(option.rect, bgColor);
+
+            // Bar color: use Highlight for normal, or a contrasting color if selected
+            QColor barColor;
+            if (option.state & QStyle::State_Selected) {
+                // Use a color that contrasts with the selection background
+                barColor = option.palette.color(QPalette::HighlightedText);
+                if (barColor == bgColor) barColor = QColor("#ffffff");
+            }
+            else {
+                barColor = option.palette.color(QPalette::Highlight);
+                if (barColor == bgColor) barColor = QColor("#87ceeb");
+            }
+
+            QRect filledRect = barRect;
+            filledRect.setWidth(barWidth);
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(barColor);
+            painter->drawRect(filledRect);
+
+            // Draw focus rect if needed
+            if (option.state & QStyle::State_HasFocus) {
+                QStyleOptionFocusRect focusOption;
+                focusOption.QStyleOption::operator=(option);
+                focusOption.rect = option.rect;
+                focusOption.state |= QStyle::State_KeyboardFocusChange;
+                focusOption.backgroundColor = bgColor;
+                QApplication::style()->drawPrimitive(QStyle::PE_FrameFocusRect, &focusOption, painter);
+            }
+
+            painter->restore();
+        }
+        else {
+            QStyledItemDelegate::paint(painter, option, index);
+        }
+    }
+
+    bool helpEvent(QHelpEvent* event, QAbstractItemView* view,
+        const QStyleOptionViewItem& option, const QModelIndex& index) override {
+        if (index.column() == 1) {
+            float value = index.data(Qt::UserRole + 1).toFloat();
+            QToolTip::showText(event->globalPos(), QString::number(value, 'g', 4), view);
+            return true;
+        }
+        return QStyledItemDelegate::helpEvent(event, view, option, index);
+    }
+
+private:
+    float minValue, maxValue;
+};
+
 
 static QString getContrastingTextColor(const QString& bgColor) {
     QColor color(bgColor);
@@ -1690,22 +1772,27 @@ void Computation::setupTableModelAndSelection(
 
     QSet<QString> topGeneSet(topGenes.begin(), topGenes.end());
 
+    float minCorr = std::numeric_limits<float>::max();
+    float maxCorr = std::numeric_limits<float>::lowest();
+    for (const auto& pair : geneCorrPairs) {
+        minCorr = std::min(minCorr, pair.first);
+        maxCorr = std::max(maxCorr, pair.first);
+    }
+
     for (int i = 0; i < static_cast<int>(geneCorrPairs.size()); ++i) {
         const QString& gene = geneCorrPairs[i].second;
         float corr = geneCorrPairs[i].first;
 
         QStandardItem* geneItem = new QStandardItem(gene);
-        QStandardItem* corrItem = new QStandardItem(QString::number(corr, 'g', 4));
+        QStandardItem* corrItem = new QStandardItem;
+        corrItem->setData(QVariant::fromValue(corr), Qt::UserRole + 1); // Store value for delegate
 
         if (topGeneSet.contains(gene)) {
             QFont font = geneItem->font();
             font.setBold(true);
             geneItem->setFont(font);
             geneItem->setBackground(QColor("#FFFACD"));
-            geneItem->setForeground(QColor("#000000")); // Set text color to black
-            corrItem->setFont(font);
-            corrItem->setBackground(QColor("#FFFACD"));
-            corrItem->setForeground(QColor("#000000")); // Set text color to black
+            geneItem->setForeground(QColor("#000000"));
         }
 
         model->setItem(i, 0, geneItem);
@@ -1713,6 +1800,7 @@ void Computation::setupTableModelAndSelection(
     }
 
     _settingsAction.getTableViewAction()->setModel(model);
+    _settingsAction.getTableViewAction()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
     _settingsAction.getTableViewAction()->resizeColumnsToContents();
     _settingsAction.getTableViewAction()->resizeRowsToContents();
     _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
