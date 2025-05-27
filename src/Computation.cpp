@@ -623,14 +623,19 @@ void Computation::Compute()
 
 
 
-        auto pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
-
-        if (!pcaAnalysisPlugin)
+        if (!_pcaAnalysisPlugin)
         {
+            _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
+            
+        }
+        if (!_pcaAnalysisPlugin)
+        {
+
             qDebug() << "PCA Analysis Plugin not found";
             _settingsAction.getSettingsHolder().getStatusMessageAction().setString("E,PCA plugin not found");
             return;
         }
+
         auto componentsAction = dynamic_cast<IntegralAction*>(_pcaDataset->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction)
         {
@@ -647,7 +652,7 @@ void Computation::Compute()
             startAction->trigger();
             QEventLoop loop;
             loop.processEvents();
-            pcaAnalysisPlugin->getOutputDataset()->setSelectionIndices({});
+            _pcaDataset->setSelectionIndices({});
         }
 
 
