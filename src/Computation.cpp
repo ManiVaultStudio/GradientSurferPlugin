@@ -26,7 +26,6 @@
 using namespace mv;
 using namespace mv::gui;
 
-// Add this helper function at file scope (above Computation constructor or in an anonymous namespace)
 static QString getContrastingTextColor(const QString& bgColor) {
     QColor color(bgColor);
     if (!color.isValid()) return "white";
@@ -53,7 +52,7 @@ QVector<QPointF> convertToQPointF(const std::vector<float>& vec, int numOfDims, 
 
     return points;
 }
-// Add this helper function at file scope (above Computation constructor or in an anonymous namespace)
+
 static QString statusToIconName(const QString& status) {
     if (status == "C") return "circle-check";      // FontAwesome: check-circle
     if (status == "M") return "circle-exclamation"; // FontAwesome: exclamation-circle
@@ -1019,7 +1018,7 @@ void Computation::AutoCompute()
         }
         QApplication::processEvents();
 
-        // Step 1: Validate and retrieve datasets and indices
+        //Validate and retrieve datasets and indices
         mv::Dataset<Points> fullPointDataset;
         mv::Dataset<Clusters> fullClusterDataset;
         int xEmbeddingIndex = -1, yEmbeddingIndex = -1, topN = 0;
@@ -1028,21 +1027,21 @@ void Computation::AutoCompute()
         if (!validateAndRetrieveDatasets(fullPointDataset, fullClusterDataset, xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, topN))
             return;
 
-        // Step 2: Create datasets if needed
+        // Create datasets if needed
         if (!createDatasetsIfNeeded())
             return;
 
-        // Step 3: Get rotation angle from plugin
+        // Get rotation angle from plugin
         float rotationAngle = 0.0f;
         if (!getRotationAngle(scatterplotViewName, rotationAngle))
             return;
 
-        // Step 4: Populate embedding coordinates
+        // Populate embedding coordinates
         std::vector<float> XYCoordinates;
         if (!populateEmbeddingCoordinates(xEmbeddingIndex, yEmbeddingIndex, XYCoordinates))
             return;
 
-        // Step 5: Rotate and extract coordinates
+        // Rotate and extract coordinates
         std::vector<float> rotatedXYCordinates;
         try {
             rotatedXYCordinates = rotateAxis(XYCoordinates, rotationAngle);
@@ -1075,12 +1074,8 @@ void Computation::AutoCompute()
         std::vector<int> columnIndices(noOfDimensions);
         std::iota(columnIndices.begin(), columnIndices.end(), 0);
 
-        // Step 6: Populate and update datasets
+        // Populate and update datasets
         if (!populateAndUpdateDatasets(fullPointDataset, rotatedXYCordinates, noOfDimensions, columnIndices, dimensionNames))
-            return;
-
-        // Step 7: Setup and trigger PCA
-        if (!setupAndTriggerPCA(noOfDimensions))
             return;
 
         // Min/max calculation and debug output
@@ -1105,7 +1100,7 @@ void Computation::AutoCompute()
             return;
         }
 
-        // Step 8: Setup table model and connect selection
+        // Setup table model and connect selection
         setupTableModelAndSelection(topGenes);
 
         setStatusMessage("C", "Computation completed", "#28a745");
@@ -1124,6 +1119,14 @@ void Computation::AutoCompute()
 
 void Computation::ManualCompute()
 {
+    auto& settingsHolder = _settingsAction.getSettingsHolder();
+    mv::Dataset<Points> fullPointDataset= mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
+
+    int noOfDimensions = fullPointDataset->getNumDimensions();
+    // Setup and trigger PCA
+    if (!setupAndTriggerPCA(noOfDimensions))
+        return;
+
 
 }
 
@@ -1387,9 +1390,7 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     _settingsAction.getSettingsHolder().getStatusMessageAction().setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 }
 
-// --- Helper function implementations for AutoCompute refactor ---
-
-// 1. Validate and retrieve datasets and indices
+//Validate and retrieve datasets and indices
 bool Computation::validateAndRetrieveDatasets(
     mv::Dataset<Points>& fullPointDataset,
     mv::Dataset<Clusters>& fullClusterDataset,
@@ -1453,7 +1454,7 @@ bool Computation::validateAndRetrieveDatasets(
     return true;
 }
 
-// 2. Create datasets if needed
+// Create datasets if needed
 bool Computation::createDatasetsIfNeeded()
 {
     if (!_selectedPointDataset.isValid()) {
@@ -1466,32 +1467,18 @@ bool Computation::createDatasetsIfNeeded()
         _rotatedSelectedEmbeddingDataset->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_rotatedSelectedEmbeddingDataset);
     }
-    if (!_pcaDataset.isValid()) {
-        _pcaDataset = mv::data().createDataset("Points", "PCA Data");
-        _pcaDataset->setGroupIndex(666);
-        mv::events().notifyDatasetAdded(_pcaDataset);
-    }
 
-    if (!_pcaDataset.isValid() || !_rotatedSelectedEmbeddingDataset.isValid() || !_selectedPointDataset.isValid()) {
+
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedPointDataset.isValid()) {
         qDebug() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
-        return false;
-    }
-
-    if (!_pcaAnalysisPlugin) {
-        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
-    }
-
-    if (!_pcaAnalysisPlugin) {
-        qDebug() << "PCA Analysis Plugin not found";
-        setStatusMessage("E", "PCA plugin not found", "");
         return false;
     }
 
     return true;
 }
 
-// 3. Retrieve rotation angle from plugin
+//Retrieve rotation angle from plugin
 bool Computation::getRotationAngle(const QString& scatterplotViewName, float& rotationAngle)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -1524,7 +1511,7 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
     return true;
 }
 
-// 4. Populate embedding coordinates
+// Populate embedding coordinates
 bool Computation::populateEmbeddingCoordinates(
     int xEmbeddingIndex, int yEmbeddingIndex,
     std::vector<float>& XYCoordinates)
@@ -1545,7 +1532,7 @@ bool Computation::populateEmbeddingCoordinates(
     return true;
 }
 
-// 5. Populate and update datasets
+//Populate and update datasets
 bool Computation::populateAndUpdateDatasets(
     mv::Dataset<Points>& fullPointDataset,
     const std::vector<float>& rotatedXYCordinates,
@@ -1553,6 +1540,23 @@ bool Computation::populateAndUpdateDatasets(
     const std::vector<int>& columnIndices,
     const std::vector<QString>& dimensionNames)
 {
+    
+    
+    if (!_selectedPointDataset.isValid() ||
+        !_rotatedSelectedEmbeddingDataset.isValid()) {
+        qDebug() << "One or more datasets are invalid!";
+        setStatusMessage("E", "Internal error: invalid dataset pointer", "");
+        return false;
+    }
+    if (_filteredSelectionIndices.empty() ||
+        columnIndices.empty() ||
+        dimensionNames.size() != static_cast<size_t>(noOfDimensions)) {
+        qDebug() << "Invalid input sizes!";
+        setStatusMessage("E", "Internal error: invalid input sizes", "");
+        return false;
+    }
+    
+    
     std::vector<float> cellbygenematrix(_filteredSelectionIndices.size() * columnIndices.size());
     try {
         fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, _filteredSelectionIndices);
@@ -1570,16 +1574,42 @@ bool Computation::populateAndUpdateDatasets(
     _rotatedSelectedEmbeddingDataset->setDimensionNames({ "X","Y" });
     mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
 
+    return true;
+}
+
+// Setup and trigger PCA
+bool Computation::setupAndTriggerPCA(int noOfDimensions)
+{
+    
+    if (!_pcaDataset.isValid()) {
+        _pcaDataset = mv::data().createDataset("Points", "PCA Data");
+        _pcaDataset->setGroupIndex(666);
+        mv::events().notifyDatasetAdded(_pcaDataset);
+    }
+
+    if (!_pcaDataset.isValid()) {
+        qDebug() << "Failed to create PCA dataset";
+        setStatusMessage("E", "Error occurred during dataset creation", "");
+        return false;
+    }
+
+
     std::vector<float> emptyData(_filteredSelectionIndices.size() * noOfDimensions, 0.0f);
     _pcaDataset->setData(emptyData.data(), _filteredSelectionIndices.size(), noOfDimensions);
     mv::events().notifyDatasetDataChanged(_pcaDataset);
 
-    return true;
-}
+    if (!_pcaAnalysisPlugin) {
+        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
+    }
 
-// 6. Setup and trigger PCA
-bool Computation::setupAndTriggerPCA(int noOfDimensions)
-{
+    if (!_pcaAnalysisPlugin) {
+        qDebug() << "PCA Analysis Plugin not found";
+        setStatusMessage("E", "PCA plugin not found", "");
+        return false;
+    }
+
+
+    
     auto componentsAction = dynamic_cast<IntegralAction*>(_pcaDataset->findChildByPath("PCA/Number of PCA components"));
     if (!componentsAction) {
         qDebug() << "Number of PCA components action not found";
@@ -1591,14 +1621,22 @@ bool Computation::setupAndTriggerPCA(int noOfDimensions)
     auto startAction = dynamic_cast<TriggerAction*>(_pcaDataset->findChildByPath("PCA/Start analysis"));
     if (startAction) {
         startAction->trigger();
+        qDebug() << "PCA analysis started";
         QEventLoop loop;
         loop.processEvents();
         _pcaDataset->setSelectionIndices({});
     }
+    else {
+        qDebug() << "Start analysis action not found in PCA dataset";
+        setStatusMessage("E", "PCA start action not found", "");
+        return false;
+    }
+    qDebug() << "PCA analysis triggered successfully";
+    setStatusMessage("C", "PCA analysis completed", "#28a745");
     return true;
 }
 
-// 7. Setup table model and connect selection
+// Setup table model and connect selection
 void Computation::setupTableModelAndSelection(const QStringList& topGenes)
 {
     QStandardItemModel* model = new QStandardItemModel(topGenes.size(), 1, _settingsAction.getTableViewAction());
