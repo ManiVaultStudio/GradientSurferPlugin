@@ -67,7 +67,8 @@ private:
 
     //QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString> geneNameOrdered);
     QStringList filterTopNGenesByCorrelation(const std::vector<float>& correlationVector, int N, std::vector<QString> geneNameOrdered);
-    void Compute();
+    void ManualCompute();
+    void AutoCompute();
     void removeDatasets();
     
 

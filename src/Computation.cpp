@@ -399,18 +399,18 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
                 _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().setPointsDataset(_embeddingDataset);
                 const auto mainSelectionChanged = [this]() -> void {
-                    qDebug() << "Main selection changed in fullEmbeddingDataset";
+                    //qDebug() << "Main selection changed in fullEmbeddingDataset";
                     setStatusMessage("M", "Selected indices changed", "");
-                    auto fullDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+                    
                     auto fullclusterDataset = mv::data().getDataset<Clusters>(_settingsAction.getSettingsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
-                    if (fullclusterDataset.isValid() && fullDataset.isValid())
+                    if (fullclusterDataset.isValid() && _embeddingDataset.isValid())
                     {
                         auto clusters = fullclusterDataset->getClusters();
                         auto selectedClusters = _settingsAction.getSettingsHolder().getClusterSelectionAction().getSelectedOptions();
-                        auto selectedIndices = fullDataset->getSelectionIndices();
+                        auto selectedIndices = _embeddingDataset->getSelectionIndices();
                         if (!selectedClusters.isEmpty())
                         {
-                            auto selectedIndices = fullDataset->getSelectionIndices();
+                            
                             for (const auto& cluster : clusters)
                             {
                                 if (!selectedClusters.contains(cluster.getName()))
@@ -426,27 +426,33 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                                 }
                             }
-                            //_filteredSelectionIndices.clear();
-                            //_filteredSelectionIndices.reserve(selectedIndices.size());
-                            //for (const auto& index : selectedIndices)
-                            //{
-                            //    _filteredSelectionIndices.push_back(index);
-                           // }
-                            fullDataset->setSelectionIndices(selectedIndices);
+                            _filteredSelectionIndices.clear();
+                            _filteredSelectionIndices.reserve(selectedIndices.size());
+                            for (const auto& index : selectedIndices)
+                            {
+                                _filteredSelectionIndices.push_back(index);
+                            }
+                            _embeddingDataset->setSelectionIndices(selectedIndices);
                         }
                         else
                         {
                             qDebug() << "No clusters selected, clearing selection indices";
-                            fullDataset->setSelectionIndices({});
+                            _embeddingDataset->setSelectionIndices({});
                         }
 
                     }
                     else
                     {
                         qDebug() << "No cluster dataset selected or invalid cluster dataset";
-                        fullDataset->setSelectionIndices({});
+                        _embeddingDataset->setSelectionIndices({});
                     }
+                    setStatusMessage("R", "Computation in progress", "");
+                    _settingsAction.getComputeHolder().getComputeAction().setDisabled(true);
+                    QApplication::processEvents();
 
+                    AutoCompute();
+
+                    _settingsAction.getComputeHolder().getComputeAction().setDisabled(false);
 
 
                     };
@@ -474,7 +480,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _settingsAction.getComputeHolder().getComputeAction().setDisabled(true);
         QApplication::processEvents();
 
-        Compute();
+        ManualCompute();
 
         _settingsAction.getComputeHolder().getComputeAction().setDisabled(false);
         };
@@ -1000,7 +1006,8 @@ void Computation::removeDatasets()
     }
 }
 
-void Computation::Compute()
+
+void Computation::AutoCompute()
 {
     try
     {
@@ -1015,11 +1022,11 @@ void Computation::Compute()
         // Cache settings holder for repeated use
         auto& settingsHolder = _settingsAction.getSettingsHolder();
 
-        auto fullEmbeddingDataset = mv::data().getDataset<Points>(settingsHolder.getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+        
         auto fullPointDataset = mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
         auto fullClusterDataset = mv::data().getDataset<Clusters>(settingsHolder.getClusterDatasetAction().getCurrentDataset().getDatasetId());
 
-        if (!fullEmbeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid())
+        if (!_embeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid())
         {
             qDebug() << "Invalid datasets";
             setStatusMessage("E", "Error occured during dataset creation", "");
@@ -1035,7 +1042,7 @@ void Computation::Compute()
             return;
         }
 
-        auto selectedIndices = fullEmbeddingDataset->getSelectionIndices();
+        auto selectedIndices = _embeddingDataset->getSelectionIndices();
         if (selectedIndices.empty())
         {
             qDebug() << "No selected indices";
@@ -1098,7 +1105,7 @@ void Computation::Compute()
             return;
         }
 
-        //  Filter selection indices by clusters in a single pass
+       /* //  Filter selection indices by clusters in a single pass
         std::set<int> selectedIndicesSet(selectedIndices.begin(), selectedIndices.end());
         //std::vector<std::seed_seq::result_type> filteredSelectionIndices;
         _filteredSelectionIndices.clear(); // Clear previous data
@@ -1113,7 +1120,7 @@ void Computation::Compute()
                     _filteredSelectionIndices.push_back(idx);
                 }
             }
-        }
+        }*/
 
         if (_filteredSelectionIndices.empty())
         {
@@ -1140,7 +1147,7 @@ void Computation::Compute()
             setStatusMessage("E", "Top N value is not valid", "");
             return;
         }
-        fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, _filteredSelectionIndices);
+        _embeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, _filteredSelectionIndices);
 
         float rotationAngle = 0.0f;
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -1276,7 +1283,7 @@ void Computation::Compute()
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
-            setStatusMessage("E", "Error occurred during filtering top "+ QString::number(topN) +" genes", "");
+            setStatusMessage("E", "Error occurred during filtering top " + QString::number(topN) + " genes", "");
             return;
         }
 
@@ -1317,13 +1324,18 @@ void Computation::Compute()
     catch (const std::exception& ex)
     {
         qDebug() << "Exception in Computation:" << ex.what();
-        setStatusMessage("E", "Error occurred during computation: " + QString::fromStdString(ex.what()),"");
+        setStatusMessage("E", "Error occurred during computation: " + QString::fromStdString(ex.what()), "");
     }
     catch (...)
     {
         qDebug() << "Unknown exception in Computation";
         setStatusMessage("E", "Unknown error occurred during computation", "");
     }
+}
+
+void Computation::ManualCompute()
+{
+
 }
 
 // Rotates the XY coordinates by a given angle
