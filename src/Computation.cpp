@@ -576,7 +576,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getSettingsHolder().getClusterSelectionAction(), &OptionsAction::selectedOptionsChanged, this, clusterSelectionChanged);
 
+    const auto correlationRangechanged = [this]() -> void {
 
+
+
+        };
+
+    connect(&_settingsAction.getSettingsHolder().getCorrelationRangeAction(), &DecimalRangeAction::rangeChanged, this, correlationRangechanged);
 
 
 
