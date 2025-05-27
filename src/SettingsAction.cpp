@@ -47,6 +47,13 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
     _settingsHolder.getTopNAction().setToolTip("Top N Action");
     _settingsHolder.getDeSelectRowAction().setToolTip("DeSelect Row Action");
+    _settingsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
+    _settingsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
+    _settingsHolder.getFreezeSelectionAction().setToolTip("Freeze Selection Action");
+
+    _settingsHolder.getFocusSelectionAction().setChecked(false);
+    _settingsHolder.getHidePointSelectionOutlineAction().setChecked(false);
+    _settingsHolder.getFreezeSelectionAction().setChecked(false);
 
     _settingsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -65,6 +72,9 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getTopNAction().setMinimum(1);
     _settingsHolder.getTopNAction().setMaximum(10000);
     _settingsHolder.getDeSelectRowAction().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
+    _settingsHolder.getFocusSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _settingsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _settingsHolder.getFreezeSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _tableViewAction = new QTableView();
     _tableViewAction->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -121,7 +131,10 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     _topNAction(this, "Top N"),
     _deSelectRowAction(this, "DeSelect Row"),
     _embeddingDimensionXAction(this, "Embedding Dimension X"),
-    _embeddingDimensionYAction(this, "Embedding Dimension Y")
+    _embeddingDimensionYAction(this, "Embedding Dimension Y"),
+    _focusSelectionAction(this, "Focus Selection"),
+    _hidePointSelectionAction(this, "Hide Point Selection Outline"),
+    _freezeSelectionAction(this, "Freeze Selection")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
@@ -136,6 +149,9 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     addAction(&_topNAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
+    addAction(&_focusSelectionAction);
+    addAction(&_hidePointSelectionAction);
+    addAction(&_freezeSelectionAction);
     //addAction(&_statusColorAction);
     addAction(&_deSelectRowAction);
 }
@@ -173,6 +189,7 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _settingsHolder.getTopNAction().fromParentVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
+
 }
 
 QVariantMap SettingsAction::toVariantMap() const

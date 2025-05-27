@@ -363,6 +363,66 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         setStatusMessage("M", "Scatterplotview selection updated", "");
 
+        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotName.isEmpty())
+        {
+            qDebug() << "No scatterplot view selected";
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName)
+                {
+                    mv::gui::ToggleAction*  notifyDuringSelectionAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Notify during selection"));
+                    mv::gui::ToggleAction* haloAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Halo"));
+
+                    if (notifyDuringSelectionAction) {
+                        notifyDuringSelectionAction->setChecked(false);
+                    }
+                    else
+                    {
+                        qDebug() << "Notify during selection action not found.";
+                    }
+                    if (haloAction) {
+                        haloAction->setChecked(true);
+                    }
+                    else
+                    {
+                        qDebug() << "Halo action not found.";
+                    }
+
+                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
+                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                    if (pointSelectionScaleAction)
+                    {
+
+                        pointSelectionScaleAction->setValue(160.0);
+
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection scale action not found";
+                    }
+                    if (pointSelectionOpacityAction)
+                    {
+
+                       pointSelectionOpacityAction->setValue(100.0);
+
+
+
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection opacity action not found";
+                    }
+
+                }
+            }
+        }
+
         };
 
     connect(&_settingsAction.getSettingsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged);
@@ -377,10 +437,139 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getSettingsHolder().getTopNAction(), &IntegralAction::valueChanged, this, topNChanged);
 
 
+
+    const auto showPointSelectionChanged = [this]() -> void {
+
+        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotName.isEmpty())
+        {
+            qDebug() << "No scatterplot view selected";
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName)
+                {
+                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
+                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                    if (pointSelectionScaleAction)
+                    {
+                        if (_settingsAction.getSettingsHolder().getHidePointSelectionOutlineAction().isChecked())
+                        {
+                            pointSelectionScaleAction->setValue(100.0);
+                        }
+                        else
+                        {
+                            pointSelectionScaleAction->setValue(160.0);
+                        }
+                        
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection scale action not found";
+                    }
+                    if (pointSelectionOpacityAction)
+                    {
+                        if (_settingsAction.getSettingsHolder().getHidePointSelectionOutlineAction().isChecked())
+                        {
+                            pointSelectionOpacityAction->setValue(0.0);
+                        }
+                        else
+                        {
+                            pointSelectionOpacityAction->setValue(100.0);
+                        }
+                        
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection opacity action not found";
+                    }
+                }
+            }
+        }
+        };
+
+    connect(&_settingsAction.getSettingsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged);
+
+    const auto freezeSelectionChanged = [this]() -> void {
+
+        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotName.isEmpty())
+        {
+            qDebug() << "No scatterplot view selected";
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName)
+                {
+                    auto freezeAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Freeze selection"));
+                    if (freezeAction)
+                    {
+                        freezeAction->setChecked(_settingsAction.getSettingsHolder().getFocusSelectionAction().isChecked());
+                    }
+                    else
+                    {
+                        qDebug() << "Freeze selection action not found";
+                    }
+                }
+            }
+        }
+
+        };
+
+    connect(&_settingsAction.getSettingsHolder().getFreezeSelectionAction(), &ToggleAction::toggled, this, freezeSelectionChanged);
+
+
+    const auto focusSelectionChanged = [this]() -> void {
+
+        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotName.isEmpty())
+        {
+            qDebug() << "No scatterplot view selected";
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName)
+                {
+                    auto focusAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Plot/Point/Focus selection"));
+                    if (focusAction)
+                    {
+                        focusAction->setChecked(_settingsAction.getSettingsHolder().getFocusSelectionAction().isChecked());
+                    }
+                    else
+                    {
+                        qDebug() << "Focus selection action not found";
+                    }
+                }
+            }
+        }
+
+        };
+
+    connect(&_settingsAction.getSettingsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged);
+
+
     const auto embeddingDimensionYActionChanged = [this]() -> void {
 
         setStatusMessage("M", "Embedding Y dimension changed", "");
-
+        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotName.isEmpty())
+        {
+            qDebug() << "No scatterplot view selected";
+            setStatusMessage("E", "No scatterplot view selected", "");
+            return;
+        }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
         mv::gui::DatasetPickerAction* pointDatasetPickerAction;
@@ -389,9 +578,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText())
+                if (plugin->getGuiName() == scatterplotName)
                 {
-                    plugin->printChildren();
+                    
                     pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
                     if (pointDatasetPickerAction)
                     {
@@ -480,7 +669,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText())
                 {
-                    plugin->printChildren();
+                    
                     pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
                     if (pointDatasetPickerAction)
                     {
@@ -579,7 +768,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText())
                 {
-                    plugin->printChildren();
+                    
                     pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
                     if (pointDatasetPickerAction)
                     {
