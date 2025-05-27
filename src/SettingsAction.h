@@ -110,6 +110,9 @@ public:
         const ToggleAction& getFreezeSelectionAction() const { return _freezeSelectionAction; }
         ToggleAction& getFreezeSelectionAction() { return _freezeSelectionAction; }
 
+        const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
+        DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
+
     protected:
         SettingsAction&                     _settingsOptions;
         DatasetPickerAction                 _clusterDatasetAction;
@@ -120,6 +123,7 @@ public:
         DimensionPickerAction               _geneSelectionAction;
         StringAction                        _statusMessageAction;
         IntegralAction                      _topNAction;
+        DecimalRangeAction                  _correlationRangeAction;                   
         TriggerAction                       _deSelectRowAction;
         DimensionPickerAction               _embeddingDimensionXAction;
         DimensionPickerAction               _embeddingDimensionYAction;

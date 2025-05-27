@@ -34,7 +34,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getTopNAction().setSerializationName("LayerSurfer:TopNAction");
     _settingsHolder.getEmbeddingDimensionXAction().setSerializationName("LayerSurfer:EmbeddingDimensionX");
     _settingsHolder.getEmbeddingDimensionYAction().setSerializationName("LayerSurfer:EmbeddingDimensionY");
-
+    _settingsHolder.getCorrelationRangeAction().setSerializationName("LayerSurfer:CorrelationRange");
 
     _settingsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
     _settingsHolder.getPointDatasetAction().setToolTip("Point Dataset");
@@ -50,10 +50,15 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _settingsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
     _settingsHolder.getFreezeSelectionAction().setToolTip("Freeze Selection Action");
+    _settingsHolder.getCorrelationRangeAction().setToolTip("Correlation Range Action");
 
     _settingsHolder.getFocusSelectionAction().setChecked(false);
     _settingsHolder.getHidePointSelectionOutlineAction().setChecked(false);
     _settingsHolder.getFreezeSelectionAction().setChecked(false);
+    _settingsHolder.getCorrelationRangeAction().setLimitsMaximum(1.0);
+    _settingsHolder.getCorrelationRangeAction().setLimitsMinimum(0.0);
+    _settingsHolder.getCorrelationRangeAction().setMaximum(1.0);
+    _settingsHolder.getCorrelationRangeAction().setMinimum(0.5);
 
     _settingsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -75,6 +80,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getFocusSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _settingsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _settingsHolder.getFreezeSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _settingsHolder.getCorrelationRangeAction().setDefaultWidgetFlags(DecimalRangeAction::Slider  | DecimalRangeAction::MaximumSpinBox | DecimalRangeAction::MinimumSpinBox);
 
     _tableViewAction = new QTableView();
     _tableViewAction->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -136,7 +142,8 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     _embeddingDimensionYAction(this, "Embedding Dimension Y"),
     _focusSelectionAction(this, "Focus Selection"),
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
-    _freezeSelectionAction(this, "Freeze Selection")
+    _freezeSelectionAction(this, "Freeze Selection"),
+    _correlationRangeAction(this, "Correlation Range")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
@@ -154,6 +161,7 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
     addAction(&_freezeSelectionAction);
+    addAction(&_correlationRangeAction);
     //addAction(&_statusColorAction);
     addAction(&_deSelectRowAction);
 }
@@ -191,6 +199,7 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _settingsHolder.getTopNAction().fromParentVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
+    _settingsHolder.getCorrelationRangeAction().fromParentVariantMap(variantMap);
 
 }
 
@@ -207,6 +216,7 @@ QVariantMap SettingsAction::toVariantMap() const
     _settingsHolder.getTopNAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionXAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
+    _settingsHolder.getCorrelationRangeAction().insertIntoVariantMap(variantMap);
 
     return variantMap;
 }

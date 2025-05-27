@@ -70,6 +70,11 @@ private:
         const std::vector<float>& correlationVector);
     //QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString> geneNameOrdered);
     QStringList filterTopNGenesByCorrelation(const std::vector<float>& correlationVector, int N, std::vector<QString> geneNameOrdered);
+    QStringList filterGenesByCorrelationRange(
+        const std::vector<float>& correlationVector,
+        float min,
+        float max,
+        std::vector<QString> geneNameOrdered);
     void ManualCompute();
     void AutoCompute();
     void removeDatasets();
@@ -82,7 +87,10 @@ private:
         int& yEmbeddingIndex,
         std::vector<int>& selectedIndices,
         QString& scatterplotViewName,
-        int& topN);
+        int& topN,
+        float& minCorrelation,
+        float& maxCorrelation
+    );
 
     bool createDatasetsIfNeeded();
 

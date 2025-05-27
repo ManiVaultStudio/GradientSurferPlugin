@@ -1103,10 +1103,10 @@ void Computation::AutoCompute()
         //Validate and retrieve datasets and indices
         mv::Dataset<Points> fullPointDataset;
         mv::Dataset<Clusters> fullClusterDataset;
-        int xEmbeddingIndex = -1, yEmbeddingIndex = -1, topN = 0;
+        int xEmbeddingIndex = -1, yEmbeddingIndex = -1, topN = 0; float maxCorrelation = 1.0f, minCorrelation=0.0f; 
         std::vector<int> selectedIndices;
         QString scatterplotViewName;
-        if (!validateAndRetrieveDatasets(fullPointDataset, fullClusterDataset, xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, topN))
+        if (!validateAndRetrieveDatasets(fullPointDataset, fullClusterDataset, xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, topN, minCorrelation, maxCorrelation))
             return;
 
         // Create datasets if needed
@@ -1174,8 +1174,9 @@ void Computation::AutoCompute()
         computeCorrelationGeneCoords(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
 
         QStringList topGenes;
+
         try {
-            topGenes = filterTopNGenesByCorrelation(corrGeneCoords, topN, dimensionNames);
+            topGenes = filterGenesByCorrelationRange(corrGeneCoords, minCorrelation, maxCorrelation, dimensionNames);
         } catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
             setStatusMessage("E", "Error occurred during filtering top " + QString::number(topN) + " genes", "");
@@ -1454,7 +1455,27 @@ QStringList Computation::filterTopNGenesByCorrelation(const std::vector<float>& 
     return topGenes;
 }
 
+QStringList Computation::filterGenesByCorrelationRange(
+    const std::vector<float>& correlationVector,
+    float min,
+    float max,
+    std::vector<QString> geneNameOrdered)
+{
+    QStringList filteredGenes;
 
+    // Defensive: correlationVector and geneNameOrdered should have the same size
+    int count = std::min(static_cast<int>(correlationVector.size()), static_cast<int>(geneNameOrdered.size()));
+    if (count == 0) return filteredGenes;
+
+    for (int i = 0; i < count; ++i) {
+        float corr = correlationVector[i];
+        if (corr >= min && corr <= max) {
+            filteredGenes << geneNameOrdered[i];
+        }
+    }
+
+    return filteredGenes;
+}
 
 void Computation::setStatusMessage(const QString& status, const QString& message, const QString& color) {
     QString resolvedColor = color;
@@ -1480,7 +1501,10 @@ bool Computation::validateAndRetrieveDatasets(
     int& yEmbeddingIndex,
     std::vector<int>& selectedIndices,
     QString& scatterplotViewName,
-    int& topN)
+    int& topN,
+    float& minCorrelation,
+    float& maxCorrelation
+)
 {
     auto& settingsHolder = _settingsAction.getSettingsHolder();
 
@@ -1532,6 +1556,16 @@ bool Computation::validateAndRetrieveDatasets(
         setStatusMessage("E", "Top N value is not valid", "");
         return false;
     }
+    minCorrelation = settingsHolder.getCorrelationRangeAction().getMinimum();
+    maxCorrelation = settingsHolder.getCorrelationRangeAction().getMaximum();
+    if (minCorrelation < 0.0f || maxCorrelation > 1.0f || minCorrelation >= maxCorrelation) {
+        qDebug() << "Invalid correlation range";
+        setStatusMessage("E", "Invalid correlation range", "");
+        return false;
+    }
+    qDebug() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex
+        << "scatterplotViewName:" << scatterplotViewName << "topN:" << topN << "minCorrelation:" << minCorrelation << "maxCorrelation:" << maxCorrelation;
+
 
     return true;
 }
