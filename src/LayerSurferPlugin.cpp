@@ -32,6 +32,9 @@ void LayerSurferPlugin::init()
     // Add table to layout
     mainLayout->addWidget(_settingsAction.getTableViewAction(),90);
 
+    // Add the line chart widget below the table
+    mainLayout->addWidget(_settingsAction.getLineChartWidget(), 90);
+
     // Add compute and status to layout
     auto* computeStatusLayout = new QHBoxLayout();
     computeStatusLayout->setContentsMargins(0, 0, 0, 0);

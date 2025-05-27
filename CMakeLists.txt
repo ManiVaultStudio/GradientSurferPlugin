@@ -24,9 +24,9 @@ endif(MSVC)
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
-find_package(Qt6 COMPONENTS Widgets WebEngineWidgets Concurrent REQUIRED)
+find_package(Qt6 COMPONENTS Widgets WebEngineWidgets Concurrent OpenGLWidgets REQUIRED)
 find_package(ManiVault COMPONENTS Core PointData ClusterData CONFIG QUIET)
-
+find_package(OpenGL REQUIRED)
 # -----------------------------------------------------------------------------
 # Source files
 # -----------------------------------------------------------------------------
@@ -37,6 +37,8 @@ set(PLUGIN_SOURCES
     src/SettingsAction.cpp
     src/Computation.h
     src/Computation.cpp
+    src/HighPerfLineChart.cpp
+    src/HighPerfLineChart.h
     src/LayerSurferPlugin.json
 )
 
@@ -73,10 +75,12 @@ endif()
 # -----------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::WebEngineWidgets)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::OpenGLWidgets)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Concurrent )
 target_link_libraries(${PROJECT_NAME} PRIVATE ManiVault::Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE ManiVault::PointData)
 target_link_libraries(${PROJECT_NAME} PRIVATE ManiVault::ClusterData)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
 
 # -----------------------------------------------------------------------------
 # Target installation

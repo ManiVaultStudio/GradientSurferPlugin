@@ -38,7 +38,7 @@
 #include <actions/HorizontalToolbarAction.h>
 #include <actions/VerticalToolbarAction.h>
 #include "QStatusBar"
-
+#include "HighPerfLineChart.h"
 
 using namespace mv::gui;
 class QMenu;
@@ -110,6 +110,9 @@ public:
         const ToggleAction& getFreezeSelectionAction() const { return _freezeSelectionAction; }
         ToggleAction& getFreezeSelectionAction() { return _freezeSelectionAction; }
 
+        const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
+        DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
+
     protected:
         SettingsAction&                     _settingsOptions;
         DatasetPickerAction                 _clusterDatasetAction;
@@ -120,6 +123,7 @@ public:
         DimensionPickerAction               _geneSelectionAction;
         StringAction                        _statusMessageAction;
         IntegralAction                      _topNAction;
+        DecimalRangeAction                  _correlationRangeAction;                   
         TriggerAction                       _deSelectRowAction;
         DimensionPickerAction               _embeddingDimensionXAction;
         DimensionPickerAction               _embeddingDimensionYAction;
@@ -158,6 +162,7 @@ public: // Serialization
     QVariantMap toVariantMap() const override;
 
     QTableView* getTableViewAction() { return _tableViewAction; }
+    HighPerfLineChart* getLineChartWidget() { return _lineChartWidget; }
 
 
 protected:
@@ -165,6 +170,7 @@ protected:
     mv::CoreInterface* _core;
     SettingsHolder              _settingsHolder;
     ComputeHolder               _computeHolder;
-    QTableView*                 _tableViewAction;
+    QTableView*                 _tableViewAction = nullptr;
+    HighPerfLineChart*          _lineChartWidget = nullptr;
     friend class ChannelAction;
 };

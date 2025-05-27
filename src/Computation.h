@@ -63,15 +63,53 @@ private:
     std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
     std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols);
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
-    void computeCorrelationGeneCoords(const std::vector<std::seed_seq::result_type>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
-
+    void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
+    void setupTableModelAndSelection(
+        const QStringList& topGenes,
+        const std::vector<QString>& allGenes,
+        const std::vector<float>& correlationVector);
     //QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString> geneNameOrdered);
     QStringList filterTopNGenesByCorrelation(const std::vector<float>& correlationVector, int N, std::vector<QString> geneNameOrdered);
-    void Compute();
+    QStringList filterGenesByCorrelationRange(
+        const std::vector<float>& correlationVector,
+        float min,
+        float max,
+        std::vector<QString> geneNameOrdered);
+    void ManualCompute();
+    void AutoCompute();
     void removeDatasets();
-    
 
-    
+    // Helper functions for AutoCompute refactor
+    bool validateAndRetrieveDatasets(
+        mv::Dataset<Points>& fullPointDataset,
+        mv::Dataset<Clusters>& fullClusterDataset,
+        int& xEmbeddingIndex,
+        int& yEmbeddingIndex,
+        std::vector<int>& selectedIndices,
+        QString& scatterplotViewName,
+        int& topN,
+        float& minCorrelation,
+        float& maxCorrelation
+    );
+
+    bool createDatasetsIfNeeded();
+
+    bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
+
+    bool populateEmbeddingCoordinates(
+        int xEmbeddingIndex, int yEmbeddingIndex,
+        std::vector<float>& XYCoordinates);
+
+    bool populateAndUpdateDatasets(
+        mv::Dataset<Points>& fullPointDataset,
+        const std::vector<float>& rotatedXYCordinates,
+        int noOfDimensions,
+        const std::vector<int>& columnIndices,
+        const std::vector<QString>& dimensionNames);
+
+    bool setupAndTriggerPCA(int noOfDimensions);
+
+    void setupTableModelAndSelection(const QStringList& topGenes);
 
 protected:
     LayerSurferPlugin&          _viewerPlugin;
@@ -80,6 +118,7 @@ protected:
     mv::Dataset<Points>         _pcaDataset= nullptr;
     mv::Dataset<Points>         _selectedPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
-
+    mv::Dataset<Points>         _embeddingDataset = nullptr;
+    std::vector<int>          _filteredSelectionIndices;
     friend class ChannelAction;
 };
