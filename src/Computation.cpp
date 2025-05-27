@@ -201,6 +201,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
             
             _settingsAction.getSettingsHolder().getClusterSelectionAction().setOptions(clusterNames);
+            _settingsAction.getSettingsHolder().getClusterSelectionAction().setSelectedOptions(clusterNames);
 
         }
         else
