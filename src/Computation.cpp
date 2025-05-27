@@ -359,73 +359,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getSettingsHolder().getClusterSelectionAction(), &OptionsAction::selectedOptionsChanged, this, clusterSelectionChanged);
 
 
-    const auto scatterplotviewSelectionChanged = [this]() -> void {
 
-        setStatusMessage("M", "Scatterplotview selection updated", "");
-
-        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        if (scatterplotName.isEmpty())
-        {
-            qDebug() << "No scatterplot view selected";
-            return;
-        }
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == scatterplotName)
-                {
-                    mv::gui::ToggleAction*  notifyDuringSelectionAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Notify during selection"));
-                    mv::gui::ToggleAction* haloAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Halo"));
-
-                    if (notifyDuringSelectionAction) {
-                        notifyDuringSelectionAction->setChecked(false);
-                    }
-                    else
-                    {
-                        qDebug() << "Notify during selection action not found.";
-                    }
-                    if (haloAction) {
-                        haloAction->setChecked(true);
-                    }
-                    else
-                    {
-                        qDebug() << "Halo action not found.";
-                    }
-
-                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
-                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
-                    if (pointSelectionScaleAction)
-                    {
-
-                        pointSelectionScaleAction->setValue(160.0);
-
-                    }
-                    else
-                    {
-                        qDebug() << "Point selection scale action not found";
-                    }
-                    if (pointSelectionOpacityAction)
-                    {
-
-                       pointSelectionOpacityAction->setValue(100.0);
-
-
-
-                    }
-                    else
-                    {
-                        qDebug() << "Point selection opacity action not found";
-                    }
-
-                }
-            }
-        }
-
-        };
-
-    connect(&_settingsAction.getSettingsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged);
 
 
     const auto topNChanged = [this]() -> void {
@@ -512,7 +446,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     auto freezeAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Freeze selection"));
                     if (freezeAction)
                     {
-                        freezeAction->setChecked(_settingsAction.getSettingsHolder().getFocusSelectionAction().isChecked());
+                        freezeAction->setChecked(_settingsAction.getSettingsHolder().getFreezeSelectionAction().isChecked());
                     }
                     else
                     {
@@ -841,7 +775,73 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getSettingsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow);
+    const auto scatterplotviewSelectionChanged = [this]() -> void {
 
+        setStatusMessage("M", "Scatterplotview selection updated", "");
+
+        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotName.isEmpty())
+        {
+            qDebug() << "No scatterplot view selected";
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName)
+                {
+                    mv::gui::ToggleAction* notifyDuringSelectionAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Notify during selection"));
+                    mv::gui::ToggleAction* haloAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Halo"));
+
+                    if (notifyDuringSelectionAction) {
+                        notifyDuringSelectionAction->setChecked(false);
+                    }
+                    else
+                    {
+                        qDebug() << "Notify during selection action not found.";
+                    }
+                    if (haloAction) {
+                        haloAction->setChecked(true);
+                    }
+                    else
+                    {
+                        qDebug() << "Halo action not found.";
+                    }
+
+                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
+                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                    if (pointSelectionScaleAction)
+                    {
+
+                        pointSelectionScaleAction->setValue(160.0);
+
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection scale action not found";
+                    }
+                    if (pointSelectionOpacityAction)
+                    {
+
+                        pointSelectionOpacityAction->setValue(100.0);
+
+
+
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection opacity action not found";
+                    }
+
+                }
+            }
+        }
+
+        };
+
+    connect(&_settingsAction.getSettingsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged);
 
 }
 
