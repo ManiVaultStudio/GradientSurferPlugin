@@ -1101,7 +1101,7 @@ void Computation::AutoCompute()
         }
 
         // Setup table model and connect selection
-        setupTableModelAndSelection(topGenes);
+        setupTableModelAndSelection(topGenes, dimensionNames, corrGeneCoords);
 
         setStatusMessage("C", "Computation completed", "#28a745");
     }
@@ -1664,6 +1664,74 @@ void Computation::setupTableModelAndSelection(const QStringList& topGenes)
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(index, Qt::DisplayRole).toString();
+            _settingsAction.getSettingsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+        }
+    );
+}
+
+void Computation::setupTableModelAndSelection(
+    const QStringList& topGenes,
+    const std::vector<QString>& allGenes,
+    const std::vector<float>& correlationVector)
+{
+    // Pair each gene with its correlation
+    std::vector<std::pair<float, QString>> geneCorrPairs;
+    for (size_t i = 0; i < allGenes.size(); ++i) {
+        float corr = (i < correlationVector.size()) ? correlationVector[i] : 0.0f;
+        geneCorrPairs.emplace_back(corr, allGenes[i]);
+    }
+
+    // Sort by correlation descending
+    std::sort(geneCorrPairs.begin(), geneCorrPairs.end(),
+        [](const auto& a, const auto& b) { return a.first > b.first; });
+
+    QStandardItemModel* model = new QStandardItemModel(static_cast<int>(geneCorrPairs.size()), 2, _settingsAction.getTableViewAction());
+    model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation");
+
+    QSet<QString> topGeneSet(topGenes.begin(), topGenes.end());
+
+    for (int i = 0; i < static_cast<int>(geneCorrPairs.size()); ++i) {
+        const QString& gene = geneCorrPairs[i].second;
+        float corr = geneCorrPairs[i].first;
+
+        QStandardItem* geneItem = new QStandardItem(gene);
+        QStandardItem* corrItem = new QStandardItem(QString::number(corr, 'g', 4));
+
+        if (topGeneSet.contains(gene)) {
+            QFont font = geneItem->font();
+            font.setBold(true);
+            geneItem->setFont(font);
+            geneItem->setBackground(QColor("#FFFACD"));
+            geneItem->setForeground(QColor("#000000")); // Set text color to black
+            corrItem->setFont(font);
+            corrItem->setBackground(QColor("#FFFACD"));
+            corrItem->setForeground(QColor("#000000")); // Set text color to black
+        }
+
+        model->setItem(i, 0, geneItem);
+        model->setItem(i, 1, corrItem);
+    }
+
+    _settingsAction.getTableViewAction()->setModel(model);
+    _settingsAction.getTableViewAction()->resizeColumnsToContents();
+    _settingsAction.getTableViewAction()->resizeRowsToContents();
+    _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
+
+    if (_settingsAction.getTableViewAction()->selectionModel())
+        disconnect(_settingsAction.getTableViewAction()->selectionModel(), nullptr, this, nullptr);
+
+    connect(
+        _settingsAction.getTableViewAction()->selectionModel(),
+        &QItemSelectionModel::selectionChanged,
+        this,
+        [this](const QItemSelection& selected, const QItemSelection&) {
+            auto model = _settingsAction.getTableViewAction()->model();
+            if (!model) return;
+            QModelIndexList selectedIndexes = _settingsAction.getTableViewAction()->selectionModel()->selectedIndexes();
+            if (selectedIndexes.isEmpty()) return;
+            const QModelIndex& index = selectedIndexes.first();
+            if (!index.isValid()) return;
+            QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
             _settingsAction.getSettingsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
         }
     );
