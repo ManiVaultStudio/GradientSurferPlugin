@@ -76,10 +76,10 @@ private:
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
-    mv::plugin::AnalysisPlugin* _pcaAnalysisPlugin;
-    mv::Dataset<Points>         _pcaDataset;
-    mv::Dataset<Points>         _selectedPointDataset;
-    mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset;
+    mv::plugin::AnalysisPlugin* _pcaAnalysisPlugin = nullptr;
+    mv::Dataset<Points>         _pcaDataset= nullptr;
+    mv::Dataset<Points>         _selectedPointDataset = nullptr;
+    mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
 
     friend class ChannelAction;
 };

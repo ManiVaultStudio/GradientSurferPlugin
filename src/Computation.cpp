@@ -470,7 +470,19 @@ void Computation::Compute()
             return;
         }
 
+        if (!_pcaAnalysisPlugin)
+        {
+            _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
 
+        }
+
+        if (!_pcaAnalysisPlugin)
+        {
+
+            qDebug() << "PCA Analysis Plugin not found";
+            setStatusMessage("E", "PCA plugin not found", "");
+            return;
+        }
 
         std::sort(selectedIndices.begin(), selectedIndices.end());
         auto clusterValues = fullClusterDataset->getClusters();
@@ -628,19 +640,7 @@ void Computation::Compute()
         }*/
         
 
-        if (!_pcaAnalysisPlugin)
-        {
-            _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
 
-        }
-
-        if (!_pcaAnalysisPlugin)
-        {
-
-            qDebug() << "PCA Analysis Plugin not found";
-            setStatusMessage("E", "PCA plugin not found", "");
-            return;
-        }
 
         auto componentsAction = dynamic_cast<IntegralAction*>(_pcaDataset->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction)
