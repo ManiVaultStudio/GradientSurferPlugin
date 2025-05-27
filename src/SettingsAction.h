@@ -101,19 +101,32 @@ public:
         const DimensionPickerAction& getEmbeddingDimensionYAction() const { return _embeddingDimensionYAction; }
         DimensionPickerAction& getEmbeddingDimensionYAction() { return _embeddingDimensionYAction; }
 
+        const ToggleAction& getFocusSelectionAction() const { return _focusSelectionAction; }
+        ToggleAction& getFocusSelectionAction() { return _focusSelectionAction; }
+
+        const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
+        ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
+
+        const ToggleAction& getFreezeSelectionAction() const { return _freezeSelectionAction; }
+        ToggleAction& getFreezeSelectionAction() { return _freezeSelectionAction; }
+
     protected:
-        SettingsAction&             _settingsOptions;
-        DatasetPickerAction        _clusterDatasetAction;
-        DatasetPickerAction        _pointDatasetAction;
-        DatasetPickerAction        _embeddingDatasetAction;
-        OptionAction               _scatterplotViewSelectionAction;
-        OptionsAction              _clusterSelectionAction;
-        DimensionPickerAction      _geneSelectionAction;
-        StringAction               _statusMessageAction;
-        IntegralAction              _topNAction;
-        TriggerAction                _deSelectRowAction;
-        DimensionPickerAction                _embeddingDimensionXAction;
-        DimensionPickerAction                _embeddingDimensionYAction;
+        SettingsAction&                     _settingsOptions;
+        DatasetPickerAction                 _clusterDatasetAction;
+        DatasetPickerAction                 _pointDatasetAction;
+        DatasetPickerAction                 _embeddingDatasetAction;
+        OptionAction                        _scatterplotViewSelectionAction;
+        OptionsAction                       _clusterSelectionAction;
+        DimensionPickerAction               _geneSelectionAction;
+        StringAction                        _statusMessageAction;
+        IntegralAction                      _topNAction;
+        TriggerAction                       _deSelectRowAction;
+        DimensionPickerAction               _embeddingDimensionXAction;
+        DimensionPickerAction               _embeddingDimensionYAction;
+        ToggleAction                        _focusSelectionAction;
+        ToggleAction                        _hidePointSelectionAction;
+        ToggleAction                        _freezeSelectionAction;
+
 
     };
 
