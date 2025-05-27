@@ -41,7 +41,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getEmbeddingDatasetAction().setToolTip("Embedding Dataset");
     _settingsHolder.getClusterSelectionAction().setToolTip("Cluster Selection");
     _settingsHolder.getGeneSelectionAction().setToolTip("Gene Selection");
-    _settingsHolder.getStatusColorAction().setToolTip("Status Color");
+    _settingsHolder.getStatusMessageAction().setToolTip("Status Message");
     _computeHolder.getComputeAction().setToolTip("Compute Action");
     _computeHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _settingsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
@@ -51,11 +51,11 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getEmbeddingDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _settingsHolder.getClusterSelectionAction().setDefaultWidgetFlags(OptionsAction::ComboBox);
+    _settingsHolder.getClusterSelectionAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
     _settingsHolder.getGeneSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getEmbeddingDimensionXAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _settingsHolder.getEmbeddingDimensionYAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _settingsHolder.getStatusColorAction().setDefaultWidgetFlags(StringAction::Label);
+    _settingsHolder.getStatusMessageAction().setDefaultWidgetFlags(StringAction::Label);
     _computeHolder.getComputeAction().setDefaultWidgetFlags(TriggerAction::IconText);
     _computeHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
     _computeHolder.getComputeAction().setText("Compute");
@@ -116,7 +116,7 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     _embeddingDatasetAction(this, "Embedding dataset"),
     _clusterSelectionAction(this, "Cluster selection"),
     _geneSelectionAction(this, "Gene selection"),
-    _statusColorAction(this, "Status color"),
+    _statusMessageAction(this, "Status message"),
     _scatterplotViewSelectionAction(this, "Scatterplot view selection"),
     _topNAction(this, "Top N"),
     _deSelectRowAction(this, "DeSelect Row"),
