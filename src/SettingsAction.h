@@ -38,7 +38,7 @@
 #include <actions/HorizontalToolbarAction.h>
 #include <actions/VerticalToolbarAction.h>
 #include "QStatusBar"
-
+#include "HighPerfLineChart.h"
 
 using namespace mv::gui;
 class QMenu;
@@ -158,6 +158,7 @@ public: // Serialization
     QVariantMap toVariantMap() const override;
 
     QTableView* getTableViewAction() { return _tableViewAction; }
+    HighPerfLineChart* getLineChartWidget() { return _lineChartWidget; }
 
 
 protected:
@@ -165,6 +166,7 @@ protected:
     mv::CoreInterface* _core;
     SettingsHolder              _settingsHolder;
     ComputeHolder               _computeHolder;
-    QTableView*                 _tableViewAction;
+    QTableView*                 _tableViewAction = nullptr;
+    HighPerfLineChart*          _lineChartWidget = nullptr;
     friend class ChannelAction;
 };

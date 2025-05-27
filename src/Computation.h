@@ -63,7 +63,7 @@ private:
     std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
     std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols);
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
-    void computeCorrelationGeneCoords(const std::vector<std::seed_seq::result_type>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
+    void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
 
     //QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString> geneNameOrdered);
     QStringList filterTopNGenesByCorrelation(const std::vector<float>& correlationVector, int N, std::vector<QString> geneNameOrdered);
@@ -80,6 +80,6 @@ protected:
     mv::Dataset<Points>         _pcaDataset= nullptr;
     mv::Dataset<Points>         _selectedPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
-
+    std::vector<int>          _filteredSelectionIndices;
     friend class ChannelAction;
 };

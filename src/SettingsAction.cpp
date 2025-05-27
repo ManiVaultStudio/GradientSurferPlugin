@@ -116,6 +116,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     //only highlight multiple rows if shiuft is pressed
     _tableViewAction->setSelectionBehavior(QAbstractItemView::SelectRows);
 
+    _lineChartWidget = new HighPerfLineChart();
+
 }
 
 inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAction) :

@@ -34,7 +34,25 @@ static QString getContrastingTextColor(const QString& bgColor) {
     double luminance = (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255.0;
     return (luminance > 0.5) ? "black" : "white";
 }
+QVector<QPointF> convertToQPointF(const std::vector<float>& vec, int numOfDims, int numOfPoints) {
+    QVector<QPointF> points;
 
+    if (numOfDims < 2) {
+        throw std::invalid_argument("At least 2 dimensions are required to create QPointF.");
+    }
+
+    if (static_cast<size_t>(numOfDims * numOfPoints) > vec.size()) {
+        throw std::invalid_argument("Input vector size is smaller than expected based on dimensions and number of points.");
+    }
+
+    for (int i = 0; i < numOfPoints; ++i) {
+        float x = vec[i * numOfDims];
+        float y = vec[i * numOfDims + 1];
+        points.append(QPointF(x, y));
+    }
+
+    return points;
+}
 // Add this helper function at file scope (above Computation constructor or in an anonymous namespace)
 static QString statusToIconName(const QString& status) {
     if (status == "C") return "circle-check";      // FontAwesome: check-circle
@@ -246,7 +264,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _settingsAction.getSettingsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
+        if (_settingsAction.getLineChartWidget())
+        {
+            _settingsAction.getLineChartWidget()->clear();
 
+        }
         auto selectedGene = _settingsAction.getSettingsHolder().getGeneSelectionAction().getCurrentDimensionName();
         if (selectedGene =="")
         {
@@ -254,6 +276,58 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _settingsAction.getSettingsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
+        if (_settingsAction.getSettingsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _settingsAction.getLineChartWidget() && _filteredSelectionIndices.size()>0)
+        {
+            
+
+            auto pointDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+            if(pointDataset.isValid())
+            {
+                
+                auto dimensionNames = pointDataset->getDimensionNames();
+                //get the index of the selected gene QString in the dimension names std::vector<QString>
+                auto it= std::find(dimensionNames.begin(), dimensionNames.end(), selectedGene);
+                if (it == dimensionNames.end())
+                {
+                    qDebug() << "Selected gene not found in point dataset dimensions";
+
+                }
+                else
+                {
+                   
+                    int geneIndex = std::distance(dimensionNames.begin(), it);
+                    LineData selectedGeneLineData;
+                    
+                    std::vector<int> geneIndices = { geneIndex };
+                    std::vector<float> XYCoordinates(_filteredSelectionIndices.size()* geneIndices.size());
+                    QVector<QPointF> points;
+
+
+
+                    pointDataset->populateDataForDimensions(XYCoordinates, geneIndices, _filteredSelectionIndices);
+                    auto pointsData = convertToQPointF(XYCoordinates, _filteredSelectionIndices.size(), geneIndices.size());
+                    selectedGeneLineData.points = pointsData;
+                    QVector<LineData> lineData;
+                    lineData.push_back(selectedGeneLineData);
+
+                    _settingsAction.getLineChartWidget()->setLines(lineData);
+                }
+                
+
+
+                
+            }
+            else
+            {
+                qDebug() << "Point dataset is not valid";
+            }
+            
+        }
+        else
+        {
+            qDebug() << "No point dataset selected";
+        }
+
         
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
@@ -969,8 +1043,9 @@ void Computation::Compute()
 
         //  Filter selection indices by clusters in a single pass
         std::set<int> selectedIndicesSet(selectedIndices.begin(), selectedIndices.end());
-        std::vector<std::seed_seq::result_type> filteredSelectionIndices;
-        filteredSelectionIndices.reserve(selectedIndices.size()); // Reserve for performance
+        //std::vector<std::seed_seq::result_type> filteredSelectionIndices;
+        _filteredSelectionIndices.clear(); // Clear previous data
+        _filteredSelectionIndices.reserve(selectedIndices.size()); // Reserve for performance
 
         auto clusterValues = fullClusterDataset->getClusters();
         for (const auto& cluster : clusterValues)
@@ -978,12 +1053,12 @@ void Computation::Compute()
             const auto& clusterIndices = cluster.getIndices();
             for (int idx : clusterIndices) {
                 if (selectedIndicesSet.count(idx)) {
-                    filteredSelectionIndices.push_back(idx);
+                    _filteredSelectionIndices.push_back(idx);
                 }
             }
         }
 
-        if (filteredSelectionIndices.empty())
+        if (_filteredSelectionIndices.empty())
         {
             qDebug() << "No filtered selection indices";
             setStatusMessage("E", "No indices selected", "");
@@ -991,11 +1066,11 @@ void Computation::Compute()
         }
 
         //Preallocate and use reserve for vectors
-        std::vector<float> XYCoordinates(filteredSelectionIndices.size() * 2);
+        std::vector<float> XYCoordinates(_filteredSelectionIndices.size() * 2);
 
         std::vector<int> preComputedEmbeddingColumnIndices{ xEmbeddingIndex, yEmbeddingIndex };
 
-        if (XYCoordinates.size() != filteredSelectionIndices.size() * 2)
+        if (XYCoordinates.size() != _filteredSelectionIndices.size() * 2)
         {
             qDebug() << "XYCoordinates size mismatch";
             setStatusMessage("E", "XYCoordinates size mismatch", "");
@@ -1008,7 +1083,7 @@ void Computation::Compute()
             setStatusMessage("E", "Top N value is not valid", "");
             return;
         }
-        fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, filteredSelectionIndices);
+        fullEmbeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, _filteredSelectionIndices);
 
         float rotationAngle = 0.0f;
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -1083,10 +1158,10 @@ void Computation::Compute()
         std::vector<int> columnIndices(noOfDimensions);
         std::iota(columnIndices.begin(), columnIndices.end(), 0);
 
-        std::vector<float> cellbygenematrix(filteredSelectionIndices.size() * columnIndices.size());
+        std::vector<float> cellbygenematrix(_filteredSelectionIndices.size() * columnIndices.size());
 
         try {
-            fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, filteredSelectionIndices);
+            fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, _filteredSelectionIndices);
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in populateDataForDimensions:" << ex.what();
@@ -1094,16 +1169,16 @@ void Computation::Compute()
             return;
         }
 
-        _selectedPointDataset->setData(cellbygenematrix.data(), filteredSelectionIndices.size(), noOfDimensions);
+        _selectedPointDataset->setData(cellbygenematrix.data(), _filteredSelectionIndices.size(), noOfDimensions);
         _selectedPointDataset->setDimensionNames(dimensionNames);
         mv::events().notifyDatasetDataChanged(_selectedPointDataset);
 
-        _rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), filteredSelectionIndices.size(), 2);
+        _rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), _filteredSelectionIndices.size(), 2);
         _rotatedSelectedEmbeddingDataset->setDimensionNames({ "X","Y" });
         mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
 
-        std::vector<float> emptyData(filteredSelectionIndices.size() * noOfDimensions, 0.0f);
-        _pcaDataset->setData(emptyData.data(), filteredSelectionIndices.size(), noOfDimensions);
+        std::vector<float> emptyData(_filteredSelectionIndices.size() * noOfDimensions, 0.0f);
+        _pcaDataset->setData(emptyData.data(), _filteredSelectionIndices.size(), noOfDimensions);
         mv::events().notifyDatasetDataChanged(_pcaDataset);
 
         auto componentsAction = dynamic_cast<IntegralAction*>(_pcaDataset->findChildByPath("PCA/Number of PCA components"));
@@ -1132,11 +1207,11 @@ void Computation::Compute()
         float minY = *std::min_element(yCoordinates.begin(), yCoordinates.end());
         float maxY = *std::max_element(yCoordinates.begin(), yCoordinates.end());
         qDebug() << "Rotated XY Coordinates minX:" << minX << "maxX:" << maxX << "minY:" << minY << "maxY:" << maxY;
-        qDebug() << "Rotated XY Coordinates size:" << rotatedXYCordinates.size() << "filteredSelectionIndices size:" << filteredSelectionIndices.size() << "yCoordinates size:" << yCoordinates.size();
+        qDebug() << "Rotated XY Coordinates size:" << rotatedXYCordinates.size() << "filteredSelectionIndices size:" << _filteredSelectionIndices.size() << "yCoordinates size:" << yCoordinates.size();
 
         //Preallocate corrGeneCoords vector 
         std::vector<float> corrGeneCoords;
-        computeCorrelationGeneCoords(filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
+        computeCorrelationGeneCoords(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
 
         QStringList topGenes;
         try {
@@ -1313,7 +1388,7 @@ std::vector<int> Computation::computeCorrelation(const std::vector<float>& cellb
     return correlation;
 }
 
-void Computation::computeCorrelationGeneCoords(const std::vector<std::seed_seq::result_type>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector)
+void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector)
 {
     const int numGenes = dataset->getNumDimensions();
     const int numCells = cellIndices.size();
