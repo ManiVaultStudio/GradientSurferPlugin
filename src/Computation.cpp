@@ -19,6 +19,9 @@
 #include <Eigen/Dense>
 #include <QtConcurrent>
 #include <QColor>
+#include "util/StyledIcon.h"
+#include <QLabel>
+#include <QStatusBar>
 
 using namespace mv;
 using namespace mv::gui;
@@ -30,6 +33,15 @@ static QString getContrastingTextColor(const QString& bgColor) {
     // Calculate luminance (perceived brightness)
     double luminance = (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255.0;
     return (luminance > 0.5) ? "black" : "white";
+}
+
+// Add this helper function at file scope (above Computation constructor or in an anonymous namespace)
+static QString statusToIconName(const QString& status) {
+    if (status == "C") return "circle-check";      // FontAwesome: check-circle
+    if (status == "M") return "circle-exclamation"; // FontAwesome: exclamation-circle
+    if (status == "E") return "circle-xmark";      // FontAwesome: times-circle
+    if (status == "R") return "spinner";           // FontAwesome: spinner
+    return "circle-question";                      // FontAwesome: question-circle
 }
 
 Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& SettingsAction)
@@ -82,10 +94,54 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         QString textColor = getContrastingTextColor(backgroundColor);
 
-        _settingsAction.getComputeHolder().getStatusBarAction()->showMessage("Status: " + labelText);
-        _settingsAction.getComputeHolder().getStatusBarAction()->setStyleSheet(
-            "QStatusBar{padding-left:8px;background:" + backgroundColor + ";color:" + textColor + ";}"
+        QString iconName = statusToIconName(status);
+
+        // Create a QLabel to get the font metrics for text height
+        QLabel tempLabel;
+        tempLabel.setText(labelText);
+        QFont font = tempLabel.font();
+        QFontMetrics fm(font);
+        int textHeight = fm.height();
+        int iconSize = std::max(12, textHeight - 2); // icon a little less than text height, min 12px
+
+        // Set icon color to match text color
+        QColor iconColor(textColor);
+        mv::util::StyledIcon icon(iconName);
+        icon.withColor(iconColor);
+
+        QPixmap iconPixmap = QIcon(icon).pixmap(iconSize, iconSize);
+
+        // Create a QLabel with icon and text
+        QLabel* statusLabel = new QLabel;
+        statusLabel->setTextFormat(Qt::RichText);
+
+        // Use HTML to combine icon and text
+        QByteArray ba;
+        QBuffer buffer(&ba);
+        buffer.open(QIODevice::WriteOnly);
+        iconPixmap.save(&buffer, "PNG");
+        QString imgTag = QString("<img style='vertical-align:middle;' width='%1' height='%2' src='data:image/png;base64,%3'/>")
+            .arg(iconSize)
+            .arg(iconSize)
+            .arg(QString::fromLatin1(ba.toBase64()));
+        statusLabel->setText(imgTag + "&nbsp;" + labelText);
+        statusLabel->setStyleSheet(
+            "QLabel{padding-left:8px;background:" + backgroundColor + ";color:" + textColor + ";}"
         );
+        statusLabel->setFont(font);
+
+        // Clear previous widgets and set new label in status bar
+        QStatusBar* statusBar = _settingsAction.getComputeHolder().getStatusBarAction();
+        if (statusBar) {
+            // Remove all previous widgets
+            QList<QWidget*> children = statusBar->findChildren<QWidget*>();
+            for (QWidget* child : children) {
+                statusBar->removeWidget(child);
+                child->deleteLater();
+            }
+            statusBar->addWidget(statusLabel, 1);
+        }
+        
     };
     connect(&_settingsAction.getSettingsHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
     const auto scatterplotSelectionOptions = [this]() -> void
