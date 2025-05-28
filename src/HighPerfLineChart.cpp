@@ -69,6 +69,27 @@ bool cohenSutherlandClip(double& x0, double& y0, double& x1, double& y1, double 
 // Static member definition
 std::unordered_map<int, QString> LineData::groupStringMap;
 
+// --- Merged binary normalization helper ---
+QVector<QPointF> HighPerfLineChart::binaryNormalize(const QVector<QPointF>& points, BinaryNormAxis axis) const {
+    bool enabled = (axis == BinaryNormAxis::X) ? m_binaryNormalizeX : m_binaryNormalizeY;
+    if (!enabled)
+        return points;
+    QVector<QPointF> normed;
+    normed.reserve(points.size());
+    if (axis == BinaryNormAxis::X) {
+        for (const QPointF& pt : points) {
+            double x = (pt.x() > m_binaryNormalizeXThreshold) ? 1.0 : 0.0;
+            normed.append(QPointF(x, pt.y()));
+        }
+    } else {
+        for (const QPointF& pt : points) {
+            double y = (pt.y() > m_binaryNormalizeYThreshold) ? 1.0 : 0.0;
+            normed.append(QPointF(pt.x(), y));
+        }
+    }
+    return normed;
+}
+
 HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     : QOpenGLWidget(parent) {
     m_selectedLine = -1;
@@ -106,6 +127,10 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_legendColor = Qt::black;
     m_legendX = -1;
     m_legendY = -1;
+    m_binaryNormalizeX = false;
+    m_binaryNormalizeY = false;
+    m_binaryNormalizeXThreshold = 0.5;
+    m_binaryNormalizeYThreshold = 0.5;
 }
 
 // Add log transform setter/getter
@@ -141,6 +166,28 @@ void HighPerfLineChart::setNoiseRemovalThreshold(double threshold) {
     m_noiseRemovalThreshold = threshold;
     update();
 }
+
+// --- Binary normalization setters/getters ---
+void HighPerfLineChart::setBinaryNormalizeX(bool enabled) {
+    m_binaryNormalizeX = enabled;
+    update();
+}
+void HighPerfLineChart::setBinaryNormalizeY(bool enabled) {
+    m_binaryNormalizeY = enabled;
+    update();
+}
+void HighPerfLineChart::setBinaryNormalizeXThreshold(double threshold) {
+    m_binaryNormalizeXThreshold = threshold;
+    update();
+}
+void HighPerfLineChart::setBinaryNormalizeYThreshold(double threshold) {
+    m_binaryNormalizeYThreshold = threshold;
+    update();
+}
+bool HighPerfLineChart::binaryNormalizeX() const { return m_binaryNormalizeX; }
+bool HighPerfLineChart::binaryNormalizeY() const { return m_binaryNormalizeY; }
+double HighPerfLineChart::binaryNormalizeXThreshold() const { return m_binaryNormalizeXThreshold; }
+double HighPerfLineChart::binaryNormalizeYThreshold() const { return m_binaryNormalizeYThreshold; }
 
 // --- Customization setters/getters ---
 void HighPerfLineChart::setLineWidth(float w) { m_lineWidth = w; update(); }
@@ -292,6 +339,16 @@ void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
              << "gridEnabled:" << m_gridEnabled
              << "backgroundColor:" << m_backgroundColor
              << "showPoints:" << m_showPoints;
+
+    // --- Apply binary normalization to all lines if enabled ---
+    if (m_binaryNormalizeX || m_binaryNormalizeY) {
+        for (auto& line : m_lines) {
+            if (m_binaryNormalizeX)
+                line.points = binaryNormalize(line.points, BinaryNormAxis::X);
+            if (m_binaryNormalizeY)
+                line.points = binaryNormalize(line.points, BinaryNormAxis::Y);
+        }
+    }
 
     // Auto-range axes if not explicitly set or if data is out of range
     if (!m_lines.isEmpty()) {
@@ -496,7 +553,12 @@ void HighPerfLineChart::paintGL() {
         std::unordered_map<int, std::vector<QPointF>> groupPoints;
         for (const auto& line : m_lines) {
             int group = line.group;
-            for (const QPointF& pt : line.points) {
+            QVector<QPointF> pts = line.points;
+            if (m_binaryNormalizeX)
+                pts = binaryNormalize(pts, BinaryNormAxis::X);
+            if (m_binaryNormalizeY)
+                pts = binaryNormalize(pts, BinaryNormAxis::Y);
+            for (const QPointF& pt : pts) {
                 if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
                     continue;
                 groupPoints[group].push_back(pt);
@@ -540,6 +602,10 @@ void HighPerfLineChart::paintGL() {
             if (line.points.isEmpty())
                 continue;
             QVector<QPointF> pts = m_noiseRemovalEnabled ? filterNoise(line.points) : line.points;
+            if (m_binaryNormalizeX)
+                pts = binaryNormalize(pts, BinaryNormAxis::X);
+            if (m_binaryNormalizeY)
+                pts = binaryNormalize(pts, BinaryNormAxis::Y);
             QColor c = line.color.isValid() ? line.color : Qt::black;
             float alpha = (line.opacity >= 0.0f && line.opacity <= 1.0f) ? line.opacity : 1.0f;
             float lw = (line.lineWidth > 0) ? line.lineWidth : m_lineWidth;

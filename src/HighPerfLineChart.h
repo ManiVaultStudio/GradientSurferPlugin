@@ -32,6 +32,9 @@ struct LineData {
     LineDashStyle dashStyle = LineDashStyle::Solid; // New: per-line dash style
 };
 
+// Add this enum for axis selection
+enum class BinaryNormAxis { X, Y };
+
 class HighPerfLineChart : public QOpenGLWidget, protected QOpenGLFunctions {
     Q_OBJECT
 public:
@@ -103,6 +106,16 @@ public:
     void setLegendColor(const QColor& c);
     void setLegendPosition(int x, int y);
 
+    // --- Binary normalization API ---
+    void setBinaryNormalizeX(bool enabled);
+    void setBinaryNormalizeY(bool enabled);
+    void setBinaryNormalizeXThreshold(double threshold);
+    void setBinaryNormalizeYThreshold(double threshold);
+    bool binaryNormalizeX() const;
+    bool binaryNormalizeY() const;
+    double binaryNormalizeXThreshold() const;
+    double binaryNormalizeYThreshold() const;
+
 signals:
     void lineSelected(int index);
     void lineHovered(int index);
@@ -113,6 +126,9 @@ protected:
     void resizeGL(int w, int h) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+
+    // --- Binary normalization helpers ---
+    QVector<QPointF> binaryNormalize(const QVector<QPointF>& points, BinaryNormAxis axis) const;
 
 private:
     QVector<LineData> m_lines;
@@ -173,4 +189,10 @@ private:
     QFont m_legendFont;
     QColor m_legendColor = Qt::black;
     int m_legendX = -1, m_legendY = -1; // -1 means auto
+
+    // --- Binary normalization members ---
+    bool m_binaryNormalizeX;
+    bool m_binaryNormalizeY;
+    double m_binaryNormalizeXThreshold;
+    double m_binaryNormalizeYThreshold;
 };

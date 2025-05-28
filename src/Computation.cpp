@@ -602,6 +602,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     // 5. Send to chart
                     _settingsAction.getLineChartWidget()->setLines(lineData);
+
+                    
                 }
 
 
@@ -1224,7 +1226,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
         }
-
+        _settingsAction.getLineChartWidget()->clear();
         };
 
     connect(&_settingsAction.getSettingsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow);
@@ -1333,6 +1335,7 @@ void Computation::AutoCompute()
             if (rowCount > 0)
                 model->removeRows(0, rowCount);
         }
+        _settingsAction.getLineChartWidget()->clear();
         QApplication::processEvents();
 
         //Validate and retrieve datasets and indices
