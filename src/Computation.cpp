@@ -687,8 +687,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto correlationRangechanged = [this]() -> void {
 
-        setStatusMessage("M", "Cluster selection updated", "");
-
+        setStatusMessage("M", "Updating table", "");
+        //setupTableModelAndSelection();
+        setStatusMessage("C", "Table updated", "");
         };
 
     connect(&_settingsAction.getSettingsHolder().getCorrelationRangeAction(), &DecimalRangeAction::rangeChanged, this, correlationRangechanged);
@@ -1275,7 +1276,7 @@ void Computation::AutoCompute()
         std::iota(columnIndices.begin(), columnIndices.end(), 0);
 
         // Populate and update datasets
-        if (!populateAndUpdateDatasets(fullPointDataset, rotatedXYCordinates, noOfDimensions, columnIndices, dimensionNames))
+        if (!populateAndUpdateDatasets(fullPointDataset, rotatedXYCordinates, XYCoordinates,noOfDimensions, columnIndices, dimensionNames))
             return;
 
         // Min/max calculation and debug output
@@ -1291,19 +1292,27 @@ void Computation::AutoCompute()
         std::vector<float> corrGeneCoords;
         computeCorrelationGeneCoords(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
 
-        // TODO: integrate the following part with setupTableModelAndSelection(), to avoid repetitive code
+        
+
+        /*
+        * // TODO: integrate the following part with setupTableModelAndSelection(), to avoid repetitive code
+        * 
+        * 
+        * 
+        * 
         // Sort genes by correlation and output top 5
         int numGenes = corrGeneCoords.size();
-        std::vector<std::pair<float, int>> geneCorrPairs(numGenes);
+        _geneCorrPairs.clear();
+        _geneCorrPairs.reserve(numGenes);
         for (int i = 0; i < numGenes; ++i) {
-            geneCorrPairs[i] = std::make_pair(corrGeneCoords[i], i);
+            _geneCorrPairs[i] = std::make_pair(corrGeneCoords[i], i);
         }
-        std::sort(geneCorrPairs.begin(), geneCorrPairs.end(), std::greater<std::pair<float, int>>());
+        std::sort(_geneCorrPairs.begin(), _geneCorrPairs.end(), std::greater<std::pair<float, int>>());
         qDebug() << "Top 5 genes with highest correlation:";
         for (int i = 0; i < 5 && i < numGenes; ++i) {
-            int geneIdx = geneCorrPairs[i].second;
+            int geneIdx = _geneCorrPairs[i].second;
             QString geneSymbol = fullPointDataset->getDimensionNames()[geneIdx];
-            qDebug() << "Gene:" << geneSymbol << "Correlation:" << geneCorrPairs[i].first;
+            qDebug() << "Gene:" << geneSymbol << "Correlation:" << _geneCorrPairs[i].first;
         }
         // Filter top N genes by correlation and store the gene symbols
         int tempNumGenesOfInterest = 20; // FIXME: this is a hardcoded value, should be replaced with a proper setting
@@ -1313,15 +1322,11 @@ void Computation::AutoCompute()
             _geneOfInterestIndices.push_back(geneIdx);
         }
         qDebug() << "Gene of interest indices:" << _geneOfInterestIndices;
+        */
 
-        // TODO: decide whether _fullPointDataset should be a member or not
-        _fullPointDataset = fullPointDataset;
-
-
-
-        QStringList topGenes;
+        
         try {
-            topGenes = filterGenesByCorrelationRange(corrGeneCoords, minCorrelation, maxCorrelation, dimensionNames);
+            populateGenesByCorrelationRange(corrGeneCoords, minCorrelation, maxCorrelation, dimensionNames);
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -1330,7 +1335,7 @@ void Computation::AutoCompute()
         }
 
         // Setup table model and connect selection
-        setupTableModelAndSelection(topGenes, dimensionNames, corrGeneCoords);
+        setupTableModelAndSelection();
 
         setStatusMessage("C", "Computation completed", "#28a745");
     }
@@ -1351,11 +1356,8 @@ void Computation::ManualCompute()
     auto& settingsHolder = _settingsAction.getSettingsHolder();
     mv::Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
 
-    //int noOfDimensions = fullPointDataset->getNumDimensions();
-    int noOfDimensions = _geneOfInterestIndices.size(); // Use the number of genes of interest instead of full dataset dimensions
-
     // Setup and trigger PCA
-    if (!setupAndTriggerPCA(noOfDimensions))
+    if (!setupAndTriggerPCA())
         return;
 }
 
@@ -1609,6 +1611,48 @@ QStringList Computation::filterGenesByCorrelationRange(
 
     return filteredGenes;
 }
+void Computation::populateGenesByCorrelationRange(
+    const std::vector<float>& correlationVector,
+    float min,
+    float max,
+    const std::vector<QString>& geneNameOrdered)
+{
+    _geneOfInterestIndices.clear();
+    constexpr float epsilon = 1e-6f;
+    const int count = std::min(static_cast<int>(correlationVector.size()),
+        static_cast<int>(geneNameOrdered.size()));
+    if (count == 0) return;
+
+    // Prepare vector of pointers to original indices for sorting
+    std::vector<int> indices(count);
+    std::iota(indices.begin(), indices.end(), 0);
+
+    // Sort indices by descending correlation value
+    std::sort(indices.begin(), indices.end(),
+        [&correlationVector](int a, int b) {
+            return correlationVector[a] > correlationVector[b];
+        });
+
+    _geneCorrValues.clear();
+    _geneCorrValues.reserve(count);
+
+    // Fill _geneCorrValues directly in sorted (rank) order
+    for (int rank = 0; rank < count; ++rank) {
+        int i = indices[rank];
+        float corr = correlationVector[i];
+        bool inRange = (corr > min - epsilon) && (corr < max + epsilon);
+        _geneCorrValues.emplace_back(CorrelationGeneCoords{
+            i,
+            geneNameOrdered[i],
+            corr,
+            rank + 1,
+            inRange
+            });
+        if (inRange) {
+            _geneOfInterestIndices.push_back(i);
+        }
+    }
+}
 
 void Computation::setStatusMessage(const QString& status, const QString& message, const QString& color) {
     QString resolvedColor = color;
@@ -1706,19 +1750,29 @@ bool Computation::validateAndRetrieveDatasets(
 // Create datasets if needed
 bool Computation::createDatasetsIfNeeded()
 {
-    if (!_selectedPointDataset.isValid()) {
-        _selectedPointDataset = mv::data().createDataset("Points", "Selected Point Data");
-        _selectedPointDataset->setGroupIndex(666);
-        mv::events().notifyDatasetAdded(_selectedPointDataset);
+    if (!_selectedGenePointDataset.isValid()) {
+        _selectedGenePointDataset = mv::data().createDataset("Points", "Selected Gene Point Data");
+        _selectedGenePointDataset->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_selectedGenePointDataset);
+    }
+    
+    if (!_selectedCellPointDataset.isValid()) {
+        _selectedCellPointDataset = mv::data().createDataset("Points", "Selected Cell Point Data");
+        _selectedCellPointDataset->setGroupIndex(666);
+        mv::events().notifyDatasetAdded(_selectedCellPointDataset);
     }
     if (!_rotatedSelectedEmbeddingDataset.isValid()) {
-        _rotatedSelectedEmbeddingDataset = mv::data().createDataset("Points", "Selected Rotated Embedding Data", _selectedPointDataset);
+        _rotatedSelectedEmbeddingDataset = mv::data().createDataset("Points", "Selected Rotated Embedding Data", _selectedCellPointDataset);
         _rotatedSelectedEmbeddingDataset->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_rotatedSelectedEmbeddingDataset);
     }
+    if (!_selectedEmbeddingDataset.isValid()) {
+        _selectedEmbeddingDataset = mv::data().createDataset("Points", "Selected Embedding Data", _selectedCellPointDataset);
+        _selectedEmbeddingDataset->setGroupIndex(666);
+        mv::events().notifyDatasetAdded(_selectedEmbeddingDataset);
+    }
 
-
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedPointDataset.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid()) {
         qDebug() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -1787,13 +1841,15 @@ bool Computation::populateEmbeddingCoordinates(
 bool Computation::populateAndUpdateDatasets(
     mv::Dataset<Points>& fullPointDataset,
     const std::vector<float>& rotatedXYCordinates,
+    const std::vector<float>& XYCordinates,
     int noOfDimensions,
     const std::vector<int>& columnIndices,
     const std::vector<QString>& dimensionNames)
 {
 
-    if (!_selectedPointDataset.isValid() ||
-        !_rotatedSelectedEmbeddingDataset.isValid()) {
+    if (!_selectedCellPointDataset.isValid() ||
+        !_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset.isValid() ||
+        !_selectedEmbeddingDataset.isValid()) {
         qDebug() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return false;
@@ -1816,13 +1872,17 @@ bool Computation::populateAndUpdateDatasets(
         return false;
     }
 
-    _selectedPointDataset->setData(cellbygenematrix.data(), _filteredSelectionIndices.size(), noOfDimensions);
-    _selectedPointDataset->setDimensionNames(dimensionNames);
-    mv::events().notifyDatasetDataChanged(_selectedPointDataset);
+    _selectedCellPointDataset->setData(cellbygenematrix.data(), _filteredSelectionIndices.size(), noOfDimensions);
+    _selectedCellPointDataset->setDimensionNames(dimensionNames);
+    mv::events().notifyDatasetDataChanged(_selectedCellPointDataset);
 
     _rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), _filteredSelectionIndices.size(), 2);
     _rotatedSelectedEmbeddingDataset->setDimensionNames({ "X","Y" });
     mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
+
+    _selectedEmbeddingDataset->setData(XYCordinates.data(), _filteredSelectionIndices.size(), 2);
+    _selectedEmbeddingDataset->setDimensionNames({ "X","Y" });
+    mv::events().notifyDatasetDataChanged(_selectedEmbeddingDataset);
 
     return true;
 }
@@ -1886,7 +1946,7 @@ bool Computation::populateAndUpdateDatasets(
 //    return true;
 //}
 
-bool Computation::setupAndTriggerPCA(int noOfDimensions)
+bool Computation::setupAndTriggerPCA()
 {
     // noOfDimensions is the number of genes of interest, not the full dataset dimensions
     // compute PCA on all cells w. ith selected genes
@@ -1897,25 +1957,34 @@ bool Computation::setupAndTriggerPCA(int noOfDimensions)
         mv::events().notifyDatasetAdded(_pcaDataset);
     }
 
-    if (!_pcaDataset.isValid()) {
+    /*if (!_pcaDataset.isValid()) {
         qDebug() << "Failed to create PCA dataset";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
+    }*/
+    auto& settingsHolder = _settingsAction.getSettingsHolder();
+    Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
+
+    if (!_selectedGenePointDataset.isValid() || !fullPointDataset.isValid() || !_pcaDataset.isValid()) {
+        qDebug() << "One or more datasets are invalid!";
+        setStatusMessage("E", "Internal error: invalid dataset pointer", "");
+        return false;
     }
 
-    size_t numAllCells = _fullPointDataset->getNumPoints();
-    qDebug() << "Number of all cells:" << numAllCells << "Number of dimensions of interest:" << noOfDimensions;
+    auto numAllCells = fullPointDataset->getNumPoints();
+    auto numofIntGenes = _geneOfInterestIndices.size();
+    qDebug() << "Number of all cells:" << numAllCells << "Number of dimensions of interest:" << numofIntGenes;
 
-    std::vector<float> emptyData(numAllCells * noOfDimensions, 0.0f);
-    _pcaDataset->setData(emptyData.data(), numAllCells, noOfDimensions);
+    std::vector<float> emptyData(numAllCells * numofIntGenes, 0.0f);
+    _pcaDataset->setData(emptyData.data(), numAllCells, numofIntGenes);
     mv::events().notifyDatasetDataChanged(_pcaDataset);
 
     // create point dataset subset with all cells and genes of interest
     std::vector<int> allCellIndices(numAllCells);
     std::iota(allCellIndices.begin(), allCellIndices.end(), 0);
-    std::vector<float> cellbygenematrix(numAllCells * noOfDimensions);
+    std::vector<float> cellbygenematrix(numAllCells * numofIntGenes);
     try {
-        _fullPointDataset->populateDataForDimensions(cellbygenematrix, _geneOfInterestIndices, allCellIndices);
+        fullPointDataset->populateDataForDimensions(cellbygenematrix, _geneOfInterestIndices, allCellIndices);
     }
     catch (const std::exception& ex) {
         qDebug() << "Exception in populateDataForDimensions:" << ex.what();
@@ -1924,18 +1993,19 @@ bool Computation::setupAndTriggerPCA(int noOfDimensions)
     }
 
     // FIXME: this is a workaround to avoid using the filtered selection indices
-    _selectedPointDataset->setData(cellbygenematrix.data(), numAllCells, noOfDimensions);
+    _selectedCellPointDataset->setData(cellbygenematrix.data(), numAllCells, numofIntGenes);
     std::vector<QString> dimensionNamesOfInterest;
     for (int idx : _geneOfInterestIndices) {
-        if (idx >= 0 && idx < _fullPointDataset->getNumDimensions()) {
-            dimensionNamesOfInterest.push_back(_fullPointDataset->getDimensionNames()[idx]);
+        if (idx >= 0 && idx < fullPointDataset->getNumDimensions()) {
+            dimensionNamesOfInterest.push_back(fullPointDataset->getDimensionNames()[idx]);
         }
     }
-    _selectedPointDataset->setDimensionNames(dimensionNamesOfInterest);
-    mv::events().notifyDatasetDataChanged(_selectedPointDataset);
+
+    _selectedCellPointDataset->setDimensionNames(dimensionNamesOfInterest);
+    mv::events().notifyDatasetDataChanged(_selectedCellPointDataset);
 
     if (!_pcaAnalysisPlugin) {
-        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
+        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedCellPointDataset }, { _pcaDataset });
     }
 
     if (!_pcaAnalysisPlugin) {
@@ -1950,7 +2020,7 @@ bool Computation::setupAndTriggerPCA(int noOfDimensions)
         setStatusMessage("E", "PCA components action not found", "");
         return false;
     }
-    componentsAction->setValue(noOfDimensions);
+    componentsAction->setValue(numofIntGenes);
 
     auto startAction = dynamic_cast<TriggerAction*>(_pcaDataset->findChildByPath("PCA/Start analysis"));
     if (startAction) {
@@ -2061,6 +2131,78 @@ void Computation::setupTableModelAndSelection(
     // Enable sorting
     _settingsAction.getTableViewAction()->setSortingEnabled(true);
     // Sort by correlation column (descending) by default
+    _settingsAction.getTableViewAction()->sortByColumn(1, Qt::DescendingOrder);
+
+    if (_settingsAction.getTableViewAction()->selectionModel())
+        disconnect(_settingsAction.getTableViewAction()->selectionModel(), nullptr, this, nullptr);
+
+    connect(
+        _settingsAction.getTableViewAction()->selectionModel(),
+        &QItemSelectionModel::selectionChanged,
+        this,
+        [this](const QItemSelection& selected, const QItemSelection&) {
+            auto model = _settingsAction.getTableViewAction()->model();
+            if (!model) return;
+            QModelIndexList selectedIndexes = _settingsAction.getTableViewAction()->selectionModel()->selectedIndexes();
+            if (selectedIndexes.isEmpty()) return;
+            const QModelIndex& index = selectedIndexes.first();
+            if (!index.isValid()) return;
+            QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
+            _settingsAction.getSettingsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+        }
+    );
+}
+
+
+
+void Computation::setupTableModelAndSelection()
+{
+    QStandardItemModel* model = new QStandardItemModel(static_cast<int>(_geneCorrValues.size()), 3, _settingsAction.getTableViewAction());
+    model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
+
+    float minCorr = std::numeric_limits<float>::max();
+    float maxCorr = std::numeric_limits<float>::lowest();
+
+    for (const auto& entry : _geneCorrValues) {
+        minCorr = std::min(minCorr, entry.correlationValue);
+        maxCorr = std::max(maxCorr, entry.correlationValue);
+    }
+
+    for (int i = 0; i < static_cast<int>(_geneCorrValues.size()); ++i) {
+        const auto& entry = _geneCorrValues[i];
+
+        QStandardItem* geneItem = new QStandardItem(entry.geneName);
+        QStandardItem* corrItem = new QStandardItem;
+        QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
+
+        corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::UserRole + 1); // For delegate
+        corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::DisplayRole);  // For sorting
+
+        // Color row based on isWithinRange
+        if (entry.isWithinRange) {
+            geneItem->setBackground(QColor("#E6FFE6")); // Light green
+            corrItem->setBackground(QColor("#E6FFE6"));
+            rankItem->setBackground(QColor("#E6FFE6"));
+        }
+        else {
+            geneItem->setBackground(QColor("#FFE6E6")); // Light red
+            corrItem->setBackground(QColor("#FFE6E6"));
+            rankItem->setBackground(QColor("#FFE6E6"));
+        }
+
+        model->setItem(i, 0, geneItem);
+        model->setItem(i, 1, corrItem);
+        model->setItem(i, 2, rankItem);
+    }
+
+    _settingsAction.getTableViewAction()->setModel(model);
+    _settingsAction.getTableViewAction()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
+    _settingsAction.getTableViewAction()->resizeColumnsToContents();
+    _settingsAction.getTableViewAction()->resizeRowsToContents();
+    _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
+
+    // Enable sorting
+    _settingsAction.getTableViewAction()->setSortingEnabled(true);
     _settingsAction.getTableViewAction()->sortByColumn(1, Qt::DescendingOrder);
 
     if (_settingsAction.getTableViewAction()->selectionModel())

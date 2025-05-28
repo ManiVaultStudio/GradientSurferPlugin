@@ -50,6 +50,14 @@ namespace mv
     class CoreInterface;
 }
 
+struct CorrelationGeneCoords
+{
+    int geneIndex;
+    QString geneName;
+    float correlationValue;
+    int   rank;
+    bool  isWithinRange;
+};
 
 class Computation : public WidgetAction
 {
@@ -64,8 +72,8 @@ private:
     std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols);
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
     void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
-    void setupTableModelAndSelection(
-        const QStringList& topGenes,
+    void setupTableModelAndSelection();
+    void setupTableModelAndSelection(const QStringList& topGenes,
         const std::vector<QString>& allGenes,
         const std::vector<float>& correlationVector);
     //QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString> geneNameOrdered);
@@ -75,6 +83,11 @@ private:
         float min,
         float max,
         std::vector<QString> geneNameOrdered);
+    void populateGenesByCorrelationRange(
+        const std::vector<float>& correlationVector,
+        float min,
+        float max,
+        const std::vector<QString>& geneNameOrdered);
     void ManualCompute();
     void AutoCompute();
     void removeDatasets();
@@ -103,11 +116,12 @@ private:
     bool populateAndUpdateDatasets(
         mv::Dataset<Points>& fullPointDataset,
         const std::vector<float>& rotatedXYCordinates,
+        const std::vector<float>& XYCordinates,
         int noOfDimensions,
         const std::vector<int>& columnIndices,
         const std::vector<QString>& dimensionNames);
 
-    bool setupAndTriggerPCA(int noOfDimensions);
+    bool setupAndTriggerPCA();
 
     void setupTableModelAndSelection(const QStringList& topGenes);
 
@@ -116,13 +130,13 @@ protected:
     SettingsAction&             _settingsAction;
     mv::plugin::AnalysisPlugin* _pcaAnalysisPlugin = nullptr;
     mv::Dataset<Points>         _pcaDataset= nullptr;
-    mv::Dataset<Points>         _selectedPointDataset = nullptr;
+    mv::Dataset<Points>         _selectedCellPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _embeddingDataset = nullptr;
+    mv::Dataset<Points>         _selectedEmbeddingDataset = nullptr;
+    mv::Dataset<Points>         _selectedGenePointDataset = nullptr;
     std::vector<int>            _filteredSelectionIndices;
+    std::vector<CorrelationGeneCoords> _geneCorrValues;
     std::vector<int>            _geneOfInterestIndices;
-
-    // FIXME: for temp cpnvenience 
-    mv::Dataset<Points>         _fullPointDataset = nullptr;
     friend class ChannelAction;
 };
