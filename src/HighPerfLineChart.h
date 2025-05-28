@@ -116,6 +116,10 @@ public:
     double binaryNormalizeXThreshold() const;
     double binaryNormalizeYThreshold() const;
 
+    // --- Interchange X and Y API ---
+    void setInterchangeXY(bool enabled);
+    bool interchangeXY() const;
+
 signals:
     void lineSelected(int index);
     void lineHovered(int index);
@@ -195,4 +199,7 @@ private:
     bool m_binaryNormalizeY;
     double m_binaryNormalizeXThreshold;
     double m_binaryNormalizeYThreshold;
+
+    // --- Interchange X and Y member ---
+    bool m_interchangeXY;
 };
