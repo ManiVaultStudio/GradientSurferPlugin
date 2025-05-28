@@ -6,12 +6,17 @@
 #include <QColor>
 #include <QString>
 #include <QMap>
+#include <map>
+#include <unordered_map>
 
 struct LineData {
     QVector<QPointF> points;
     QColor color = Qt::black;
     float opacity = 1.0f;
     bool selected = false;
+    int group = -1; // Group number for this line
+    // Map from group number to group string (shared across all lines)
+    static std::unordered_map<int, QString> groupStringMap;
 };
 
 class HighPerfLineChart : public QOpenGLWidget, protected QOpenGLFunctions {
@@ -33,6 +38,35 @@ public:
     int selectedLine() const;
     int hoveredLine() const;
 
+    // Option to enable group averaging mode
+    void setGroupAveragingEnabled(bool enabled);
+    bool groupAveragingEnabled() const { return m_groupAveragingEnabled; }
+    // Set the group string map (for legend)
+    void setGroupStringMap(const std::unordered_map<int, QString>& groupMap);
+
+    // Log transform option for x coordinates
+    void setLogTransformX(bool enabled);
+    bool logTransformX() const { return m_logTransformX; }
+
+    // Log transform option for y coordinates
+    void setLogTransformY(bool enabled);
+    bool logTransformY() const { return m_logTransformY; }
+
+    // Strong log transform option
+    void setStrongLogTransform(bool enabled);
+    bool strongLogTransform() const { return m_strongLogTransform; }
+
+    // Gradient line and noise removal options
+    void setGradientLineEnabled(bool enabled);
+    bool gradientLineEnabled() const { return m_gradientLineEnabled; }
+
+    void setNoiseRemovalEnabled(bool enabled);
+    bool noiseRemovalEnabled() const { return m_noiseRemovalEnabled; }
+    void setNoiseRemovalWindow(int window);
+    int noiseRemovalWindow() const { return m_noiseRemovalWindow; }
+    void setNoiseRemovalThreshold(double threshold);
+    double noiseRemovalThreshold() const { return m_noiseRemovalThreshold; }
+
 signals:
     void lineSelected(int index);
     void lineHovered(int index);
@@ -52,6 +86,31 @@ private:
     int m_hoveredLine = -1;
     QString m_emptyMessage;
     QString m_chartTitle; // Add this member for the chart title
+
+    bool m_groupAveragingEnabled = false;
+    std::unordered_map<int, QString> m_groupStringMap;
+    std::unordered_map<int, QColor> m_groupColorMap;
+    void updateGroupColors();
+
+    // Log transform for x and y
+    bool m_logTransformX = false;
+    bool m_logTransformY = false;
+    bool m_strongLogTransform = false;
+    double logX(double x) const;
+    double invLogX(double lx) const;
+    double logY(double y) const;
+    double invLogY(double ly) const;
+    double strongLog(double v) const;
+    double invStrongLog(double lv) const;
+
+    // Gradient line and noise removal options
+    bool m_gradientLineEnabled = false;
+    bool m_noiseRemovalEnabled = false;
+    int m_noiseRemovalWindow = 3; // for moving average/median
+    double m_noiseRemovalThreshold = 0.0; // for threshold-based removal
+
+    QVector<QPointF> filterNoise(const QVector<QPointF>& points) const;
+    QColor slopeToColor(double slope) const;
 
     QPointF screenToChart(const QPoint& p) const;
     int findLineAt(const QPoint& pos) const;

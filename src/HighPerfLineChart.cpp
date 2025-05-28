@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QtMath>
 #include <QDebug>
+#include <random>
 
 namespace {
 enum OutCode {
@@ -63,12 +64,131 @@ bool cohenSutherlandClip(double& x0, double& y0, double& x1, double& y1, double 
 }
 } // end anonymous namespace
 
+// Static member definition
+std::unordered_map<int, QString> LineData::groupStringMap;
+
 HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     : QOpenGLWidget(parent) {
     m_selectedLine = -1;
     m_hoveredLine = -1;
     m_xMin = 0; m_xMax = 1;
     m_yMin = 0; m_yMax = 1;
+    m_groupAveragingEnabled = false;
+    m_logTransformX = false;
+    m_logTransformY = false;
+    m_strongLogTransform = false;
+    m_gradientLineEnabled = false;
+    m_noiseRemovalEnabled = false;
+    m_noiseRemovalWindow = 3;
+    m_noiseRemovalThreshold = 0.0;
+}
+
+// Add log transform setter/getter
+void HighPerfLineChart::setLogTransformX(bool enabled) {
+    m_logTransformX = enabled;
+    update();
+}
+
+void HighPerfLineChart::setLogTransformY(bool enabled) {
+    m_logTransformY = enabled;
+    update();
+}
+
+void HighPerfLineChart::setStrongLogTransform(bool enabled) {
+    m_strongLogTransform = enabled;
+    update();
+}
+
+// Gradient line and noise removal setters
+void HighPerfLineChart::setGradientLineEnabled(bool enabled) {
+    m_gradientLineEnabled = enabled;
+    update();
+}
+void HighPerfLineChart::setNoiseRemovalEnabled(bool enabled) {
+    m_noiseRemovalEnabled = enabled;
+    update();
+}
+void HighPerfLineChart::setNoiseRemovalWindow(int window) {
+    m_noiseRemovalWindow = window;
+    update();
+}
+void HighPerfLineChart::setNoiseRemovalThreshold(double threshold) {
+    m_noiseRemovalThreshold = threshold;
+    update();
+}
+
+// Stronger log transform: log(log(x+e)+1), e = 1e-6 to avoid log(0)
+double HighPerfLineChart::strongLog(double v) const {
+    double e = 1e-6;
+    if (v <= 0) return 0.0;
+    return std::log(std::log(v + e) + 1.0);
+}
+double HighPerfLineChart::invStrongLog(double lv) const {
+    // Inverse of log(log(x+e)+1): x = exp(exp(lv)-1)-e
+    double e = 1e-6;
+    return std::exp(std::exp(lv) - 1.0) - e;
+}
+
+// Log transform helpers
+double HighPerfLineChart::logX(double x) const {
+    if (m_strongLogTransform)
+        return strongLog(x);
+    // Use log10(x+1) to handle x=0 gracefully, and avoid negative/zero
+    return (x > 0) ? std::log10(x + 1.0) : 0.0;
+}
+double HighPerfLineChart::invLogX(double lx) const {
+    if (m_strongLogTransform)
+        return invStrongLog(lx);
+    return std::pow(10.0, lx) - 1.0;
+}
+double HighPerfLineChart::logY(double y) const {
+    if (m_strongLogTransform)
+        return strongLog(y);
+    // Use log10(y+1) to handle y=0 gracefully, and avoid negative/zero
+    return (y > 0) ? std::log10(y + 1.0) : 0.0;
+}
+double HighPerfLineChart::invLogY(double ly) const {
+    if (m_strongLogTransform)
+        return invStrongLog(ly);
+    return std::pow(10.0, ly) - 1.0;
+}
+
+// Simple moving average filter for noise removal (can be replaced with median or threshold)
+QVector<QPointF> HighPerfLineChart::filterNoise(const QVector<QPointF>& points) const {
+    if (!m_noiseRemovalEnabled || points.size() < 3)
+        return points;
+    QVector<QPointF> filtered;
+    int w = m_noiseRemovalWindow;
+    for (int i = 0; i < points.size(); ++i) {
+        int start = static_cast<int>(std::max(0.0, static_cast<double>(i - w)));
+        int end = static_cast<int>(std::min(static_cast<double>(points.size() - 1), static_cast<double>(i + w)));
+        double sumX = 0, sumY = 0;
+        int count = 0;
+        for (int j = start; j <= end; ++j) {
+            sumX += points[j].x();
+            sumY += points[j].y();
+            ++count;
+        }
+        double avgX = sumX / count;
+        double avgY = sumY / count;
+        // Optionally, threshold-based noise removal
+        if (m_noiseRemovalThreshold > 0.0) {
+            if (std::abs(points[i].y() - avgY) > m_noiseRemovalThreshold)
+                continue; // skip noisy point
+        }
+        filtered.append(QPointF(avgX, avgY));
+    }
+    return filtered;
+}
+
+// Map slope to color (blue for negative, green for zero, red for positive)
+QColor HighPerfLineChart::slopeToColor(double slope) const {
+    // Clamp slope for color mapping
+    double s = std::tanh(slope / 2.0); // -1 to 1
+    int r = int(127 + 128 * s);
+    int g = int(200 - 100 * std::abs(s));
+    int b = int(127 - 128 * s);
+    return QColor(qBound(0, r, 255), qBound(0, g, 255), qBound(0, b, 255));
 }
 
 void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
@@ -88,10 +208,12 @@ void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
             for (const QPointF& pt : line.points) {
                 if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
                     continue;
-                xMin = std::min(xMin, pt.x());
-                xMax = std::max(xMax, pt.x());
-                yMin = std::min(yMin, pt.y());
-                yMax = std::max(yMax, pt.y());
+                double xval = m_logTransformX ? logX(pt.x()) : pt.x();
+                double yval = m_logTransformY ? logY(pt.y()) : pt.y();
+                xMin = std::min(xMin, static_cast<double>(xval));
+                xMax = std::max(xMax, static_cast<double>(xval));
+                yMin = std::min(yMin, static_cast<double>(yval));
+                yMax = std::max(yMax, static_cast<double>(yval));
                 found = true;
             }
         }
@@ -153,6 +275,38 @@ void HighPerfLineChart::setChartTitle(const QString& title) {
     update();
 }
 
+void HighPerfLineChart::setGroupAveragingEnabled(bool enabled) {
+    m_groupAveragingEnabled = enabled;
+    update();
+}
+
+void HighPerfLineChart::setGroupStringMap(const std::unordered_map<int, QString>& groupMap) {
+    m_groupStringMap = groupMap;
+    updateGroupColors();
+    update();
+}
+
+void HighPerfLineChart::updateGroupColors() {
+    m_groupColorMap.clear();
+    // Assign a unique color for each group
+    std::vector<QColor> palette = {
+        QColor(31,119,180), QColor(255,127,14), QColor(44,160,44), QColor(214,39,40),
+        QColor(148,103,189), QColor(140,86,75), QColor(227,119,194), QColor(127,127,127),
+        QColor(188,189,34), QColor(23,190,207)
+    };
+    int idx = 0;
+    for (const auto& [group, str] : m_groupStringMap) {
+        if (idx < int(palette.size()))
+            m_groupColorMap[group] = palette[idx++];
+        else {
+            // Generate random color if palette runs out
+            std::mt19937 rng(group);
+            std::uniform_int_distribution<int> dist(0, 255);
+            m_groupColorMap[group] = QColor(dist(rng), dist(rng), dist(rng));
+        }
+    }
+}
+
 int HighPerfLineChart::selectedLine() const { return m_selectedLine; }
 int HighPerfLineChart::hoveredLine() const { return m_hoveredLine; }
 
@@ -210,60 +364,159 @@ void HighPerfLineChart::paintGL() {
 
     // Helper lambda: map chart (data) coordinates to chartRect (screen) coordinates
     auto chartToScreen = [&](const QPointF& pt) -> QPointF {
-        double xFrac = (pt.x() - m_xMin) / (m_xMax - m_xMin);
-        double yFrac = (pt.y() - m_yMin) / (m_yMax - m_yMin);
+        double xval = m_logTransformX ? logX(pt.x()) : pt.x();
+        double yval = m_logTransformY ? logY(pt.y()) : pt.y();
+        double xFrac = (xval - m_xMin) / (m_xMax - m_xMin);
+        double yFrac = (yval - m_yMin) / (m_yMax - m_yMin);
         double x = chartRect.left() + xFrac * chartRect.width();
         double y = chartRect.bottom() - yFrac * chartRect.height();
         return QPointF(x, y);
     };
 
-    // --- Draw lines and points (with line clipping to axes) ---
-    for (int i = 0; i < m_lines.size(); ++i) {
-        const auto& line = m_lines[i];
-        if (line.points.isEmpty())
-            continue;
-        QColor c = line.color.isValid() ? line.color : Qt::black;
-        float alpha = (line.opacity >= 0.0f && line.opacity <= 1.0f) ? line.opacity : 1.0f;
-        if (i == m_selectedLine) { c = Qt::red; alpha = 1.0f; }
-        else if (i == m_hoveredLine) { c = c.lighter(150); alpha = 1.0f; }
-
-        glColor4f(c.redF(), c.greenF(), c.blueF(), alpha);
-        glLineWidth(line.selected ? 3.0f : 1.0f);
-
-        // Draw points (all points inside axes)
-        glPointSize(6.0f);
+    if (m_groupAveragingEnabled) {
+        // --- Group averaging mode ---
+        // Collect all points by group
+        std::unordered_map<int, std::vector<QPointF>> groupPoints;
+        for (const auto& line : m_lines) {
+            int group = line.group;
+            for (const QPointF& pt : line.points) {
+                if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
+                    continue;
+                groupPoints[group].push_back(pt);
+            }
+        }
+        // Compute mean for each group
+        std::unordered_map<int, QPointF> groupMeans;
+        for (const auto& [group, pts] : groupPoints) {
+            if (pts.empty()) continue;
+            double sumX = 0, sumY = 0;
+            for (const auto& pt : pts) {
+                sumX += m_logTransformX ? logX(pt.x()) : pt.x();
+                sumY += m_logTransformY ? logY(pt.y()) : pt.y();
+            }
+            groupMeans[group] = QPointF(sumX / pts.size(), sumY / pts.size());
+        }
+        // Draw points colored by group
+        glPointSize(10.0f);
         glBegin(GL_POINTS);
-        for (const QPointF& pt : line.points) {
-            if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
+        for (const auto& [group, meanPt] : groupMeans) {
+            if (!qIsFinite(meanPt.x()) || !qIsFinite(meanPt.y()))
                 continue;
-            if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+            if (meanPt.x() < m_xMin || meanPt.x() > m_xMax || meanPt.y() < m_yMin || meanPt.y() > m_yMax)
                 continue;
-            QPointF screenPt = chartToScreen(pt);
+            QColor c = m_groupColorMap.count(group) ? m_groupColorMap[group] : Qt::black;
+            glColor4f(c.redF(), c.greenF(), c.blueF(), 1.0f);
+            // meanPt is already in log space if enabled
+            QPointF screenPt = chartToScreen(QPointF(
+                m_logTransformX ? invLogX(meanPt.x()) : meanPt.x(),
+                m_logTransformY ? invLogY(meanPt.y()) : meanPt.y()
+            ));
             float x = (screenPt.x() / width()) * 2.0f - 1.0f;
             float y = 1.0f - (screenPt.y() / height()) * 2.0f;
             glVertex2f(x, y);
         }
         glEnd();
+    } else {
+        // --- Draw lines and points (with line clipping to axes) ---
+        for (int i = 0; i < m_lines.size(); ++i) {
+            const auto& line = m_lines[i];
+            if (line.points.isEmpty())
+                continue;
+            QVector<QPointF> pts = m_noiseRemovalEnabled ? filterNoise(line.points) : line.points;
+            QColor c = line.color.isValid() ? line.color : Qt::black;
+            float alpha = (line.opacity >= 0.0f && line.opacity <= 1.0f) ? line.opacity : 1.0f;
+            if (i == m_selectedLine) { c = Qt::red; alpha = 1.0f; }
+            else if (i == m_hoveredLine) { c = c.lighter(150); alpha = 1.0f; }
 
-        // Draw lines (clip each segment to axes)
-        if (line.points.size() > 1) {
-            for (int j = 1; j < line.points.size(); ++j) {
-                QPointF p0 = line.points[j - 1];
-                QPointF p1 = line.points[j];
-                if (!qIsFinite(p0.x()) || !qIsFinite(p0.y()) || !qIsFinite(p1.x()) || !qIsFinite(p1.y()))
+            // Draw points (all points inside axes)
+            glPointSize(6.0f);
+            glBegin(GL_POINTS);
+            for (const QPointF& pt : pts) {
+                if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
                     continue;
-                double x0 = p0.x(), y0 = p0.y(), x1 = p1.x(), y1 = p1.y();
-                if (cohenSutherlandClip(x0, y0, x1, y1, m_xMin, m_xMax, m_yMin, m_yMax)) {
-                    QPointF sp0 = chartToScreen(QPointF(x0, y0));
-                    QPointF sp1 = chartToScreen(QPointF(x1, y1));
-                    float sx0 = (sp0.x() / width()) * 2.0f - 1.0f;
-                    float sy0 = 1.0f - (sp0.y() / height()) * 2.0f;
-                    float sx1 = (sp1.x() / width()) * 2.0f - 1.0f;
-                    float sy1 = 1.0f - (sp1.y() / height()) * 2.0f;
-                    glBegin(GL_LINES);
-                    glVertex2f(sx0, sy0);
-                    glVertex2f(sx1, sy1);
-                    glEnd();
+                double xval = m_logTransformX ? logX(pt.x()) : pt.x();
+                double yval = m_logTransformY ? logY(pt.y()) : pt.y();
+                if (xval < m_xMin || xval > m_xMax || yval < m_yMin || yval > m_yMax)
+                    continue;
+                QPointF screenPt = chartToScreen(pt);
+                float x = (screenPt.x() / width()) * 2.0f - 1.0f;
+                float y = 1.0f - (screenPt.y() / height()) * 2.0f;
+                glColor4f(c.redF(), c.greenF(), c.blueF(), alpha);
+                glVertex2f(x, y);
+            }
+            glEnd();
+
+            // Draw lines (clip each segment to axes)
+            if (pts.size() > 1) {
+                if (m_gradientLineEnabled) {
+                    // Draw with gradient color based on slope
+                    for (int j = 1; j < pts.size(); ++j) {
+                        QPointF p0 = pts[j - 1];
+                        QPointF p1 = pts[j];
+                        if (!qIsFinite(p0.x()) || !qIsFinite(p0.y()) || !qIsFinite(p1.x()) || !qIsFinite(p1.y()))
+                            continue;
+                        double x0 = m_logTransformX ? logX(p0.x()) : p0.x();
+                        double y0 = m_logTransformY ? logY(p0.y()) : p0.y();
+                        double x1 = m_logTransformX ? logX(p1.x()) : p1.x();
+                        double y1 = m_logTransformY ? logY(p1.y()) : p1.y();
+                        if (cohenSutherlandClip(x0, y0, x1, y1, m_xMin, m_xMax, m_yMin, m_yMax)) {
+                            QPointF sp0 = chartToScreen(QPointF(
+                                m_logTransformX ? invLogX(x0) : x0,
+                                m_logTransformY ? invLogY(y0) : y0
+                            ));
+                            QPointF sp1 = chartToScreen(QPointF(
+                                m_logTransformX ? invLogX(x1) : x1,
+                                m_logTransformY ? invLogY(y1) : y1
+                            ));
+                            float sx0 = (sp0.x() / width()) * 2.0f - 1.0f;
+                            float sy0 = 1.0f - (sp0.y() / height()) * 2.0f;
+                            float sx1 = (sp1.x() / width()) * 2.0f - 1.0f;
+                            float sy1 = 1.0f - (sp1.y() / height()) * 2.0f;
+                            double dx = x1 - x0;
+                            double dy = y1 - y0;
+                            double slope = (dx != 0) ? dy / dx : 0.0;
+                            QColor gradColor = slopeToColor(slope);
+                            glLineWidth(line.selected ? 3.0f : 1.0f);
+                            glBegin(GL_LINES);
+                            glColor4f(gradColor.redF(), gradColor.greenF(), gradColor.blueF(), alpha);
+                            glVertex2f(sx0, sy0);
+                            glColor4f(gradColor.redF(), gradColor.greenF(), gradColor.blueF(), alpha);
+                            glVertex2f(sx1, sy1);
+                            glEnd();
+                        }
+                    }
+                } else {
+                    // Standard line drawing
+                    for (int j = 1; j < pts.size(); ++j) {
+                        QPointF p0 = pts[j - 1];
+                        QPointF p1 = pts[j];
+                        if (!qIsFinite(p0.x()) || !qIsFinite(p0.y()) || !qIsFinite(p1.x()) || !qIsFinite(p1.y()))
+                            continue;
+                        double x0 = m_logTransformX ? logX(p0.x()) : p0.x();
+                        double y0 = m_logTransformY ? logY(p0.y()) : p0.y();
+                        double x1 = m_logTransformX ? logX(p1.x()) : p1.x();
+                        double y1 = m_logTransformY ? logY(p1.y()) : p1.y();
+                        if (cohenSutherlandClip(x0, y0, x1, y1, m_xMin, m_xMax, m_yMin, m_yMax)) {
+                            QPointF sp0 = chartToScreen(QPointF(
+                                m_logTransformX ? invLogX(x0) : x0,
+                                m_logTransformY ? invLogY(y0) : y0
+                            ));
+                            QPointF sp1 = chartToScreen(QPointF(
+                                m_logTransformX ? invLogX(x1) : x1,
+                                m_logTransformY ? invLogY(y1) : y1
+                            ));
+                            float sx0 = (sp0.x() / width()) * 2.0f - 1.0f;
+                            float sy0 = 1.0f - (sp0.y() / height()) * 2.0f;
+                            float sx1 = (sp1.x() / width()) * 2.0f - 1.0f;
+                            float sy1 = 1.0f - (sp1.y() / height()) * 2.0f;
+                            glLineWidth(line.selected ? 3.0f : 1.0f);
+                            glColor4f(c.redF(), c.greenF(), c.blueF(), alpha);
+                            glBegin(GL_LINES);
+                            glVertex2f(sx0, sy0);
+                            glVertex2f(sx1, sy1);
+                            glEnd();
+                        }
+                    }
                 }
             }
         }
@@ -294,7 +547,11 @@ void HighPerfLineChart::paintGL() {
         int y = chartRect.bottom();
         painter.drawLine(QPoint(x, y), QPoint(x, y + 6));
         double xValue = m_xMin + t * (m_xMax - m_xMin);
-        QString xLabel = QString::number(xValue, 'g', 4);
+        QString xLabel;
+        if (m_logTransformX)
+            xLabel = QString::number(invLogX(xValue), 'g', 4);
+        else
+            xLabel = QString::number(xValue, 'g', 4);
         int labelWidth = fm.horizontalAdvance(xLabel);
         painter.drawText(x - labelWidth / 2, y + 6 + fm.ascent(), xLabel);
     }
@@ -306,7 +563,11 @@ void HighPerfLineChart::paintGL() {
         int x = chartRect.left();
         painter.drawLine(QPoint(x, y), QPoint(x - 6, y));
         double yValue = m_yMin + t * (m_yMax - m_yMin);
-        QString yLabel = QString::number(yValue, 'g', 4);
+        QString yLabel;
+        if (m_logTransformY)
+            yLabel = QString::number(invLogY(yValue), 'g', 4);
+        else
+            yLabel = QString::number(yValue, 'g', 4);
         int labelHeight = fm.height();
         painter.drawText(x - 8 - fm.horizontalAdvance(yLabel), y + labelHeight / 2 - 2, yLabel);
     }
@@ -332,6 +593,28 @@ void HighPerfLineChart::paintGL() {
         painter.rotate(-90);
         painter.drawText(QRect(0, 0, chartRect.height(), 20), Qt::AlignHCenter | Qt::AlignVCenter, m_yAxisName);
         painter.restore();
+    }
+
+    // --- Draw legend for group colors ---
+    if (m_groupAveragingEnabled && !m_groupStringMap.empty()) {
+        int legendX = width() - 160;
+        int legendY = 50;
+        int boxSize = 16;
+        int spacing = 6;
+        int textOffset = 22;
+        int i = 0;
+        QFontMetrics fm(painter.font());
+        painter.setPen(Qt::black);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawText(legendX, legendY - 10, "Group Legend:");
+        for (const auto& [group, groupStr] : m_groupStringMap) {
+            QColor c = m_groupColorMap.count(group) ? m_groupColorMap[group] : Qt::black;
+            QRect colorRect(legendX, legendY + i * (boxSize + spacing), boxSize, boxSize);
+            painter.fillRect(colorRect, c);
+            painter.drawRect(colorRect);
+            painter.drawText(legendX + textOffset, legendY + i * (boxSize + spacing) + boxSize - 2, groupStr);
+            ++i;
+        }
     }
 }
 
