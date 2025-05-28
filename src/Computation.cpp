@@ -465,19 +465,19 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     LineData selectedGeneLineData;
                     
                     std::vector<int> geneIndices = { geneIndex };
-                    std::vector<float> XYCoordinates(_filteredSelectionIndices.size()* geneIndices.size());
+                    std::vector<float> expresionValues(_filteredSelectionIndices.size()* geneIndices.size());
                     QVector<QPointF> points;
 
 
 
-                    pointDataset->populateDataForDimensions(XYCoordinates, geneIndices, _filteredSelectionIndices);
+                    pointDataset->populateDataForDimensions(expresionValues, geneIndices, _filteredSelectionIndices);
 
 
-                    qDebug() << "Raw data size:" << XYCoordinates.size();
-                    if (!XYCoordinates.empty()) {
+                    qDebug() << "Raw data size:" << expresionValues.size();
+                    if (!expresionValues.empty()) {
                         qDebug() << "First 10 elements:";
-                        for (size_t i = 0; i < std::min(size_t(10), XYCoordinates.size()); ++i) {
-                            qDebug() << i << ":" << XYCoordinates[i];
+                        for (size_t i = 0; i < std::min(size_t(10), expresionValues.size()); ++i) {
+                            qDebug() << i << ":" << expresionValues[i];
                         }
                     }
 
@@ -486,7 +486,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     qDebug() << "Number of lines:" << geneIndices.size();
 
                     // 3. Convert with debugging
-                    auto lineData = convertToLineData(XYCoordinates,
+                    auto lineData = convertToLineData(expresionValues,
                         _filteredSelectionIndices.size(),
                         geneIndices.size());
 
