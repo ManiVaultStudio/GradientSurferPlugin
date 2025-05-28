@@ -70,7 +70,7 @@ bool cohenSutherlandClip(double& x0, double& y0, double& x1, double& y1, double 
 std::unordered_map<int, QString> LineData::groupStringMap;
 
 // --- Merged binary normalization helper ---
-// Ensure normalization is always on original x/y, not swapped
+// Remove m_interchangeXY logic from here: normalization is always on original x/y, not swapped
 QVector<QPointF> HighPerfLineChart::binaryNormalize(const QVector<QPointF>& points, BinaryNormAxis axis) const {
     bool enabled = (axis == BinaryNormAxis::X) ? m_binaryNormalizeX : m_binaryNormalizeY;
     if (!enabled)
@@ -80,12 +80,12 @@ QVector<QPointF> HighPerfLineChart::binaryNormalize(const QVector<QPointF>& poin
     if (axis == BinaryNormAxis::X) {
         for (const QPointF& pt : points) {
             double x = (pt.x() > m_binaryNormalizeXThreshold) ? 1.0 : 0.0;
-            normed.append(m_interchangeXY ? QPointF(pt.y(), x) : QPointF(x, pt.y()));
+            normed.append(QPointF(x, pt.y()));
         }
     } else {
         for (const QPointF& pt : points) {
             double y = (pt.y() > m_binaryNormalizeYThreshold) ? 1.0 : 0.0;
-            normed.append(m_interchangeXY ? QPointF(y, pt.x()) : QPointF(pt.x(), y));
+            normed.append(QPointF(pt.x(), y));
         }
     }
     return normed;
@@ -132,7 +132,7 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_binaryNormalizeY = false;
     m_binaryNormalizeXThreshold = 0.5;
     m_binaryNormalizeYThreshold = 0.5;
-    m_interchangeXY = false; // <--- add this line
+    m_interchangeXY = false; // 
 }
 
 // Add log transform setter/getter
@@ -261,7 +261,7 @@ double HighPerfLineChart::invLogY(double ly) const {
     return std::pow(10.0, ly) - 1.0;
 }
 
-// Simple moving average filter for noise removal (can be replaced with median or threshold)
+// Remove m_interchangeXY logic from filterNoise as well
 QVector<QPointF> HighPerfLineChart::filterNoise(const QVector<QPointF>& points) const {
     if (!m_noiseRemovalEnabled || points.size() < 3)
         return points;
@@ -284,7 +284,7 @@ QVector<QPointF> HighPerfLineChart::filterNoise(const QVector<QPointF>& points) 
             if (std::abs(points[i].y() - avgY) > m_noiseRemovalThreshold)
                 continue; // skip noisy point
         }
-        filtered.append(m_interchangeXY ? QPointF(avgY, avgX) : QPointF(avgX, avgY));
+        filtered.append(QPointF(avgX, avgY));
     }
     return filtered;
 }
@@ -561,14 +561,8 @@ void HighPerfLineChart::paintGL() {
 
     // Helper lambda: map chart (data) coordinates to chartRect (screen) coordinates
     auto chartToScreen = [&](const QPointF& pt) -> QPointF {
-        double xval, yval;
-        if (m_interchangeXY) {
-            xval = m_logTransformY ? logY(pt.y()) : pt.y();
-            yval = m_logTransformX ? logX(pt.x()) : pt.x();
-        } else {
-            xval = m_logTransformX ? logX(pt.x()) : pt.x();
-            yval = m_logTransformY ? logY(pt.y()) : pt.y();
-        }
+        double xval = m_logTransformX ? logX(pt.x()) : pt.x();
+        double yval = m_logTransformY ? logY(pt.y()) : pt.y();
         double xFrac = (xval - m_xMin) / (m_xMax - m_xMin);
         double yFrac = (yval - m_yMin) / (m_yMax - m_yMin);
         double x = chartRect.left() + xFrac * chartRect.width();
@@ -657,17 +651,10 @@ void HighPerfLineChart::paintGL() {
             if (m_showPoints) {
                 glPointSize(ps);
                 glBegin(GL_POINTS);
-                for (const QPointF& pt : pts) {
-                    if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
-                        continue;
-                    double xval, yval;
-                    if (m_interchangeXY) {
-                        xval = m_logTransformY ? logY(pt.y()) : pt.y();
-                        yval = m_logTransformX ? logX(pt.x()) : pt.x();
-                    } else {
-                        xval = m_logTransformX ? logX(pt.x()) : pt.x();
-                        yval = m_logTransformY ? logY(pt.y()) : pt.y();
-                    }
+                for (const QPointF& ptOrig : pts) {
+                    QPointF pt = m_interchangeXY ? QPointF(ptOrig.y(), ptOrig.x()) : ptOrig;
+                    double xval = m_logTransformX ? logX(pt.x()) : pt.x();
+                    double yval = m_logTransformY ? logY(pt.y()) : pt.y();
                     if (xval < m_xMin || xval > m_xMax || yval < m_yMin || yval > m_yMax)
                         continue;
                     QPointF screenPt = chartToScreen(pt);
@@ -683,22 +670,16 @@ void HighPerfLineChart::paintGL() {
             if (pts.size() > 1) {
                 if (m_gradientLineEnabled) {
                     for (int j = 1; j < pts.size(); ++j) {
-                        QPointF p0 = pts[j - 1];
-                        QPointF p1 = pts[j];
+                        QPointF p0Orig = pts[j - 1];
+                        QPointF p1Orig = pts[j];
+                        QPointF p0 = m_interchangeXY ? QPointF(p0Orig.y(), p0Orig.x()) : p0Orig;
+                        QPointF p1 = m_interchangeXY ? QPointF(p1Orig.y(), p1Orig.x()) : p1Orig;
                         if (!qIsFinite(p0.x()) || !qIsFinite(p0.y()) || !qIsFinite(p1.x()) || !qIsFinite(p1.y()))
                             continue;
-                        double x0, y0, x1, y1;
-                        if (m_interchangeXY) {
-                            x0 = m_logTransformY ? logY(p0.y()) : p0.y();
-                            y0 = m_logTransformX ? logX(p0.x()) : p0.x();
-                            x1 = m_logTransformY ? logY(p1.y()) : p1.y();
-                            y1 = m_logTransformX ? logX(p1.x()) : p1.x();
-                        } else {
-                            x0 = m_logTransformX ? logX(p0.x()) : p0.x();
-                            y0 = m_logTransformY ? logY(p0.y()) : p0.y();
-                            x1 = m_logTransformX ? logX(p1.x()) : p1.x();
-                            y1 = m_logTransformY ? logY(p1.y()) : p1.y();
-                        }
+                        double x0 = m_logTransformX ? logX(p0.x()) : p0.x();
+                        double y0 = m_logTransformY ? logY(p0.y()) : p0.y();
+                        double x1 = m_logTransformX ? logX(p1.x()) : p1.x();
+                        double y1 = m_logTransformY ? logY(p1.y()) : p1.y();
                         if (cohenSutherlandClip(x0, y0, x1, y1, m_xMin, m_xMax, m_yMin, m_yMax)) {
                             QPointF sp0 = chartToScreen(QPointF(
                                 m_logTransformX ? invLogX(x0) : x0,
@@ -727,22 +708,16 @@ void HighPerfLineChart::paintGL() {
                     }
                 } else {
                     for (int j = 1; j < pts.size(); ++j) {
-                        QPointF p0 = pts[j - 1];
-                        QPointF p1 = pts[j];
+                        QPointF p0Orig = pts[j - 1];
+                        QPointF p1Orig = pts[j];
+                        QPointF p0 = m_interchangeXY ? QPointF(p0Orig.y(), p0Orig.x()) : p0Orig;
+                        QPointF p1 = m_interchangeXY ? QPointF(p1Orig.y(), p1Orig.x()) : p1Orig;
                         if (!qIsFinite(p0.x()) || !qIsFinite(p0.y()) || !qIsFinite(p1.x()) || !qIsFinite(p1.y()))
                             continue;
-                        double x0, y0, x1, y1;
-                        if (m_interchangeXY) {
-                            x0 = m_logTransformY ? logY(p0.y()) : p0.y();
-                            y0 = m_logTransformX ? logX(p0.x()) : p0.x();
-                            x1 = m_logTransformY ? logY(p1.y()) : p1.y();
-                            y1 = m_logTransformX ? logX(p1.x()) : p1.x();
-                        } else {
-                            x0 = m_logTransformX ? logX(p0.x()) : p0.x();
-                            y0 = m_logTransformY ? logY(p0.y()) : p0.y();
-                            x1 = m_logTransformX ? logX(p1.x()) : p1.x();
-                            y1 = m_logTransformY ? logY(p1.y()) : p1.y();
-                        }
+                        double x0 = m_logTransformX ? logX(p0.x()) : p0.x();
+                        double y0 = m_logTransformY ? logY(p0.y()) : p0.y();
+                        double x1 = m_logTransformX ? logX(p1.x()) : p1.x();
+                        double y1 = m_logTransformY ? logY(p1.y()) : p1.y();
                         if (cohenSutherlandClip(x0, y0, x1, y1, m_xMin, m_xMax, m_yMin, m_yMax)) {
                             QPointF sp0 = chartToScreen(QPointF(
                                 m_logTransformX ? invLogX(x0) : x0,
