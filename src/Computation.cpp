@@ -2069,10 +2069,15 @@ void Computation::resetupCorrelationTable()
     auto minRange = _settingsAction.getSettingsHolder().getCorrelationRangeAction().getMinimum();
     auto maxRange = _settingsAction.getSettingsHolder().getCorrelationRangeAction().getMaximum();
 
-
+    _geneOfInterestIndices.clear();
     //change the _geneCorrValues isWithinRange flag based on the min and max range
     for (auto& gene : _geneCorrValues) {
-        gene.isWithinRange = (gene.correlationValue >= minRange && gene.correlationValue <= maxRange);
+        bool isWithinRange = (gene.correlationValue >= minRange && gene.correlationValue <= maxRange);
+
+        gene.isWithinRange = isWithinRange;
+        if (isWithinRange) {
+            _geneOfInterestIndices.push_back(gene.geneIndex);
+        }
     }
 
     setupTableModelAndSelection();
