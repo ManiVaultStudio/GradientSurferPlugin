@@ -8,6 +8,14 @@
 #include <QMap>
 #include <map>
 #include <unordered_map>
+#include <QFont>
+#include <QPen>
+
+enum class LineDashStyle {
+    Solid,
+    Dash,
+    Dot
+};
 
 struct LineData {
     QVector<QPointF> points;
@@ -17,6 +25,11 @@ struct LineData {
     int group = -1; // Group number for this line
     // Map from group number to group string (shared across all lines)
     static std::unordered_map<int, QString> groupStringMap;
+
+    // --- Customization options per line ---
+    float lineWidth = 0.0f;  // If >0, overrides chart default line width
+    float pointSize = 0.0f;  // If >0, overrides chart default point size
+    LineDashStyle dashStyle = LineDashStyle::Solid; // New: per-line dash style
 };
 
 class HighPerfLineChart : public QOpenGLWidget, protected QOpenGLFunctions {
@@ -67,6 +80,29 @@ public:
     void setNoiseRemovalThreshold(double threshold);
     double noiseRemovalThreshold() const { return m_noiseRemovalThreshold; }
 
+    // --- Customization API ---
+    void setLineWidth(float w);
+    void setPointSize(float s);
+    void setAxisFont(const QFont& f);
+    void setAxisColor(const QColor& c);
+    void setNumXTicks(int n);
+    void setNumYTicks(int n);
+    void setGridEnabled(bool en);
+    void setGridColor(const QColor& c);
+    void setBackgroundColor(const QColor& c);
+    void setShowPoints(bool en);
+
+    // New customization options
+    void setAxisLineWidth(float w);
+    void setXAxisLineColor(const QColor& c);
+    void setYAxisLineColor(const QColor& c);
+    void setTickLabelFont(const QFont& f);
+    void setTickLabelColor(const QColor& c);
+    void setChartMargins(int left, int right, int top, int bottom);
+    void setLegendFont(const QFont& f);
+    void setLegendColor(const QColor& c);
+    void setLegendPosition(int x, int y);
+
 signals:
     void lineSelected(int index);
     void lineHovered(int index);
@@ -114,4 +150,27 @@ private:
 
     QPointF screenToChart(const QPoint& p) const;
     int findLineAt(const QPoint& pos) const;
+
+    // --- Customization members ---
+    float m_lineWidth;
+    float m_pointSize;
+    QFont m_axisFont;
+    QColor m_axisColor;
+    int m_numXTicks;
+    int m_numYTicks;
+    bool m_gridEnabled;
+    QColor m_gridColor;
+    QColor m_backgroundColor;
+    bool m_showPoints;
+
+    // New customization members
+    float m_axisLineWidth = 1.0f;
+    QColor m_xAxisLineColor = Qt::black;
+    QColor m_yAxisLineColor = Qt::black;
+    QFont m_tickLabelFont;
+    QColor m_tickLabelColor = Qt::black;
+    int m_leftMargin = 50, m_rightMargin = 20, m_topMargin = 40, m_bottomMargin = 40;
+    QFont m_legendFont;
+    QColor m_legendColor = Qt::black;
+    int m_legendX = -1, m_legendY = -1; // -1 means auto
 };

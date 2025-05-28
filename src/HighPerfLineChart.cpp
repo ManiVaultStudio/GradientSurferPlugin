@@ -4,6 +4,8 @@
 #include <QtMath>
 #include <QDebug>
 #include <random>
+#include <QFont>
+#include <QPen>
 
 namespace {
 enum OutCode {
@@ -81,6 +83,29 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_noiseRemovalEnabled = false;
     m_noiseRemovalWindow = 3;
     m_noiseRemovalThreshold = 0.0;
+    m_lineWidth = 1.0f;
+    m_pointSize = 6.0f;
+    m_axisFont = QFont();
+    m_axisColor = Qt::black;
+    m_numXTicks = 5;
+    m_numYTicks = 5;
+    m_gridEnabled = false;
+    m_gridColor = QColor(220,220,220);
+    m_backgroundColor = Qt::white;
+    m_showPoints = true;
+    m_axisLineWidth = 1.0f;
+    m_xAxisLineColor = Qt::black;
+    m_yAxisLineColor = Qt::black;
+    m_tickLabelFont = QFont();
+    m_tickLabelColor = Qt::black;
+    m_leftMargin = 50;
+    m_rightMargin = 20;
+    m_topMargin = 40;
+    m_bottomMargin = 40;
+    m_legendFont = QFont();
+    m_legendColor = Qt::black;
+    m_legendX = -1;
+    m_legendY = -1;
 }
 
 // Add log transform setter/getter
@@ -116,6 +141,31 @@ void HighPerfLineChart::setNoiseRemovalThreshold(double threshold) {
     m_noiseRemovalThreshold = threshold;
     update();
 }
+
+// --- Customization setters/getters ---
+void HighPerfLineChart::setLineWidth(float w) { m_lineWidth = w; update(); }
+void HighPerfLineChart::setPointSize(float s) { m_pointSize = s; update(); }
+void HighPerfLineChart::setAxisFont(const QFont& f) { m_axisFont = f; update(); }
+void HighPerfLineChart::setAxisColor(const QColor& c) { m_axisColor = c; update(); }
+void HighPerfLineChart::setNumXTicks(int n) { m_numXTicks = n; update(); }
+void HighPerfLineChart::setNumYTicks(int n) { m_numYTicks = n; update(); }
+void HighPerfLineChart::setGridEnabled(bool en) { m_gridEnabled = en; update(); }
+void HighPerfLineChart::setGridColor(const QColor& c) { m_gridColor = c; update(); }
+void HighPerfLineChart::setBackgroundColor(const QColor& c) { m_backgroundColor = c; update(); }
+void HighPerfLineChart::setShowPoints(bool en) { m_showPoints = en; update(); }
+
+// New customization setters/getters
+void HighPerfLineChart::setAxisLineWidth(float w) { m_axisLineWidth = w; update(); }
+void HighPerfLineChart::setXAxisLineColor(const QColor& c) { m_xAxisLineColor = c; update(); }
+void HighPerfLineChart::setYAxisLineColor(const QColor& c) { m_yAxisLineColor = c; update(); }
+void HighPerfLineChart::setTickLabelFont(const QFont& f) { m_tickLabelFont = f; update(); }
+void HighPerfLineChart::setTickLabelColor(const QColor& c) { m_tickLabelColor = c; update(); }
+void HighPerfLineChart::setChartMargins(int left, int right, int top, int bottom) {
+    m_leftMargin = left; m_rightMargin = right; m_topMargin = top; m_bottomMargin = bottom; update();
+}
+void HighPerfLineChart::setLegendFont(const QFont& f) { m_legendFont = f; update(); }
+void HighPerfLineChart::setLegendColor(const QColor& c) { m_legendColor = c; update(); }
+void HighPerfLineChart::setLegendPosition(int x, int y) { m_legendX = x; m_legendY = y; update(); }
 
 // Stronger log transform: log(log(x+e)+1), e = 1e-6 to avoid log(0)
 double HighPerfLineChart::strongLog(double v) const {
@@ -194,6 +244,54 @@ QColor HighPerfLineChart::slopeToColor(double slope) const {
 void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
     m_lines = lines;
     qDebug() << "[HighPerfLineChart] setLines called. Number of lines:" << m_lines.size();
+
+    // --- Detailed debug info ---
+    int totalPoints = 0;
+    QSet<int> uniqueGroups;
+    double xMin = std::numeric_limits<double>::max();
+    double xMax = std::numeric_limits<double>::lowest();
+    double yMin = std::numeric_limits<double>::max();
+    double yMax = std::numeric_limits<double>::lowest();
+
+    for (int i = 0; i < m_lines.size(); ++i) {
+        const auto& line = m_lines[i];
+        int npts = line.points.size();
+        totalPoints += npts;
+        uniqueGroups.insert(line.group);
+        qDebug() << "  Line" << i
+                 << "points:" << npts
+                 << "group:" << line.group
+                 << "color:" << line.color
+                 << "opacity:" << line.opacity
+                 << "lineWidth:" << line.lineWidth
+                 << "pointSize:" << line.pointSize;
+        for (const QPointF& pt : line.points) {
+            if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
+                continue;
+            double xval = m_logTransformX ? logX(pt.x()) : pt.x();
+            double yval = m_logTransformY ? logY(pt.y()) : pt.y();
+            xMin = std::min(xMin, xval);
+            xMax = std::max(xMax, xval);
+            yMin = std::min(yMin, yval);
+            yMax = std::max(yMax, yval);
+        }
+    }
+    qDebug() << "  Total points:" << totalPoints;
+    qDebug() << "  Unique groups:" << uniqueGroups.size() << uniqueGroups;
+    if (totalPoints > 0) {
+        qDebug() << "  X range:" << xMin << "to" << xMax;
+        qDebug() << "  Y range:" << yMin << "to" << yMax;
+    }
+    qDebug() << "  Chart customization:"
+             << "defaultLineWidth:" << m_lineWidth
+             << "defaultPointSize:" << m_pointSize
+             << "axisFont:" << m_axisFont
+             << "axisColor:" << m_axisColor
+             << "numXTicks:" << m_numXTicks
+             << "numYTicks:" << m_numYTicks
+             << "gridEnabled:" << m_gridEnabled
+             << "backgroundColor:" << m_backgroundColor
+             << "showPoints:" << m_showPoints;
 
     // Auto-range axes if not explicitly set or if data is out of range
     if (!m_lines.isEmpty()) {
@@ -316,6 +414,7 @@ void HighPerfLineChart::initializeGL() {
 }
 
 void HighPerfLineChart::paintGL() {
+    glClearColor(m_backgroundColor.redF(), m_backgroundColor.greenF(), m_backgroundColor.blueF(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Guard: avoid division by zero if range is invalid or widget size is zero
@@ -356,11 +455,29 @@ void HighPerfLineChart::paintGL() {
     }
 
     // --- Chart area margins and rect ---
-    const int leftMargin = 50;
-    const int rightMargin = 20;
-    const int topMargin = 40;
-    const int bottomMargin = 40;
+    const int leftMargin = m_leftMargin;
+    const int rightMargin = m_rightMargin;
+    const int topMargin = m_topMargin;
+    const int bottomMargin = m_bottomMargin;
     QRect chartRect(leftMargin, topMargin, width() - leftMargin - rightMargin, height() - topMargin - bottomMargin);
+
+    // --- Draw grid lines (if enabled) ---
+    if (m_gridEnabled) {
+        QPainter gridPainter(this);
+        gridPainter.setPen(QPen(m_gridColor, 1, Qt::DashLine));
+        // Vertical grid lines
+        for (int i = 0; i <= m_numXTicks; ++i) {
+            double t = double(i) / m_numXTicks;
+            int x = chartRect.left() + t * chartRect.width();
+            gridPainter.drawLine(QPoint(x, chartRect.top()), QPoint(x, chartRect.bottom()));
+        }
+        // Horizontal grid lines
+        for (int i = 0; i <= m_numYTicks; ++i) {
+            double t = double(i) / m_numYTicks;
+            int y = chartRect.bottom() - t * chartRect.height();
+            gridPainter.drawLine(QPoint(chartRect.left(), y), QPoint(chartRect.right(), y));
+        }
+    }
 
     // Helper lambda: map chart (data) coordinates to chartRect (screen) coordinates
     auto chartToScreen = [&](const QPointF& pt) -> QPointF {
@@ -425,31 +542,45 @@ void HighPerfLineChart::paintGL() {
             QVector<QPointF> pts = m_noiseRemovalEnabled ? filterNoise(line.points) : line.points;
             QColor c = line.color.isValid() ? line.color : Qt::black;
             float alpha = (line.opacity >= 0.0f && line.opacity <= 1.0f) ? line.opacity : 1.0f;
-            if (i == m_selectedLine) { c = Qt::red; alpha = 1.0f; }
+            float lw = (line.lineWidth > 0) ? line.lineWidth : m_lineWidth;
+            float ps = (line.pointSize > 0) ? line.pointSize : m_pointSize;
+            if (i == m_selectedLine) { c = Qt::red; alpha = 1.0f; lw = std::max(lw, 3.0f); }
             else if (i == m_hoveredLine) { c = c.lighter(150); alpha = 1.0f; }
 
-            // Draw points (all points inside axes)
-            glPointSize(6.0f);
-            glBegin(GL_POINTS);
-            for (const QPointF& pt : pts) {
-                if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
-                    continue;
-                double xval = m_logTransformX ? logX(pt.x()) : pt.x();
-                double yval = m_logTransformY ? logY(pt.y()) : pt.y();
-                if (xval < m_xMin || xval > m_xMax || yval < m_yMin || yval > m_yMax)
-                    continue;
-                QPointF screenPt = chartToScreen(pt);
-                float x = (screenPt.x() / width()) * 2.0f - 1.0f;
-                float y = 1.0f - (screenPt.y() / height()) * 2.0f;
-                glColor4f(c.redF(), c.greenF(), c.blueF(), alpha);
-                glVertex2f(x, y);
+            // Set OpenGL line stipple for dash style
+            if (line.dashStyle == LineDashStyle::Dash) {
+                glEnable(GL_LINE_STIPPLE);
+                glLineStipple(1, 0x00FF);
+            } else if (line.dashStyle == LineDashStyle::Dot) {
+                glEnable(GL_LINE_STIPPLE);
+                glLineStipple(1, 0x0101);
+            } else {
+                glDisable(GL_LINE_STIPPLE);
             }
-            glEnd();
+
+            // Draw points (all points inside axes)
+            if (m_showPoints) {
+                glPointSize(ps);
+                glBegin(GL_POINTS);
+                for (const QPointF& pt : pts) {
+                    if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
+                        continue;
+                    double xval = m_logTransformX ? logX(pt.x()) : pt.x();
+                    double yval = m_logTransformY ? logY(pt.y()) : pt.y();
+                    if (xval < m_xMin || xval > m_xMax || yval < m_yMin || yval > m_yMax)
+                        continue;
+                    QPointF screenPt = chartToScreen(pt);
+                    float x = (screenPt.x() / width()) * 2.0f - 1.0f;
+                    float y = 1.0f - (screenPt.y() / height()) * 2.0f;
+                    glColor4f(c.redF(), c.greenF(), c.blueF(), alpha);
+                    glVertex2f(x, y);
+                }
+                glEnd();
+            }
 
             // Draw lines (clip each segment to axes)
             if (pts.size() > 1) {
                 if (m_gradientLineEnabled) {
-                    // Draw with gradient color based on slope
                     for (int j = 1; j < pts.size(); ++j) {
                         QPointF p0 = pts[j - 1];
                         QPointF p1 = pts[j];
@@ -476,7 +607,7 @@ void HighPerfLineChart::paintGL() {
                             double dy = y1 - y0;
                             double slope = (dx != 0) ? dy / dx : 0.0;
                             QColor gradColor = slopeToColor(slope);
-                            glLineWidth(line.selected ? 3.0f : 1.0f);
+                            glLineWidth(lw);
                             glBegin(GL_LINES);
                             glColor4f(gradColor.redF(), gradColor.greenF(), gradColor.blueF(), alpha);
                             glVertex2f(sx0, sy0);
@@ -486,7 +617,6 @@ void HighPerfLineChart::paintGL() {
                         }
                     }
                 } else {
-                    // Standard line drawing
                     for (int j = 1; j < pts.size(); ++j) {
                         QPointF p0 = pts[j - 1];
                         QPointF p1 = pts[j];
@@ -509,7 +639,7 @@ void HighPerfLineChart::paintGL() {
                             float sy0 = 1.0f - (sp0.y() / height()) * 2.0f;
                             float sx1 = (sp1.x() / width()) * 2.0f - 1.0f;
                             float sy1 = 1.0f - (sp1.y() / height()) * 2.0f;
-                            glLineWidth(line.selected ? 3.0f : 1.0f);
+                            glLineWidth(lw);
                             glColor4f(c.redF(), c.greenF(), c.blueF(), alpha);
                             glBegin(GL_LINES);
                             glVertex2f(sx0, sy0);
@@ -519,26 +649,39 @@ void HighPerfLineChart::paintGL() {
                     }
                 }
             }
+            glDisable(GL_LINE_STIPPLE); // Always disable after drawing
         }
     }
 
     // --- Draw axes and labels using QPainter for text ---
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(Qt::black);
 
-    // Draw X and Y axis lines
+    // Draw X and Y axis lines with custom width and color
+    QPen xPen(m_xAxisLineColor, m_axisLineWidth);
+    QPen yPen(m_yAxisLineColor, m_axisLineWidth);
+
+    // X axis
+    painter.setPen(xPen);
     QPoint xAxisStart(chartRect.left(), chartRect.bottom());
     QPoint xAxisEnd(chartRect.right(), chartRect.bottom());
     painter.drawLine(xAxisStart, xAxisEnd);
+
+    // Y axis
+    painter.setPen(yPen);
     QPoint yAxisStart(chartRect.left(), chartRect.bottom());
     QPoint yAxisEnd(chartRect.left(), chartRect.top());
     painter.drawLine(yAxisStart, yAxisEnd);
 
     // Draw tick marks and values
-    int numXTicks = 5;
-    int numYTicks = 5;
-    QFontMetrics fm(painter.font());
+    int numXTicks = m_numXTicks;
+    int numYTicks = m_numYTicks;
+
+    // Tick labels
+    QFont tickFont = m_tickLabelFont.family().isEmpty() ? painter.font() : m_tickLabelFont;
+    painter.setFont(tickFont);
+    painter.setPen(m_tickLabelColor);
+    QFontMetrics fmTick(tickFont);
 
     // X ticks and labels
     for (int i = 0; i <= numXTicks; ++i) {
@@ -552,8 +695,8 @@ void HighPerfLineChart::paintGL() {
             xLabel = QString::number(invLogX(xValue), 'g', 4);
         else
             xLabel = QString::number(xValue, 'g', 4);
-        int labelWidth = fm.horizontalAdvance(xLabel);
-        painter.drawText(x - labelWidth / 2, y + 6 + fm.ascent(), xLabel);
+        int labelWidth = fmTick.horizontalAdvance(xLabel);
+        painter.drawText(x - labelWidth / 2, y + 6 + fmTick.ascent(), xLabel);
     }
 
     // Y ticks and labels
@@ -568,9 +711,13 @@ void HighPerfLineChart::paintGL() {
             yLabel = QString::number(invLogY(yValue), 'g', 4);
         else
             yLabel = QString::number(yValue, 'g', 4);
-        int labelHeight = fm.height();
-        painter.drawText(x - 8 - fm.horizontalAdvance(yLabel), y + labelHeight / 2 - 2, yLabel);
+        int labelHeight = fmTick.height();
+        painter.drawText(x - 8 - fmTick.horizontalAdvance(yLabel), y + labelHeight / 2 - 2, yLabel);
     }
+
+    // Axis labels and title
+    painter.setFont(m_axisFont);
+    painter.setPen(m_axisColor);
 
     // Draw chart title at the top center
     if (!m_chartTitle.isEmpty()) {
@@ -579,7 +726,7 @@ void HighPerfLineChart::paintGL() {
         titleFont.setPointSize(titleFont.pointSize() + 2);
         painter.setFont(titleFont);
         painter.drawText(QRect(0, 0, width(), topMargin), Qt::AlignHCenter | Qt::AlignVCenter, m_chartTitle);
-        painter.setFont(QFont());
+        painter.setFont(m_axisFont);
     }
 
     // Draw x-axis label
@@ -597,14 +744,17 @@ void HighPerfLineChart::paintGL() {
 
     // --- Draw legend for group colors ---
     if (m_groupAveragingEnabled && !m_groupStringMap.empty()) {
-        int legendX = width() - 160;
-        int legendY = 50;
+        QFont legendFont = m_legendFont.family().isEmpty() ? painter.font() : m_legendFont;
+        painter.setFont(legendFont);
+        painter.setPen(m_legendColor);
+
+        int legendX = (m_legendX >= 0) ? m_legendX : width() - 160;
+        int legendY = (m_legendY >= 0) ? m_legendY : 50;
         int boxSize = 16;
         int spacing = 6;
         int textOffset = 22;
         int i = 0;
-        QFontMetrics fm(painter.font());
-        painter.setPen(Qt::black);
+        QFontMetrics fmLegend(legendFont);
         painter.setBrush(Qt::NoBrush);
         painter.drawText(legendX, legendY - 10, "Group Legend:");
         for (const auto& [group, groupStr] : m_groupStringMap) {
