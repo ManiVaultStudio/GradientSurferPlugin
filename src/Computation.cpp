@@ -1952,15 +1952,11 @@ bool Computation::setupAndTriggerPCA()
     // compute PCA on all cells w. ith selected genes
 
 
-    /*if (!_pcaDataset.isValid()) {
-        qDebug() << "Failed to create PCA dataset";
-        setStatusMessage("E", "Error occurred during dataset creation", "");
-        return false;
-    }*/
+
     auto& settingsHolder = _settingsAction.getSettingsHolder();
     Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
 
-    if (!_selectedGenePointDataset.isValid() || !fullPointDataset.isValid() || !_pcaDataset.isValid()) {
+    if (!_selectedGenePointDataset.isValid() || !fullPointDataset.isValid()) {
         qDebug() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return false;
