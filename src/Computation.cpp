@@ -2180,15 +2180,21 @@ void Computation::setupTableModelAndSelection()
 
         // Consistent formatting: only highlight and bold if isWithinRange
         if (entry.isWithinRange) {
-            QFont font = geneItem->font();
-            font.setBold(true);
-            geneItem->setFont(font);
+            QFont fontG = geneItem->font();
+            fontG.setBold(true);
+            geneItem->setFont(fontG);
             geneItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
             geneItem->setForeground(QColor("#000000"));
+            QFont fontR = rankItem->font();
+            fontR.setBold(true);
+            rankItem->setFont(fontR);
+            rankItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
+            rankItem->setForeground(QColor("#000000"));
+
+
         }
         // Always set text color for visibility
         corrItem->setForeground(QColor("#000000"));
-        rankItem->setForeground(QColor("#000000"));
 
         model->setItem(i, 0, geneItem);
         model->setItem(i, 1, corrItem);
