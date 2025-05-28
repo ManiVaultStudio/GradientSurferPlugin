@@ -224,12 +224,15 @@ QVector<LineData> convertToLineData(const std::vector<float>& vec,
 QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std::vector<float>& vecCoord,
     int pointsPerLine,
     int numOfLines,
-    const QVector<QColor>& colors = QVector<QColor>()) {
+    const QVector<QColor>& colors = QVector<QColor>(),
+    bool coordIsX = true) 
+{
     QVector<LineData> lines;
 
     qDebug() << "Conversion started. Total elements:" << vecAll.size()
         << "Points per line:" << pointsPerLine
-        << "Number of lines:" << numOfLines;
+        << "Number of lines:" << numOfLines
+        << "coordIsX:" << coordIsX;
 
     // Validate input
     if (pointsPerLine < 1 || numOfLines < 1) {
@@ -247,17 +250,32 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
 
     lines.reserve(numOfLines);
 
-    // Debug print first few x and y values to verify data organization
-    qDebug() << "First few x values (column order):";
-    for (int i = 0; i < std::min(5, pointsPerLine); ++i) {
-        for (int j = 0; j < std::min(5, numOfLines); ++j) {
-            size_t pos = static_cast<size_t>(i) * numOfLines + j;
-            qDebug() << "x[" << i << "][" << j << "]: pos" << pos << "=" << vecAll[pos];
+    // Debug print first few values to verify data organization
+    if (!coordIsX) {
+        qDebug() << "First few x values (column order):";
+        for (int i = 0; i < std::min(5, pointsPerLine); ++i) {
+            for (int j = 0; j < std::min(5, numOfLines); ++j) {
+                size_t pos = static_cast<size_t>(i) * numOfLines + j;
+                qDebug() << "x[" << i << "][" << j << "]: pos" << pos << "=" << vecAll[pos];
+            }
+        }
+        qDebug() << "First few y values:";
+        for (int i = 0; i < std::min(5, pointsPerLine); ++i) {
+            qDebug() << "y[" << i << "]:" << vecCoord[i];
         }
     }
-    qDebug() << "First few y values:";
-    for (int i = 0; i < std::min(5, pointsPerLine); ++i) {
-        qDebug() << "y[" << i << "]:" << vecCoord[i];
+    else {
+        qDebug() << "First few y values (column order):";
+        for (int i = 0; i < std::min(5, pointsPerLine); ++i) {
+            for (int j = 0; j < std::min(5, numOfLines); ++j) {
+                size_t pos = static_cast<size_t>(i) * numOfLines + j;
+                qDebug() << "y[" << i << "][" << j << "]: pos" << pos << "=" << vecAll[pos];
+            }
+        }
+        qDebug() << "First few x values:";
+        for (int i = 0; i < std::min(5, pointsPerLine); ++i) {
+            qDebug() << "x[" << i << "]:" << vecCoord[i];
+        }
     }
 
     for (int lineIdx = 0; lineIdx < numOfLines; ++lineIdx) {
@@ -278,15 +296,22 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
         line.points.reserve(pointsPerLine);
 
         for (int pointIdx = 0; pointIdx < pointsPerLine; ++pointIdx) {
-            size_t xPos = static_cast<size_t>(pointIdx) * numOfLines + lineIdx;
-            if (xPos >= vecAll.size() || pointIdx >= static_cast<int>(vecCoord.size())) {
+            size_t pos = static_cast<size_t>(pointIdx) * numOfLines + lineIdx;
+            if (pos >= vecAll.size() || pointIdx >= static_cast<int>(vecCoord.size())) {
                 qWarning() << "Index out of bounds at line" << lineIdx
                     << "point" << pointIdx;
                 continue;
             }
 
-            float x = vecAll[xPos];
-            float y = vecCoord[pointIdx];
+            float x, y;
+            if (!coordIsX) {
+                x = vecAll[pos];
+                y = vecCoord[pointIdx];
+            }
+            else {
+                x = vecCoord[pointIdx];
+                y = vecAll[pos];
+            }
 
             if (!std::isfinite(x) || !std::isfinite(y)) {
                 qWarning() << "Non-finite point at line" << lineIdx
@@ -300,7 +325,6 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
         if (!line.points.isEmpty()) {
             lines.append(line);
             qDebug() << "Added line" << lineIdx << "with" << line.points.size() << "points";
-            // Debug print first and last points of the line
             if (!line.points.isEmpty()) {
                 qDebug() << "  First point:" << line.points.first().x() << line.points.first().y();
                 qDebug() << "  Last point:" << line.points.last().x() << line.points.last().y();
