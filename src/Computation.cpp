@@ -115,20 +115,20 @@ static QString getContrastingTextColor(const QString& bgColor) {
     double luminance = (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255.0;
     return (luminance > 0.5) ? "black" : "white";
 }
-QVector<QPointF> convertToQPointF(const std::vector<float>& vec, int numOfDims, int numOfPoints) {
+QVector<QPointF> convertToQPointF(const std::vector<float>& vec, int numOfPointsinLines, int numOfLines) {
     QVector<QPointF> points;
 
-    if (numOfDims < 2) {
+    if (numOfPointsinLines < 2) {
         throw std::invalid_argument("At least 2 dimensions are required to create QPointF.");
     }
 
-    if (static_cast<size_t>(numOfDims * numOfPoints) > vec.size()) {
+    if (static_cast<size_t>(numOfPointsinLines * numOfLines) > vec.size()) {
         throw std::invalid_argument("Input vector size is smaller than expected based on dimensions and number of points.");
     }
 
-    for (int i = 0; i < numOfPoints; ++i) {
-        float x = vec[i * numOfDims];
-        float y = vec[i * numOfDims + 1];
+    for (int i = 0; i < numOfLines; ++i) {
+        float x = vec[i * numOfPointsinLines];
+        float y = vec[i * numOfPointsinLines + 1];
         points.append(QPointF(x, y));
     }
 
