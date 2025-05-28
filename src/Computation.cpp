@@ -235,7 +235,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 {
 
     _correlationRangeDebounceTimer.setSingleShot(true);
-
+    _clusterSelectionDebounceTimer.setSingleShot(true);
 
 
     const auto updateStatus = [this]() -> void {
@@ -681,13 +681,25 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getComputeHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
 
-    const auto clusterSelectionChanged = [this]() -> void {
 
-        setStatusMessage("M", "Cluster selection updated", "");
+    connect(&_settingsAction.getSettingsHolder().getClusterSelectionAction(),
+        &OptionsAction::selectedOptionsChanged,
+        this,
+        [this]() {
+            _clusterSelectionDebounceTimer.start(800);
+        });
+    connect(&_clusterSelectionDebounceTimer, &QTimer::timeout, this, [this]() {
+        //setStatusMessage("M", "Cluster selection updated", "");
+        setStatusMessage("R", "Computation in progress", "");
+        _settingsAction.getComputeHolder().getComputeAction().setDisabled(true);
+        QApplication::processEvents();
 
-        };
+        
+        setSelectionAndAutoCompute();
 
-    connect(&_settingsAction.getSettingsHolder().getClusterSelectionAction(), &OptionsAction::selectedOptionsChanged, this, clusterSelectionChanged);
+        _settingsAction.getComputeHolder().getComputeAction().setDisabled(false);
+        });
+
 
 
     connect(&_settingsAction.getSettingsHolder().getCorrelationRangeAction(),
@@ -697,8 +709,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _correlationRangeDebounceTimer.start(300);
         });
     connect(&_correlationRangeDebounceTimer, &QTimer::timeout, this, [this]() {
-        setStatusMessage("M", "Updating correlation table", "");
-        setupCorrelationTable();
+        setStatusMessage("R", "Updating correlation table", "");
+        resetupCorrelationTable();
         setStatusMessage("C", "Correlation table updated", "");
         });
 
@@ -2052,7 +2064,7 @@ bool Computation::setupAndTriggerPCA()
     return true;
 }
 
-void Computation::setupCorrelationTable()
+void Computation::resetupCorrelationTable()
 {
     auto minRange = _settingsAction.getSettingsHolder().getCorrelationRangeAction().getMinimum();
     auto maxRange = _settingsAction.getSettingsHolder().getCorrelationRangeAction().getMaximum();
@@ -2065,6 +2077,13 @@ void Computation::setupCorrelationTable()
 
     setupTableModelAndSelection();
 }
+
+void Computation::setSelectionAndAutoCompute()
+{
+
+    AutoCompute();
+}
+
 
 // Setup table model and connect selection
 void Computation::setupTableModelAndSelection(const QStringList& topGenes)
