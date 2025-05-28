@@ -27,6 +27,7 @@ public:
     void setYRange(double min, double max);
     void clear();
     void setEmptyMessage(const QString& msg);
+    void setChartTitle(const QString& title); // Add this setter
 
     // Selection/hover
     int selectedLine() const;
@@ -50,6 +51,7 @@ private:
     int m_selectedLine = -1;
     int m_hoveredLine = -1;
     QString m_emptyMessage;
+    QString m_chartTitle; // Add this member for the chart title
 
     QPointF screenToChart(const QPoint& p) const;
     int findLineAt(const QPoint& pos) const;
