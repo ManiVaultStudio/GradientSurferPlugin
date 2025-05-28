@@ -2017,6 +2017,8 @@ bool Computation::setupAndTriggerPCA()
     }
     componentsAction->setValue(numofIntGenes);
 
+    QApplication::processEvents();
+
     auto startAction = dynamic_cast<TriggerAction*>(_pcaDataset->findChildByPath("PCA/Start analysis"));
     if (startAction) {
         startAction->trigger();
@@ -2030,6 +2032,7 @@ bool Computation::setupAndTriggerPCA()
         setStatusMessage("E", "PCA start action not found", "");
         return false;
     }
+    QApplication::processEvents();
     qDebug() << "PCA analysis triggered successfully";
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     return true;
