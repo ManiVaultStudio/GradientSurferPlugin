@@ -1321,7 +1321,7 @@ void Computation::AutoCompute()
 
         QStringList topGenes;
         try {
-            topGenes = filterGenesByCorrelationRange(corrGeneCoords, minCorrelation, maxCorrelation, dimensionNames); // FIXME: currently not doing anything
+            topGenes = filterGenesByCorrelationRange(corrGeneCoords, minCorrelation, maxCorrelation, dimensionNames);
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
