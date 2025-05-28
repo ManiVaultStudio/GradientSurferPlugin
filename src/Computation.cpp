@@ -1951,8 +1951,6 @@ bool Computation::setupAndTriggerPCA()
     // noOfDimensions is the number of genes of interest, not the full dataset dimensions
     // compute PCA on all cells w. ith selected genes
 
-
-
     auto& settingsHolder = _settingsAction.getSettingsHolder();
     Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
 
@@ -1979,8 +1977,7 @@ bool Computation::setupAndTriggerPCA()
         return false;
     }
 
-    // FIXME: this is a workaround to avoid using the filtered selection indices
-    _selectedCellPointDataset->setData(cellbygenematrix.data(), numAllCells, numofIntGenes);
+    _selectedGenePointDataset->setData(cellbygenematrix.data(), numAllCells, numofIntGenes);
     std::vector<QString> dimensionNamesOfInterest;
     for (int idx : _geneOfInterestIndices) {
         if (idx >= 0 && idx < fullPointDataset->getNumDimensions()) {
@@ -1988,14 +1985,14 @@ bool Computation::setupAndTriggerPCA()
         }
     }
 
-    _selectedCellPointDataset->setDimensionNames(dimensionNamesOfInterest);
-    mv::events().notifyDatasetDataChanged(_selectedCellPointDataset);
+    _selectedGenePointDataset->setDimensionNames(dimensionNamesOfInterest);
+    mv::events().notifyDatasetDataChanged(_selectedGenePointDataset);
 
     if (!_pcaDataset.isValid()) {
         _pcaDataset = mv::data().createDataset("Points", "PCA Data", _selectedGenePointDataset);
         _pcaDataset->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_pcaDataset);
-        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedCellPointDataset }, { _pcaDataset });
+        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset }, { _pcaDataset });
     }
 
     std::vector<float> emptyData(numAllCells * numofIntGenes, 0.0f);
@@ -2003,7 +2000,7 @@ bool Computation::setupAndTriggerPCA()
     mv::events().notifyDatasetDataChanged(_pcaDataset);
 
     if (!_pcaAnalysisPlugin) {
-        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedCellPointDataset }, { _pcaDataset });
+        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset }, { _pcaDataset });
     }
 
     if (!_pcaAnalysisPlugin) {
