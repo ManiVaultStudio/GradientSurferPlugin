@@ -119,6 +119,10 @@ protected:
     mv::Dataset<Points>         _selectedPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _embeddingDataset = nullptr;
-    std::vector<int>          _filteredSelectionIndices;
+    std::vector<int>            _filteredSelectionIndices;
+    std::vector<int>            _geneOfInterestIndices;
+
+    // FIXME: for temp cpnvenience 
+    mv::Dataset<Points>         _fullPointDataset = nullptr;
     friend class ChannelAction;
 };
