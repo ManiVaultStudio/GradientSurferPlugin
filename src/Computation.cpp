@@ -220,6 +220,101 @@ QVector<LineData> convertToLineData(const std::vector<float>& vec,
     qDebug() << "Conversion complete. Generated" << lines.size() << "lines";
     return lines;
 }
+
+QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std::vector<float>& vecCoord,
+    int pointsPerLine,
+    int numOfLines,
+    const QVector<QColor>& colors = QVector<QColor>()) {
+    QVector<LineData> lines;
+
+    qDebug() << "Conversion started. Total elements:" << vecAll.size()
+        << "Points per line:" << pointsPerLine
+        << "Number of lines:" << numOfLines;
+
+    // Validate input
+    if (pointsPerLine < 1 || numOfLines < 1) {
+        qWarning() << "Invalid parameters - pointsPerLine:" << pointsPerLine
+            << "numOfLines:" << numOfLines;
+        return lines;
+    }
+
+    const size_t requiredSize = static_cast<size_t>(pointsPerLine * numOfLines);
+    if (vecAll.size() < requiredSize || vecCoord.size() < static_cast<size_t>(pointsPerLine)) {
+        qWarning() << "Insufficient data - Got:" << vecAll.size()
+            << "Need:" << requiredSize << "and vecCoord size:" << vecCoord.size();
+        return lines;
+    }
+
+    lines.reserve(numOfLines);
+
+    // Debug print first few x and y values to verify data organization
+    qDebug() << "First few x values (column order):";
+    for (int i = 0; i < std::min(5, pointsPerLine); ++i) {
+        for (int j = 0; j < std::min(5, numOfLines); ++j) {
+            size_t pos = static_cast<size_t>(i) * numOfLines + j;
+            qDebug() << "x[" << i << "][" << j << "]: pos" << pos << "=" << vecAll[pos];
+        }
+    }
+    qDebug() << "First few y values:";
+    for (int i = 0; i < std::min(5, pointsPerLine); ++i) {
+        qDebug() << "y[" << i << "]:" << vecCoord[i];
+    }
+
+    for (int lineIdx = 0; lineIdx < numOfLines; ++lineIdx) {
+        LineData line;
+
+        // Set color
+        if (!colors.isEmpty() && lineIdx < colors.size()) {
+            line.color = colors[lineIdx];
+        }
+        else {
+            static const QVector<QColor> defaultColors = {
+                Qt::blue, Qt::green, Qt::red, Qt::cyan,
+                Qt::magenta, Qt::yellow, Qt::gray
+            };
+            line.color = defaultColors[lineIdx % defaultColors.size()];
+        }
+
+        line.points.reserve(pointsPerLine);
+
+        for (int pointIdx = 0; pointIdx < pointsPerLine; ++pointIdx) {
+            size_t xPos = static_cast<size_t>(pointIdx) * numOfLines + lineIdx;
+            if (xPos >= vecAll.size() || pointIdx >= static_cast<int>(vecCoord.size())) {
+                qWarning() << "Index out of bounds at line" << lineIdx
+                    << "point" << pointIdx;
+                continue;
+            }
+
+            float x = vecAll[xPos];
+            float y = vecCoord[pointIdx];
+
+            if (!std::isfinite(x) || !std::isfinite(y)) {
+                qWarning() << "Non-finite point at line" << lineIdx
+                    << "point" << pointIdx << ":" << x << y;
+                continue;
+            }
+
+            line.points.append(QPointF(x, y));
+        }
+
+        if (!line.points.isEmpty()) {
+            lines.append(line);
+            qDebug() << "Added line" << lineIdx << "with" << line.points.size() << "points";
+            // Debug print first and last points of the line
+            if (!line.points.isEmpty()) {
+                qDebug() << "  First point:" << line.points.first().x() << line.points.first().y();
+                qDebug() << "  Last point:" << line.points.last().x() << line.points.last().y();
+            }
+        }
+        else {
+            qWarning() << "Skipping empty line" << lineIdx;
+        }
+    }
+
+    qDebug() << "Conversion complete. Generated" << lines.size() << "lines";
+    return lines;
+}
+
 static QString statusToIconName(const QString& status) {
     if (status == "C") return "circle-check";      // FontAwesome: check-circle
     if (status == "M") return "circle-exclamation"; // FontAwesome: exclamation-circle
@@ -451,7 +546,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
             auto pointDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
-            if (pointDataset.isValid())
+            if (pointDataset.isValid() && _rotatedSelectedEmbeddingDataset.isValid())
             {
 
                 auto dimensionNames = pointDataset->getDimensionNames();
@@ -468,14 +563,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     int geneIndex = std::distance(dimensionNames.begin(), it);
                     LineData selectedGeneLineData;
 
-                    std::vector<int> geneIndices = { geneIndex };
-                    std::vector<float> expresionValues(_filteredSelectionIndices.size() * geneIndices.size());
+                    std::vector<int> geneIndicesExp = { geneIndex };
+                    std::vector<float> expresionValues(_filteredSelectionIndices.size() * geneIndicesExp.size());
                     QVector<QPointF> points;
+                    
+                    int geneIndicesCoord =  1 ;
+                    std::vector<float> coordValues(_filteredSelectionIndices.size()* geneIndicesCoord);
 
 
-
-                    pointDataset->populateDataForDimensions(expresionValues, geneIndices, _filteredSelectionIndices);
-
+                    pointDataset->populateDataForDimensions(expresionValues, geneIndicesExp, _filteredSelectionIndices);
+                    _rotatedSelectedEmbeddingDataset->extractDataForDimension(coordValues, geneIndicesCoord);
 
                     qDebug() << "Raw data size:" << expresionValues.size();
                     if (!expresionValues.empty()) {
@@ -487,12 +584,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     // 2. Verify your indices
                     qDebug() << "Points per line:" << _filteredSelectionIndices.size();
-                    qDebug() << "Number of lines:" << geneIndices.size();
+                    qDebug() << "Number of lines:" << geneIndicesExp.size();
 
                     // 3. Convert with debugging
-                    auto lineData = convertToLineData(expresionValues,
+                    auto lineData = convertToLineData(expresionValues, coordValues,
                         _filteredSelectionIndices.size(),
-                        geneIndices.size());
+                        geneIndicesExp.size());
 
                     // 4. Verify output
                     qDebug() << "Converted line data size:" << lineData.size();
@@ -505,6 +602,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     // 5. Send to chart
                     _settingsAction.getLineChartWidget()->setLines(lineData);
+                    //_settingsAction.getLineChartWidget()->setBinaryNormalizeXThreshold(0.95f);
+                    //_settingsAction.getLineChartWidget()->setBinaryNormalizeX(true);
+                    
                 }
 
 
@@ -627,11 +727,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 _filteredSelectionIndices.push_back(index);
                             }
                             _embeddingDataset->setSelectionIndices(selectedIndices);
+                            mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
                         }
                         else
                         {
                             qDebug() << "No clusters selected, clearing selection indices";
                             _embeddingDataset->setSelectionIndices({});
+                            mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
                         }
 
                     }
@@ -639,6 +741,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     {
                         qDebug() << "No cluster dataset selected or invalid cluster dataset";
                         _embeddingDataset->setSelectionIndices({});
+                        mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
                     }
                     setStatusMessage("R", "Computation in progress", "");
                     _settingsAction.getComputeHolder().getComputeAction().setDisabled(true);
@@ -1124,7 +1227,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
         }
-
+        _settingsAction.getLineChartWidget()->clear();
         };
 
     connect(&_settingsAction.getSettingsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow);
@@ -1233,6 +1336,7 @@ void Computation::AutoCompute()
             if (rowCount > 0)
                 model->removeRows(0, rowCount);
         }
+        _settingsAction.getLineChartWidget()->clear();
         QApplication::processEvents();
 
         //Validate and retrieve datasets and indices
@@ -1355,6 +1459,21 @@ void Computation::AutoCompute()
 
         // Setup table model and connect selection
         setupTableModelAndSelection();
+        //select the first row of the table
+        {
+            auto* tableView = _settingsAction.getTableViewAction();
+            auto* model = tableView->model();
+            if (model && model->rowCount() > 0) {
+                QModelIndex firstIndex = model->index(0, 0);
+                if (firstIndex.isValid()) {
+                    tableView->setCurrentIndex(firstIndex);
+                    tableView->selectionModel()->select(
+                        firstIndex,
+                        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                    );
+                }
+            }
+        }
 
         setStatusMessage("C", "Computation completed", "#28a745");
     }
@@ -2052,6 +2171,8 @@ bool Computation::setupAndTriggerPCA()
         QEventLoop loop;
         loop.processEvents();
         _pcaDataset->setSelectionIndices({});
+        mv::events().notifyDatasetDataSelectionChanged(_pcaDataset);
+        
     }
     else {
         qDebug() << "Start analysis action not found in PCA dataset";
@@ -2081,6 +2202,21 @@ void Computation::resetupCorrelationTable()
     }
 
     setupTableModelAndSelection();
+    //select the first row of the table
+    {
+        auto* tableView = _settingsAction.getTableViewAction();
+        auto* model = tableView->model();
+        if (model && model->rowCount() > 0) {
+            QModelIndex firstIndex = model->index(0, 0);
+            if (firstIndex.isValid()) {
+                tableView->setCurrentIndex(firstIndex);
+                tableView->selectionModel()->select(
+                    firstIndex,
+                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                );
+            }
+        }
+    }
 }
 
 void Computation::setSelectionAndAutoCompute()
