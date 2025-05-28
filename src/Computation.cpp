@@ -2178,17 +2178,17 @@ void Computation::setupTableModelAndSelection()
         corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::UserRole + 1); // For delegate
         corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::DisplayRole);  // For sorting
 
-        // Color row based on isWithinRange
+        // Consistent formatting: only highlight and bold if isWithinRange
         if (entry.isWithinRange) {
-            geneItem->setBackground(QColor("#E6FFE6")); // Light green
-            corrItem->setBackground(QColor("#E6FFE6"));
-            rankItem->setBackground(QColor("#E6FFE6"));
+            QFont font = geneItem->font();
+            font.setBold(true);
+            geneItem->setFont(font);
+            geneItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
+            geneItem->setForeground(QColor("#000000"));
         }
-        else {
-            geneItem->setBackground(QColor("#FFE6E6")); // Light red
-            corrItem->setBackground(QColor("#FFE6E6"));
-            rankItem->setBackground(QColor("#FFE6E6"));
-        }
+        // Always set text color for visibility
+        corrItem->setForeground(QColor("#000000"));
+        rankItem->setForeground(QColor("#000000"));
 
         model->setItem(i, 0, geneItem);
         model->setItem(i, 1, corrItem);
@@ -2201,7 +2201,7 @@ void Computation::setupTableModelAndSelection()
     _settingsAction.getTableViewAction()->resizeRowsToContents();
     _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
 
-    // Enable sorting
+    // Enable sorting and set default sort order
     _settingsAction.getTableViewAction()->setSortingEnabled(true);
     _settingsAction.getTableViewAction()->sortByColumn(1, Qt::DescendingOrder);
 
