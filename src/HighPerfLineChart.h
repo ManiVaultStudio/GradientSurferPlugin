@@ -32,7 +32,7 @@ struct LineData {
     LineDashStyle dashStyle = LineDashStyle::Solid; // New: per-line dash style
 };
 
-// Add this enum for axis selection
+
 enum class BinaryNormAxis { X, Y };
 
 class HighPerfLineChart : public QOpenGLWidget, protected QOpenGLFunctions {
@@ -48,7 +48,7 @@ public:
     void setYRange(double min, double max);
     void clear();
     void setEmptyMessage(const QString& msg);
-    void setChartTitle(const QString& title); // Add this setter
+    void setChartTitle(const QString& title); 
 
     // Selection/hover
     int selectedLine() const;
@@ -141,7 +141,7 @@ private:
     int m_selectedLine = -1;
     int m_hoveredLine = -1;
     QString m_emptyMessage;
-    QString m_chartTitle; // Add this member for the chart title
+    QString m_chartTitle; 
 
     bool m_groupAveragingEnabled = false;
     std::unordered_map<int, QString> m_groupStringMap;

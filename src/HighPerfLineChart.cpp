@@ -135,7 +135,7 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_interchangeXY = false; // 
 }
 
-// Add log transform setter/getter
+// log transform setter/getter
 void HighPerfLineChart::setLogTransformX(bool enabled) {
     m_logTransformX = enabled;
     update();
@@ -191,7 +191,7 @@ bool HighPerfLineChart::binaryNormalizeY() const { return m_binaryNormalizeY; }
 double HighPerfLineChart::binaryNormalizeXThreshold() const { return m_binaryNormalizeXThreshold; }
 double HighPerfLineChart::binaryNormalizeYThreshold() const { return m_binaryNormalizeYThreshold; }
 
-// --- Add interchangeXY setter/getter ---
+// --- interchangeXY setter/getter ---
 void HighPerfLineChart::setInterchangeXY(bool enabled) {
     m_interchangeXY = enabled;
     update();
@@ -405,7 +405,7 @@ void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
                 yMin -= 0.5;
                 yMax += 0.5;
             }
-            // Add a small margin for better visualization
+            // small margin for better visualization
             double xMargin = (xMax - xMin) * 0.05 + 1e-6;
             double yMargin = (yMax - yMin) * 0.05 + 1e-6;
             m_xMin = xMin - xMargin;
