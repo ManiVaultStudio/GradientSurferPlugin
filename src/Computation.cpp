@@ -602,7 +602,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     // 5. Send to chart
                     _settingsAction.getLineChartWidget()->setLines(lineData);
-
+                    //_settingsAction.getLineChartWidget()->setBinaryNormalizeXThreshold(0.95f);
+                    //_settingsAction.getLineChartWidget()->setBinaryNormalizeX(true);
                     
                 }
 
@@ -1458,6 +1459,21 @@ void Computation::AutoCompute()
 
         // Setup table model and connect selection
         setupTableModelAndSelection();
+        //select the first row of the table
+        {
+            auto* tableView = _settingsAction.getTableViewAction();
+            auto* model = tableView->model();
+            if (model && model->rowCount() > 0) {
+                QModelIndex firstIndex = model->index(0, 0);
+                if (firstIndex.isValid()) {
+                    tableView->setCurrentIndex(firstIndex);
+                    tableView->selectionModel()->select(
+                        firstIndex,
+                        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                    );
+                }
+            }
+        }
 
         setStatusMessage("C", "Computation completed", "#28a745");
     }
@@ -2186,6 +2202,21 @@ void Computation::resetupCorrelationTable()
     }
 
     setupTableModelAndSelection();
+    //select the first row of the table
+    {
+        auto* tableView = _settingsAction.getTableViewAction();
+        auto* model = tableView->model();
+        if (model && model->rowCount() > 0) {
+            QModelIndex firstIndex = model->index(0, 0);
+            if (firstIndex.isValid()) {
+                tableView->setCurrentIndex(firstIndex);
+                tableView->selectionModel()->select(
+                    firstIndex,
+                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                );
+            }
+        }
+    }
 }
 
 void Computation::setSelectionAndAutoCompute()
