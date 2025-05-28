@@ -122,7 +122,7 @@ private:
         const std::vector<QString>& dimensionNames);
 
     bool setupAndTriggerPCA();
-
+    void setupCorrelationTable();
     void setupTableModelAndSelection(const QStringList& topGenes);
 
 protected:
@@ -138,5 +138,9 @@ protected:
     std::vector<int>            _filteredSelectionIndices;
     std::vector<CorrelationGeneCoords> _geneCorrValues;
     std::vector<int>            _geneOfInterestIndices;
+
+    //debouncetimers
+    QTimer _correlationRangeDebounceTimer;
+
     friend class ChannelAction;
 };

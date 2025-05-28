@@ -234,6 +234,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     _settingsAction(SettingsAction)
 {
 
+    _correlationRangeDebounceTimer.setSingleShot(true);
+
+
+
     const auto updateStatus = [this]() -> void {
         auto stringFull = _settingsAction.getSettingsHolder().getStatusMessageAction().getString();
 
@@ -685,15 +689,18 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getSettingsHolder().getClusterSelectionAction(), &OptionsAction::selectedOptionsChanged, this, clusterSelectionChanged);
 
-    const auto correlationRangechanged = [this]() -> void {
 
-        setStatusMessage("M", "Updating table", "");
-        //setupTableModelAndSelection();
-        setStatusMessage("C", "Table updated", "");
-        };
-
-    connect(&_settingsAction.getSettingsHolder().getCorrelationRangeAction(), &DecimalRangeAction::rangeChanged, this, correlationRangechanged);
-
+    connect(&_settingsAction.getSettingsHolder().getCorrelationRangeAction(),
+        &DecimalRangeAction::rangeChanged,
+        this,
+        [this]() {
+            _correlationRangeDebounceTimer.start(300);
+        });
+    connect(&_correlationRangeDebounceTimer, &QTimer::timeout, this, [this]() {
+        setStatusMessage("M", "Updating correlation table", "");
+        setupCorrelationTable();
+        setStatusMessage("C", "Correlation table updated", "");
+        });
 
 
     const auto topNChanged = [this]() -> void {
@@ -2043,6 +2050,20 @@ bool Computation::setupAndTriggerPCA()
     qDebug() << "PCA analysis triggered successfully";
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     return true;
+}
+
+void Computation::setupCorrelationTable()
+{
+    auto minRange = _settingsAction.getSettingsHolder().getCorrelationRangeAction().getMinimum();
+    auto maxRange = _settingsAction.getSettingsHolder().getCorrelationRangeAction().getMaximum();
+
+
+    //change the _geneCorrValues isWithinRange flag based on the min and max range
+    for (auto& gene : _geneCorrValues) {
+        gene.isWithinRange = (gene.correlationValue >= minRange && gene.correlationValue <= maxRange);
+    }
+
+    setupTableModelAndSelection();
 }
 
 // Setup table model and connect selection
