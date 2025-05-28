@@ -100,8 +100,8 @@ void HighPerfLineChart::initializeGL() {
 void HighPerfLineChart::paintGL() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    qDebug() << "[HighPerfLineChart] paintGL called. m_lines.size():" << m_lines.size()
-             << "xRange:" << m_xMin << m_xMax << "yRange:" << m_yMin << m_yMax;
+    //qDebug() << "[HighPerfLineChart] paintGL called. m_lines.size():" << m_lines.size()
+             //<< "xRange:" << m_xMin << m_xMax << "yRange:" << m_yMin << m_yMax;
 
     // Guard: avoid division by zero if range is invalid or widget size is zero
     if (m_xMax == m_xMin || m_yMax == m_yMin || width() <= 0 || height() <= 0) {
@@ -116,7 +116,7 @@ void HighPerfLineChart::paintGL() {
         QPainter painter(this);
         painter.setPen(Qt::darkGray);
         painter.drawText(rect(), Qt::AlignCenter, m_emptyMessage.isEmpty() ? "No data to display" : m_emptyMessage);
-        qDebug() << "[HighPerfLineChart] No data to display!";
+        //qDebug() << "[HighPerfLineChart] No data to display!";
         return;
     }
 
