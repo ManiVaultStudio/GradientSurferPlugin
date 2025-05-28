@@ -627,11 +627,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 _filteredSelectionIndices.push_back(index);
                             }
                             _embeddingDataset->setSelectionIndices(selectedIndices);
+                            mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
                         }
                         else
                         {
                             qDebug() << "No clusters selected, clearing selection indices";
                             _embeddingDataset->setSelectionIndices({});
+                            mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
                         }
 
                     }
@@ -639,6 +641,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     {
                         qDebug() << "No cluster dataset selected or invalid cluster dataset";
                         _embeddingDataset->setSelectionIndices({});
+                        mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
                     }
                     setStatusMessage("R", "Computation in progress", "");
                     _settingsAction.getComputeHolder().getComputeAction().setDisabled(true);
@@ -2052,6 +2055,8 @@ bool Computation::setupAndTriggerPCA()
         QEventLoop loop;
         loop.processEvents();
         _pcaDataset->setSelectionIndices({});
+        mv::events().notifyDatasetDataSelectionChanged(_pcaDataset);
+        
     }
     else {
         qDebug() << "Start analysis action not found in PCA dataset";
