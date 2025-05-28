@@ -26,16 +26,16 @@ void LayerSurferPlugin::init()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // Add settings to layout
+    //  settings to layout
     //mainLayout->addWidget(_settingsAction.getSettingsHolder().createWidget(&getWidget()));
     addDockingAction(&_settingsAction.getSettingsHolder(), nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
-    // Add table to layout
+    //  table to layout
     mainLayout->addWidget(_settingsAction.getTableViewAction(),90);
 
-    // Add the line chart widget below the table
+    //  the line chart widget below the table
     mainLayout->addWidget(_settingsAction.getLineChartWidget(), 90);
 
-    // Add compute and status to layout
+    //  compute and status to layout
     auto* computeStatusLayout = new QHBoxLayout();
     computeStatusLayout->setContentsMargins(0, 0, 0, 0);
     computeStatusLayout->setSpacing(0);
