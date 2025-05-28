@@ -1826,6 +1826,7 @@ void Computation::setupTableModelAndSelection(
         QStandardItem* geneItem = new QStandardItem(gene);
         QStandardItem* corrItem = new QStandardItem;
         corrItem->setData(QVariant::fromValue(corr), Qt::UserRole + 1); // Store value for delegate
+        corrItem->setData(QVariant::fromValue(corr), Qt::DisplayRole);  // Set value for sorting
 
         if (topGeneSet.contains(gene)) {
             QFont font = geneItem->font();
@@ -1844,6 +1845,11 @@ void Computation::setupTableModelAndSelection(
     _settingsAction.getTableViewAction()->resizeColumnsToContents();
     _settingsAction.getTableViewAction()->resizeRowsToContents();
     _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
+
+    // Enable sorting
+    _settingsAction.getTableViewAction()->setSortingEnabled(true);
+    // Sort by correlation column (descending) by default
+    _settingsAction.getTableViewAction()->sortByColumn(1, Qt::DescendingOrder);
 
     if (_settingsAction.getTableViewAction()->selectionModel())
         disconnect(_settingsAction.getTableViewAction()->selectionModel(), nullptr, this, nullptr);
