@@ -26,6 +26,7 @@ public:
     void setXRange(double min, double max);
     void setYRange(double min, double max);
     void clear();
+    void setEmptyMessage(const QString& msg);
 
     // Selection/hover
     int selectedLine() const;
@@ -48,6 +49,7 @@ private:
     double m_xMin = 0, m_xMax = 1, m_yMin = 0, m_yMax = 1;
     int m_selectedLine = -1;
     int m_hoveredLine = -1;
+    QString m_emptyMessage;
 
     QPointF screenToChart(const QPoint& p) const;
     int findLineAt(const QPoint& pos) const;
