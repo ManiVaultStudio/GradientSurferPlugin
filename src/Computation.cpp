@@ -1951,11 +1951,6 @@ bool Computation::setupAndTriggerPCA()
     // noOfDimensions is the number of genes of interest, not the full dataset dimensions
     // compute PCA on all cells w. ith selected genes
 
-    if (!_pcaDataset.isValid()) {
-        _pcaDataset = mv::data().createDataset("Points", "PCA Data", _selectedGenePointDataset);
-        _pcaDataset->setGroupIndex(667);
-        mv::events().notifyDatasetAdded(_pcaDataset);
-    }
 
     /*if (!_pcaDataset.isValid()) {
         qDebug() << "Failed to create PCA dataset";
@@ -2000,6 +1995,12 @@ bool Computation::setupAndTriggerPCA()
     _selectedCellPointDataset->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedCellPointDataset);
 
+    if (!_pcaDataset.isValid()) {
+        _pcaDataset = mv::data().createDataset("Points", "PCA Data", _selectedGenePointDataset);
+        _pcaDataset->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_pcaDataset);
+        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedCellPointDataset }, { _pcaDataset });
+    }
 
     std::vector<float> emptyData(numAllCells * numofIntGenes, 0.0f);
     _pcaDataset->setData(emptyData.data(), numAllCells, numofIntGenes);
