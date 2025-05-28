@@ -115,26 +115,111 @@ static QString getContrastingTextColor(const QString& bgColor) {
     double luminance = (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255.0;
     return (luminance > 0.5) ? "black" : "white";
 }
-QVector<QPointF> convertToQPointF(const std::vector<float>& vec, int numOfDims, int numOfPoints) {
+QVector<QPointF> convertToQPointF(const std::vector<float>& vec,
+    int pointsPerLine,
+    int numOfLines) {
     QVector<QPointF> points;
 
-    if (numOfDims < 2) {
-        throw std::invalid_argument("At least 2 dimensions are required to create QPointF.");
+    if (pointsPerLine < 1) {
+        throw std::invalid_argument("At least 1 point per line is required.");
     }
 
-    if (static_cast<size_t>(numOfDims * numOfPoints) > vec.size()) {
-        throw std::invalid_argument("Input vector size is smaller than expected based on dimensions and number of points.");
+    if (static_cast<size_t>(pointsPerLine * numOfLines * 2) > vec.size()) {
+        throw std::invalid_argument("Input vector size is smaller than expected.");
     }
 
-    for (int i = 0; i < numOfPoints; ++i) {
-        float x = vec[i * numOfDims];
-        float y = vec[i * numOfDims + 1];
-        points.append(QPointF(x, y));
+    // Total points = numOfLines * pointsPerLine
+    points.reserve(numOfLines * pointsPerLine);
+
+    for (int pointIdx = 0; pointIdx < pointsPerLine; ++pointIdx) {
+        for (int lineIdx = 0; lineIdx < numOfLines; ++lineIdx) {
+            // Calculate position in the flat array
+            size_t pos = pointIdx * numOfLines * 2 + lineIdx * 2;
+            float x = vec[pos];
+            float y = vec[pos + 1];
+            points.append(QPointF(x, y));
+        }
     }
 
     return points;
 }
+QVector<LineData> convertToLineData(const std::vector<float>& vec,
+    int pointsPerLine,
+    int numOfLines,
+    const QVector<QColor>& colors = QVector<QColor>()) {
+    QVector<LineData> lines;
 
+    qDebug() << "Conversion started. Total elements:" << vec.size()
+        << "Points per line:" << pointsPerLine
+        << "Number of lines:" << numOfLines;
+
+    // Validate input
+    if (pointsPerLine < 1 || numOfLines < 1) {
+        qWarning() << "Invalid parameters - pointsPerLine:" << pointsPerLine
+            << "numOfLines:" << numOfLines;
+        return lines;
+    }
+
+    const size_t requiredSize = static_cast<size_t>(pointsPerLine * numOfLines * 2);
+    if (vec.size() < requiredSize) {
+        qWarning() << "Insufficient data - Got:" << vec.size()
+            << "Need:" << requiredSize;
+        return lines;
+    }
+
+    lines.reserve(numOfLines);
+
+    for (int lineIdx = 0; lineIdx < numOfLines; ++lineIdx) {
+        LineData line;
+
+        // Set color
+        if (!colors.isEmpty() && lineIdx < colors.size()) {
+            line.color = colors[lineIdx];
+        }
+        else {
+            static const QVector<QColor> defaultColors = {
+                Qt::blue, Qt::green, Qt::red, Qt::cyan,
+                Qt::magenta, Qt::yellow, Qt::gray
+            };
+            line.color = defaultColors[lineIdx % defaultColors.size()];
+        }
+
+        line.points.reserve(pointsPerLine);
+
+        for (int pointIdx = 0; pointIdx < pointsPerLine; ++pointIdx) {
+            size_t pos = pointIdx * numOfLines * 2 + lineIdx * 2;
+
+            // Bounds checking
+            if (pos + 1 >= vec.size()) {
+                qWarning() << "Index out of bounds at line" << lineIdx
+                    << "point" << pointIdx;
+                continue;
+            }
+
+            float x = vec[pos];
+            float y = vec[pos + 1];
+
+            if (!std::isfinite(x) || !std::isfinite(y)) {
+                qWarning() << "Non-finite point at line" << lineIdx
+                    << "point" << pointIdx << ":" << x << y;
+                continue;
+            }
+
+            line.points.append(QPointF(x, y));
+        }
+
+        if (!line.points.isEmpty()) {
+            lines.append(line);
+            qDebug() << "Added line" << lineIdx << "with" << line.points.size() << "points";
+        }
+        else {
+            qWarning() << "Skipping empty line" << lineIdx;
+        }
+    }
+
+    qDebug() << "Conversion complete. Generated" << lines.size() << "lines";
+    return lines;
+}
 static QString statusToIconName(const QString& status) {
     if (status == "C") return "circle-check";      // FontAwesome: check-circle
     if (status == "M") return "circle-exclamation"; // FontAwesome: exclamation-circle
@@ -386,11 +471,35 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
                     pointDataset->populateDataForDimensions(XYCoordinates, geneIndices, _filteredSelectionIndices);
-                    auto pointsData = convertToQPointF(XYCoordinates, _filteredSelectionIndices.size(), geneIndices.size());
-                    selectedGeneLineData.points = pointsData;
-                    QVector<LineData> lineData;
-                    lineData.push_back(selectedGeneLineData);
 
+
+                    qDebug() << "Raw data size:" << XYCoordinates.size();
+                    if (!XYCoordinates.empty()) {
+                        qDebug() << "First 10 elements:";
+                        for (size_t i = 0; i < std::min(size_t(10), XYCoordinates.size()); ++i) {
+                            qDebug() << i << ":" << XYCoordinates[i];
+                        }
+                    }
+
+                    // 2. Verify your indices
+                    qDebug() << "Points per line:" << _filteredSelectionIndices.size();
+                    qDebug() << "Number of lines:" << geneIndices.size();
+
+                    // 3. Convert with debugging
+                    auto lineData = convertToLineData(XYCoordinates,
+                        _filteredSelectionIndices.size(),
+                        geneIndices.size());
+
+                    // 4. Verify output
+                    qDebug() << "Converted line data size:" << lineData.size();
+                    if (!lineData.empty()) {
+                        qDebug() << "First line points:" << lineData.first().points.size();
+                        if (!lineData.first().points.empty()) {
+                            qDebug() << "Sample point:" << lineData.first().points.first();
+                        }
+                    }
+
+                    // 5. Send to chart
                     _settingsAction.getLineChartWidget()->setLines(lineData);
                 }
                 
@@ -578,7 +687,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto correlationRangechanged = [this]() -> void {
 
-        setStatusMessage("M", "Correlation range updated", "");
+        setStatusMessage("M", "Cluster selection updated", "");
 
         };
 
@@ -1826,6 +1935,7 @@ void Computation::setupTableModelAndSelection(
         QStandardItem* geneItem = new QStandardItem(gene);
         QStandardItem* corrItem = new QStandardItem;
         corrItem->setData(QVariant::fromValue(corr), Qt::UserRole + 1); // Store value for delegate
+        corrItem->setData(QVariant::fromValue(corr), Qt::DisplayRole);  // Set value for sorting
 
         if (topGeneSet.contains(gene)) {
             QFont font = geneItem->font();
@@ -1844,6 +1954,11 @@ void Computation::setupTableModelAndSelection(
     _settingsAction.getTableViewAction()->resizeColumnsToContents();
     _settingsAction.getTableViewAction()->resizeRowsToContents();
     _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
+
+    // Enable sorting
+    _settingsAction.getTableViewAction()->setSortingEnabled(true);
+    // Sort by correlation column (descending) by default
+    _settingsAction.getTableViewAction()->sortByColumn(1, Qt::DescendingOrder);
 
     if (_settingsAction.getTableViewAction()->selectionModel())
         disconnect(_settingsAction.getTableViewAction()->selectionModel(), nullptr, this, nullptr);
