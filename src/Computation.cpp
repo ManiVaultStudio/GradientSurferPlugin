@@ -1999,6 +1999,12 @@ bool Computation::setupAndTriggerPCA()
     _pcaDataset->setData(emptyData.data(), numAllCells, numofIntGenes);
     mv::events().notifyDatasetDataChanged(_pcaDataset);
 
+    if (numofIntGenes <= 0) {
+        qDebug() << "No genes of interest selected for PCA";
+        setStatusMessage("E", "No genes of interest selected for PCA", "");
+        return false;
+    }
+
     if (!_pcaAnalysisPlugin) {
         _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset }, { _pcaDataset });
     }
@@ -2015,6 +2021,7 @@ bool Computation::setupAndTriggerPCA()
         setStatusMessage("E", "PCA components action not found", "");
         return false;
     }
+    componentsAction->setMaximum(numofIntGenes);
     componentsAction->setValue(numofIntGenes);
 
     QApplication::processEvents();
