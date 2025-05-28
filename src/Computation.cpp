@@ -578,7 +578,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto correlationRangechanged = [this]() -> void {
 
-        setStatusMessage("M", "Correlation range updated", "");
+        setStatusMessage("M", "Cluster selection updated", "");
 
         };
 
