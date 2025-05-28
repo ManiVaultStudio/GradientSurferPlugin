@@ -1952,8 +1952,8 @@ bool Computation::setupAndTriggerPCA()
     // compute PCA on all cells w. ith selected genes
 
     if (!_pcaDataset.isValid()) {
-        _pcaDataset = mv::data().createDataset("Points", "PCA Data");
-        _pcaDataset->setGroupIndex(666);
+        _pcaDataset = mv::data().createDataset("Points", "PCA Data", _selectedGenePointDataset);
+        _pcaDataset->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_pcaDataset);
     }
 
@@ -1974,10 +1974,6 @@ bool Computation::setupAndTriggerPCA()
     auto numAllCells = fullPointDataset->getNumPoints();
     auto numofIntGenes = _geneOfInterestIndices.size();
     qDebug() << "Number of all cells:" << numAllCells << "Number of dimensions of interest:" << numofIntGenes;
-
-    std::vector<float> emptyData(numAllCells * numofIntGenes, 0.0f);
-    _pcaDataset->setData(emptyData.data(), numAllCells, numofIntGenes);
-    mv::events().notifyDatasetDataChanged(_pcaDataset);
 
     // create point dataset subset with all cells and genes of interest
     std::vector<int> allCellIndices(numAllCells);
@@ -2003,6 +1999,11 @@ bool Computation::setupAndTriggerPCA()
 
     _selectedCellPointDataset->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedCellPointDataset);
+
+
+    std::vector<float> emptyData(numAllCells * numofIntGenes, 0.0f);
+    _pcaDataset->setData(emptyData.data(), numAllCells, numofIntGenes);
+    mv::events().notifyDatasetDataChanged(_pcaDataset);
 
     if (!_pcaAnalysisPlugin) {
         _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedCellPointDataset }, { _pcaDataset });
