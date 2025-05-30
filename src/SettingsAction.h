@@ -110,6 +110,25 @@ public:
         const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
         DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
 
+        // Dataset2 getters
+        const DatasetPickerAction& getClusterDataset2Action() const { return _clusterDataset2Action; }
+        DatasetPickerAction& getClusterDataset2Action() { return _clusterDataset2Action; }
+
+        const DatasetPickerAction& getPointDataset2Action() const { return _pointDataset2Action; }
+        DatasetPickerAction& getPointDataset2Action() { return _pointDataset2Action; }
+
+        const DatasetPickerAction& getEmbeddingDataset2Action() const { return _embeddingDataset2Action; }
+        DatasetPickerAction& getEmbeddingDataset2Action() { return _embeddingDataset2Action; }
+
+        const OptionAction& getScatterplotViewSelection2Action() const { return _scatterplotViewSelection2Action; }
+        OptionAction& getScatterplotViewSelection2Action() { return _scatterplotViewSelection2Action; }
+
+        const DimensionPickerAction& getEmbeddingDimension2XAction() const { return _embeddingDimension2XAction; }
+        DimensionPickerAction& getEmbeddingDimension2XAction() { return _embeddingDimension2XAction; }
+
+        const DimensionPickerAction& getEmbeddingDimension2YAction() const { return _embeddingDimension2YAction; }
+        DimensionPickerAction& getEmbeddingDimension2YAction() { return _embeddingDimension2YAction; }
+
     protected:
         SettingsAction&                     _settingsOptions;
         
@@ -119,15 +138,23 @@ public:
         DatasetPickerAction                 _pointDatasetAction;
         DatasetPickerAction                 _embeddingDatasetAction;
         OptionAction                        _scatterplotViewSelectionAction;
-        OptionsAction                       _clusterSelectionAction;
         DimensionPickerAction               _embeddingDimensionXAction;
         DimensionPickerAction               _embeddingDimensionYAction;
+
+        //Dataset2 Options
+        DatasetPickerAction                 _clusterDataset2Action;
+        DatasetPickerAction                 _pointDataset2Action;
+        DatasetPickerAction                 _embeddingDataset2Action;
+        OptionAction                        _scatterplotViewSelection2Action;
+        DimensionPickerAction               _embeddingDimension2XAction;
+        DimensionPickerAction               _embeddingDimension2YAction;
 
         //Selection Options
         TriggerAction                       _deSelectRowAction;
         DimensionPickerAction               _geneSelectionAction;
         StringAction                        _statusMessageAction;
         DecimalRangeAction                  _correlationRangeAction;
+        OptionsAction                       _clusterSelectionAction;
 
         //Scatterplot options
         ToggleAction                        _focusSelectionAction;
