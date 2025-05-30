@@ -22,33 +22,131 @@ LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
 
 void LayerSurferPlugin::init()
 {
+    
+
+    QWidget* composite = new QWidget();
+    QVBoxLayout* layout = new QVBoxLayout(composite);
+
+    // Improved collapsible area: professional header, full header clickable, no space when collapsed
+    auto createCollapsibleArea = [](const QString& title, QWidget* content, QWidget* parent = nullptr) {
+        QWidget* area = new QWidget(parent);
+        QVBoxLayout* areaLayout = new QVBoxLayout(area);
+        areaLayout->setContentsMargins(0, 0, 0, 0);
+        areaLayout->setSpacing(0);
+
+        // Header widget with professional look
+        QWidget* headerWidget = new QWidget(area);
+        QHBoxLayout* headerLayout = new QHBoxLayout(headerWidget);
+        headerLayout->setContentsMargins(8, 2, 8, 2);
+        headerLayout->setSpacing(8);
+
+        // Style: subtle border, rounded corners, bold font
+        headerWidget->setStyleSheet(
+            "QWidget {"
+            " border-bottom: 1px solid #bbb;"
+            " border-radius: 4px;"
+            " background: transparent;"
+            "}"
+            "QLabel { font-weight: bold; font-size: 12pt; }"
+        );
+
+        QToolButton* toggleButton = new QToolButton(headerWidget);
+        toggleButton->setText("-");
+        toggleButton->setCheckable(true);
+        toggleButton->setChecked(true);
+        toggleButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        toggleButton->setStyleSheet("QToolButton { border: none; font-size: 12pt; }");
+
+        QLabel* titleLabel = new QLabel(title, headerWidget);
+
+        headerLayout->addWidget(toggleButton);
+        headerLayout->addWidget(titleLabel);
+        headerLayout->addStretch();
+
+        areaLayout->addWidget(headerWidget);
+        areaLayout->addWidget(content);
+
+        // Store original size policy
+        QSizePolicy originalPolicy = content->sizePolicy();
+
+        // Make the whole header clickable
+        headerWidget->setCursor(Qt::PointingHandCursor);
+
+        // Remove the direct QObject::connect to QWidget::mouseReleaseEvent (not allowed)
+        // Use only the event filter for header click
+        class HeaderClickFilter : public QObject {
+        public:
+            QToolButton* btn;
+            HeaderClickFilter(QToolButton* b) : btn(b) {}
+            bool eventFilter(QObject* obj, QEvent* event) override {
+                if (event->type() == QEvent::MouseButtonRelease) {
+                    auto* me = static_cast<QMouseEvent*>(event);
+                    if (me->button() == Qt::LeftButton) {
+                        btn->toggle();
+                        return true;
+                    }
+                }
+                return QObject::eventFilter(obj, event);
+            }
+        };
+        headerWidget->installEventFilter(new HeaderClickFilter(toggleButton));
+
+        // Collapse/expand logic
+        QObject::connect(toggleButton, &QToolButton::toggled, area, [content, toggleButton, originalPolicy](bool checked) {
+            content->setVisible(checked);
+            toggleButton->setText(checked ? "-" : "+");
+            if (checked) {
+                content->setSizePolicy(originalPolicy);
+            } else {
+                content->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored));
+            }
+            if (content->parentWidget() && content->parentWidget()->layout())
+                content->parentWidget()->layout()->invalidate();
+        });
+
+        // Start expanded
+        content->setVisible(true);
+
+        return area;
+    };
+
+    QWidget* dataset1Widget = _settingsAction.getDataset1OptionsHolder().createWidget(&getWidget());
+    layout->addWidget(createCollapsibleArea("Dataset 1 Options", dataset1Widget, composite));
+
+    QWidget* dataset2Widget = _settingsAction.getDataset2OptionsHolder().createWidget(&getWidget());
+    layout->addWidget(createCollapsibleArea("Dataset 2 Options", dataset2Widget, composite));
+
+    QWidget* selectionWidget = _settingsAction.getSelectionOptionsHolder().createWidget(&getWidget());
+    layout->addWidget(createCollapsibleArea("Selection Options", selectionWidget, composite));
+
+    QWidget* scatterplotWidget = _settingsAction.getScatterplotOptionsHolder().createWidget(&getWidget());
+    layout->addWidget(createCollapsibleArea("Scatterplot Options", scatterplotWidget, composite));
+
+    auto* compositeAction = new mv::gui::WidgetAction(this, "Options");
+    compositeAction->setWidgetConfigurationFunction(
+        [composite](mv::gui::WidgetAction*, QWidget* parent) {
+            composite->setParent(parent);
+            return composite;
+        }
+    );
+    addDockingAction(compositeAction, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
+
     auto* mainLayout = new QVBoxLayout(&getWidget());
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
-
-    //  settings to layout
-    //mainLayout->addWidget(_settingsAction.getSettingsHolder().createWidget(&getWidget()));
-    addDockingAction(&_settingsAction.getSettingsHolder(), nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
-    //  table to layout
-    mainLayout->addWidget(_settingsAction.getTableViewAction(),70);
-
-    //  the line chart widget below the table
+    mainLayout->addWidget(_settingsAction.getTableViewAction(), 70);
     mainLayout->addWidget(_settingsAction.getLineChartWidget(), 90);
 
-    //  compute and status to layout
     auto* computeStatusLayout = new QHBoxLayout();
     computeStatusLayout->setContentsMargins(0, 0, 0, 0);
     computeStatusLayout->setSpacing(0);
     computeStatusLayout->addWidget(_settingsAction.getComputeHolder().getStatusBarAction(),90);
     computeStatusLayout->addWidget(_settingsAction.getComputeHolder().createWidget(&getWidget()));
-    
 
     mainLayout->addLayout(computeStatusLayout);
 
-    // Apply the layout
     getWidget().setLayout(mainLayout);
 
-    // Alternatively, classes which derive from hdsp::EventListener (all plugins do) can also respond to events
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetRemoved));

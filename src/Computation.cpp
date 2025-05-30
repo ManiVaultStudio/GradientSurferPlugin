@@ -373,7 +373,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto updateStatus = [this]() -> void {
-        auto stringFull = _settingsAction.getSettingsHolder().getStatusMessageAction().getString();
+        auto stringFull = _settingsAction.getSelectionOptionsHolder().getStatusMessageAction().getString();
 
         QJsonParseError parseError;
         QJsonDocument doc = QJsonDocument::fromJson(stringFull.toUtf8(), &parseError);
@@ -465,12 +465,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
 
         };
-    connect(&_settingsAction.getSettingsHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
+    connect(&_settingsAction.getSelectionOptionsHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
     const auto scatterplotSelectionOptions = [this]() -> void
         {
             QStringList scatterplotNames = {};
-            QString selectedCurrentText = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
-
+            QString selectedCurrentText1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+            QString selectedCurrentText2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
             auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
             if (scatterplotViewFactory)
             {
@@ -481,37 +481,60 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
 
-            if (!scatterplotNames.contains(selectedCurrentText))
+            if (!scatterplotNames.contains(selectedCurrentText1))
             {
-                selectedCurrentText = "";
+                selectedCurrentText1 = "";
                 if (scatterplotNames.size() > 0)
                 {
-                    selectedCurrentText = scatterplotNames[0];
+                    selectedCurrentText1 = scatterplotNames[0];
+                }
+            }
+            if (!scatterplotNames.contains(selectedCurrentText2))
+            {
+                selectedCurrentText2 = "";
+                if (scatterplotNames.size() > 1)
+                {
+                    selectedCurrentText1 = scatterplotNames[1];
+                }
+                else if (scatterplotNames.size() > 0)
+                {
+                    selectedCurrentText2 = scatterplotNames[0];
                 }
             }
 
-            _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
-            _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText);
-
+            _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
+            _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText1);
+            _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().setOptions(scatterplotNames);
+            _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().setCurrentText(selectedCurrentText2);
 
         };
 
     connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, scatterplotSelectionOptions);
 
-    _settingsAction.getSettingsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+    _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         return dataset->getDataType() == ClusterType;
         });
-    _settingsAction.getSettingsHolder().getPointDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+     _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         return dataset->getDataType() == PointType;
         });
-    _settingsAction.getSettingsHolder().getEmbeddingDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+     _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         return dataset->getDataType() == PointType;
         });
 
-    const auto updateClusterDataset = [this]() -> void {
-        if (_settingsAction.getSettingsHolder().getClusterDatasetAction().getCurrentDataset().isValid())
+     _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+         return dataset->getDataType() == ClusterType;
+         });
+     _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+         return dataset->getDataType() == PointType;
+         });
+     _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+         return dataset->getDataType() == PointType;
+         });
+
+    const auto updateClusterDataset1 = [this]() -> void {
+        if (_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().isValid())
         {
-            auto clusterFullDataset = mv::data().getDataset<Clusters>(_settingsAction.getSettingsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+            auto clusterFullDataset = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
             auto clusters = clusterFullDataset->getClusters();
             QStringList clusterNames = {};
             if (!clusters.isEmpty())
@@ -522,28 +545,32 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
 
-            _settingsAction.getSettingsHolder().getClusterSelectionAction().setOptions(clusterNames);
-            _settingsAction.getSettingsHolder().getClusterSelectionAction().setSelectedOptions(clusterNames);
+             _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions(clusterNames);
+             _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setSelectedOptions(clusterNames);
 
         }
         else
         {
-            _settingsAction.getSettingsHolder().getClusterSelectionAction().setOptions({});
+             _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions({});
         }
         setStatusMessage("M", "Cluster dataset updated", "");
         };
 
-    connect(&_settingsAction.getSettingsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset);
+    connect(&_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset1);
 
+    const auto updateClusterDataset2 = [this]() -> void {
 
+        };
 
-    const auto updatePointDataset = [this]() -> void {
-        if (_settingsAction.getSettingsHolder().getPointDatasetAction().getCurrentDataset().isValid())
+    connect(&_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset2);
+
+    const auto updatePointDataset1 = [this]() -> void {
+        if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
         {
-            auto dataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+            auto dataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
             if (dataset.isValid())
             {
-                _settingsAction.getSettingsHolder().getGeneSelectionAction().setPointsDataset(dataset);
+                 _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
                 
             }
@@ -552,20 +579,24 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         else
         {
-            _settingsAction.getSettingsHolder().getGeneSelectionAction().setPointsDataset({});
+             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setPointsDataset({});
         }
         setStatusMessage("M", "Point dataset updated", "");
         };
 
-    connect(&_settingsAction.getSettingsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset);
+    connect(& _settingsAction.getDataset1OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset1);
 
+    const auto updatePointDataset2 = [this]() -> void {
 
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getPointDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset2);
 
     const auto updateGeneSelection = [this]() -> void {
-        if (_settingsAction.getSettingsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
+        if ( _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
         {
             qDebug() << "No gene selected";
-            _settingsAction.getSettingsHolder().getDeSelectRowAction().setEnabled(false);
+             _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
         if (_settingsAction.getLineChartWidget())
@@ -573,18 +604,18 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _settingsAction.getLineChartWidget()->clear();
 
         }
-        auto selectedGene = _settingsAction.getSettingsHolder().getGeneSelectionAction().getCurrentDimensionName();
+        auto selectedGene =  _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
         if (selectedGene == "")
         {
             qDebug() << "No gene selected";
-            _settingsAction.getSettingsHolder().getDeSelectRowAction().setEnabled(false);
+             _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
-        if (_settingsAction.getSettingsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _settingsAction.getLineChartWidget() && _filteredSelectionIndices.size() > 0)
+        if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _settingsAction.getLineChartWidget() && _filteredSelectionIndices.size() > 0)
         {
 
 
-            auto pointDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+            auto pointDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
             if (pointDataset.isValid() && _rotatedSelectedEmbeddingDataset.isValid())
             {
 
@@ -692,19 +723,19 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         mv::gui::DatasetPickerAction* pointDatasetPickerAction;
 
         DimensionPickerAction* geneSelectionAction;
-        _settingsAction.getSettingsHolder().getDeSelectRowAction().setEnabled(true);
+         _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(true);
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText())
+                if (plugin->getGuiName() == _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText())
                 {
                     pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
                     if (pointDatasetPickerAction)
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
                         {
-                            auto embeddingDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+                            auto embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
                             if (embeddingDataset.isValid())
                             {
                                 pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
@@ -715,7 +746,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
                             if (colorDatasetPickerAction)
                             {
-                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+                                auto dataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
                                 if (dataset.isValid())
                                 {
                                     colorDatasetPickerAction->setCurrentDataset(dataset);
@@ -742,29 +773,29 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         };
 
-    connect(&_settingsAction.getSettingsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection);
+    connect(& _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection);
 
 
-    const auto updateEmbeddingDataset = [this]() -> void {
-        if (_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid())
+    const auto updateEmbeddingDataset1 = [this]() -> void {
+        if ( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid())
         {
 
 
-            _embeddingDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+            _embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
 
             if (_embeddingDataset.isValid())
             {
-                _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
-                _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().setPointsDataset(_embeddingDataset);
+                 _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
+                 _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setPointsDataset(_embeddingDataset);
                 const auto mainSelectionChanged = [this]() -> void {
                     //qDebug() << "Main selection changed in fullEmbeddingDataset";
                     setStatusMessage("M", "Selected indices changed", "");
 
-                    auto fullclusterDataset = mv::data().getDataset<Clusters>(_settingsAction.getSettingsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+                    auto fullclusterDataset = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
                     if (fullclusterDataset.isValid() && _embeddingDataset.isValid())
                     {
                         auto clusters = fullclusterDataset->getClusters();
-                        auto selectedClusters = _settingsAction.getSettingsHolder().getClusterSelectionAction().getSelectedOptions();
+                        auto selectedClusters =  _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().getSelectedOptions();
                         auto selectedIndices = _embeddingDataset->getSelectionIndices();
                         if (!selectedClusters.isEmpty())
                         {
@@ -833,7 +864,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         setStatusMessage("M", "Embedding dataset updated", "");
         };
 
-    connect(&_settingsAction.getSettingsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset);
+    connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset1);
+
+    const auto updateEmbeddingDataset2 = [this]() -> void {
+
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset2);
 
     const auto computeInfo = [this]() -> void {
 
@@ -849,7 +886,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getComputeHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
 
 
-    connect(&_settingsAction.getSettingsHolder().getClusterSelectionAction(),
+    connect(& _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction(),
         &OptionsAction::selectedOptionsChanged,
         this,
         [this]() {
@@ -869,7 +906,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
 
-    connect(&_settingsAction.getSettingsHolder().getCorrelationRangeAction(),
+    connect(& _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction(),
         &DecimalRangeAction::rangeChanged,
         this,
         [this]() {
@@ -884,7 +921,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto showPointSelectionChanged = [this]() -> void {
 
-        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotName.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
@@ -901,7 +938,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
                     if (pointSelectionScaleAction)
                     {
-                        if (_settingsAction.getSettingsHolder().getHidePointSelectionOutlineAction().isChecked())
+                        if ( _settingsAction.getScatterplotOptionsHolder().getHidePointSelectionOutlineAction().isChecked())
                         {
                             pointSelectionScaleAction->setValue(100.0);
                         }
@@ -917,7 +954,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     if (pointSelectionOpacityAction)
                     {
-                        if (_settingsAction.getSettingsHolder().getHidePointSelectionOutlineAction().isChecked())
+                        if ( _settingsAction.getScatterplotOptionsHolder().getHidePointSelectionOutlineAction().isChecked())
                         {
                             pointSelectionOpacityAction->setValue(0.0);
                         }
@@ -936,11 +973,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         };
 
-    connect(&_settingsAction.getSettingsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged);
+    connect(& _settingsAction.getScatterplotOptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged);
 
     const auto freezeSelectionChanged = [this]() -> void {
 
-        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotName.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
@@ -956,7 +993,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     auto freezeAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Freeze selection"));
                     if (freezeAction)
                     {
-                        freezeAction->setChecked(_settingsAction.getSettingsHolder().getFreezeSelectionAction().isChecked());
+                        freezeAction->setChecked( _settingsAction.getScatterplotOptionsHolder().getFreezeSelectionAction().isChecked());
                     }
                     else
                     {
@@ -968,12 +1005,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
 
-    connect(&_settingsAction.getSettingsHolder().getFreezeSelectionAction(), &ToggleAction::toggled, this, freezeSelectionChanged);
+    connect(& _settingsAction.getScatterplotOptionsHolder().getFreezeSelectionAction(), &ToggleAction::toggled, this, freezeSelectionChanged);
 
 
-    const auto focusSelectionChanged = [this]() -> void {
+    const auto focusSelectionChanged1 = [this]() -> void {
 
-        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotName.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
@@ -989,7 +1026,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     auto focusAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Plot/Point/Focus selection"));
                     if (focusAction)
                     {
-                        focusAction->setChecked(_settingsAction.getSettingsHolder().getFocusSelectionAction().isChecked());
+                        focusAction->setChecked( _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().isChecked());
                     }
                     else
                     {
@@ -1001,13 +1038,21 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
 
-    connect(&_settingsAction.getSettingsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged);
+    connect(& _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged1);
+
+    const auto focusSelectionChanged2 = [this]() -> void {
 
 
-    const auto embeddingDimensionYActionChanged = [this]() -> void {
+
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action(), &ToggleAction::toggled, this, focusSelectionChanged2);
+
+
+    const auto embeddingDimensionYActionChanged1 = [this]() -> void {
 
         setStatusMessage("M", "Embedding Y dimension changed", "");
-        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotName.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
@@ -1030,7 +1075,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
                         {
-                            auto embeddingDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+                            auto embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
                             if (embeddingDataset.isValid())
                             {
                                 pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
@@ -1038,8 +1083,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         }
                         if (pointDatasetPickerAction->getCurrentDataset().isValid())
                         {
-                            auto xPosition = _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
-                            auto yPosition = _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
+                            auto xPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
+                            auto yPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
                             if (xPosition != "" && yPosition != "") {
                                 auto embeddingXVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
                                 auto embeddingYVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
@@ -1075,7 +1120,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
                             if (colorDatasetPickerAction)
                             {
-                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
                                 if (dataset.isValid())
                                 {
                                     colorDatasetPickerAction->setCurrentDataset(dataset);
@@ -1098,9 +1143,19 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
 
-    connect(&_settingsAction.getSettingsHolder().getEmbeddingDimensionYAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged);
+    connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged1);
 
-    const auto embeddingDimensionXActionChanged = [this]() -> void {
+
+    const auto embeddingDimensionYActionChanged2 = [this]() -> void {
+
+
+
+
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged2);
+
+    const auto embeddingDimensionXActionChanged1 = [this]() -> void {
 
         setStatusMessage("M", "Embedding X dimension changed", "");
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -1111,7 +1166,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText())
+                if (plugin->getGuiName() == _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText())
                 {
 
                     pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
@@ -1119,7 +1174,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
                         {
-                            auto embeddingDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+                            auto embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
                             if (embeddingDataset.isValid())
                             {
                                 pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
@@ -1127,8 +1182,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         }
                         if (pointDatasetPickerAction->getCurrentDataset().isValid())
                         {
-                            auto xPosition = _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
-                            auto yPosition = _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
+                            auto xPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
+                            auto yPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
                             if (xPosition != "" && yPosition != "") {
                                 auto embeddingXVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
                                 auto embeddingYVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
@@ -1164,7 +1219,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
                             if (colorDatasetPickerAction)
                             {
-                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
                                 if (dataset.isValid())
                                 {
                                     colorDatasetPickerAction->setCurrentDataset(dataset);
@@ -1185,7 +1240,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
 
-    connect(&_settingsAction.getSettingsHolder().getEmbeddingDimensionXAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged);
+    connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged1);
+
+
+    const auto embeddingDimensionXActionChanged2 = [this]() -> void {
+
+
+
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged2);
 
     const auto deselectRow = [this]() -> void {
         auto selectedIndex = _settingsAction.getTableViewAction()->currentIndex();
@@ -1193,14 +1257,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             _settingsAction.getTableViewAction()->selectionModel()->clearSelection();
             _settingsAction.getTableViewAction()->setCurrentIndex(QModelIndex());
-            _settingsAction.getSettingsHolder().getGeneSelectionAction().setCurrentDimensionName("");
+             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName("");
         }
         else
         {
             qDebug() << "No row selected";
         }
-        _settingsAction.getSettingsHolder().getDeSelectRowAction().setEnabled(false);
-        _settingsAction.getSettingsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+         _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
+         _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
 
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
@@ -1210,7 +1274,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText())
+                if (plugin->getGuiName() == _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText())
                 {
 
                     pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
@@ -1218,7 +1282,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
                         {
-                            auto embeddingDataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+                            auto embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
                             if (embeddingDataset.isValid())
                             {
                                 pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
@@ -1226,8 +1290,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         }
                         if (pointDatasetPickerAction->getCurrentDataset().isValid())
                         {
-                            auto xPosition = _settingsAction.getSettingsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
-                            auto yPosition = _settingsAction.getSettingsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
+                            auto xPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
+                            auto yPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
                             if (xPosition != "" && yPosition != "") {
                                 auto embeddingXVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
                                 auto embeddingYVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
@@ -1263,7 +1327,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
                             if (colorDatasetPickerAction)
                             {
-                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getSettingsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
                                 if (dataset.isValid())
                                 {
                                     colorDatasetPickerAction->setCurrentDataset(dataset);
@@ -1284,12 +1348,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _settingsAction.getLineChartWidget()->clear();
         };
 
-    connect(&_settingsAction.getSettingsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow);
-    const auto scatterplotviewSelectionChanged = [this]() -> void {
+    connect(& _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow);
+    const auto scatterplotviewSelectionChanged1= [this]() -> void {
 
         setStatusMessage("M", "Scatterplotview selection updated", "");
 
-        QString scatterplotName = _settingsAction.getSettingsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotName.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
@@ -1351,7 +1415,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
 
-    connect(&_settingsAction.getSettingsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged);
+    connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged1);
+
+
+    const auto scatterplotviewSelectionChanged2 = [this]() -> void {
+
+
+
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged2);
 
 }
 
@@ -1545,8 +1618,7 @@ void Computation::AutoCompute()
 
 void Computation::ManualCompute()
 {
-    auto& settingsHolder = _settingsAction.getSettingsHolder();
-    mv::Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
+    mv::Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
 
     // Setup and trigger PCA
     if (!setupAndTriggerPCA())
@@ -1859,7 +1931,7 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     obj["status"] = status;
     obj["message"] = message;
     obj["color"] = resolvedColor;
-    _settingsAction.getSettingsHolder().getStatusMessageAction().setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+    _settingsAction.getSelectionOptionsHolder().getStatusMessageAction().setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 }
 
 //Validate and retrieve datasets and indices
@@ -1874,10 +1946,9 @@ bool Computation::validateAndRetrieveDatasets(
     float& maxCorrelation
 )
 {
-    auto& settingsHolder = _settingsAction.getSettingsHolder();
 
-    fullPointDataset = mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
-    fullClusterDataset = mv::data().getDataset<Clusters>(settingsHolder.getClusterDatasetAction().getCurrentDataset().getDatasetId());
+    fullPointDataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+    fullClusterDataset = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
 
     if (!_embeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid()) {
         qDebug() << "Invalid datasets";
@@ -1885,8 +1956,8 @@ bool Computation::validateAndRetrieveDatasets(
         return false;
     }
 
-    xEmbeddingIndex = settingsHolder.getEmbeddingDimensionXAction().getCurrentDimensionIndex();
-    yEmbeddingIndex = settingsHolder.getEmbeddingDimensionYAction().getCurrentDimensionIndex();
+    xEmbeddingIndex = _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionIndex();
+    yEmbeddingIndex = _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionIndex();
     if (xEmbeddingIndex == -1 || yEmbeddingIndex == -1) {
         qDebug() << "No embedding dimensions selected";
         setStatusMessage("E", "No embedding dataset dimensions selected", "");
@@ -1904,22 +1975,22 @@ bool Computation::validateAndRetrieveDatasets(
         return false;
     }
 
-    auto selectedClusterValues = settingsHolder.getClusterSelectionAction().getSelectedOptions();
+    auto selectedClusterValues = _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().getSelectedOptions();
     if (selectedClusterValues.isEmpty()) {
         qDebug() << "No selected cluster values";
         setStatusMessage("E", "No clusters selected", "");
         return false;
     }
 
-    scatterplotViewName = settingsHolder.getScatterplotViewSelectionAction().getCurrentText();
+    scatterplotViewName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
     if (scatterplotViewName.isEmpty()) {
         qDebug() << "No scatterplot view selected";
         setStatusMessage("E", "No scatterplot view selected", "");
         return false;
     }
 
-    minCorrelation = settingsHolder.getCorrelationRangeAction().getMinimum();
-    maxCorrelation = settingsHolder.getCorrelationRangeAction().getMaximum();
+    minCorrelation = _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction().getMinimum();
+    maxCorrelation = _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction().getMaximum();
     if (minCorrelation < 0.0f || maxCorrelation > 1.0f || minCorrelation >= maxCorrelation) {
         qDebug() << "Invalid correlation range";
         setStatusMessage("E", "Invalid correlation range", "");
@@ -2136,8 +2207,7 @@ bool Computation::setupAndTriggerPCA()
     // noOfDimensions is the number of genes of interest, not the full dataset dimensions
     // compute PCA on all cells w. ith selected genes
 
-    auto& settingsHolder = _settingsAction.getSettingsHolder();
-    Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(settingsHolder.getPointDatasetAction().getCurrentDataset().getDatasetId());
+    Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
 
     if (!_selectedGenePointDataset.isValid() || !fullPointDataset.isValid()) {
         qDebug() << "One or more datasets are invalid!";
@@ -2234,8 +2304,8 @@ bool Computation::setupAndTriggerPCA()
 
 void Computation::resetupCorrelationTable()
 {
-    auto minRange = _settingsAction.getSettingsHolder().getCorrelationRangeAction().getMinimum();
-    auto maxRange = _settingsAction.getSettingsHolder().getCorrelationRangeAction().getMaximum();
+    auto minRange =  _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction().getMinimum();
+    auto maxRange =  _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction().getMaximum();
 
     _geneOfInterestIndices.clear();
     //change the _geneCorrValues isWithinRange flag based on the min and max range
@@ -2301,7 +2371,7 @@ void Computation::setupTableModelAndSelection(const QStringList& topGenes)
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(index, Qt::DisplayRole).toString();
-            _settingsAction.getSettingsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
         }
     );
 }
@@ -2381,7 +2451,7 @@ void Computation::setupTableModelAndSelection(
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
-            _settingsAction.getSettingsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
         }
     );
 }
@@ -2459,7 +2529,7 @@ void Computation::setupTableModelAndSelection()
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
-            _settingsAction.getSettingsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
         }
     );
 }
