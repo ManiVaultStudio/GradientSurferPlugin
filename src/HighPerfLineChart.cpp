@@ -147,6 +147,7 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_globalLineWidth = 0.0f;
     m_globalLineOpacity = 1.0f;
     m_showLegend = true; // NEW: default to show legend
+    m_showAvgNumPointsLabel = false; // NEW: default to hide average points label
 
     // Initialize statistical line labels
     m_averageLineLabel = "Average";
@@ -1257,7 +1258,8 @@ void HighPerfLineChart::paintGL() {
         painter.restore();
     }
 
-    // --- Draw legend for group colors and statistical lines ---
+    // --- Draw average number of points and total lines label ---
+    int legendBottomY = -1; // Will be set if legend is shown
     if (m_showLegend) {
         // --- Compute average slope of main stat line (average or median) ---
         double statSlope = 0.0;
@@ -1487,6 +1489,46 @@ void HighPerfLineChart::paintGL() {
             label += QString(" (n=%1)").arg(m_connectStatsLineN);
             drawStatLegendEntry(pen, label);
         }
+
+        // Compute bottom of legend area for later use
+        legendBottomY = statLegendY + statLegendHeight;
+        // If group legend is shown, extend legendBottomY accordingly
+        if (m_groupAveragingEnabled && !m_groupStringMap.empty()) {
+            int groupLegendY = statLegendY + statLegendHeight + legendMargin;
+            int groupLegendHeight = int(m_groupStringMap.size()) * (16 + 6);
+            legendBottomY = groupLegendY + groupLegendHeight;
+        }
+        // Add some margin below legend
+        legendBottomY += 10;
+    }
+
+    if (m_showAvgNumPointsLabel && !m_lines.isEmpty()) {
+        int totalPoints = 0;
+        int numLines = 0;
+        for (const auto& line : m_lines) {
+            totalPoints += line.points.size();
+            ++numLines;
+        }
+        if (numLines > 0) {
+            double avgPoints = double(totalPoints) / numLines;
+            QString avgLabel = QString("Average points per line: %1    Total lines: %2")
+                                   .arg(avgPoints, 0, 'f', 2)
+                                   .arg(numLines);
+            QFont avgFont = painter.font();
+            avgFont.setBold(true);
+            painter.setFont(avgFont);
+            painter.setPen(QColor(80, 80, 80));
+            int x = m_leftMargin;
+            int y = m_topMargin - 10;
+            if (!m_chartTitle.isEmpty()) {
+                y += 18; // leave space for title font
+            }
+            // If legend is present and would overlap, move label below legend
+            if (legendBottomY > 0 && y < legendBottomY + 5) {
+                y = legendBottomY + 5;
+            }
+            painter.drawText(x, y, avgLabel);
+        }
     }
 }
 
@@ -1707,3 +1749,13 @@ HighPerfLineChart::ConnectStatsType HighPerfLineChart::connectStatsLineType() co
 // --- Legend visibility setters/getters ---
 void HighPerfLineChart::setShowLegend(bool show) { m_showLegend = show; update(); }
 bool HighPerfLineChart::showLegend() const { return m_showLegend; }
+
+// --- Average number of points label visibility setters/getters ---
+void HighPerfLineChart::setShowAvgNumPointsLabel(bool show) {
+    m_showAvgNumPointsLabel = show;
+    update();
+}
+
+bool HighPerfLineChart::showAvgNumPointsLabel() const {
+    return m_showAvgNumPointsLabel;
+}

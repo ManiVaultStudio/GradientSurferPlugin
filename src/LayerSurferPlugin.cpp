@@ -30,7 +30,7 @@ void LayerSurferPlugin::init()
     //mainLayout->addWidget(_settingsAction.getSettingsHolder().createWidget(&getWidget()));
     addDockingAction(&_settingsAction.getSettingsHolder(), nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
     //  table to layout
-    mainLayout->addWidget(_settingsAction.getTableViewAction(),90);
+    mainLayout->addWidget(_settingsAction.getTableViewAction(),70);
 
     //  the line chart widget below the table
     mainLayout->addWidget(_settingsAction.getLineChartWidget(), 90);

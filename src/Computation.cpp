@@ -667,6 +667,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     _settingsAction.getLineChartWidget()->setConnectStatsLineEnabled(true);
                     _settingsAction.getLineChartWidget()->setConnectStatsLineN((lineData.first().points.size() /100)*50);
                     _settingsAction.getLineChartWidget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
+                    _settingsAction.getLineChartWidget()->setShowAvgNumPointsLabel(true);
                     
                 }
 

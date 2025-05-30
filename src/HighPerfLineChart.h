@@ -204,6 +204,10 @@ public:
     void setConnectStatsLineType(ConnectStatsType type);
     ConnectStatsType connectStatsLineType() const;
 
+    // Add setter/getter for the label visibility
+    void setShowAvgNumPointsLabel(bool show);
+    bool showAvgNumPointsLabel() const;
+
 signals:
     void lineSelected(int index);
     void lineHovered(int index);
@@ -238,6 +242,9 @@ protected:
     bool m_connectStatsLineEnabled = false;
     int m_connectStatsLineN = 5;
     ConnectStatsType m_connectStatsLineType = ConnectStatsType::None;
+
+    // Add a flag to show/hide average number of points label
+    bool m_showAvgNumPointsLabel = true;
 
 private:
     QVector<LineData> m_lines;
