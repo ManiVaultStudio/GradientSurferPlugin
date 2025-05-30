@@ -112,21 +112,31 @@ public:
 
     protected:
         SettingsAction&                     _settingsOptions;
+        
+        
+        //Dataset1 Options
         DatasetPickerAction                 _clusterDatasetAction;
         DatasetPickerAction                 _pointDatasetAction;
         DatasetPickerAction                 _embeddingDatasetAction;
         OptionAction                        _scatterplotViewSelectionAction;
         OptionsAction                       _clusterSelectionAction;
-        DimensionPickerAction               _geneSelectionAction;
-        StringAction                        _statusMessageAction;
-        DecimalRangeAction                  _correlationRangeAction;                   
-        TriggerAction                       _deSelectRowAction;
         DimensionPickerAction               _embeddingDimensionXAction;
         DimensionPickerAction               _embeddingDimensionYAction;
+
+        //Selection Options
+        TriggerAction                       _deSelectRowAction;
+        DimensionPickerAction               _geneSelectionAction;
+        StringAction                        _statusMessageAction;
+        DecimalRangeAction                  _correlationRangeAction;
+
+        //Scatterplot options
         ToggleAction                        _focusSelectionAction;
         ToggleAction                        _hidePointSelectionAction;
         ToggleAction                        _freezeSelectionAction;
 
+        //Table view options
+        
+        //Line chart options
 
     };
 
@@ -143,6 +153,8 @@ public:
 
     protected:
         SettingsAction& _settingsOptions;
+        
+        //Computation Options
         QStatusBar*                 _statusBarAction;
         TriggerAction              _computeAction;
     };
