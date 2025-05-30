@@ -1483,7 +1483,8 @@ void HighPerfLineChart::paintGL() {
                 case ConnectStatsType::Mode: label += "Mode"; break;
                 default: break;
             }
-            label += " (first/last n)";
+            // Show the actual value of n in the legend, e.g., (n=5)
+            label += QString(" (n=%1)").arg(m_connectStatsLineN);
             drawStatLegendEntry(pen, label);
         }
     }
