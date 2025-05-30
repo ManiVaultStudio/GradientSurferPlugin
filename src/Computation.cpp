@@ -2803,6 +2803,7 @@ void Computation::setupTableModelAndSelection(const QStringList& topGenes)
             if (!index.isValid()) return;
             QString value = model->data(index, Qt::DisplayRole).toString();
              _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
         }
     );
 }
@@ -2883,6 +2884,7 @@ void Computation::setupTableModelAndSelection(
             if (!index.isValid()) return;
             QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
              _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
         }
     );
 }
@@ -2961,6 +2963,7 @@ void Computation::setupTableModelAndSelection()
             if (!index.isValid()) return;
             QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
              _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
         }
     );
 }
