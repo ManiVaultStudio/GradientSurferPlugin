@@ -167,7 +167,6 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_scatterplotViewSelectionAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
-
 }
 
 
