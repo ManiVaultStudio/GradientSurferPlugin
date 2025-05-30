@@ -224,8 +224,9 @@ QVector<LineData> convertToLineData(const std::vector<float>& vec,
 QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std::vector<float>& vecCoord,
     int pointsPerLine,
     int numOfLines,
-    const QVector<QColor>& colors = QVector<QColor>(),
-    bool coordIsX = true) 
+    const QVector<QColor>& colors,
+    bool coordIsX,
+    bool sortByX)
 {
     QVector<LineData> lines;
 
@@ -320,6 +321,20 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
             }
 
             line.points.append(QPointF(x, y));
+        }
+
+        // Sort points if requested
+        if (sortByX) {
+            if (coordIsX) {
+                std::sort(line.points.begin(), line.points.end(), [](const QPointF& a, const QPointF& b) {
+                    return a.x() < b.x();
+                    });
+            }
+            else {
+                std::sort(line.points.begin(), line.points.end(), [](const QPointF& a, const QPointF& b) {
+                    return a.y() < b.y();
+                    });
+            }
         }
 
         if (!line.points.isEmpty()) {
@@ -611,10 +626,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     qDebug() << "Number of lines:" << geneIndicesExp.size();
 
                     // 3. Convert with debugging
-                    auto lineData = convertToLineData(expresionValues, coordValues,
-                        _filteredSelectionIndices.size(),
-                        geneIndicesExp.size());
-
+                    auto lineData = convertToLineData(
+                        expresionValues,
+                        coordValues,
+                        static_cast<int>(_filteredSelectionIndices.size()),
+                        static_cast<int>(geneIndicesExp.size()),
+                        QVector<QColor>(), // colors
+                        true,              // coordIsX
+                        true               // sortByX
+                    );
                     // 4. Verify output
                     qDebug() << "Converted line data size:" << lineData.size();
                     if (!lineData.empty()) {
