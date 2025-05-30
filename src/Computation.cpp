@@ -545,7 +545,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 _settingsAction.getSettingsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
-                _settingsAction.getSettingsHolder().getTopNAction().setMaximum(dimensions);
+                
             }
 
 
@@ -879,16 +879,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         resetupCorrelationTable();
         setStatusMessage("C", "Correlation table updated", "");
         });
-
-
-    const auto topNChanged = [this]() -> void {
-
-        setStatusMessage("M", "Top N updated", "");
-
-        };
-
-    connect(&_settingsAction.getSettingsHolder().getTopNAction(), &IntegralAction::valueChanged, this, topNChanged);
-
 
 
     const auto showPointSelectionChanged = [this]() -> void {
@@ -1405,10 +1395,10 @@ void Computation::AutoCompute()
         //Validate and retrieve datasets and indices
         mv::Dataset<Points> fullPointDataset;
         mv::Dataset<Clusters> fullClusterDataset;
-        int xEmbeddingIndex = -1, yEmbeddingIndex = -1, topN = 0; float maxCorrelation = 1.0f, minCorrelation = 0.0f;
+        int xEmbeddingIndex = -1, yEmbeddingIndex = -1; float maxCorrelation = 1.0f, minCorrelation = 0.0f;
         std::vector<int> selectedIndices;
         QString scatterplotViewName;
-        if (!validateAndRetrieveDatasets(fullPointDataset, fullClusterDataset, xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, topN, minCorrelation, maxCorrelation))
+        if (!validateAndRetrieveDatasets(fullPointDataset, fullClusterDataset, xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, minCorrelation, maxCorrelation))
             return;
 
         // Create datasets if needed
@@ -1516,7 +1506,7 @@ void Computation::AutoCompute()
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
-            setStatusMessage("E", "Error occurred during filtering top " + QString::number(topN) + " genes", "");
+            setStatusMessage("E", "Error occurred during filtering genes", "");
             return;
         }
 
@@ -1879,7 +1869,6 @@ bool Computation::validateAndRetrieveDatasets(
     int& yEmbeddingIndex,
     std::vector<int>& selectedIndices,
     QString& scatterplotViewName,
-    int& topN,
     float& minCorrelation,
     float& maxCorrelation
 )
@@ -1928,12 +1917,6 @@ bool Computation::validateAndRetrieveDatasets(
         return false;
     }
 
-    topN = settingsHolder.getTopNAction().getValue();
-    if (topN <= 0) {
-        qDebug() << "Top N value is not valid";
-        setStatusMessage("E", "Top N value is not valid", "");
-        return false;
-    }
     minCorrelation = settingsHolder.getCorrelationRangeAction().getMinimum();
     maxCorrelation = settingsHolder.getCorrelationRangeAction().getMaximum();
     if (minCorrelation < 0.0f || maxCorrelation > 1.0f || minCorrelation >= maxCorrelation) {
@@ -1942,7 +1925,7 @@ bool Computation::validateAndRetrieveDatasets(
         return false;
     }
     qDebug() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex
-        << "scatterplotViewName:" << scatterplotViewName << "topN:" << topN << "minCorrelation:" << minCorrelation << "maxCorrelation:" << maxCorrelation;
+        << "scatterplotViewName:" << scatterplotViewName << "minCorrelation:" << minCorrelation << "maxCorrelation:" << maxCorrelation;
 
 
     return true;
