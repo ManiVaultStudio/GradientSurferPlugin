@@ -1960,6 +1960,7 @@ QStringList Computation::filterGenesByCorrelationRange(
 
     return filteredGenes;
 }
+
 void Computation::populateGenesByCorrelationRange(
     const std::vector<float>& correlationVector,
     float min,
@@ -1985,20 +1986,29 @@ void Computation::populateGenesByCorrelationRange(
     _geneCorrValues.clear();
     _geneCorrValues.reserve(count);
 
-    // Fill _geneCorrValues directly in sorted (rank) order
-    for (int rank = 0; rank < count; ++rank) {
-        int i = indices[rank];
-        float corr = correlationVector[i];
+    // Assign ranks: same correlation value gets same rank (dense ranking)
+    int rank = 1;
+    float prevCorr = std::numeric_limits<float>::quiet_NaN();
+    for (int i = 0; i < count; ++i) {
+        int idx = indices[i];
+        float corr = correlationVector[idx];
         bool inRange = (corr > min - epsilon) && (corr < max + epsilon);
+
+        // If this is the first entry or the correlation value has changed, update the rank
+        if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
+            rank = i + 1;
+            prevCorr = corr;
+        }
+
         _geneCorrValues.emplace_back(CorrelationGeneCoords{
-            i,
-            geneNameOrdered[i],
+            idx,
+            geneNameOrdered[idx],
             corr,
-            rank + 1,
+            rank,
             inRange
-            });
+        });
         if (inRange) {
-            _geneOfInterestIndices.push_back(i);
+            _geneOfInterestIndices.push_back(idx);
         }
     }
 }
