@@ -665,7 +665,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     //_settingsAction.getLineChartWidget()->setShowVarianceLine(true);
                     //_settingsAction.getLineChartWidget()->setGradientLineEnabled(true);
                     _settingsAction.getLineChartWidget()->setConnectStatsLineEnabled(true);
-                    _settingsAction.getLineChartWidget()->setConnectStatsLineN((lineData.size()/100)*50);
+                    _settingsAction.getLineChartWidget()->setConnectStatsLineN((lineData.first().points.size() /100)*50);
                     _settingsAction.getLineChartWidget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
                     
                 }
