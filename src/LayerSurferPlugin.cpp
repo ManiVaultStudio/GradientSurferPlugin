@@ -27,23 +27,63 @@ void LayerSurferPlugin::init()
     QWidget* composite = new QWidget();
     QVBoxLayout* layout = new QVBoxLayout(composite);
 
-    //const int maxWidgetWidth = 300;
+    // Helper lambda to create a collapsible area with +/-
+    auto createCollapsibleArea = [](const QString& title, QWidget* content, QWidget* parent = nullptr) {
+        QWidget* area = new QWidget(parent);
+        QVBoxLayout* areaLayout = new QVBoxLayout(area);
+        areaLayout->setContentsMargins(0, 0, 0, 0);
+        areaLayout->setSpacing(0);
+
+        QWidget* headerWidget = new QWidget(area);
+        QHBoxLayout* headerLayout = new QHBoxLayout(headerWidget);
+        headerLayout->setContentsMargins(0, 0, 0, 0);
+        headerLayout->setSpacing(4);
+
+        QToolButton* toggleButton = new QToolButton(headerWidget);
+        toggleButton->setText("-");
+        toggleButton->setCheckable(true);
+        toggleButton->setChecked(true);
+        toggleButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+        QLabel* titleLabel = new QLabel(title, headerWidget);
+        titleLabel->setStyleSheet("font-weight: bold;");
+
+        headerLayout->addWidget(toggleButton);
+        headerLayout->addWidget(titleLabel);
+        headerLayout->addStretch();
+
+        areaLayout->addWidget(headerWidget);
+        areaLayout->addWidget(content);
+
+        // Store original size policy
+        QSizePolicy originalPolicy = content->sizePolicy();
+
+        QObject::connect(toggleButton, &QToolButton::toggled, area, [content, toggleButton, originalPolicy](bool checked) {
+            content->setVisible(checked);
+            toggleButton->setText(checked ? "-" : "+");
+            if (checked) {
+                content->setSizePolicy(originalPolicy);
+            }
+            else {
+                content->setSizePolicy(QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored));
+            }
+            content->parentWidget()->layout()->invalidate();
+            });
+
+        return area;
+        };
 
     QWidget* dataset1Widget = _settingsAction.getDataset1OptionsHolder().createWidget(&getWidget());
-    //dataset1Widget->setMaximumWidth(maxWidgetWidth);
-    layout->addWidget(dataset1Widget);
+    layout->addWidget(createCollapsibleArea("Dataset 1 Options", dataset1Widget, composite));
 
     QWidget* dataset2Widget = _settingsAction.getDataset2OptionsHolder().createWidget(&getWidget());
-    //dataset2Widget->setMaximumWidth(maxWidgetWidth);
-    layout->addWidget(dataset2Widget);
+    layout->addWidget(createCollapsibleArea("Dataset 2 Options", dataset2Widget, composite));
 
     QWidget* selectionWidget = _settingsAction.getSelectionOptionsHolder().createWidget(&getWidget());
-    //selectionWidget->setMaximumWidth(maxWidgetWidth);
-    layout->addWidget(selectionWidget);
+    layout->addWidget(createCollapsibleArea("Selection Options", selectionWidget, composite));
 
     QWidget* scatterplotWidget = _settingsAction.getScatterplotOptionsHolder().createWidget(&getWidget());
-    //scatterplotWidget->setMaximumWidth(maxWidgetWidth);
-    layout->addWidget(scatterplotWidget);
+    layout->addWidget(createCollapsibleArea("Scatterplot Options", scatterplotWidget, composite));
 
     auto* compositeAction = new mv::gui::WidgetAction(this, "Options");
     compositeAction->setWidgetConfigurationFunction(
