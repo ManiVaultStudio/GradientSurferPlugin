@@ -643,31 +643,31 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             qDebug() << "Sample point:" << lineData.first().points.first();
                         }
                     }
-
+                    
                     // 5. Send to chart
                     _settingsAction.getLineChartWidget()->setLines(lineData);
                     /*_settingsAction.getLineChartWidget()->setBinaryNormalizeXThreshold(0.95f);
-                    _settingsAction.getLineChartWidget()->setBinaryNormalizeX(true);
-                    _settingsAction.getLineChartWidget()->setShowAverageLine(true);
+                    _settingsAction.getLineChartWidget()->setBinaryNormalizeX(true);*/
+                    //_settingsAction.getLineChartWidget()->setShowAverageLine(true);
                     _settingsAction.getLineChartWidget()->setShowMedianLine(true);
-                    _settingsAction.getLineChartWidget()->setShowPercentileLines(true);
-                    _settingsAction.getLineChartWidget()->setShowStddevLines(true);
-                    _settingsAction.getLineChartWidget()->setShowMaxLine(true);
-                    _settingsAction.getLineChartWidget()->setShowMinLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowPercentileLines(true);
+                    //_settingsAction.getLineChartWidget()->setShowStddevLines(true);
+                    //_settingsAction.getLineChartWidget()->setShowMaxLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowMinLine(true);
                     _settingsAction.getLineChartWidget()->setShowPoints(false);
                     _settingsAction.getLineChartWidget()->setShowLines(false);
-                    _settingsAction.getLineChartWidget()->setShowKurtosisLine(true);
-                    _settingsAction.getLineChartWidget()->setShowLowerQuartileLine(true);
-                    _settingsAction.getLineChartWidget()->setShowMADLine(true);
-                    _settingsAction.getLineChartWidget()->setShowModeLine(true);
-                    _settingsAction.getLineChartWidget()->setShowSkewnessLine(true);
-                    _settingsAction.getLineChartWidget()->setShowUpperQuartileLine(true);
-                    _settingsAction.getLineChartWidget()->setShowVarianceLine(true);
-                    _settingsAction.getLineChartWidget()->setGradientLineEnabled(true);
+                    //_settingsAction.getLineChartWidget()->setShowKurtosisLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowLowerQuartileLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowMADLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowModeLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowSkewnessLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowUpperQuartileLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowVarianceLine(true);
+                    //_settingsAction.getLineChartWidget()->setGradientLineEnabled(true);
                     _settingsAction.getLineChartWidget()->setConnectStatsLineEnabled(true);
-                    _settingsAction.getLineChartWidget()->setConnectStatsLineN(5);
-                    _settingsAction.getLineChartWidget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Average);
-                    */
+                    _settingsAction.getLineChartWidget()->setConnectStatsLineN((lineData.size()/100)*10);
+                    _settingsAction.getLineChartWidget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
+                    
                 }
 
 
