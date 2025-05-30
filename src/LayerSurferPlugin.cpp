@@ -23,20 +23,29 @@ LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
 void LayerSurferPlugin::init()
 {
     
-    // Pseudocode: create a QWidget, add all option widgets, then wrap in WidgetAction
+
     QWidget* composite = new QWidget();
     QVBoxLayout* layout = new QVBoxLayout(composite);
-    layout->addWidget(_settingsAction.getScatterplotOptionsHolder().createWidget(&getWidget()));
-    layout->addWidget(_settingsAction.getSelectionOptionsHolder().createWidget(&getWidget()));
-    layout->addWidget(_settingsAction.getDataset2OptionsHolder().createWidget(&getWidget()));
-    layout->addWidget(_settingsAction.getDataset1OptionsHolder().createWidget(&getWidget()));
 
-    // Instead of passing QWidget* to WidgetAction (which is not allowed), 
-    // create a WidgetAction and set up the composite widget as its default widget.
-    // WidgetAction expects (QObject* parent, const QString& title)
+    //const int maxWidgetWidth = 300;
+
+    QWidget* dataset1Widget = _settingsAction.getDataset1OptionsHolder().createWidget(&getWidget());
+    //dataset1Widget->setMaximumWidth(maxWidgetWidth);
+    layout->addWidget(dataset1Widget);
+
+    QWidget* dataset2Widget = _settingsAction.getDataset2OptionsHolder().createWidget(&getWidget());
+    //dataset2Widget->setMaximumWidth(maxWidgetWidth);
+    layout->addWidget(dataset2Widget);
+
+    QWidget* selectionWidget = _settingsAction.getSelectionOptionsHolder().createWidget(&getWidget());
+    //selectionWidget->setMaximumWidth(maxWidgetWidth);
+    layout->addWidget(selectionWidget);
+
+    QWidget* scatterplotWidget = _settingsAction.getScatterplotOptionsHolder().createWidget(&getWidget());
+    //scatterplotWidget->setMaximumWidth(maxWidgetWidth);
+    layout->addWidget(scatterplotWidget);
+
     auto* compositeAction = new mv::gui::WidgetAction(this, "Options");
-    // Use setDefaultWidget is private, so instead, use createWidget or refactor as needed.
-    // Here, we use a lambda to provide the composite as the widget for the action.
     compositeAction->setWidgetConfigurationFunction(
         [composite](mv::gui::WidgetAction*, QWidget* parent) {
             composite->setParent(parent);
@@ -44,7 +53,6 @@ void LayerSurferPlugin::init()
         }
     );
     addDockingAction(compositeAction, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
-
 
     auto* mainLayout = new QVBoxLayout(&getWidget());
     mainLayout->setContentsMargins(0, 0, 0, 0);
