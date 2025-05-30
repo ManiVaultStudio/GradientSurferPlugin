@@ -62,10 +62,10 @@ class SettingsAction : public WidgetAction
 {
 public:
 
-    class SettingsHolder : public VerticalGroupAction
+    class Dataset1OptionsHolder : public VerticalGroupAction
     {
     public:
-        SettingsHolder(SettingsAction& settingsAction);
+        Dataset1OptionsHolder(SettingsAction& settingsAction);
 
 
         const DatasetPickerAction& getClusterDatasetAction() const { return _clusterDatasetAction; }
@@ -77,20 +77,11 @@ public:
         const DatasetPickerAction& getEmbeddingDatasetAction() const { return _embeddingDatasetAction; }
         DatasetPickerAction& getEmbeddingDatasetAction() { return _embeddingDatasetAction; }
 
-        const OptionsAction& getClusterSelectionAction() const { return _clusterSelectionAction; }
-        OptionsAction& getClusterSelectionAction() { return _clusterSelectionAction; }
-
-        const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
-        DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
-
-        const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
-        StringAction& getStatusMessageAction() { return _statusMessageAction; }
 
         const OptionAction& getScatterplotViewSelectionAction() const { return _scatterplotViewSelectionAction; }
         OptionAction& getScatterplotViewSelectionAction() { return _scatterplotViewSelectionAction; }
 
-        const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
-        TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
+
 
         const DimensionPickerAction& getEmbeddingDimensionXAction() const { return _embeddingDimensionXAction; }
         DimensionPickerAction& getEmbeddingDimensionXAction() { return _embeddingDimensionXAction; }
@@ -98,17 +89,26 @@ public:
         const DimensionPickerAction& getEmbeddingDimensionYAction() const { return _embeddingDimensionYAction; }
         DimensionPickerAction& getEmbeddingDimensionYAction() { return _embeddingDimensionYAction; }
 
-        const ToggleAction& getFocusSelectionAction() const { return _focusSelectionAction; }
-        ToggleAction& getFocusSelectionAction() { return _focusSelectionAction; }
 
-        const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
-        ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
+    protected:
+        SettingsAction&                     _settingsOptions;
+        
+        
+        //Dataset1 Options
+        DatasetPickerAction                 _clusterDatasetAction;
+        DatasetPickerAction                 _pointDatasetAction;
+        DatasetPickerAction                 _embeddingDatasetAction;
+        OptionAction                        _scatterplotViewSelectionAction;
+        DimensionPickerAction               _embeddingDimensionXAction;
+        DimensionPickerAction               _embeddingDimensionYAction;
 
-        const ToggleAction& getFreezeSelectionAction() const { return _freezeSelectionAction; }
-        ToggleAction& getFreezeSelectionAction() { return _freezeSelectionAction; }
+    };
 
-        const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
-        DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
+    class Dataset2OptionsHolder : public VerticalGroupAction
+    {
+    public:
+        Dataset2OptionsHolder(SettingsAction& settingsAction);
+
 
         // Dataset2 getters
         const DatasetPickerAction& getClusterDataset2Action() const { return _clusterDataset2Action; }
@@ -130,16 +130,8 @@ public:
         DimensionPickerAction& getEmbeddingDimension2YAction() { return _embeddingDimension2YAction; }
 
     protected:
-        SettingsAction&                     _settingsOptions;
-        
-        
-        //Dataset1 Options
-        DatasetPickerAction                 _clusterDatasetAction;
-        DatasetPickerAction                 _pointDatasetAction;
-        DatasetPickerAction                 _embeddingDatasetAction;
-        OptionAction                        _scatterplotViewSelectionAction;
-        DimensionPickerAction               _embeddingDimensionXAction;
-        DimensionPickerAction               _embeddingDimensionYAction;
+        SettingsAction& _settingsOptions;
+
 
         //Dataset2 Options
         DatasetPickerAction                 _clusterDataset2Action;
@@ -149,6 +141,37 @@ public:
         DimensionPickerAction               _embeddingDimension2XAction;
         DimensionPickerAction               _embeddingDimension2YAction;
 
+    };
+
+    class SelectionOptionsHolder : public VerticalGroupAction
+    {
+    public:
+        SelectionOptionsHolder(SettingsAction& settingsAction);
+
+
+        const OptionsAction& getClusterSelectionAction() const { return _clusterSelectionAction; }
+        OptionsAction& getClusterSelectionAction() { return _clusterSelectionAction; }
+
+        const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
+        DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
+
+        const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
+        StringAction& getStatusMessageAction() { return _statusMessageAction; }
+
+
+
+        const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
+        TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
+
+
+        const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
+        DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
+
+
+
+    protected:
+        SettingsAction& _settingsOptions;
+
         //Selection Options
         TriggerAction                       _deSelectRowAction;
         DimensionPickerAction               _geneSelectionAction;
@@ -156,14 +179,62 @@ public:
         DecimalRangeAction                  _correlationRangeAction;
         OptionsAction                       _clusterSelectionAction;
 
+    };
+
+    class ScatterplotOptionsHolder : public VerticalGroupAction
+    {
+    public:
+        ScatterplotOptionsHolder(SettingsAction& settingsAction);
+
+        const ToggleAction& getFocusSelectionAction() const { return _focusSelectionAction; }
+        ToggleAction& getFocusSelectionAction() { return _focusSelectionAction; }
+
+        const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
+        ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
+
+        const ToggleAction& getFreezeSelectionAction() const { return _freezeSelectionAction; }
+        ToggleAction& getFreezeSelectionAction() { return _freezeSelectionAction; }
+
+
+    protected:
+        SettingsAction& _settingsOptions;
+
+
         //Scatterplot options
         ToggleAction                        _focusSelectionAction;
         ToggleAction                        _hidePointSelectionAction;
         ToggleAction                        _freezeSelectionAction;
 
         //Table view options
-        
+
         //Line chart options
+
+    };
+
+    class LineChartOptionsHolder : public VerticalGroupAction
+    {
+    public:
+        LineChartOptionsHolder(SettingsAction& settingsAction);
+
+
+    protected:
+        SettingsAction& _settingsOptions;
+
+
+        //Line chart options
+
+    };
+
+    class TableOptionsHolder : public VerticalGroupAction
+    {
+    public:
+        TableOptionsHolder(SettingsAction& settingsAction);
+
+
+    protected:
+        SettingsAction& _settingsOptions;
+
+        //Table view options
 
     };
 
@@ -190,7 +261,10 @@ public:
     SettingsAction(LayerSurferPlugin& LayerSurferPlugin);
 
     ComputeHolder& getComputeHolder() { return _computeHolder; }
-    SettingsHolder& getSettingsHolder() { return _settingsHolder; }
+    Dataset1OptionsHolder& getDataset1OptionsHolder() { return _dataset1OptionsHolder; }
+    Dataset2OptionsHolder& getDataset2OptionsHolder() { return _dataset2OptionsHolder; }
+    SelectionOptionsHolder& getSelectionOptionsHolder() { return _selectionOptionsHolder; }
+    ScatterplotOptionsHolder& getScatterplotOptionsHolder() { return _scatterplotOptionsHolder; }
 
 public: // Serialization
     void fromVariantMap(const QVariantMap& variantMap) override;
@@ -203,7 +277,10 @@ public: // Serialization
 protected:
     LayerSurferPlugin& _viewerPlugin;
     mv::CoreInterface* _core;
-    SettingsHolder              _settingsHolder;
+    Dataset1OptionsHolder              _dataset1OptionsHolder;
+    Dataset2OptionsHolder              _dataset2OptionsHolder;
+    SelectionOptionsHolder              _selectionOptionsHolder;
+    ScatterplotOptionsHolder              _scatterplotOptionsHolder;
     ComputeHolder               _computeHolder;
     QTableView*                 _tableViewAction = nullptr;
     HighPerfLineChart*          _lineChartWidget = nullptr;

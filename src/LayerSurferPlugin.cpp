@@ -22,33 +22,46 @@ LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
 
 void LayerSurferPlugin::init()
 {
+    
+    // Pseudocode: create a QWidget, add all option widgets, then wrap in WidgetAction
+    QWidget* composite = new QWidget();
+    QVBoxLayout* layout = new QVBoxLayout(composite);
+    layout->addWidget(_settingsAction.getScatterplotOptionsHolder().createWidget(&getWidget()));
+    layout->addWidget(_settingsAction.getSelectionOptionsHolder().createWidget(&getWidget()));
+    layout->addWidget(_settingsAction.getDataset2OptionsHolder().createWidget(&getWidget()));
+    layout->addWidget(_settingsAction.getDataset1OptionsHolder().createWidget(&getWidget()));
+
+    // Instead of passing QWidget* to WidgetAction (which is not allowed), 
+    // create a WidgetAction and set up the composite widget as its default widget.
+    // WidgetAction expects (QObject* parent, const QString& title)
+    auto* compositeAction = new mv::gui::WidgetAction(this, "Options");
+    // Use setDefaultWidget is private, so instead, use createWidget or refactor as needed.
+    // Here, we use a lambda to provide the composite as the widget for the action.
+    compositeAction->setWidgetConfigurationFunction(
+        [composite](mv::gui::WidgetAction*, QWidget* parent) {
+            composite->setParent(parent);
+            return composite;
+        }
+    );
+    addDockingAction(compositeAction, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
+
+
     auto* mainLayout = new QVBoxLayout(&getWidget());
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
-
-    //  settings to layout
-    //mainLayout->addWidget(_settingsAction.getSettingsHolder().createWidget(&getWidget()));
-    addDockingAction(&_settingsAction.getSettingsHolder(), nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
-    //  table to layout
-    mainLayout->addWidget(_settingsAction.getTableViewAction(),70);
-
-    //  the line chart widget below the table
+    mainLayout->addWidget(_settingsAction.getTableViewAction(), 70);
     mainLayout->addWidget(_settingsAction.getLineChartWidget(), 90);
 
-    //  compute and status to layout
     auto* computeStatusLayout = new QHBoxLayout();
     computeStatusLayout->setContentsMargins(0, 0, 0, 0);
     computeStatusLayout->setSpacing(0);
     computeStatusLayout->addWidget(_settingsAction.getComputeHolder().getStatusBarAction(),90);
     computeStatusLayout->addWidget(_settingsAction.getComputeHolder().createWidget(&getWidget()));
-    
 
     mainLayout->addLayout(computeStatusLayout);
 
-    // Apply the layout
     getWidget().setLayout(mainLayout);
 
-    // Alternatively, classes which derive from hdsp::EventListener (all plugins do) can also respond to events
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetRemoved));
