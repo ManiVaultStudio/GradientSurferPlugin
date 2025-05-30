@@ -89,6 +89,8 @@ public:
         const DimensionPickerAction& getEmbeddingDimensionYAction() const { return _embeddingDimensionYAction; }
         DimensionPickerAction& getEmbeddingDimensionYAction() { return _embeddingDimensionYAction; }
 
+        const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
+        DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
     protected:
         SettingsAction&                     _settingsOptions;
@@ -101,6 +103,7 @@ public:
         OptionAction                        _scatterplotViewSelectionAction;
         DimensionPickerAction               _embeddingDimensionXAction;
         DimensionPickerAction               _embeddingDimensionYAction;
+        DimensionPickerAction               _geneSelectionAction;
 
     };
 
@@ -129,6 +132,9 @@ public:
         const DimensionPickerAction& getEmbeddingDimension2YAction() const { return _embeddingDimension2YAction; }
         DimensionPickerAction& getEmbeddingDimension2YAction() { return _embeddingDimension2YAction; }
 
+        const DimensionPickerAction& getGeneSelection2Action() const { return _geneSelection2Action; }
+        DimensionPickerAction& getGeneSelection2Action() { return _geneSelection2Action; }
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -140,6 +146,7 @@ public:
         OptionAction                        _scatterplotViewSelection2Action;
         DimensionPickerAction               _embeddingDimension2XAction;
         DimensionPickerAction               _embeddingDimension2YAction;
+        DimensionPickerAction               _geneSelection2Action;
 
     };
 
@@ -151,9 +158,6 @@ public:
 
         const OptionsAction& getClusterSelectionAction() const { return _clusterSelectionAction; }
         OptionsAction& getClusterSelectionAction() { return _clusterSelectionAction; }
-
-        const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
-        DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
         const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
         StringAction& getStatusMessageAction() { return _statusMessageAction; }
@@ -174,7 +178,6 @@ public:
 
         //Selection Options
         TriggerAction                       _deSelectRowAction;
-        DimensionPickerAction               _geneSelectionAction;
         StringAction                        _statusMessageAction;
         DecimalRangeAction                  _correlationRangeAction;
         OptionsAction                       _clusterSelectionAction;

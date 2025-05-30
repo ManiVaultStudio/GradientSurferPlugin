@@ -570,7 +570,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             auto dataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
             if (dataset.isValid())
             {
-                 _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
+                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
                 
             }
@@ -579,21 +579,37 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         else
         {
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setPointsDataset({});
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset({});
         }
-        setStatusMessage("M", "Point dataset updated", "");
+        setStatusMessage("M", "Point dataset 1 updated", "");
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset1);
 
     const auto updatePointDataset2 = [this]() -> void {
+        if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid())
+        {
+            auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
+            if (dataset.isValid())
+            {
+                _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setPointsDataset(dataset);
+                auto dimensions = dataset->getNumDimensions();
 
+            }
+
+
+        }
+        else
+        {
+            _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setPointsDataset({});
+        }
+        setStatusMessage("M", "Point dataset 2 updated", "");
         };
 
     connect(&_settingsAction.getDataset2OptionsHolder().getPointDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset2);
 
     const auto updateGeneSelection = [this]() -> void {
-        if ( _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
+        if ( _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
         {
             qDebug() << "No gene selected";
              _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
@@ -604,7 +620,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _settingsAction.getLineChartWidget()->clear();
 
         }
-        auto selectedGene =  _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
+        auto selectedGene =  _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
         if (selectedGene == "")
         {
             qDebug() << "No gene selected";
@@ -773,7 +789,74 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         };
 
-    connect(& _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection);
+    connect(& _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection);
+
+    const auto updateGeneSelection2 = [this]() -> void {
+
+        auto selectedGene2 = _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().getCurrentDimensionName();
+        if (selectedGene2 == "")
+        {
+            qDebug() << "No gene selected";
+            _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+
+        DimensionPickerAction* geneSelectionAction;
+
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
+                {
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset2.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            {
+                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
+                                if (dataset2.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
+                                }
+
+                            }
+                            geneSelectionAction = dynamic_cast<DimensionPickerAction*>(plugin->findChildByPath("Settings/Coloring/Dimension"));
+                            if (geneSelectionAction)
+                            {
+                                geneSelectionAction->setCurrentDimensionName(selectedGene2);
+                            }
+                            else
+                            {
+                                qDebug() << "Gene selection action not found";
+                            }
+                        }
+
+
+
+                    }
+
+                }
+            }
+        }
+
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection2);
 
 
     const auto updateEmbeddingDataset1 = [this]() -> void {
@@ -861,13 +944,28 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         }
 
-        setStatusMessage("M", "Embedding dataset updated", "");
+        setStatusMessage("M", "Embedding dataset 1 updated", "");
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset1);
 
     const auto updateEmbeddingDataset2 = [this]() -> void {
+        if (_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().isValid())
+        {
 
+
+            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+
+            if (embeddingDataset2.isValid())
+            {
+                _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setPointsDataset(embeddingDataset2);
+                _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setPointsDataset(embeddingDataset2);
+            }
+
+
+        }
+
+        setStatusMessage("M", "Embedding dataset 2 updated", "");
         };
 
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset2);
@@ -1076,7 +1174,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto embeddingDimensionYActionChanged1 = [this]() -> void {
 
-        setStatusMessage("M", "Embedding Y dimension changed", "");
+        setStatusMessage("M", "Embedding 1 Y dimension changed", "");
         QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotName.isEmpty())
         {
@@ -1173,6 +1271,94 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto embeddingDimensionYActionChanged2 = [this]() -> void {
 
+        setStatusMessage("M", "Embedding 2 Y dimension changed", "");
+        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotName.isEmpty())
+        {
+            qDebug() << "No scatterplot view 2 selected";
+            setStatusMessage("E", "No scatterplot view 2 selected", "");
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName)
+                {
+
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset2.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
+                            auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
+                            if (xPosition2 != "" && yPosition2 != "") {
+                                auto embeddingXVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
+                                auto embeddingYVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
+                                if (embeddingXVal2 && embeddingYVal2) {
+                                    if (embeddingXVal2->getCurrentIndex() != -1) {
+                                        embeddingXVal2->setCurrentText("");
+                                    }
+                                    if (embeddingYVal2->getCurrentIndex() != -1) {
+                                        embeddingYVal2->setCurrentText("");
+                                    }
+
+                                    auto xoptions2 = embeddingXVal2->getOptions();
+                                    if (xoptions2.contains(xPosition2)) {
+                                        embeddingXVal2->setCurrentText(xPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 X value not found in options";
+                                    }
+
+                                    auto yoptions2 = embeddingYVal2->getOptions();
+                                    if (yoptions2.contains(yPosition2)) {
+                                        embeddingYVal2->setCurrentText(yPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 Y value not found in options";
+                                    }
+                                }
+                                else {
+                                    qDebug() << "Embedding 2 X or Y value is null";
+                                }
+                            }
+
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            {
+                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
+                                if (dataset2.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
+                                    //qDebug() << "Setting dataset to color dataset";
+                                }
+
+                            }
+
+                        }
+
+
+
+                    }
+
+                }
+            }
+        }
+
 
 
 
@@ -1182,7 +1368,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto embeddingDimensionXActionChanged1 = [this]() -> void {
 
-        setStatusMessage("M", "Embedding X dimension changed", "");
+        setStatusMessage("M", "Embedding 1 X dimension changed", "");
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
         mv::gui::DatasetPickerAction* pointDatasetPickerAction;
@@ -1270,7 +1456,86 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto embeddingDimensionXActionChanged2 = [this]() -> void {
 
+        setStatusMessage("M", "Embedding 1 X dimension changed", "");
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
 
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
+                {
+
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset2.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
+                            auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
+                            if (xPosition2 != "" && yPosition2 != "") {
+                                auto embeddingXVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
+                                auto embeddingYVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
+                                if (embeddingXVal2 && embeddingYVal2) {
+                                    if (embeddingXVal2->getCurrentIndex() != -1) {
+                                        embeddingXVal2->setCurrentText("");
+                                    }
+                                    if (embeddingYVal2->getCurrentIndex() != -1) {
+                                        embeddingYVal2->setCurrentText("");
+                                    }
+
+                                    auto xoptions2 = embeddingXVal2->getOptions();
+                                    if (xoptions2.contains(xPosition2)) {
+                                        embeddingXVal2->setCurrentText(xPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 X value not found in options";
+                                    }
+
+                                    auto yoptions2 = embeddingYVal2->getOptions();
+                                    if (yoptions2.contains(yPosition2)) {
+                                        embeddingYVal2->setCurrentText(yPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 Y value not found in options";
+                                    }
+                                }
+                                else {
+                                    qDebug() << "Embedding 2 X or Y value is null";
+                                }
+                            }
+
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            {
+                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
+                                if (dataset2.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
+                                    //qDebug() << "Setting dataset to color dataset";
+                                }
+
+                            }
+
+                        }
+
+
+
+                    }
+
+                }
+            }
+        }
 
         };
 
@@ -1282,14 +1547,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             _settingsAction.getTableViewAction()->selectionModel()->clearSelection();
             _settingsAction.getTableViewAction()->setCurrentIndex(QModelIndex());
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName("");
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName("");
+             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName("");
         }
         else
         {
             qDebug() << "No row selected";
         }
          _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
-         _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+         _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+         _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
 
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
@@ -1356,6 +1623,75 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 if (dataset.isValid())
                                 {
                                     colorDatasetPickerAction->setCurrentDataset(dataset);
+                                    qDebug() << "Setting dataset to color dataset";
+                                }
+
+                            }
+
+                        }
+
+
+
+                    }
+
+                }
+                else if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
+                {
+
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset2.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
+                            auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
+                            if (xPosition2 != "" && yPosition2 != "") {
+                                auto embeddingXVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
+                                auto embeddingYVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
+                                if (embeddingXVal2 && embeddingYVal2) {
+                                    if (embeddingXVal2->getCurrentIndex() != -1) {
+                                        embeddingXVal2->setCurrentText("");
+                                    }
+                                    if (embeddingYVal2->getCurrentIndex() != -1) {
+                                        embeddingYVal2->setCurrentText("");
+                                    }
+
+                                    auto xoptions2 = embeddingXVal2->getOptions();
+                                    if (xoptions2.contains(xPosition2)) {
+                                        embeddingXVal2->setCurrentText(xPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 X value not found in options";
+                                    }
+
+                                    auto yoptions2 = embeddingYVal2->getOptions();
+                                    if (yoptions2.contains(yPosition2)) {
+                                        embeddingYVal2->setCurrentText(yPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 Y value not found in options";
+                                    }
+                                }
+                                else {
+                                    qDebug() << "Embedding 2 X or Y value is null";
+                                }
+                            }
+
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            {
+                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
+                                if (dataset2.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
                                     qDebug() << "Setting dataset to color dataset";
                                 }
 
@@ -2466,7 +2802,7 @@ void Computation::setupTableModelAndSelection(const QStringList& topGenes)
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(index, Qt::DisplayRole).toString();
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
         }
     );
 }
@@ -2546,7 +2882,7 @@ void Computation::setupTableModelAndSelection(
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
         }
     );
 }
@@ -2624,7 +2960,7 @@ void Computation::setupTableModelAndSelection()
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
         }
     );
 }
