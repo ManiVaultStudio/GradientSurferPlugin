@@ -185,9 +185,9 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     setIcon(mv::util::StyledIcon("braille"));
     setPopupSizeHint(QSize(500, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
-    addAction(&_clusterDataset2Action);
     addAction(&_pointDataset2Action);
     addAction(&_embeddingDataset2Action);
+    addAction(&_clusterDataset2Action);
     addAction(&_scatterplotViewSelection2Action);
     addAction(&_embeddingDimension2XAction);
     addAction(&_embeddingDimension2YAction);
