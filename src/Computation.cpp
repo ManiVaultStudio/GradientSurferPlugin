@@ -224,8 +224,9 @@ QVector<LineData> convertToLineData(const std::vector<float>& vec,
 QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std::vector<float>& vecCoord,
     int pointsPerLine,
     int numOfLines,
-    const QVector<QColor>& colors = QVector<QColor>(),
-    bool coordIsX = true) 
+    const QVector<QColor>& colors,
+    bool coordIsX,
+    bool sortByX)
 {
     QVector<LineData> lines;
 
@@ -320,6 +321,20 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
             }
 
             line.points.append(QPointF(x, y));
+        }
+
+        // Sort points if requested
+        if (sortByX) {
+            if (coordIsX) {
+                std::sort(line.points.begin(), line.points.end(), [](const QPointF& a, const QPointF& b) {
+                    return a.x() < b.x();
+                    });
+            }
+            else {
+                std::sort(line.points.begin(), line.points.end(), [](const QPointF& a, const QPointF& b) {
+                    return a.y() < b.y();
+                    });
+            }
         }
 
         if (!line.points.isEmpty()) {
@@ -530,7 +545,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 _settingsAction.getSettingsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
-                _settingsAction.getSettingsHolder().getTopNAction().setMaximum(dimensions);
+                
             }
 
 
@@ -611,10 +626,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     qDebug() << "Number of lines:" << geneIndicesExp.size();
 
                     // 3. Convert with debugging
-                    auto lineData = convertToLineData(expresionValues, coordValues,
-                        _filteredSelectionIndices.size(),
-                        geneIndicesExp.size());
-
+                    auto lineData = convertToLineData(
+                        expresionValues,
+                        coordValues,
+                        static_cast<int>(_filteredSelectionIndices.size()),
+                        static_cast<int>(geneIndicesExp.size()),
+                        QVector<QColor>(), // colors
+                        true,              // coordIsX
+                        true               // sortByX
+                    );
                     // 4. Verify output
                     qDebug() << "Converted line data size:" << lineData.size();
                     if (!lineData.empty()) {
@@ -623,11 +643,31 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             qDebug() << "Sample point:" << lineData.first().points.first();
                         }
                     }
-
+                    
                     // 5. Send to chart
                     _settingsAction.getLineChartWidget()->setLines(lineData);
-                    //_settingsAction.getLineChartWidget()->setBinaryNormalizeXThreshold(0.95f);
-                    //_settingsAction.getLineChartWidget()->setBinaryNormalizeX(true);
+                    /*_settingsAction.getLineChartWidget()->setBinaryNormalizeXThreshold(0.95f);
+                    _settingsAction.getLineChartWidget()->setBinaryNormalizeX(true);*/
+                    //_settingsAction.getLineChartWidget()->setShowAverageLine(true);
+                    _settingsAction.getLineChartWidget()->setShowMedianLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowPercentileLines(true);
+                    //_settingsAction.getLineChartWidget()->setShowStddevLines(true);
+                    //_settingsAction.getLineChartWidget()->setShowMaxLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowMinLine(true);
+                    _settingsAction.getLineChartWidget()->setShowPoints(false);
+                    _settingsAction.getLineChartWidget()->setShowLines(false);
+                    //_settingsAction.getLineChartWidget()->setShowKurtosisLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowLowerQuartileLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowMADLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowModeLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowSkewnessLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowUpperQuartileLine(true);
+                    //_settingsAction.getLineChartWidget()->setShowVarianceLine(true);
+                    //_settingsAction.getLineChartWidget()->setGradientLineEnabled(true);
+                    _settingsAction.getLineChartWidget()->setConnectStatsLineEnabled(true);
+                    _settingsAction.getLineChartWidget()->setConnectStatsLineN((lineData.first().points.size() /100)*50);
+                    _settingsAction.getLineChartWidget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
+                    _settingsAction.getLineChartWidget()->setShowAvgNumPointsLabel(true);
                     
                 }
 
@@ -840,16 +880,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         resetupCorrelationTable();
         setStatusMessage("C", "Correlation table updated", "");
         });
-
-
-    const auto topNChanged = [this]() -> void {
-
-        setStatusMessage("M", "Top N updated", "");
-
-        };
-
-    connect(&_settingsAction.getSettingsHolder().getTopNAction(), &IntegralAction::valueChanged, this, topNChanged);
-
 
 
     const auto showPointSelectionChanged = [this]() -> void {
@@ -1366,10 +1396,10 @@ void Computation::AutoCompute()
         //Validate and retrieve datasets and indices
         mv::Dataset<Points> fullPointDataset;
         mv::Dataset<Clusters> fullClusterDataset;
-        int xEmbeddingIndex = -1, yEmbeddingIndex = -1, topN = 0; float maxCorrelation = 1.0f, minCorrelation = 0.0f;
+        int xEmbeddingIndex = -1, yEmbeddingIndex = -1; float maxCorrelation = 1.0f, minCorrelation = 0.0f;
         std::vector<int> selectedIndices;
         QString scatterplotViewName;
-        if (!validateAndRetrieveDatasets(fullPointDataset, fullClusterDataset, xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, topN, minCorrelation, maxCorrelation))
+        if (!validateAndRetrieveDatasets(fullPointDataset, fullClusterDataset, xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, minCorrelation, maxCorrelation))
             return;
 
         // Create datasets if needed
@@ -1477,7 +1507,7 @@ void Computation::AutoCompute()
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
-            setStatusMessage("E", "Error occurred during filtering top " + QString::number(topN) + " genes", "");
+            setStatusMessage("E", "Error occurred during filtering genes", "");
             return;
         }
 
@@ -1840,7 +1870,6 @@ bool Computation::validateAndRetrieveDatasets(
     int& yEmbeddingIndex,
     std::vector<int>& selectedIndices,
     QString& scatterplotViewName,
-    int& topN,
     float& minCorrelation,
     float& maxCorrelation
 )
@@ -1889,12 +1918,6 @@ bool Computation::validateAndRetrieveDatasets(
         return false;
     }
 
-    topN = settingsHolder.getTopNAction().getValue();
-    if (topN <= 0) {
-        qDebug() << "Top N value is not valid";
-        setStatusMessage("E", "Top N value is not valid", "");
-        return false;
-    }
     minCorrelation = settingsHolder.getCorrelationRangeAction().getMinimum();
     maxCorrelation = settingsHolder.getCorrelationRangeAction().getMaximum();
     if (minCorrelation < 0.0f || maxCorrelation > 1.0f || minCorrelation >= maxCorrelation) {
@@ -1903,7 +1926,7 @@ bool Computation::validateAndRetrieveDatasets(
         return false;
     }
     qDebug() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex
-        << "scatterplotViewName:" << scatterplotViewName << "topN:" << topN << "minCorrelation:" << minCorrelation << "maxCorrelation:" << maxCorrelation;
+        << "scatterplotViewName:" << scatterplotViewName << "minCorrelation:" << minCorrelation << "maxCorrelation:" << maxCorrelation;
 
 
     return true;

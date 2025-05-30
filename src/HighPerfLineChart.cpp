@@ -1,4 +1,4 @@
-#include "HighPerfLineChart.h"
+﻿#include "HighPerfLineChart.h"
 #include <QMouseEvent>
 #include <QPainter>
 #include <QtMath>
@@ -115,6 +115,7 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_gridColor = QColor(220,220,220);
     m_backgroundColor = Qt::white;
     m_showPoints = true;
+    m_showLines = true; // NEW: default to show lines
     m_axisLineWidth = 1.0f;
     m_xAxisLineColor = Qt::black;
     m_yAxisLineColor = Qt::black;
@@ -133,6 +134,52 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_binaryNormalizeXThreshold = 0.5;
     m_binaryNormalizeYThreshold = 0.5;
     m_interchangeXY = false; // 
+    m_showAverageLine = false;
+    m_showMedianLine = false;
+    m_showPercentileLines = false;
+    m_percentileLower = 0.25;
+    m_percentileUpper = 0.75;
+    m_showMinLine = false;
+    m_showMaxLine = false;
+    m_showStddevLines = false;
+    m_showAllLines = true;
+    m_globalLineColor = QColor();
+    m_globalLineWidth = 0.0f;
+    m_globalLineOpacity = 1.0f;
+    m_showLegend = true; // NEW: default to show legend
+    m_showAvgNumPointsLabel = false; // NEW: default to hide average points label
+
+    // Initialize statistical line labels
+    m_averageLineLabel = "Average";
+    m_medianLineLabel = "Median";
+    m_percentileLowerLabel = "25th Percentile";
+    m_percentileUpperLabel = "75th Percentile";
+    m_minLineLabel = "Min";
+    m_maxLineLabel = "Max";
+    m_stddevLineLabel = "Stddev";
+
+    // Initialize additional statistical line options
+    m_showModeLine = false;
+    m_showVarianceLine = false;
+    m_showLowerQuartileLine = false;
+    m_showUpperQuartileLine = false;
+    m_showMADLine = false;
+    m_showSkewnessLine = false;
+    m_showKurtosisLine = false;
+
+    // Initialize additional statistical line labels
+    m_modeLineLabel = "Mode";
+    m_varianceLineLabel = "Variance";
+    m_lowerQuartileLineLabel = "Lower Quartile";
+    m_upperQuartileLineLabel = "Upper Quartile";
+    m_madLineLabel = "MAD";
+    m_skewnessLineLabel = "Skewness";
+    m_kurtosisLineLabel = "Kurtosis";
+
+    // Initialize connect stats line options
+    m_connectStatsLineEnabled = false;
+    m_connectStatsLineN = 5;
+    m_connectStatsLineType = ConnectStatsType::None;
 }
 
 // log transform setter/getter
@@ -211,6 +258,11 @@ void HighPerfLineChart::setGridEnabled(bool en) { m_gridEnabled = en; update(); 
 void HighPerfLineChart::setGridColor(const QColor& c) { m_gridColor = c; update(); }
 void HighPerfLineChart::setBackgroundColor(const QColor& c) { m_backgroundColor = c; update(); }
 void HighPerfLineChart::setShowPoints(bool en) { m_showPoints = en; update(); }
+bool HighPerfLineChart::showPoints() const { return m_showPoints; }
+
+// NEW: show/hide lines connecting points
+void HighPerfLineChart::setShowLines(bool en) { m_showLines = en; update(); }
+bool HighPerfLineChart::showLines() const { return m_showLines; }
 
 // New customization setters/getters
 void HighPerfLineChart::setAxisLineWidth(float w) { m_axisLineWidth = w; update(); }
@@ -570,56 +622,8 @@ void HighPerfLineChart::paintGL() {
         return QPointF(x, y);
     };
 
-    if (m_groupAveragingEnabled) {
-        // --- Group averaging mode ---
-        // Collect all points by group
-        std::unordered_map<int, std::vector<QPointF>> groupPoints;
-        for (const auto& line : m_lines) {
-            int group = line.group;
-            QVector<QPointF> pts = line.points;
-            if (m_binaryNormalizeX)
-                pts = binaryNormalize(pts, BinaryNormAxis::X);
-            if (m_binaryNormalizeY)
-                pts = binaryNormalize(pts, BinaryNormAxis::Y);
-            for (const QPointF& pt : pts) {
-                if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
-                    continue;
-                groupPoints[group].push_back(pt);
-            }
-        }
-        // Compute mean for each group
-        std::unordered_map<int, QPointF> groupMeans;
-        for (const auto& [group, pts] : groupPoints) {
-            if (pts.empty()) continue;
-            double sumX = 0, sumY = 0;
-            for (const auto& pt : pts) {
-                sumX += m_logTransformX ? logX(pt.x()) : pt.x();
-                sumY += m_logTransformY ? logY(pt.y()) : pt.y();
-            }
-            groupMeans[group] = QPointF(sumX / pts.size(), sumY / pts.size());
-        }
-        // Draw points colored by group
-        glPointSize(10.0f);
-        glBegin(GL_POINTS);
-        for (const auto& [group, meanPt] : groupMeans) {
-            if (!qIsFinite(meanPt.x()) || !qIsFinite(meanPt.y()))
-                continue;
-            if (meanPt.x() < m_xMin || meanPt.x() > m_xMax || meanPt.y() < m_yMin || meanPt.y() > m_yMax)
-                continue;
-            QColor c = m_groupColorMap.count(group) ? m_groupColorMap[group] : Qt::black;
-            glColor4f(c.redF(), c.greenF(), c.blueF(), 1.0f);
-            // meanPt is already in log space if enabled
-            QPointF screenPt = chartToScreen(QPointF(
-                m_logTransformX ? invLogX(meanPt.x()) : meanPt.x(),
-                m_logTransformY ? invLogY(meanPt.y()) : meanPt.y()
-            ));
-            float x = (screenPt.x() / width()) * 2.0f - 1.0f;
-            float y = 1.0f - (screenPt.y() / height()) * 2.0f;
-            glVertex2f(x, y);
-        }
-        glEnd();
-    } else {
-        // --- Draw lines and points (with line clipping to axes) ---
+    // --- Draw lines and points (with line clipping to axes) ---
+    if (m_showAllLines) {
         for (int i = 0; i < m_lines.size(); ++i) {
             const auto& line = m_lines[i];
             if (line.points.isEmpty())
@@ -629,9 +633,10 @@ void HighPerfLineChart::paintGL() {
                 pts = binaryNormalize(pts, BinaryNormAxis::X);
             if (m_binaryNormalizeY)
                 pts = binaryNormalize(pts, BinaryNormAxis::Y);
-            QColor c = line.color.isValid() ? line.color : Qt::black;
-            float alpha = (line.opacity >= 0.0f && line.opacity <= 1.0f) ? line.opacity : 1.0f;
-            float lw = (line.lineWidth > 0) ? line.lineWidth : m_lineWidth;
+
+            QColor c = m_globalLineColor.isValid() ? m_globalLineColor : (line.color.isValid() ? line.color : Qt::black);
+            float alpha = m_globalLineOpacity;
+            float lw = (m_globalLineWidth > 0) ? m_globalLineWidth : ((line.lineWidth > 0) ? line.lineWidth : m_lineWidth);
             float ps = (line.pointSize > 0) ? line.pointSize : m_pointSize;
             if (i == m_selectedLine) { c = Qt::red; alpha = 1.0f; lw = std::max(lw, 3.0f); }
             else if (i == m_hoveredLine) { c = c.lighter(150); alpha = 1.0f; }
@@ -667,7 +672,7 @@ void HighPerfLineChart::paintGL() {
             }
 
             // Draw lines (clip each segment to axes)
-            if (pts.size() > 1) {
+            if (m_showLines && pts.size() > 1) { // <--- Only draw lines if m_showLines is true
                 if (m_gradientLineEnabled) {
                     for (int j = 1; j < pts.size(); ++j) {
                         QPointF p0Orig = pts[j - 1];
@@ -742,6 +747,423 @@ void HighPerfLineChart::paintGL() {
                 }
             }
             glDisable(GL_LINE_STIPPLE); // Always disable after drawing
+        }
+    }
+
+    // --- Draw line between statistic of first n and last n points ---
+    if (m_connectStatsLineEnabled && m_connectStatsLineType != ConnectStatsType::None && !m_lines.isEmpty()) {
+        // Use the first line for simplicity (or could average across all lines)
+        const auto& line = m_lines[0];
+        if (line.points.size() >= 2 * m_connectStatsLineN) {
+            auto statFunc = [](const QVector<QPointF>& pts, ConnectStatsType type) -> QPointF {
+                if (pts.isEmpty()) return QPointF();
+                QVector<double> xs, ys;
+                for (const auto& pt : pts) { xs.append(pt.x()); ys.append(pt.y()); }
+                double x = 0, y = 0;
+                switch (type) {
+                    case ConnectStatsType::Average:
+                        x = std::accumulate(xs.begin(), xs.end(), 0.0) / xs.size();
+                        y = std::accumulate(ys.begin(), ys.end(), 0.0) / ys.size();
+                        break;
+                    case ConnectStatsType::Median: {
+                        std::sort(xs.begin(), xs.end());
+                        std::sort(ys.begin(), ys.end());
+                        int n = xs.size();
+                        x = (n % 2 == 1) ? xs[n/2] : 0.5 * (xs[n/2-1] + xs[n/2]);
+                        y = (n % 2 == 1) ? ys[n/2] : 0.5 * (ys[n/2-1] + ys[n/2]);
+                        break;
+                    }
+                    case ConnectStatsType::Mode: {
+                        auto mode = [](const QVector<double>& vals) -> double {
+                            std::map<double, int> freq;
+                            for (double v : vals) freq[v]++;
+                            auto it = std::max_element(freq.begin(), freq.end(), [](const auto& a, const auto& b) { return a.second < b.second; });
+                            return (it != freq.end()) ? it->first : vals[0];
+                        };
+                        x = mode(xs);
+                        y = mode(ys);
+                        break;
+                    }
+                    default: break;
+                }
+                return QPointF(x, y);
+            };
+            QVector<QPointF> firstN(line.points.mid(0, m_connectStatsLineN));
+            QVector<QPointF> lastN(line.points.mid(line.points.size() - m_connectStatsLineN, m_connectStatsLineN));
+            QPointF statFirst = statFunc(firstN, m_connectStatsLineType);
+            QPointF statLast = statFunc(lastN, m_connectStatsLineType);
+
+            // Draw the connecting line
+            QPainter painter(this);
+            painter.setRenderHint(QPainter::Antialiasing, true);
+            QPen pen(Qt::darkCyan, 2, Qt::DashDotLine);
+            painter.setPen(pen);
+            QPointF p1 = chartToScreen(statFirst);
+            QPointF p2 = chartToScreen(statLast);
+            painter.drawLine(p1, p2);
+
+            // Optionally, draw points at the ends
+            painter.setBrush(Qt::darkCyan);
+            painter.drawEllipse(p1, 5, 5);
+            painter.drawEllipse(p2, 5, 5);
+        }
+    }
+
+    // --- Draw average/median/percentile/min/max/stddev lines using QPainter ---
+    if ((!m_lines.isEmpty()) && (m_showAverageLine || m_showMedianLine || m_showPercentileLines || m_showMinLine || m_showMaxLine || m_showStddevLines || m_showModeLine || m_showVarianceLine || m_showLowerQuartileLine || m_showUpperQuartileLine || m_showMADLine || m_showSkewnessLine || m_showKurtosisLine)) {
+        const int N = 200;
+        QVector<QPointF> avgPoints, medianPoints, percLowPoints, percHighPoints, minPoints, maxPoints, stddevLowPoints, stddevHighPoints;
+        QVector<QPointF> modePoints, variancePoints, lowerQuartilePoints, upperQuartilePoints, madPoints, skewnessPoints, kurtosisPoints;
+        double xStart = m_xMin, xEnd = m_xMax;
+        for (int i = 0; i < N; ++i) {
+            double x = xStart + (xEnd - xStart) * i / (N - 1);
+            QVector<double> yVals;
+            double ySum = 0;
+            int yCount = 0;
+            // For each line, interpolate y at this x (if possible)
+            for (const auto& line : m_lines) {
+                const QVector<QPointF>& pts = line.points;
+                if (pts.size() < 2) continue;
+                for (int j = 1; j < pts.size(); ++j) {
+                    double x0 = m_logTransformX ? logX(pts[j-1].x()) : pts[j-1].x();
+                    double x1 = m_logTransformX ? logX(pts[j].x()) : pts[j].x();
+                    double y0 = m_logTransformY ? logY(pts[j-1].y()) : pts[j-1].y();
+                    double y1 = m_logTransformY ? logY(pts[j].y()) : pts[j].y();
+                    if ((x0 <= x && x <= x1) || (x1 <= x && x <= x0)) {
+                        double t = (x1 - x0) != 0 ? (x - x0) / (x1 - x0) : 0.0;
+                        double y = y0 + t * (y1 - y0);
+                        yVals.append(y);
+                        ySum += y;
+                        yCount++;
+                        break;
+                    }
+                }
+            }
+            if (yCount > 0) {
+                if (m_showAverageLine)
+                    avgPoints.append(QPointF(x, ySum / yCount));
+                if (m_showMedianLine || m_showPercentileLines || m_showMinLine || m_showMaxLine || m_showStddevLines || m_showModeLine || m_showVarianceLine || m_showLowerQuartileLine || m_showUpperQuartileLine || m_showMADLine || m_showSkewnessLine || m_showKurtosisLine) {
+                    std::sort(yVals.begin(), yVals.end());
+                    int n = yVals.size();
+                    // Median
+                    if (m_showMedianLine) {
+                        double med = (n % 2 == 1) ? yVals[n/2] : 0.5 * (yVals[n/2-1] + yVals[n/2]);
+                        medianPoints.append(QPointF(x, med));
+                    }
+                    // Percentiles
+                    if (m_showPercentileLines) {
+                        int idxLow = std::clamp(int(m_percentileLower * n), 0, n-1);
+                        int idxHigh = std::clamp(int(m_percentileUpper * n), 0, n-1);
+                        percLowPoints.append(QPointF(x, yVals[idxLow]));
+                        percHighPoints.append(QPointF(x, yVals[idxHigh]));
+                    }
+                    // Min/Max
+                    if (m_showMinLine)
+                        minPoints.append(QPointF(x, yVals.first()));
+                    if (m_showMaxLine)
+                        maxPoints.append(QPointF(x, yVals.last()));
+                    // Stddev
+                    if (m_showStddevLines) {
+                        double mean = ySum / yCount;
+                        double var = 0;
+                        for (double y : yVals) var += (y - mean) * (y - mean);
+                        double stddev = std::sqrt(var / yCount);
+                        stddevLowPoints.append(QPointF(x, mean - stddev));
+                        stddevHighPoints.append(QPointF(x, mean + stddev));
+                    }
+                    // Mode
+                    if (m_showModeLine) {
+                        std::map<double, int> freqMap;
+                        for (double y : yVals) freqMap[y]++;
+                        auto modeIt = std::max_element(freqMap.begin(), freqMap.end(), [](const auto& a, const auto& b) { return a.second < b.second; });
+                        if (modeIt != freqMap.end())
+                            modePoints.append(QPointF(x, modeIt->first));
+                    }
+                    // Variance
+                    if (m_showVarianceLine) {
+                        double mean = ySum / yCount;
+                        double var = 0;
+                        for (double y : yVals) var += (y - mean) * (y - mean);
+                        variancePoints.append(QPointF(x, var / yCount));
+                    }
+                    // Lower/Upper Quartiles
+                    if (m_showLowerQuartileLine) {
+                        int idxLQ = std::clamp(int(0.25 * n), 0, n-1);
+                        lowerQuartilePoints.append(QPointF(x, yVals[idxLQ]));
+                    }
+                    if (m_showUpperQuartileLine) {
+                        int idxUQ = std::clamp(int(0.75 * n), 0, n-1);
+                        upperQuartilePoints.append(QPointF(x, yVals[idxUQ]));
+                    }
+                    // MAD
+                    if (m_showMADLine) {
+                        double mean = ySum / yCount;
+                        QVector<double> absDevs;
+                        for (double y : yVals) absDevs.append(std::abs(y - mean));
+                        std::sort(absDevs.begin(), absDevs.end());
+                        double mad = (n % 2 == 1) ? absDevs[n/2] : 0.5 * (absDevs[n/2-1] + absDevs[n/2]);
+                        madPoints.append(QPointF(x, mad));
+                    }
+                    // Skewness
+                    if (m_showSkewnessLine) {
+                        double mean = ySum / yCount;
+                        double m3 = 0, m2 = 0;
+                        for (double y : yVals) {
+                            double dev = y - mean;
+                            m3 += dev * dev * dev;
+                            m2 += dev * dev;
+                        }
+                        m3 /= yCount;
+                        m2 = std::pow(m2 / yCount, 1.5);
+                        double skewness = (m2 != 0) ? m3 / m2 : 0.0;
+                        skewnessPoints.append(QPointF(x, skewness));
+                    }
+                    // Kurtosis
+                    if (m_showKurtosisLine) {
+                        double mean = ySum / yCount;
+                        double m4 = 0, m2 = 0;
+                        for (double y : yVals) {
+                            double dev = y - mean;
+                            m4 += dev * dev * dev * dev;
+                            m2 += dev * dev;
+                        }
+                        m4 /= yCount;
+                        m2 = std::pow(m2 / yCount, 2.0);
+                        double kurtosis = (m2 != 0) ? m4 / m2 : 0.0;
+                        kurtosisPoints.append(QPointF(x, kurtosis));
+                    }
+                }
+            }
+        }
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        // Average line
+        if (m_showAverageLine && avgPoints.size() > 1) {
+            QPen avgPen(QColor(0, 0, 200), 2, Qt::DotLine);
+            painter.setPen(avgPen);
+            QPolygonF poly;
+            for (const QPointF& pt : avgPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // Median line
+        if (m_showMedianLine && medianPoints.size() > 1) {
+            QPen medPen(QColor(200, 0, 200), 2, Qt::DashLine);
+            painter.setPen(medPen);
+            QPolygonF poly;
+            for (const QPointF& pt : medianPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // Percentile lines
+        if (m_showPercentileLines && percLowPoints.size() > 1 && percHighPoints.size() > 1) {
+            QPen percPen(QColor(0, 180, 0), 1, Qt::DashDotLine);
+            painter.setPen(percPen);
+            QPolygonF polyLow, polyHigh;
+            for (const QPointF& pt : percLowPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                polyLow << screenPt;
+            }
+            for (const QPointF& pt : percHighPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                polyHigh << screenPt;
+            }
+            painter.drawPolyline(polyLow);
+            painter.drawPolyline(polyHigh);
+        }
+        // Min line
+        if (m_showMinLine && minPoints.size() > 1) {
+            QPen minPen(QColor(0, 150, 255), 1, Qt::DotLine);
+            painter.setPen(minPen);
+            QPolygonF poly;
+            for (const QPointF& pt : minPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // Max line
+        if (m_showMaxLine && maxPoints.size() > 1) {
+            QPen maxPen(QColor(255, 100, 0), 1, Qt::DotLine);
+            painter.setPen(maxPen);
+            QPolygonF poly;
+            for (const QPointF& pt : maxPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // Stddev lines
+        if (m_showStddevLines && stddevLowPoints.size() > 1 && stddevHighPoints.size() > 1) {
+            QPen stddevPen(QColor(120, 120, 120), 1, Qt::DashLine);
+            painter.setPen(stddevPen);
+            QPolygonF polyLow, polyHigh;
+            for (const QPointF& pt : stddevLowPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                polyLow << screenPt;
+            }
+            for (const QPointF& pt : stddevHighPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                polyHigh << screenPt;
+            }
+            painter.drawPolyline(polyLow);
+            painter.drawPolyline(polyHigh);
+        }
+        // Mode line
+        if (m_showModeLine && modePoints.size() > 1) {
+            QPen modePen(QColor(0, 0, 0), 1, Qt::SolidLine);
+            painter.setPen(modePen);
+            QPolygonF poly;
+            for (const QPointF& pt : modePoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // Variance line
+        if (m_showVarianceLine && variancePoints.size() > 1) {
+            QPen varPen(QColor(100, 100, 255), 1, Qt::DashDotDotLine);
+            painter.setPen(varPen);
+            QPolygonF poly;
+            for (const QPointF& pt : variancePoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // Lower Quartile line
+        if (m_showLowerQuartileLine && lowerQuartilePoints.size() > 1) {
+            QPen lqPen(QColor(0, 180, 180), 1, Qt::DotLine);
+            painter.setPen(lqPen);
+            QPolygonF poly;
+            for (const QPointF& pt : lowerQuartilePoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // Upper Quartile line
+        if (m_showUpperQuartileLine && upperQuartilePoints.size() > 1) {
+            QPen uqPen(QColor(180, 180, 0), 1, Qt::DotLine);
+            painter.setPen(uqPen);
+            QPolygonF poly;
+            for (const QPointF& pt : upperQuartilePoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // MAD line
+        if (m_showMADLine && madPoints.size() > 1) {
+            QPen madPen(QColor(180, 0, 180), 1, Qt::DashDotLine);
+            painter.setPen(madPen);
+            QPolygonF poly;
+            for (const QPointF& pt : madPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // Skewness line
+        if (m_showSkewnessLine && skewnessPoints.size() > 1) {
+            QPen skewPen(QColor(0, 120, 120), 1, Qt::DashLine);
+            painter.setPen(skewPen);
+            QPolygonF poly;
+            for (const QPointF& pt : skewnessPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
+        // Kurtosis line
+        if (m_showKurtosisLine && kurtosisPoints.size() > 1) {
+            QPen kurtPen(QColor(120, 0, 120), 1, Qt::DashLine);
+            painter.setPen(kurtPen);
+            QPolygonF poly;
+            for (const QPointF& pt : kurtosisPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
         }
     }
 
@@ -836,29 +1258,278 @@ void HighPerfLineChart::paintGL() {
         painter.restore();
     }
 
-    // --- Draw legend for group colors ---
-    if (m_groupAveragingEnabled && !m_groupStringMap.empty()) {
-        QFont legendFont = m_legendFont.family().isEmpty() ? painter.font() : m_legendFont;
-        painter.setFont(legendFont);
+    // --- Draw average number of points and total lines label ABOVE the legend ---
+    int legendTopY = -1; // Will be set if legend is shown
+    int legendBottomY = -1; // Will be set if legend is shown
+    int avgLabelY = m_topMargin - 10;
+    int avgLabelHeight = 0;
+    int legendMargin = 10;
+    int statLegendHeight = 0;
+    int statLegendX = 0, statLegendY = 0;
+    int statLegendWidth = 160;
+
+    QString avgLabel;
+    if (m_showAvgNumPointsLabel && !m_lines.isEmpty()) {
+        int totalPoints = 0;
+        int numLines = 0;
+        for (const auto& line : m_lines) {
+            totalPoints += line.points.size();
+            ++numLines;
+        }
+        if (numLines > 0) {
+            double avgPoints = double(totalPoints) / numLines;
+            avgLabel = QString("Average points per line: %1    Total lines: %2")
+                           .arg(avgPoints, 0, 'f', 2)
+                           .arg(numLines);
+            QFont avgFont = painter.font();
+            avgFont.setBold(true);
+            painter.setFont(avgFont);
+            painter.setPen(QColor(80, 80, 80));
+            if (!m_chartTitle.isEmpty()) {
+                avgLabelY += 18; // leave space for title font
+            }
+            avgLabelHeight = painter.fontMetrics().height();
+            painter.drawText(m_leftMargin, avgLabelY, avgLabel);
+        }
+    }
+
+    // --- Draw legend below the average label ---
+    if (m_showLegend) {
+        // --- Compute average slope of main stat line (average or median) ---
+        double statSlope = 0.0;
+        int statSlopeCount = 0;
+        QVector<QPointF> statLinePoints;
+        if (m_showAverageLine || m_showMedianLine) {
+            // Use whichever is enabled (prefer average)
+            const int N = 200;
+            QVector<QPointF> avgPoints, medianPoints;
+            double xStart = m_xMin, xEnd = m_xMax;
+            for (int i = 0; i < N; ++i) {
+                double x = xStart + (xEnd - xStart) * i / (N - 1);
+                QVector<double> yVals;
+                double ySum = 0;
+                int yCount = 0;
+                for (const auto& line : m_lines) {
+                    const QVector<QPointF>& pts = line.points;
+                    if (pts.size() < 2) continue;
+                    for (int j = 1; j < pts.size(); ++j) {
+                        double x0 = m_logTransformX ? logX(pts[j-1].x()) : pts[j-1].x();
+                        double x1 = m_logTransformX ? logX(pts[j].x()) : pts[j].x();
+                        double y0 = m_logTransformY ? logY(pts[j-1].y()) : pts[j-1].y();
+                        double y1 = m_logTransformY ? logY(pts[j].y()) : pts[j].y();
+                        if ((x0 <= x && x <= x1) || (x1 <= x && x <= x0)) {
+                            double t = (x1 - x0) != 0 ? (x - x0) / (x1 - x0) : 0.0;
+                            double y = y0 + t * (y1 - y0);
+                            yVals.append(y);
+                            ySum += y;
+                            yCount++;
+                            break;
+                        }
+                    }
+                }
+                if (yCount > 0) {
+                    if (m_showAverageLine)
+                        avgPoints.append(QPointF(x, ySum / yCount));
+                    if (m_showMedianLine) {
+                        std::sort(yVals.begin(), yVals.end());
+                        int n = yVals.size();
+                        double med = (n % 2 == 1) ? yVals[n/2] : 0.5 * (yVals[n/2-1] + yVals[n/2]);
+                        medianPoints.append(QPointF(x, med));
+                    }
+                }
+            }
+            if (m_showAverageLine && avgPoints.size() > 1)
+                statLinePoints = avgPoints;
+            else if (m_showMedianLine && medianPoints.size() > 1)
+                statLinePoints = medianPoints;
+        }
+        if (statLinePoints.size() > 1) {
+            for (int i = 1; i < statLinePoints.size(); ++i) {
+                double dx = statLinePoints[i].x() - statLinePoints[i-1].x();
+                double dy = statLinePoints[i].y() - statLinePoints[i-1].y();
+                if (std::abs(dx) > 1e-8) {
+                    statSlope += dy / dx;
+                    ++statSlopeCount;
+                }
+            }
+        }
+        double avgSlope = (statSlopeCount > 0) ? statSlope / statSlopeCount : 0.0;
+
+        // --- Legend positioning logic ---
+        int statBoxSize = 16;
+        int statSpacing = 6;
+        int statTextOffset = 22;
+        int statLegendLine = 0;
+
+        // Count number of stat lines to compute legend height
+        int statLineCount = 0;
+        if (m_showAverageLine) ++statLineCount;
+        if (m_showMedianLine) ++statLineCount;
+        if (m_showPercentileLines) statLineCount += 2;
+        if (m_showMinLine) ++statLineCount;
+        if (m_showMaxLine) ++statLineCount;
+        if (m_showStddevLines) ++statLineCount;
+        // Additional statistical lines
+        if (m_showModeLine) ++statLineCount;
+        if (m_showVarianceLine) ++statLineCount;
+        if (m_showLowerQuartileLine) ++statLineCount;
+        if (m_showUpperQuartileLine) ++statLineCount;
+        if (m_showMADLine) ++statLineCount;
+        if (m_showSkewnessLine) ++statLineCount;
+        if (m_showKurtosisLine) ++statLineCount;
+        bool anyStatLine = statLineCount > 0;
+
+        statLegendHeight = (statLineCount + 1) * (statBoxSize + statSpacing);
+
+        // Place legend to left or right of chart area, not overlapping y axis
+        if (avgSlope < 0) {
+            // Downward: put legend on right
+            statLegendX = chartRect.right() + legendMargin;
+            if (statLegendX + statLegendWidth > width())
+                statLegendX = width() - statLegendWidth - legendMargin;
+        } else {
+            // Upward or flat: put legend to the right of y axis (not overlapping)
+            statLegendX = chartRect.left() + legendMargin;
+            if (statLegendX + statLegendWidth > chartRect.right() - legendMargin)
+                statLegendX = std::max(legendMargin, chartRect.right() - statLegendWidth - legendMargin);
+        }
+        // Place legend vertically just below the average label
+        statLegendY = avgLabelY + avgLabelHeight + legendMargin;
+        legendTopY = statLegendY;
+
+        QFont statLegendFont = m_legendFont.family().isEmpty() ? painter.font() : m_legendFont;
+        painter.setFont(statLegendFont);
         painter.setPen(m_legendColor);
 
-        int legendX = (m_legendX >= 0) ? m_legendX : width() - 160;
-        int legendY = (m_legendY >= 0) ? m_legendY : 50;
-        int boxSize = 16;
-        int spacing = 6;
-        int textOffset = 22;
-        int i = 0;
-        QFontMetrics fmLegend(legendFont);
-        painter.setBrush(Qt::NoBrush);
-        painter.drawText(legendX, legendY - 10, "Group Legend:");
-        for (const auto& [group, groupStr] : m_groupStringMap) {
-            QColor c = m_groupColorMap.count(group) ? m_groupColorMap[group] : Qt::black;
-            QRect colorRect(legendX, legendY + i * (boxSize + spacing), boxSize, boxSize);
-            painter.fillRect(colorRect, c);
-            painter.drawRect(colorRect);
-            painter.drawText(legendX + textOffset, legendY + i * (boxSize + spacing) + boxSize - 2, groupStr);
-            ++i;
+        // Draw header
+        if (anyStatLine) {
+            painter.drawText(statLegendX, statLegendY - 10, "Statistical Lines:");
         }
+
+        // Helper lambda to draw a legend swatch with a given pen and label
+        auto drawStatLegendEntry = [&](const QPen& pen, const QString& label) {
+            int y = statLegendY + statLegendLine * (statBoxSize + statSpacing);
+            QRect swatchRect(statLegendX, y, statBoxSize, statBoxSize);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(Qt::NoBrush);
+            painter.drawRect(swatchRect);
+            // Draw line style in the box
+            int midY = y + statBoxSize / 2;
+            QPen penCopy = pen;
+            penCopy.setWidth(2);
+            painter.setPen(penCopy);
+            painter.drawLine(statLegendX + 2, midY, statLegendX + statBoxSize - 2, midY);
+            painter.setPen(m_legendColor);
+            painter.drawText(statLegendX + statTextOffset, y + statBoxSize - 2, label);
+            ++statLegendLine;
+        };
+
+        // Draw entries for each enabled statistical line, matching the style in the chart
+        if (m_showAverageLine) {
+            QPen avgPen(QColor(0, 0, 200), 2, Qt::DotLine);
+            drawStatLegendEntry(avgPen, m_averageLineLabel);
+        }
+        if (m_showMedianLine) {
+            QPen medPen(QColor(200, 0, 200), 2, Qt::DashLine);
+            drawStatLegendEntry(medPen, m_medianLineLabel);
+        }
+        if (m_showPercentileLines) {
+            QPen percPen(QColor(0, 180, 0), 1, Qt::DashDotLine);
+            drawStatLegendEntry(percPen, m_percentileLowerLabel);
+            drawStatLegendEntry(percPen, m_percentileUpperLabel);
+        }
+        if (m_showMinLine) {
+            QPen minPen(QColor(0, 150, 255), 1, Qt::DotLine);
+            drawStatLegendEntry(minPen, m_minLineLabel);
+        }
+        if (m_showMaxLine) {
+            QPen maxPen(QColor(255, 100, 0), 1, Qt::DotLine);
+            drawStatLegendEntry(maxPen, m_maxLineLabel);
+        }
+        if (m_showStddevLines) {
+            QPen stddevPen(QColor(120, 120, 120), 1, Qt::DashLine);
+            drawStatLegendEntry(stddevPen, m_stddevLineLabel + " (±1σ)");
+        }
+        // Additional statistical lines
+        if (m_showModeLine) {
+            QPen modePen(QColor(0, 0, 0), 1, Qt::SolidLine);
+            drawStatLegendEntry(modePen, m_modeLineLabel.isEmpty() ? "Mode" : m_modeLineLabel);
+        }
+        if (m_showVarianceLine) {
+            QPen varPen(QColor(100, 100, 255), 1, Qt::DashDotDotLine);
+            drawStatLegendEntry(varPen, m_varianceLineLabel.isEmpty() ? "Variance" : m_varianceLineLabel);
+        }
+        if (m_showLowerQuartileLine) {
+            QPen lqPen(QColor(0, 180, 180), 1, Qt::DotLine);
+            drawStatLegendEntry(lqPen, m_lowerQuartileLineLabel.isEmpty() ? "Lower Quartile" : m_lowerQuartileLineLabel);
+        }
+        if (m_showUpperQuartileLine) {
+            QPen uqPen(QColor(180, 180, 0), 1, Qt::DotLine);
+            drawStatLegendEntry(uqPen, m_upperQuartileLineLabel.isEmpty() ? "Upper Quartile" : m_upperQuartileLineLabel);
+        }
+        if (m_showMADLine) {
+            QPen madPen(QColor(180, 0, 180), 1, Qt::DashDotLine);
+            drawStatLegendEntry(madPen, m_madLineLabel.isEmpty() ? "MAD" : m_madLineLabel);
+        }
+        if (m_showSkewnessLine) {
+            QPen skewPen(QColor(0, 120, 120), 1, Qt::DashLine);
+            drawStatLegendEntry(skewPen, m_skewnessLineLabel.isEmpty() ? "Skewness" : m_skewnessLineLabel);
+        }
+        if (m_showKurtosisLine) {
+            QPen kurtPen(QColor(120, 0, 120), 1, Qt::DashLine);
+            drawStatLegendEntry(kurtPen, m_kurtosisLineLabel.isEmpty() ? "Kurtosis" : m_kurtosisLineLabel);
+        }
+
+        // --- Draw group legend below statistical legend if enabled ---
+        if (m_groupAveragingEnabled && !m_groupStringMap.empty()) {
+            QFont legendFont = m_legendFont.family().isEmpty() ? painter.font() : m_legendFont;
+            painter.setFont(legendFont);
+            painter.setPen(m_legendColor);
+
+            int groupLegendX = statLegendX;
+            int groupLegendY = statLegendY + statLegendHeight + legendMargin;
+            int boxSize = 16;
+            int spacing = 6;
+            int textOffset = 22;
+            int i = 0;
+            QFontMetrics fmLegend(legendFont);
+            painter.setBrush(Qt::NoBrush);
+            painter.drawText(groupLegendX, groupLegendY - 10, "Group Legend:");
+            for (const auto& [group, groupStr] : m_groupStringMap) {
+                QColor c = m_groupColorMap.count(group) ? m_groupColorMap[group] : Qt::black;
+                QRect colorRect(groupLegendX, groupLegendY + i * (boxSize + spacing), boxSize, boxSize);
+                painter.fillRect(colorRect, c);
+                painter.drawRect(colorRect);
+                painter.drawText(groupLegendX + textOffset, groupLegendY + i * (boxSize + spacing) + boxSize - 2, groupStr);
+                ++i;
+            }
+        }
+
+        // Add legend entry for connect stats line if enabled
+        if (m_connectStatsLineEnabled && m_connectStatsLineType != ConnectStatsType::None) {
+            QPen pen(Qt::darkCyan, 2, Qt::DashDotLine);
+            QString label = "Connect ";
+            switch (m_connectStatsLineType) {
+                case ConnectStatsType::Average: label += "Avg"; break;
+                case ConnectStatsType::Median: label += "Median"; break;
+                case ConnectStatsType::Mode: label += "Mode"; break;
+                default: break;
+            }
+            // Show the actual value of n in the legend, e.g., (n=5)
+            label += QString(" (n=%1)").arg(m_connectStatsLineN);
+            drawStatLegendEntry(pen, label);
+        }
+
+        // Compute bottom of legend area for later use
+        legendBottomY = statLegendY + statLegendHeight;
+        // If group legend is shown, extend legendBottomY accordingly
+        if (m_groupAveragingEnabled && !m_groupStringMap.empty()) {
+            int groupLegendY = statLegendY + statLegendHeight + legendMargin;
+            int groupLegendHeight = int(m_groupStringMap.size()) * (16 + 6);
+            legendBottomY = groupLegendY + groupLegendHeight;
+        }
+        // Add some margin below legend
+        legendBottomY += 10;
     }
 }
 
@@ -931,4 +1602,161 @@ void HighPerfLineChart::mousePressEvent(QMouseEvent* event) {
         emit lineSelected(idx);
         update();
     }
+}
+
+void HighPerfLineChart::setShowAverageLine(bool show) {
+    m_showAverageLine = show;
+    update();
+}
+
+bool HighPerfLineChart::showAverageLine() const {
+    return m_showAverageLine;
+}
+
+void HighPerfLineChart::setShowMedianLine(bool show) {
+    m_showMedianLine = show;
+    update();
+}
+
+bool HighPerfLineChart::showMedianLine() const {
+    return m_showMedianLine;
+}
+
+void HighPerfLineChart::setShowPercentileLines(bool show, double lower, double upper) {
+    m_showPercentileLines = show;
+    m_percentileLower = lower;
+    m_percentileUpper = upper;
+    update();
+}
+
+bool HighPerfLineChart::showPercentileLines() const {
+    return m_showPercentileLines;
+}
+
+double HighPerfLineChart::percentileLower() const {
+    return m_percentileLower;
+}
+
+double HighPerfLineChart::percentileUpper() const {
+    return m_percentileUpper;
+}
+
+void HighPerfLineChart::setShowMinLine(bool show) {
+    m_showMinLine = show;
+    update();
+}
+
+bool HighPerfLineChart::showMinLine() const {
+    return m_showMinLine;
+}
+
+void HighPerfLineChart::setShowMaxLine(bool show) {
+    m_showMaxLine = show;
+    update();
+}
+
+bool HighPerfLineChart::showMaxLine() const {
+    return m_showMaxLine;
+}
+
+void HighPerfLineChart::setShowStddevLines(bool show) {
+    m_showStddevLines = show;
+    update();
+}
+
+bool HighPerfLineChart::showStddevLines() const {
+    return m_showStddevLines;
+}
+
+void HighPerfLineChart::setShowAllLines(bool show) {
+    m_showAllLines = show;
+    update();
+}
+
+bool HighPerfLineChart::showAllLines() const {
+    return m_showAllLines;
+}
+
+void HighPerfLineChart::setGlobalLineColor(const QColor& color) {
+    m_globalLineColor = color;
+    update();
+}
+
+QColor HighPerfLineChart::globalLineColor() const {
+    return m_globalLineColor;
+}
+
+void HighPerfLineChart::setGlobalLineWidth(float width) {
+    m_globalLineWidth = width;
+    update();
+}
+
+float HighPerfLineChart::globalLineWidth() const {
+    return m_globalLineWidth;
+}
+
+void HighPerfLineChart::setGlobalLineOpacity(float opacity) {
+    m_globalLineOpacity = opacity;
+    update();
+}
+
+float HighPerfLineChart::globalLineOpacity() const {
+    return m_globalLineOpacity;
+}
+
+// --- Statistical line legend label setters ---
+void HighPerfLineChart::setAverageLineLabel(const QString& label) { m_averageLineLabel = label; update(); }
+void HighPerfLineChart::setMedianLineLabel(const QString& label) { m_medianLineLabel = label; update(); }
+void HighPerfLineChart::setPercentileLineLabels(const QString& lowerLabel, const QString& upperLabel) {
+    m_percentileLowerLabel = lowerLabel; m_percentileUpperLabel = upperLabel; update();
+}
+void HighPerfLineChart::setMinLineLabel(const QString& label) { m_minLineLabel = label; update(); }
+void HighPerfLineChart::setMaxLineLabel(const QString& label) { m_maxLineLabel = label; update(); }
+void HighPerfLineChart::setStddevLineLabel(const QString& label) { m_stddevLineLabel = label; update(); }
+
+// --- Additional statistical line setters/getters ---
+void HighPerfLineChart::setShowModeLine(bool show) { m_showModeLine = show; update(); }
+bool HighPerfLineChart::showModeLine() const { return m_showModeLine; }
+void HighPerfLineChart::setShowVarianceLine(bool show) { m_showVarianceLine = show; update(); }
+bool HighPerfLineChart::showVarianceLine() const { return m_showVarianceLine; }
+void HighPerfLineChart::setShowLowerQuartileLine(bool show) { m_showLowerQuartileLine = show; update(); }
+bool HighPerfLineChart::showLowerQuartileLine() const { return m_showLowerQuartileLine; }
+void HighPerfLineChart::setShowUpperQuartileLine(bool show) { m_showUpperQuartileLine = show; update(); }
+bool HighPerfLineChart::showUpperQuartileLine() const { return m_showUpperQuartileLine; }
+void HighPerfLineChart::setShowMADLine(bool show) { m_showMADLine = show; update(); }
+bool HighPerfLineChart::showMADLine() const { return m_showMADLine; }
+void HighPerfLineChart::setShowSkewnessLine(bool show) { m_showSkewnessLine = show; update(); }
+bool HighPerfLineChart::showSkewnessLine() const { return m_showSkewnessLine; }
+void HighPerfLineChart::setShowKurtosisLine(bool show) { m_showKurtosisLine = show; update(); }
+bool HighPerfLineChart::showKurtosisLine() const { return m_showKurtosisLine; }
+
+// --- Additional statistical line legend label setters ---
+void HighPerfLineChart::setModeLineLabel(const QString& label) { m_modeLineLabel = label; update(); }
+void HighPerfLineChart::setVarianceLineLabel(const QString& label) { m_varianceLineLabel = label; update(); }
+void HighPerfLineChart::setLowerQuartileLineLabel(const QString& label) { m_lowerQuartileLineLabel = label; update(); }
+void HighPerfLineChart::setUpperQuartileLineLabel(const QString& label) { m_upperQuartileLineLabel = label; update(); }
+void HighPerfLineChart::setMADLineLabel(const QString& label) { m_madLineLabel = label; update(); }
+void HighPerfLineChart::setSkewnessLineLabel(const QString& label) { m_skewnessLineLabel = label; update(); }
+void HighPerfLineChart::setKurtosisLineLabel(const QString& label) { m_kurtosisLineLabel = label; update(); }
+
+// --- Connect stats line setters/getters ---
+void HighPerfLineChart::setConnectStatsLineEnabled(bool enabled) { m_connectStatsLineEnabled = enabled; update(); }
+bool HighPerfLineChart::connectStatsLineEnabled() const { return m_connectStatsLineEnabled; }
+void HighPerfLineChart::setConnectStatsLineN(int n) { m_connectStatsLineN = std::max(1, n); update(); }
+int HighPerfLineChart::connectStatsLineN() const { return m_connectStatsLineN; }
+void HighPerfLineChart::setConnectStatsLineType(ConnectStatsType type) { m_connectStatsLineType = type; update(); }
+HighPerfLineChart::ConnectStatsType HighPerfLineChart::connectStatsLineType() const { return m_connectStatsLineType; }
+
+// --- Legend visibility setters/getters ---
+void HighPerfLineChart::setShowLegend(bool show) { m_showLegend = show; update(); }
+bool HighPerfLineChart::showLegend() const { return m_showLegend; }
+
+// --- Average number of points label visibility setters/getters ---
+void HighPerfLineChart::setShowAvgNumPointsLabel(bool show) {
+    m_showAvgNumPointsLabel = show;
+    update();
+}
+
+bool HighPerfLineChart::showAvgNumPointsLabel() const {
+    return m_showAvgNumPointsLabel;
 }

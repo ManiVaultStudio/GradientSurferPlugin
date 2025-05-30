@@ -89,9 +89,6 @@ public:
         const OptionAction& getScatterplotViewSelectionAction() const { return _scatterplotViewSelectionAction; }
         OptionAction& getScatterplotViewSelectionAction() { return _scatterplotViewSelectionAction; }
 
-        const IntegralAction& getTopNAction() const { return _topNAction; }
-        IntegralAction& getTopNAction() { return _topNAction; }
-
         const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
         TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
 
@@ -122,7 +119,6 @@ public:
         OptionsAction                       _clusterSelectionAction;
         DimensionPickerAction               _geneSelectionAction;
         StringAction                        _statusMessageAction;
-        IntegralAction                      _topNAction;
         DecimalRangeAction                  _correlationRangeAction;                   
         TriggerAction                       _deSelectRowAction;
         DimensionPickerAction               _embeddingDimensionXAction;

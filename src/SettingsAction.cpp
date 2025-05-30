@@ -31,7 +31,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _settingsHolder.getClusterSelectionAction().setSerializationName("LayerSurfer:ClusterSelection");
     _settingsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
     _settingsHolder.getScatterplotViewSelectionAction().setSerializationName("LayerSurfer:ScatterplotViewSelection");
-    _settingsHolder.getTopNAction().setSerializationName("LayerSurfer:TopNAction");
     _settingsHolder.getEmbeddingDimensionXAction().setSerializationName("LayerSurfer:EmbeddingDimensionX");
     _settingsHolder.getEmbeddingDimensionYAction().setSerializationName("LayerSurfer:EmbeddingDimensionY");
     _settingsHolder.getCorrelationRangeAction().setSerializationName("LayerSurfer:CorrelationRange");
@@ -45,7 +44,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _computeHolder.getComputeAction().setToolTip("Compute Action");
     _computeHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _settingsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
-    _settingsHolder.getTopNAction().setToolTip("Top N Action");
     _settingsHolder.getDeSelectRowAction().setToolTip("DeSelect Row Action");
     _settingsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _settingsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
@@ -72,10 +70,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _computeHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
     _computeHolder.getComputeAction().setText("Compute");
     _settingsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _settingsHolder.getTopNAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
-    _settingsHolder.getTopNAction().setValue(10);
-    _settingsHolder.getTopNAction().setMinimum(1);
-    _settingsHolder.getTopNAction().setMaximum(10000);
     _settingsHolder.getDeSelectRowAction().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
     _settingsHolder.getFocusSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _settingsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
@@ -136,7 +130,6 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     _geneSelectionAction(this, "Gene selection"),
     _statusMessageAction(this, "Status message"),
     _scatterplotViewSelectionAction(this, "Scatterplot view selection"),
-    _topNAction(this, "Top N"),
     _deSelectRowAction(this, "DeSelect Row"),
     _embeddingDimensionXAction(this, "Embedding Dimension X"),
     _embeddingDimensionYAction(this, "Embedding Dimension Y"),
@@ -155,7 +148,6 @@ inline SettingsAction::SettingsHolder::SettingsHolder(SettingsAction& settingsAc
     addAction(&_clusterSelectionAction);
     //addAction(&_geneSelectionAction);
     addAction(&_scatterplotViewSelectionAction);
-    addAction(&_topNAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
     addAction(&_focusSelectionAction);
@@ -196,7 +188,6 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _settingsHolder.getClusterSelectionAction().fromParentVariantMap(variantMap);
     _settingsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _settingsHolder.getScatterplotViewSelectionAction().fromParentVariantMap(variantMap);
-    _settingsHolder.getTopNAction().fromParentVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
     _settingsHolder.getCorrelationRangeAction().fromParentVariantMap(variantMap);
@@ -213,7 +204,6 @@ QVariantMap SettingsAction::toVariantMap() const
     _settingsHolder.getClusterSelectionAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getScatterplotViewSelectionAction().insertIntoVariantMap(variantMap);
-    _settingsHolder.getTopNAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionXAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
     _settingsHolder.getCorrelationRangeAction().insertIntoVariantMap(variantMap);

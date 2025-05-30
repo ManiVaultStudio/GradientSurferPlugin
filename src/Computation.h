@@ -100,7 +100,6 @@ private:
         int& yEmbeddingIndex,
         std::vector<int>& selectedIndices,
         QString& scatterplotViewName,
-        int& topN,
         float& minCorrelation,
         float& maxCorrelation
     );
