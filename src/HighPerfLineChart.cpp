@@ -1258,8 +1258,42 @@ void HighPerfLineChart::paintGL() {
         painter.restore();
     }
 
-    // --- Draw average number of points and total lines label ---
+    // --- Draw average number of points and total lines label ABOVE the legend ---
+    int legendTopY = -1; // Will be set if legend is shown
     int legendBottomY = -1; // Will be set if legend is shown
+    int avgLabelY = m_topMargin - 10;
+    int avgLabelHeight = 0;
+    int legendMargin = 10;
+    int statLegendHeight = 0;
+    int statLegendX = 0, statLegendY = 0;
+    int statLegendWidth = 160;
+
+    QString avgLabel;
+    if (m_showAvgNumPointsLabel && !m_lines.isEmpty()) {
+        int totalPoints = 0;
+        int numLines = 0;
+        for (const auto& line : m_lines) {
+            totalPoints += line.points.size();
+            ++numLines;
+        }
+        if (numLines > 0) {
+            double avgPoints = double(totalPoints) / numLines;
+            avgLabel = QString("Average points per line: %1    Total lines: %2")
+                           .arg(avgPoints, 0, 'f', 2)
+                           .arg(numLines);
+            QFont avgFont = painter.font();
+            avgFont.setBold(true);
+            painter.setFont(avgFont);
+            painter.setPen(QColor(80, 80, 80));
+            if (!m_chartTitle.isEmpty()) {
+                avgLabelY += 18; // leave space for title font
+            }
+            avgLabelHeight = painter.fontMetrics().height();
+            painter.drawText(m_leftMargin, avgLabelY, avgLabel);
+        }
+    }
+
+    // --- Draw legend below the average label ---
     if (m_showLegend) {
         // --- Compute average slope of main stat line (average or median) ---
         double statSlope = 0.0;
@@ -1322,14 +1356,10 @@ void HighPerfLineChart::paintGL() {
         double avgSlope = (statSlopeCount > 0) ? statSlope / statSlopeCount : 0.0;
 
         // --- Legend positioning logic ---
-        int legendMargin = 10;
         int statBoxSize = 16;
         int statSpacing = 6;
         int statTextOffset = 22;
         int statLegendLine = 0;
-        int statLegendWidth = 160;
-        int statLegendHeight = 0;
-        int statLegendX = 0, statLegendY = 0;
 
         // Count number of stat lines to compute legend height
         int statLineCount = 0;
@@ -1360,12 +1390,12 @@ void HighPerfLineChart::paintGL() {
         } else {
             // Upward or flat: put legend to the right of y axis (not overlapping)
             statLegendX = chartRect.left() + legendMargin;
-            // Ensure it doesn't overlap chart area too much
             if (statLegendX + statLegendWidth > chartRect.right() - legendMargin)
                 statLegendX = std::max(legendMargin, chartRect.right() - statLegendWidth - legendMargin);
         }
-        // Place legend vertically near top of chart area, but not above
-        statLegendY = chartRect.top() + legendMargin;
+        // Place legend vertically just below the average label
+        statLegendY = avgLabelY + avgLabelHeight + legendMargin;
+        legendTopY = statLegendY;
 
         QFont statLegendFont = m_legendFont.family().isEmpty() ? painter.font() : m_legendFont;
         painter.setFont(statLegendFont);
@@ -1500,35 +1530,6 @@ void HighPerfLineChart::paintGL() {
         }
         // Add some margin below legend
         legendBottomY += 10;
-    }
-
-    if (m_showAvgNumPointsLabel && !m_lines.isEmpty()) {
-        int totalPoints = 0;
-        int numLines = 0;
-        for (const auto& line : m_lines) {
-            totalPoints += line.points.size();
-            ++numLines;
-        }
-        if (numLines > 0) {
-            double avgPoints = double(totalPoints) / numLines;
-            QString avgLabel = QString("Average points per line: %1    Total lines: %2")
-                                   .arg(avgPoints, 0, 'f', 2)
-                                   .arg(numLines);
-            QFont avgFont = painter.font();
-            avgFont.setBold(true);
-            painter.setFont(avgFont);
-            painter.setPen(QColor(80, 80, 80));
-            int x = m_leftMargin;
-            int y = m_topMargin - 10;
-            if (!m_chartTitle.isEmpty()) {
-                y += 18; // leave space for title font
-            }
-            // If legend is present and would overlap, move label below legend
-            if (legendBottomY > 0 && y < legendBottomY + 5) {
-                y = legendBottomY + 5;
-            }
-            painter.drawText(x, y, avgLabel);
-        }
     }
 }
 
