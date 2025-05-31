@@ -2779,8 +2779,32 @@ bool Computation::setupAndTriggerPCA()
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
 
     std::vector<float> emptyData2(numAllCells2 * dimensionNamesOfInterest.size(), 0.0f);
-    _pcaCommonGenesDataset1->setData(emptyData2.data(), numAllCells2, dimensionNamesOfInterest.size());
+    _pcaCommonGenesDataset2->setData(emptyData2.data(), numAllCells2, dimensionNamesOfInterest.size());
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
+    _pcaDataset1Complete = false;
+    _pcaDataset2Complete = false;
+    disconnect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, nullptr);
+    disconnect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, nullptr);
+    connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
+        _pcaDataset1Complete = true;
+        qDebug() << "PCA Dataset 1 data changed";
+        if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            processAfterPCAComplete();
+        }
+        else {
+            qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
+        }
+        });
+    connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
+        _pcaDataset2Complete = true;
+        qDebug() << "PCA Dataset 2 data changed";
+        if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            processAfterPCAComplete();
+        }
+        else {
+            qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";
+        }
+        });
 
     if (dimensionNamesOfInterest.size() <= 0) {
         qDebug() << "No genes of interest selected for PCA";
@@ -2825,8 +2849,7 @@ bool Computation::setupAndTriggerPCA()
     componentsAction2->setValue(numofIntGenes);
 
     QApplication::processEvents();
-    _pcaDataset1Complete = false;
-    _pcaDataset2Complete = false;
+
     auto startAction1 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Start analysis"));
     auto startAction2 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Start analysis"));
     if (startAction1) {
@@ -2858,26 +2881,7 @@ bool Computation::setupAndTriggerPCA()
         return false;
     }
     QApplication::processEvents();
-    disconnect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, nullptr);
-    disconnect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, nullptr);
-    connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
-        _pcaDataset1Complete = true;
-        if (_pcaDataset1Complete && _pcaDataset2Complete) {
-            processAfterPCAComplete();
-        }
-        else {
-            qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
-        }
-        });
-    connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
-        _pcaDataset2Complete = true;
-        if (_pcaDataset1Complete && _pcaDataset2Complete) {
-            processAfterPCAComplete();
-        }
-        else {
-            qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";
-        }
-        });
+
     
     return true;
 }
