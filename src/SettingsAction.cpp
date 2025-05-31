@@ -25,6 +25,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset2OptionsHolder(*this),
     _selectionOptionsHolder(*this),
     _scatterplotOptionsHolder(*this),
+    _lineChartOptionsHolder(*this),
+    _tableOptionsHolder(*this),
     _computeHolder(*this)
 {
     setSerializationName("LayerSurfer:Settings");
@@ -70,6 +72,11 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset2OptionsHolder.getEmbeddingDimension2XAction().setToolTip("Embedding Dimension 2 X");
     _dataset2OptionsHolder.getEmbeddingDimension2YAction().setToolTip("Embedding Dimension 2 Y");
 
+    _lineChartOptionsHolder.getConnectStatsLineAction().setToolTip("Connect Stats Line Action");
+    _lineChartOptionsHolder.getConnectStatsLineAction().setMaximum(1.0);
+    _lineChartOptionsHolder.getConnectStatsLineAction().setMinimum(0.0);
+    _lineChartOptionsHolder.getConnectStatsLineAction().setValue(0.5);
+    _lineChartOptionsHolder.getConnectStatsLineAction().setSingleStep(0.1);
 
     _scatterplotOptionsHolder.getFocusSelectionAction().setChecked(false);
     _scatterplotOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
@@ -163,7 +170,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
-    setPopupSizeHint(QSize(500, 0));
+    setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_pointDatasetAction);
     addAction(&_embeddingDatasetAction);
@@ -187,7 +194,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
-    setPopupSizeHint(QSize(500, 0));
+    setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_pointDataset2Action);
     addAction(&_embeddingDataset2Action);
@@ -208,7 +215,7 @@ inline SettingsAction::SelectionOptionsHolder::SelectionOptionsHolder(SettingsAc
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
-    setPopupSizeHint(QSize(500, 0));
+    setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
     addAction(&_correlationRangeAction);
@@ -225,7 +232,7 @@ inline SettingsAction::ScatterplotOptionsHolder::ScatterplotOptionsHolder(Settin
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
-    setPopupSizeHint(QSize(500, 0));
+    setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
@@ -235,7 +242,33 @@ inline SettingsAction::ScatterplotOptionsHolder::ScatterplotOptionsHolder(Settin
 
 
 
+inline SettingsAction::LineChartOptionsHolder::LineChartOptionsHolder(SettingsAction& settingsAction) :
+    VerticalGroupAction(&settingsAction, "Line options"),
+    _settingsOptions(settingsAction),
+    _connectStatsLineAction(this, "Stats Line Top Bottom N")
+{
+    setText("Line Options");
+    setIcon(mv::util::StyledIcon("braille"));
+    setPopupSizeHint(QSize(300, 0));
+    setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
+    addAction(&_connectStatsLineAction);
 
+
+}
+
+
+inline SettingsAction::TableOptionsHolder::TableOptionsHolder(SettingsAction& settingsAction) :
+    VerticalGroupAction(&settingsAction, "Table options"),
+    _settingsOptions(settingsAction)
+{
+    setText("Settings Options");
+    setIcon(mv::util::StyledIcon("braille"));
+    setPopupSizeHint(QSize(300, 0));
+    setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
+
+
+
+}
 
 
 inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsAction) :
@@ -245,7 +278,7 @@ inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsActi
 {
     setText("Color Options");
     setIcon(mv::util::StyledIcon("braille"));
-    setPopupSizeHint(QSize(500, 0));
+    setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_computeAction);
     _statusBarAction = new QStatusBar();
