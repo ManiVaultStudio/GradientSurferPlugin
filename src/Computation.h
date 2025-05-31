@@ -105,7 +105,7 @@ private:
     );
 
     bool createDatasetsIfNeeded();
-
+    void updateClusterOptions();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
 
     bool populateEmbeddingCoordinates(

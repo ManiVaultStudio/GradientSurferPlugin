@@ -532,34 +532,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
          });
 
     const auto updateClusterDataset1 = [this]() -> void {
-        if (_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().isValid())
-        {
-            auto clusterFullDataset = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
-            auto clusters = clusterFullDataset->getClusters();
-            QStringList clusterNames = {};
-            if (!clusters.isEmpty())
-            {
-                for (auto cluster : clusters)
-                {
-                    clusterNames.append(cluster.getName());
-                }
-            }
-
-             _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions(clusterNames);
-             _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setSelectedOptions(clusterNames);
-
-        }
-        else
-        {
-             _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions({});
-        }
+        updateClusterOptions();
         setStatusMessage("M", "Cluster dataset updated", "");
         };
 
     connect(&_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset1);
 
     const auto updateClusterDataset2 = [this]() -> void {
-
+        updateClusterOptions();
+        setStatusMessage("M", "Cluster dataset updated", "");
         };
 
     connect(&_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset2);
@@ -2472,6 +2453,52 @@ bool Computation::createDatasetsIfNeeded()
     }
 
     return true;
+}
+
+void Computation::updateClusterOptions()
+{
+    QStringList clusterNamesCommon = {};
+    QStringList clusterNames1 = {};
+    QStringList clusterNames2 = {};
+    if (_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().isValid() )
+    {
+        auto clusterFullDataset1 = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+        auto clusters1 = clusterFullDataset1->getClusters();
+        
+        if (!clusters1.isEmpty())
+        {
+            for (auto cluster : clusters1)
+            {
+                clusterNames1.append(cluster.getName());
+            }
+        }
+
+    }
+    if (_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().isValid())
+    {
+        auto clusterFullDataset2 = mv::data().getDataset<Clusters>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
+        auto clusters2 = clusterFullDataset2->getClusters();
+
+        if (!clusters2.isEmpty())
+        {
+            for (auto cluster : clusters2)
+            {
+                clusterNames2.append(cluster.getName());
+            }
+        }
+
+    }
+    //add common items from clusterNames1 and clusterNames2 to clusterNamesCommon
+   
+    std::sort(clusterNames1.begin(), clusterNames1.end());
+    std::sort(clusterNames2.begin(), clusterNames2.end());
+    std::set_intersection(clusterNames1.begin(), clusterNames1.end(),
+        clusterNames2.begin(), clusterNames2.end(),
+        std::back_inserter(clusterNamesCommon));
+
+
+    _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions(clusterNamesCommon);
+    _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setSelectedOptions(clusterNamesCommon);
 }
 
 //Retrieve rotation angle from plugin
