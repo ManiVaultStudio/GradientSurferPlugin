@@ -2505,7 +2505,7 @@ void Computation::processAfterPCAComplete()
     _pcaDataset1Complete = false;
     _pcaDataset2Complete = false;
     //wait for the two pca finished events to complete std::cout << "PCA Plugin: Finished." << std::endl;
-    qDebug() << "PCA analysis triggered successfully";
+    qDebug() << "PCA analysis completed successfully";
     setStatusMessage("C", "PCA analysis completed", "#28a745");
 }
 
