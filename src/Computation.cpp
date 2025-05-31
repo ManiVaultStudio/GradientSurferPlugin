@@ -2488,7 +2488,6 @@ void Computation::updateClusterOptions()
         }
 
     }
-    //add common items from clusterNames1 and clusterNames2 to clusterNamesCommon
    
     std::sort(clusterNames1.begin(), clusterNames1.end());
     std::sort(clusterNames2.begin(), clusterNames2.end());
@@ -2499,6 +2498,15 @@ void Computation::updateClusterOptions()
 
     _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions(clusterNamesCommon);
     _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setSelectedOptions(clusterNamesCommon);
+}
+
+void Computation::processAfterPCAComplete()
+{
+    _pcaDataset1Complete = false;
+    _pcaDataset2Complete = false;
+    //wait for the two pca finished events to complete std::cout << "PCA Plugin: Finished." << std::endl;
+    qDebug() << "PCA analysis triggered successfully";
+    setStatusMessage("C", "PCA analysis completed", "#28a745");
 }
 
 //Retrieve rotation angle from plugin
@@ -2817,7 +2825,8 @@ bool Computation::setupAndTriggerPCA()
     componentsAction2->setValue(numofIntGenes);
 
     QApplication::processEvents();
-
+    _pcaDataset1Complete = false;
+    _pcaDataset2Complete = false;
     auto startAction1 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Start analysis"));
     auto startAction2 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Start analysis"));
     if (startAction1) {
@@ -2849,9 +2858,27 @@ bool Computation::setupAndTriggerPCA()
         return false;
     }
     QApplication::processEvents();
-    //wait for the two pca finished events to complete std::cout << "PCA Plugin: Finished." << std::endl;
-    qDebug() << "PCA analysis triggered successfully";
-    setStatusMessage("C", "PCA analysis completed", "#28a745");
+    disconnect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, nullptr);
+    disconnect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, nullptr);
+    connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
+        _pcaDataset1Complete = true;
+        if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            processAfterPCAComplete();
+        }
+        else {
+            qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
+        }
+        });
+    connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
+        _pcaDataset2Complete = true;
+        if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            processAfterPCAComplete();
+        }
+        else {
+            qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";
+        }
+        });
+    
     return true;
 }
 

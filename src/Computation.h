@@ -106,6 +106,7 @@ private:
 
     bool createDatasetsIfNeeded();
     void updateClusterOptions();
+    void processAfterPCAComplete();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
 
     bool populateEmbeddingCoordinates(
@@ -144,6 +145,8 @@ protected:
     //debouncetimers
     QTimer _correlationRangeDebounceTimer;
     QTimer _clusterSelectionDebounceTimer;
+    bool      _pcaDataset1Complete = false;
+    bool      _pcaDataset2Complete = false;
 
     friend class ChannelAction;
 };
