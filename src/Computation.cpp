@@ -2822,6 +2822,7 @@ bool Computation::setupAndTriggerPCA()
         return false;
     }
     QApplication::processEvents();
+    //wait for the two pca finished events to complete std::cout << "PCA Plugin: Finished." << std::endl;
     qDebug() << "PCA analysis triggered successfully";
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     return true;
