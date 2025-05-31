@@ -126,6 +126,11 @@ void LayerSurferPlugin::init()
     scatterplotWidget->setMaximumWidth(380);
     layout->addWidget(createCollapsibleArea("Scatterplot Options", scatterplotWidget, composite));
 
+    QWidget* lineChartWidget = _settingsAction.getLineChartOptionsHolder().createWidget(&getWidget());
+    lineChartWidget->setMaximumWidth(380);
+    layout->addWidget(createCollapsibleArea("Line Chart Options", lineChartWidget, composite));
+
+
     auto* compositeAction = new mv::gui::WidgetAction(this, "Options");
     compositeAction->setWidgetConfigurationFunction(
         [composite](mv::gui::WidgetAction*, QWidget* parent) {

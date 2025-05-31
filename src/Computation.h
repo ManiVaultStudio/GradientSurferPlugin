@@ -147,6 +147,6 @@ protected:
     QTimer _clusterSelectionDebounceTimer;
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
-
+    int _numOfPointsInLine=0;
     friend class ChannelAction;
 };

@@ -599,6 +599,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         if (_settingsAction.getLineChartWidget())
         {
             _settingsAction.getLineChartWidget()->clear();
+            _numOfPointsInLine = 0;
 
         }
         auto selectedGene =  _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
@@ -693,7 +694,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     //_settingsAction.getLineChartWidget()->setShowVarianceLine(true);
                     //_settingsAction.getLineChartWidget()->setGradientLineEnabled(true);
                     _settingsAction.getLineChartWidget()->setConnectStatsLineEnabled(true);
-                    _settingsAction.getLineChartWidget()->setConnectStatsLineN((lineData.first().points.size() /100)*50);
+                    _numOfPointsInLine = lineData.first().points.size();
+                    _settingsAction.getLineChartWidget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
                     _settingsAction.getLineChartWidget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
                     _settingsAction.getLineChartWidget()->setShowAvgNumPointsLabel(true);
                     
@@ -963,6 +965,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getComputeHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
+
+    const auto updateConnectStatsLine = [this]() -> void {
+        if (!_settingsAction.getLineChartWidget())
+        {
+            qDebug() << "No line chart widget available";
+            return;
+        }
+        _settingsAction.getLineChartWidget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
+        };
+
+    connect(&_settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction(), &DecimalAction::triggered, this, updateConnectStatsLine);
 
 
     connect(& _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction(),
@@ -1688,6 +1701,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
         }
         _settingsAction.getLineChartWidget()->clear();
+        _numOfPointsInLine = 0;
         };
 
     connect(& _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow);
@@ -1866,6 +1880,7 @@ void Computation::AutoCompute()
                 model->removeRows(0, rowCount);
         }
         _settingsAction.getLineChartWidget()->clear();
+        _numOfPointsInLine = 0;
         QApplication::processEvents();
 
         //Validate and retrieve datasets and indices

@@ -182,6 +182,7 @@ public:
         DecimalRangeAction                  _correlationRangeAction;
         OptionsAction                       _clusterSelectionAction;
 
+
     };
 
     class ScatterplotOptionsHolder : public VerticalGroupAction
@@ -219,13 +220,15 @@ public:
     public:
         LineChartOptionsHolder(SettingsAction& settingsAction);
 
+        const DecimalAction& getConnectStatsLineAction() const { return _connectStatsLineAction; }
+        DecimalAction& getConnectStatsLineAction() { return _connectStatsLineAction; }
 
     protected:
         SettingsAction& _settingsOptions;
 
 
         //Line chart options
-
+        DecimalAction                       _connectStatsLineAction;
     };
 
     class TableOptionsHolder : public VerticalGroupAction
@@ -268,6 +271,9 @@ public:
     Dataset2OptionsHolder& getDataset2OptionsHolder() { return _dataset2OptionsHolder; }
     SelectionOptionsHolder& getSelectionOptionsHolder() { return _selectionOptionsHolder; }
     ScatterplotOptionsHolder& getScatterplotOptionsHolder() { return _scatterplotOptionsHolder; }
+    LineChartOptionsHolder& getLineChartOptionsHolder() { return _lineChartOptionsHolder; }
+    TableOptionsHolder& getTableOptionsHolder() { return _tableOptionsHolder; }
+
 
 public: // Serialization
     void fromVariantMap(const QVariantMap& variantMap) override;
@@ -284,6 +290,8 @@ protected:
     Dataset2OptionsHolder              _dataset2OptionsHolder;
     SelectionOptionsHolder              _selectionOptionsHolder;
     ScatterplotOptionsHolder              _scatterplotOptionsHolder;
+    LineChartOptionsHolder              _lineChartOptionsHolder;
+    TableOptionsHolder              _tableOptionsHolder;
     ComputeHolder               _computeHolder;
     QTableView*                 _tableViewAction = nullptr;
     HighPerfLineChart*          _lineChartWidget = nullptr;
