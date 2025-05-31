@@ -698,7 +698,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     _settingsAction.getLineChartWidget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
                     _settingsAction.getLineChartWidget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
                     _settingsAction.getLineChartWidget()->setShowAvgNumPointsLabel(true);
-                    
+                    _settingsAction.getLineChartWidget()->setXAxisName("Rotated Y coordinates");
+                    _settingsAction.getLineChartWidget()->setYAxisName("Gene expression "+ _selectedGene);
+   
+                    _settingsAction.getLineChartWidget()->setAxisFont(QFont("Arial", 12));
+                    _settingsAction.getLineChartWidget()->setTickLabelFont(QFont("Arial", 10));
+                    _settingsAction.getLineChartWidget()->setAxisColor(Qt::black);
+                    _settingsAction.getLineChartWidget()->setTickLabelColor(Qt::black);
+                    _settingsAction.getLineChartWidget()->setShowLegend(true); 
+                    _settingsAction.getLineChartWidget()->setShowAvgNumPointsLabel(true);
                 }
 
 
