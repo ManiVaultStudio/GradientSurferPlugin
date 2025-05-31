@@ -111,15 +111,19 @@ void LayerSurferPlugin::init()
     };
 
     QWidget* dataset1Widget = _settingsAction.getDataset1OptionsHolder().createWidget(&getWidget());
+    dataset1Widget->setMaximumWidth(380);
     layout->addWidget(createCollapsibleArea("Dataset 1 Options", dataset1Widget, composite));
 
     QWidget* dataset2Widget = _settingsAction.getDataset2OptionsHolder().createWidget(&getWidget());
+    dataset2Widget->setMaximumWidth(380);
     layout->addWidget(createCollapsibleArea("Dataset 2 Options", dataset2Widget, composite));
 
     QWidget* selectionWidget = _settingsAction.getSelectionOptionsHolder().createWidget(&getWidget());
+    selectionWidget->setMaximumWidth(380);
     layout->addWidget(createCollapsibleArea("Selection Options", selectionWidget, composite));
 
     QWidget* scatterplotWidget = _settingsAction.getScatterplotOptionsHolder().createWidget(&getWidget());
+    scatterplotWidget->setMaximumWidth(380);
     layout->addWidget(createCollapsibleArea("Scatterplot Options", scatterplotWidget, composite));
 
     auto* compositeAction = new mv::gui::WidgetAction(this, "Options");
@@ -129,6 +133,7 @@ void LayerSurferPlugin::init()
             return composite;
         }
     );
+
     addDockingAction(compositeAction, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
 
     auto* mainLayout = new QVBoxLayout(&getWidget());

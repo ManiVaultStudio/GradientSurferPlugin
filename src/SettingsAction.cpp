@@ -32,7 +32,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getPointDatasetAction().setSerializationName("LayerSurfer:PointDataset");
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setSerializationName("LayerSurfer:EmbeddingDataset");
     _selectionOptionsHolder.getClusterSelectionAction().setSerializationName("LayerSurfer:ClusterSelection");
-    _selectionOptionsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
+    _dataset1OptionsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
+    _dataset2OptionsHolder.getGeneSelection2Action().setSerializationName("LayerSurfer:GeneSelection2");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("LayerSurfer:ScatterplotViewSelection");
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("LayerSurfer:EmbeddingDimensionX");
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("LayerSurfer:EmbeddingDimensionY");
@@ -50,7 +51,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getPointDatasetAction().setToolTip("Point Dataset");
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setToolTip("Embedding Dataset");
     _selectionOptionsHolder.getClusterSelectionAction().setToolTip("Cluster Selection");
-    _selectionOptionsHolder.getGeneSelectionAction().setToolTip("Gene Selection");
+    _dataset1OptionsHolder.getGeneSelectionAction().setToolTip("Gene Selection");
+    _dataset2OptionsHolder.getGeneSelection2Action().setToolTip("Gene Selection2");
     _selectionOptionsHolder.getStatusMessageAction().setToolTip("Status Message");
     _computeHolder.getComputeAction().setToolTip("Compute Action");
     _computeHolder.getStatusBarAction()->setToolTip("Status Bar Action");
@@ -81,7 +83,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _selectionOptionsHolder.getClusterSelectionAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
-    _selectionOptionsHolder.getGeneSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _dataset1OptionsHolder.getGeneSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _dataset2OptionsHolder.getGeneSelection2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _selectionOptionsHolder.getStatusMessageAction().setDefaultWidgetFlags(StringAction::Label);
@@ -155,7 +158,8 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _embeddingDatasetAction(this, "Embedding dataset"),
     _scatterplotViewSelectionAction(this, "Scatterplot view selection"),
     _embeddingDimensionXAction(this, "Embedding Dimension X"),
-    _embeddingDimensionYAction(this, "Embedding Dimension Y")
+    _embeddingDimensionYAction(this, "Embedding Dimension Y"),
+    _geneSelectionAction(this, "Gene Selection")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
@@ -167,7 +171,6 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_scatterplotViewSelectionAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
-
 }
 
 
@@ -179,15 +182,16 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     _embeddingDataset2Action(this, "Embedding dataset 2"),
     _scatterplotViewSelection2Action(this, "Scatterplot view selection 2"),
     _embeddingDimension2XAction(this, "Embedding Dimension 2 X"),
-    _embeddingDimension2YAction(this, "Embedding Dimension 2 Y")
+    _embeddingDimension2YAction(this, "Embedding Dimension 2 Y"),
+    _geneSelection2Action(this, "Gene Selection 2")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("braille"));
     setPopupSizeHint(QSize(500, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
-    addAction(&_clusterDataset2Action);
     addAction(&_pointDataset2Action);
     addAction(&_embeddingDataset2Action);
+    addAction(&_clusterDataset2Action);
     addAction(&_scatterplotViewSelection2Action);
     addAction(&_embeddingDimension2XAction);
     addAction(&_embeddingDimension2YAction);
@@ -198,7 +202,6 @@ inline SettingsAction::SelectionOptionsHolder::SelectionOptionsHolder(SettingsAc
     VerticalGroupAction(&settingsAction, "Settings options"),
     _settingsOptions(settingsAction),
     _clusterSelectionAction(this, "Cluster selection"),
-    _geneSelectionAction(this, "Gene selection"),
     _statusMessageAction(this, "Status message"),
     _deSelectRowAction(this, "DeSelect Row"),
     _correlationRangeAction(this, "Correlation Range")
@@ -268,7 +271,8 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
 
     _selectionOptionsHolder.getClusterSelectionAction().fromParentVariantMap(variantMap);
-    _selectionOptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
+    _dataset1OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
+    _dataset2OptionsHolder.getGeneSelection2Action().fromParentVariantMap(variantMap);
     _selectionOptionsHolder.getCorrelationRangeAction().fromParentVariantMap(variantMap);
 
 
@@ -296,7 +300,8 @@ QVariantMap SettingsAction::toVariantMap() const
 
 
     _selectionOptionsHolder.getClusterSelectionAction().insertIntoVariantMap(variantMap);
-    _selectionOptionsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
+    _dataset1OptionsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
+    _dataset2OptionsHolder.getGeneSelection2Action().insertIntoVariantMap(variantMap);
     _selectionOptionsHolder.getCorrelationRangeAction().insertIntoVariantMap(variantMap);
 
     _dataset2OptionsHolder.getClusterDataset2Action().insertIntoVariantMap(variantMap);

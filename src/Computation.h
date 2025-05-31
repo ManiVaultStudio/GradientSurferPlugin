@@ -105,7 +105,8 @@ private:
     );
 
     bool createDatasetsIfNeeded();
-
+    void updateClusterOptions();
+    void processAfterPCAComplete();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
 
     bool populateEmbeddingCoordinates(
@@ -128,20 +129,24 @@ private:
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
-    mv::plugin::AnalysisPlugin* _pcaAnalysisPlugin = nullptr;
-    mv::Dataset<Points>         _pcaDataset= nullptr;
     mv::Dataset<Points>         _selectedCellPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _embeddingDataset = nullptr;
     mv::Dataset<Points>         _selectedEmbeddingDataset = nullptr;
-    mv::Dataset<Points>         _selectedGenePointDataset = nullptr;
+    mv::Dataset<Points>         _selectedGenePointDataset1 = nullptr;
+    mv::Dataset<Points>         _selectedGenePointDataset2 = nullptr;
     std::vector<int>            _filteredSelectionIndices;
     std::vector<CorrelationGeneCoords> _geneCorrValues;
     std::vector<int>            _geneOfInterestIndices;
-
+    mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
+    mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
+    mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
+    mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
     //debouncetimers
     QTimer _correlationRangeDebounceTimer;
     QTimer _clusterSelectionDebounceTimer;
+    bool      _pcaDataset1Complete = false;
+    bool      _pcaDataset2Complete = false;
 
     friend class ChannelAction;
 };

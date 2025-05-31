@@ -532,34 +532,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
          });
 
     const auto updateClusterDataset1 = [this]() -> void {
-        if (_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().isValid())
-        {
-            auto clusterFullDataset = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
-            auto clusters = clusterFullDataset->getClusters();
-            QStringList clusterNames = {};
-            if (!clusters.isEmpty())
-            {
-                for (auto cluster : clusters)
-                {
-                    clusterNames.append(cluster.getName());
-                }
-            }
-
-             _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions(clusterNames);
-             _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setSelectedOptions(clusterNames);
-
-        }
-        else
-        {
-             _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions({});
-        }
+        updateClusterOptions();
         setStatusMessage("M", "Cluster dataset updated", "");
         };
 
     connect(&_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset1);
 
     const auto updateClusterDataset2 = [this]() -> void {
-
+        updateClusterOptions();
+        setStatusMessage("M", "Cluster dataset updated", "");
         };
 
     connect(&_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset2);
@@ -570,7 +551,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             auto dataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
             if (dataset.isValid())
             {
-                 _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
+                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
                 
             }
@@ -579,21 +560,37 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         else
         {
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setPointsDataset({});
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset({});
         }
-        setStatusMessage("M", "Point dataset updated", "");
+        setStatusMessage("M", "Point dataset 1 updated", "");
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset1);
 
     const auto updatePointDataset2 = [this]() -> void {
+        if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid())
+        {
+            auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
+            if (dataset.isValid())
+            {
+                _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setPointsDataset(dataset);
+                auto dimensions = dataset->getNumDimensions();
 
+            }
+
+
+        }
+        else
+        {
+            _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setPointsDataset({});
+        }
+        setStatusMessage("M", "Point dataset 2 updated", "");
         };
 
     connect(&_settingsAction.getDataset2OptionsHolder().getPointDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset2);
 
     const auto updateGeneSelection = [this]() -> void {
-        if ( _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
+        if ( _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
         {
             qDebug() << "No gene selected";
              _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
@@ -604,7 +601,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _settingsAction.getLineChartWidget()->clear();
 
         }
-        auto selectedGene =  _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
+        auto selectedGene =  _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
         if (selectedGene == "")
         {
             qDebug() << "No gene selected";
@@ -773,7 +770,74 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         };
 
-    connect(& _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection);
+    connect(& _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection);
+
+    const auto updateGeneSelection2 = [this]() -> void {
+
+        auto selectedGene2 = _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().getCurrentDimensionName();
+        if (selectedGene2 == "")
+        {
+            qDebug() << "No gene selected";
+            _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+
+        DimensionPickerAction* geneSelectionAction;
+
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
+                {
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset2.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            {
+                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
+                                if (dataset2.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
+                                }
+
+                            }
+                            geneSelectionAction = dynamic_cast<DimensionPickerAction*>(plugin->findChildByPath("Settings/Coloring/Dimension"));
+                            if (geneSelectionAction)
+                            {
+                                geneSelectionAction->setCurrentDimensionName(selectedGene2);
+                            }
+                            else
+                            {
+                                qDebug() << "Gene selection action not found";
+                            }
+                        }
+
+
+
+                    }
+
+                }
+            }
+        }
+
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection2);
 
 
     const auto updateEmbeddingDataset1 = [this]() -> void {
@@ -861,13 +925,28 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         }
 
-        setStatusMessage("M", "Embedding dataset updated", "");
+        setStatusMessage("M", "Embedding dataset 1 updated", "");
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset1);
 
     const auto updateEmbeddingDataset2 = [this]() -> void {
+        if (_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().isValid())
+        {
 
+
+            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+
+            if (embeddingDataset2.isValid())
+            {
+                _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setPointsDataset(embeddingDataset2);
+                _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setPointsDataset(embeddingDataset2);
+            }
+
+
+        }
+
+        setStatusMessage("M", "Embedding dataset 2 updated", "");
         };
 
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset2);
@@ -921,18 +1000,29 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto showPointSelectionChanged = [this]() -> void {
 
-        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        if (scatterplotName.isEmpty())
+        QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
+        if (scatterplotName2.isEmpty() && scatterplotName1.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
             return;
+        }
+        if (scatterplotName1.isEmpty())
+        {
+            qDebug() << "No scatterplot view 1 selected";
+
+        }
+        if (scatterplotName2.isEmpty())
+        {
+            qDebug() << "No scatterplot view 2 selected";
+
         }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == scatterplotName)
+                if (plugin->getGuiName() == scatterplotName1 || plugin->getGuiName() == scatterplotName2)
                 {
                     auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
                     auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
@@ -977,18 +1067,29 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto freezeSelectionChanged = [this]() -> void {
 
-        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        if (scatterplotName.isEmpty())
+        QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
+        if (scatterplotName2.isEmpty() && scatterplotName1.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
             return;
+        }
+        if (scatterplotName1.isEmpty())
+        {
+            qDebug() << "No scatterplot view 1 selected";
+
+        }
+        if (scatterplotName2.isEmpty())
+        {
+            qDebug() << "No scatterplot view 2 selected";
+
         }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == scatterplotName)
+                if (plugin->getGuiName() == scatterplotName1 || plugin->getGuiName() == scatterplotName2)
                 {
                     auto freezeAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Freeze selection"));
                     if (freezeAction)
@@ -1008,25 +1109,36 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(& _settingsAction.getScatterplotOptionsHolder().getFreezeSelectionAction(), &ToggleAction::toggled, this, freezeSelectionChanged);
 
 
-    const auto focusSelectionChanged1 = [this]() -> void {
+    const auto focusSelectionChanged = [this]() -> void {
 
-        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        if (scatterplotName.isEmpty())
+        QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
+        if (scatterplotName2.isEmpty() && scatterplotName1.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
             return;
+        }
+        if (scatterplotName1.isEmpty())
+        {
+            qDebug() << "No scatterplot view 1 selected";
+
+        }
+        if (scatterplotName2.isEmpty())
+        {
+            qDebug() << "No scatterplot view 2 selected";
+
         }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == scatterplotName)
+                if (plugin->getGuiName() == scatterplotName1 || plugin->getGuiName() == scatterplotName2)
                 {
                     auto focusAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Plot/Point/Focus selection"));
                     if (focusAction)
                     {
-                        focusAction->setChecked( _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().isChecked());
+                        focusAction->setChecked(_settingsAction.getScatterplotOptionsHolder().getFocusSelectionAction().isChecked());
                     }
                     else
                     {
@@ -1038,20 +1150,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
 
-    connect(& _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged1);
-
-    const auto focusSelectionChanged2 = [this]() -> void {
-
-
-
-        };
-
-    connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action(), &ToggleAction::toggled, this, focusSelectionChanged2);
+    connect(& _settingsAction.getScatterplotOptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged);
 
 
     const auto embeddingDimensionYActionChanged1 = [this]() -> void {
 
-        setStatusMessage("M", "Embedding Y dimension changed", "");
+        setStatusMessage("M", "Embedding 1 Y dimension changed", "");
         QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotName.isEmpty())
         {
@@ -1148,6 +1252,94 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto embeddingDimensionYActionChanged2 = [this]() -> void {
 
+        setStatusMessage("M", "Embedding 2 Y dimension changed", "");
+        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotName.isEmpty())
+        {
+            qDebug() << "No scatterplot view 2 selected";
+            setStatusMessage("E", "No scatterplot view 2 selected", "");
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName)
+                {
+
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset2.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
+                            auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
+                            if (xPosition2 != "" && yPosition2 != "") {
+                                auto embeddingXVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
+                                auto embeddingYVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
+                                if (embeddingXVal2 && embeddingYVal2) {
+                                    if (embeddingXVal2->getCurrentIndex() != -1) {
+                                        embeddingXVal2->setCurrentText("");
+                                    }
+                                    if (embeddingYVal2->getCurrentIndex() != -1) {
+                                        embeddingYVal2->setCurrentText("");
+                                    }
+
+                                    auto xoptions2 = embeddingXVal2->getOptions();
+                                    if (xoptions2.contains(xPosition2)) {
+                                        embeddingXVal2->setCurrentText(xPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 X value not found in options";
+                                    }
+
+                                    auto yoptions2 = embeddingYVal2->getOptions();
+                                    if (yoptions2.contains(yPosition2)) {
+                                        embeddingYVal2->setCurrentText(yPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 Y value not found in options";
+                                    }
+                                }
+                                else {
+                                    qDebug() << "Embedding 2 X or Y value is null";
+                                }
+                            }
+
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            {
+                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
+                                if (dataset2.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
+                                    //qDebug() << "Setting dataset to color dataset";
+                                }
+
+                            }
+
+                        }
+
+
+
+                    }
+
+                }
+            }
+        }
+
 
 
 
@@ -1157,7 +1349,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto embeddingDimensionXActionChanged1 = [this]() -> void {
 
-        setStatusMessage("M", "Embedding X dimension changed", "");
+        setStatusMessage("M", "Embedding 1 X dimension changed", "");
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
         mv::gui::DatasetPickerAction* pointDatasetPickerAction;
@@ -1245,7 +1437,86 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto embeddingDimensionXActionChanged2 = [this]() -> void {
 
+        setStatusMessage("M", "Embedding 1 X dimension changed", "");
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
 
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
+                {
+
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset2.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
+                            auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
+                            if (xPosition2 != "" && yPosition2 != "") {
+                                auto embeddingXVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
+                                auto embeddingYVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
+                                if (embeddingXVal2 && embeddingYVal2) {
+                                    if (embeddingXVal2->getCurrentIndex() != -1) {
+                                        embeddingXVal2->setCurrentText("");
+                                    }
+                                    if (embeddingYVal2->getCurrentIndex() != -1) {
+                                        embeddingYVal2->setCurrentText("");
+                                    }
+
+                                    auto xoptions2 = embeddingXVal2->getOptions();
+                                    if (xoptions2.contains(xPosition2)) {
+                                        embeddingXVal2->setCurrentText(xPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 X value not found in options";
+                                    }
+
+                                    auto yoptions2 = embeddingYVal2->getOptions();
+                                    if (yoptions2.contains(yPosition2)) {
+                                        embeddingYVal2->setCurrentText(yPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 Y value not found in options";
+                                    }
+                                }
+                                else {
+                                    qDebug() << "Embedding 2 X or Y value is null";
+                                }
+                            }
+
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            {
+                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
+                                if (dataset2.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
+                                    //qDebug() << "Setting dataset to color dataset";
+                                }
+
+                            }
+
+                        }
+
+
+
+                    }
+
+                }
+            }
+        }
 
         };
 
@@ -1257,14 +1528,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             _settingsAction.getTableViewAction()->selectionModel()->clearSelection();
             _settingsAction.getTableViewAction()->setCurrentIndex(QModelIndex());
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName("");
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName("");
+             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName("");
         }
         else
         {
             qDebug() << "No row selected";
         }
          _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
-         _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+         _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+         _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
 
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
@@ -1343,6 +1616,75 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
 
                 }
+                else if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
+                {
+
+                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction)
+                    {
+                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+                            if (embeddingDataset2.isValid())
+                            {
+                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
+                            }
+                        }
+                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                        {
+                            auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
+                            auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
+                            if (xPosition2 != "" && yPosition2 != "") {
+                                auto embeddingXVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
+                                auto embeddingYVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
+                                if (embeddingXVal2 && embeddingYVal2) {
+                                    if (embeddingXVal2->getCurrentIndex() != -1) {
+                                        embeddingXVal2->setCurrentText("");
+                                    }
+                                    if (embeddingYVal2->getCurrentIndex() != -1) {
+                                        embeddingYVal2->setCurrentText("");
+                                    }
+
+                                    auto xoptions2 = embeddingXVal2->getOptions();
+                                    if (xoptions2.contains(xPosition2)) {
+                                        embeddingXVal2->setCurrentText(xPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 X value not found in options";
+                                    }
+
+                                    auto yoptions2 = embeddingYVal2->getOptions();
+                                    if (yoptions2.contains(yPosition2)) {
+                                        embeddingYVal2->setCurrentText(yPosition2);
+                                    }
+                                    else {
+                                        qDebug() << "Embedding 2 Y value not found in options";
+                                    }
+                                }
+                                else {
+                                    qDebug() << "Embedding 2 X or Y value is null";
+                                }
+                            }
+
+                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            if (colorDatasetPickerAction)
+                            {
+                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
+                                if (dataset2.isValid())
+                                {
+                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
+                                    qDebug() << "Setting dataset to color dataset";
+                                }
+
+                            }
+
+                        }
+
+
+
+                    }
+
+                }
             }
         }
         _settingsAction.getLineChartWidget()->clear();
@@ -1351,10 +1693,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(& _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow);
     const auto scatterplotviewSelectionChanged1= [this]() -> void {
 
-        setStatusMessage("M", "Scatterplotview selection updated", "");
+        setStatusMessage("M", "Scatterplotview selection 1 updated", "");
 
-        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        if (scatterplotName.isEmpty())
+        QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        if (scatterplotName1.isEmpty())
         {
             qDebug() << "No scatterplot view selected";
             return;
@@ -1364,7 +1706,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == scatterplotName)
+                if (plugin->getGuiName() == scatterplotName1)
                 {
                     mv::gui::ToggleAction* notifyDuringSelectionAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Notify during selection"));
                     mv::gui::ToggleAction* haloAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Halo"));
@@ -1420,7 +1762,67 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto scatterplotviewSelectionChanged2 = [this]() -> void {
 
+        setStatusMessage("M", "Scatterplotview selection 2 updated", "");
 
+        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
+        if (scatterplotName2.isEmpty())
+        {
+            qDebug() << "No scatterplot view 2 selected";
+            return;
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName2)
+                {
+                    mv::gui::ToggleAction* notifyDuringSelectionAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Notify during selection"));
+                    mv::gui::ToggleAction* haloAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Halo"));
+
+                    if (notifyDuringSelectionAction) {
+                        notifyDuringSelectionAction->setChecked(false);
+                    }
+                    else
+                    {
+                        qDebug() << "Notify during selection action not found.";
+                    }
+                    if (haloAction) {
+                        haloAction->setChecked(true);
+                    }
+                    else
+                    {
+                        qDebug() << "Halo action not found.";
+                    }
+
+                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
+                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                    if (pointSelectionScaleAction)
+                    {
+
+                        pointSelectionScaleAction->setValue(160.0);
+
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection scale action not found";
+                    }
+                    if (pointSelectionOpacityAction)
+                    {
+
+                        pointSelectionOpacityAction->setValue(100.0);
+
+
+
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection opacity action not found";
+                    }
+
+                }
+            }
+        }
 
         };
 
@@ -1875,6 +2277,7 @@ QStringList Computation::filterGenesByCorrelationRange(
 
     return filteredGenes;
 }
+
 void Computation::populateGenesByCorrelationRange(
     const std::vector<float>& correlationVector,
     float min,
@@ -1900,20 +2303,29 @@ void Computation::populateGenesByCorrelationRange(
     _geneCorrValues.clear();
     _geneCorrValues.reserve(count);
 
-    // Fill _geneCorrValues directly in sorted (rank) order
-    for (int rank = 0; rank < count; ++rank) {
-        int i = indices[rank];
-        float corr = correlationVector[i];
+    // Assign ranks: same correlation value gets same rank (dense ranking)
+    int rank = 1;
+    float prevCorr = std::numeric_limits<float>::quiet_NaN();
+    for (int i = 0; i < count; ++i) {
+        int idx = indices[i];
+        float corr = correlationVector[idx];
         bool inRange = (corr > min - epsilon) && (corr < max + epsilon);
+
+        // If this is the first entry or the correlation value has changed, update the rank
+        if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
+            rank = i + 1;
+            prevCorr = corr;
+        }
+
         _geneCorrValues.emplace_back(CorrelationGeneCoords{
-            i,
-            geneNameOrdered[i],
+            idx,
+            geneNameOrdered[idx],
             corr,
-            rank + 1,
+            rank,
             inRange
-            });
+        });
         if (inRange) {
-            _geneOfInterestIndices.push_back(i);
+            _geneOfInterestIndices.push_back(idx);
         }
     }
 }
@@ -2006,10 +2418,16 @@ bool Computation::validateAndRetrieveDatasets(
 // Create datasets if needed
 bool Computation::createDatasetsIfNeeded()
 {
-    if (!_selectedGenePointDataset.isValid()) {
-        _selectedGenePointDataset = mv::data().createDataset("Points", "Selected Gene Point Data");
-        _selectedGenePointDataset->setGroupIndex(667);
-        mv::events().notifyDatasetAdded(_selectedGenePointDataset);
+    if (!_selectedGenePointDataset1.isValid()) {
+        _selectedGenePointDataset1 = mv::data().createDataset("Points", "Selected Gene Point Data 1");
+        _selectedGenePointDataset1->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_selectedGenePointDataset1);
+    }
+
+    if (!_selectedGenePointDataset2.isValid()) {
+        _selectedGenePointDataset2 = mv::data().createDataset("Points", "Selected Gene Point Data 2");
+        _selectedGenePointDataset2->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_selectedGenePointDataset2);
     }
     
     if (!_selectedCellPointDataset.isValid()) {
@@ -2028,13 +2446,67 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_selectedEmbeddingDataset);
     }
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid()) {
         qDebug() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
     }
 
     return true;
+}
+
+void Computation::updateClusterOptions()
+{
+    QStringList clusterNamesCommon = {};
+    QStringList clusterNames1 = {};
+    QStringList clusterNames2 = {};
+    if (_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().isValid() )
+    {
+        auto clusterFullDataset1 = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+        auto clusters1 = clusterFullDataset1->getClusters();
+        
+        if (!clusters1.isEmpty())
+        {
+            for (auto cluster : clusters1)
+            {
+                clusterNames1.append(cluster.getName());
+            }
+        }
+
+    }
+    if (_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().isValid())
+    {
+        auto clusterFullDataset2 = mv::data().getDataset<Clusters>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
+        auto clusters2 = clusterFullDataset2->getClusters();
+
+        if (!clusters2.isEmpty())
+        {
+            for (auto cluster : clusters2)
+            {
+                clusterNames2.append(cluster.getName());
+            }
+        }
+
+    }
+   
+    std::sort(clusterNames1.begin(), clusterNames1.end());
+    std::sort(clusterNames2.begin(), clusterNames2.end());
+    std::set_intersection(clusterNames1.begin(), clusterNames1.end(),
+        clusterNames2.begin(), clusterNames2.end(),
+        std::back_inserter(clusterNamesCommon));
+
+
+    _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions(clusterNamesCommon);
+    _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setSelectedOptions(clusterNamesCommon);
+}
+
+void Computation::processAfterPCAComplete()
+{
+    _pcaDataset1Complete = false;
+    _pcaDataset2Complete = false;
+    //wait for the two pca finished events to complete std::cout << "PCA Plugin: Finished." << std::endl;
+    qDebug() << "PCA analysis completed successfully";
+    setStatusMessage("C", "PCA analysis completed", "#28a745");
 }
 
 //Retrieve rotation angle from plugin
@@ -2104,7 +2576,7 @@ bool Computation::populateAndUpdateDatasets(
 {
 
     if (!_selectedCellPointDataset.isValid() ||
-        !_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset.isValid() ||
+        !_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid() ||
         !_selectedEmbeddingDataset.isValid()) {
         qDebug() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
@@ -2207,24 +2679,59 @@ bool Computation::setupAndTriggerPCA()
     // noOfDimensions is the number of genes of interest, not the full dataset dimensions
     // compute PCA on all cells w. ith selected genes
 
-    Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+    Dataset<Points> fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+    Dataset<Points> fullPointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
 
-    if (!_selectedGenePointDataset.isValid() || !fullPointDataset.isValid()) {
+    if (!_selectedGenePointDataset1.isValid() || !fullPointDataset1.isValid()|| !_selectedGenePointDataset2.isValid() || !fullPointDataset2.isValid()) {
         qDebug() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return false;
     }
 
-    auto numAllCells = fullPointDataset->getNumPoints();
+    auto numAllCells1 = fullPointDataset1->getNumPoints();
+    auto numAllCells2 = fullPointDataset2->getNumPoints();
     auto numofIntGenes = _geneOfInterestIndices.size();
-    qDebug() << "Number of all cells:" << numAllCells << "Number of dimensions of interest:" << numofIntGenes;
+    auto dimensionNames1 = fullPointDataset1->getDimensionNames();
+    auto dimensionNames2 = fullPointDataset2->getDimensionNames();
+
+    if (numAllCells1 <= 0 || numAllCells2 <= 0 || numofIntGenes <= 0) {
+        qDebug() << "Invalid dataset sizes: numAllCells1:" << numAllCells1 << "numAllCells2:" << numAllCells2 << "numofIntGenes:" << numofIntGenes;
+        setStatusMessage("E", "Invalid dataset sizes", "");
+        return false;
+    }
+    if (numofIntGenes > dimensionNames1.size() || numofIntGenes > dimensionNames2.size()) {
+        qDebug() << "Number of genes of interest exceeds dataset dimensions";
+        setStatusMessage("E", "Number of genes of interest exceeds dataset dimensions", "");
+        return false;
+    }
+    std::vector<QString> dimensionNamesOfInterest;
+    std::vector<int> geneDataset1;
+    std::vector<int> geneDataset2;
+    for (int idx : _geneOfInterestIndices) {
+        QString geneName = (idx >= 0 && idx < dimensionNames1.size()) ? dimensionNames1[idx] : QString();
+        //check if geneName is present in std::vector<QString> dimensionNames2 if yes then get the gene id
+        auto it2 = std::find(dimensionNames2.begin(), dimensionNames2.end(), geneName);
+        if (it2 != dimensionNames2.end()) {
+            int geneId2 = std::distance(dimensionNames2.begin(), it2);
+            dimensionNamesOfInterest.push_back(geneName);
+            geneDataset2.push_back(geneId2);
+            geneDataset1.push_back(idx);
+
+        } 
+    }
+
+
+
+
+
+    qDebug() << "Number of all cells dataset 1:" << numAllCells1 << "Number of all cells dataset 2:" << numAllCells2 << "Number of dimensions of interest:" << dimensionNamesOfInterest.size();
 
     // create point dataset subset with all cells and genes of interest
-    std::vector<int> allCellIndices(numAllCells);
-    std::iota(allCellIndices.begin(), allCellIndices.end(), 0);
-    std::vector<float> cellbygenematrix(numAllCells * numofIntGenes);
+    std::vector<int> allCellIndices1(numAllCells1);
+    std::iota(allCellIndices1.begin(), allCellIndices1.end(), 0);
+    std::vector<float> cellbygenematrix1(numAllCells1 * dimensionNamesOfInterest.size());
     try {
-        fullPointDataset->populateDataForDimensions(cellbygenematrix, _geneOfInterestIndices, allCellIndices);
+        fullPointDataset1->populateDataForDimensions(cellbygenematrix1, geneDataset1, allCellIndices1);
     }
     catch (const std::exception& ex) {
         qDebug() << "Exception in populateDataForDimensions:" << ex.what();
@@ -2232,63 +2739,126 @@ bool Computation::setupAndTriggerPCA()
         return false;
     }
 
-    _selectedGenePointDataset->setData(cellbygenematrix.data(), numAllCells, numofIntGenes);
-    std::vector<QString> dimensionNamesOfInterest;
-    for (int idx : _geneOfInterestIndices) {
-        if (idx >= 0 && idx < fullPointDataset->getNumDimensions()) {
-            dimensionNamesOfInterest.push_back(fullPointDataset->getDimensionNames()[idx]);
+    std::vector<int> allCellIndices2(numAllCells2);
+    std::iota(allCellIndices2.begin(), allCellIndices2.end(), 0);
+    std::vector<float> cellbygenematrix2(numAllCells2 * dimensionNamesOfInterest.size());
+    try {
+        fullPointDataset2->populateDataForDimensions(cellbygenematrix2, geneDataset2, allCellIndices2);
+    }
+    catch (const std::exception& ex) {
+        qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+        setStatusMessage("E", "Error occurred during populating filtered data", "");
+        return false;
+    }
+
+    _selectedGenePointDataset1->setData(cellbygenematrix1.data(), numAllCells1, dimensionNamesOfInterest.size());
+    _selectedGenePointDataset2->setData(cellbygenematrix2.data(), numAllCells2, dimensionNamesOfInterest.size());
+
+    _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
+    mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
+
+    _selectedGenePointDataset2->setDimensionNames(dimensionNamesOfInterest);
+    mv::events().notifyDatasetDataChanged(_selectedGenePointDataset2);
+
+    if (!_pcaCommonGenesDataset1.isValid()) {
+        _pcaCommonGenesDataset1 = mv::data().createDataset("Points", "PCA Dataset 1", _selectedGenePointDataset1);
+        _pcaCommonGenesDataset1->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_pcaCommonGenesDataset1);
+        _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
+    }
+
+    if (!_pcaCommonGenesDataset2.isValid()) {
+        _pcaCommonGenesDataset2 = mv::data().createDataset("Points", "PCA Dataset 2", _selectedGenePointDataset2);
+        _pcaCommonGenesDataset2->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
+        _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
+    }
+
+    std::vector<float> emptyData1(numAllCells1 * dimensionNamesOfInterest.size(), 0.0f);
+    _pcaCommonGenesDataset1->setData(emptyData1.data(), numAllCells1, dimensionNamesOfInterest.size());
+    mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
+
+    std::vector<float> emptyData2(numAllCells2 * dimensionNamesOfInterest.size(), 0.0f);
+    _pcaCommonGenesDataset2->setData(emptyData2.data(), numAllCells2, dimensionNamesOfInterest.size());
+    mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
+    _pcaDataset1Complete = false;
+    _pcaDataset2Complete = false;
+    disconnect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, nullptr);
+    disconnect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, nullptr);
+    connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
+        _pcaDataset1Complete = true;
+        qDebug() << "PCA Dataset 1 data changed";
+        if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            processAfterPCAComplete();
         }
-    }
+        else {
+            qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
+        }
+        });
+    connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
+        _pcaDataset2Complete = true;
+        qDebug() << "PCA Dataset 2 data changed";
+        if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            processAfterPCAComplete();
+        }
+        else {
+            qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";
+        }
+        });
 
-    _selectedGenePointDataset->setDimensionNames(dimensionNamesOfInterest);
-    mv::events().notifyDatasetDataChanged(_selectedGenePointDataset);
-
-    if (!_pcaDataset.isValid()) {
-        _pcaDataset = mv::data().createDataset("Points", "PCA Data", _selectedGenePointDataset);
-        _pcaDataset->setGroupIndex(667);
-        mv::events().notifyDatasetAdded(_pcaDataset);
-        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset }, { _pcaDataset });
-    }
-
-    std::vector<float> emptyData(numAllCells * numofIntGenes, 0.0f);
-    _pcaDataset->setData(emptyData.data(), numAllCells, numofIntGenes);
-    mv::events().notifyDatasetDataChanged(_pcaDataset);
-
-    if (numofIntGenes <= 0) {
+    if (dimensionNamesOfInterest.size() <= 0) {
         qDebug() << "No genes of interest selected for PCA";
         setStatusMessage("E", "No genes of interest selected for PCA", "");
         return false;
     }
 
-    if (!_pcaAnalysisPlugin) {
-        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset }, { _pcaDataset });
+    if (!_pcaAnalysisCommonGenesDataset1Plugin) {
+        _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
+    }
+    if (!_pcaAnalysisCommonGenesDataset2Plugin) {
+        _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
     }
 
-    if (!_pcaAnalysisPlugin) {
+    if (!_pcaAnalysisCommonGenesDataset1Plugin) {
+        qDebug() << "PCA Analysis Plugin not found";
+        setStatusMessage("E", "PCA plugin not found", "");
+        return false;
+    }
+    if (!_pcaAnalysisCommonGenesDataset2Plugin) {
         qDebug() << "PCA Analysis Plugin not found";
         setStatusMessage("E", "PCA plugin not found", "");
         return false;
     }
 
-    auto componentsAction = dynamic_cast<IntegralAction*>(_pcaDataset->findChildByPath("PCA/Number of PCA components"));
-    if (!componentsAction) {
+    auto componentsAction1 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Number of PCA components"));
+    if (!componentsAction1) {
         qDebug() << "Number of PCA components action not found";
         setStatusMessage("E", "PCA components action not found", "");
         return false;
     }
-    componentsAction->setMaximum(numofIntGenes);
-    componentsAction->setValue(numofIntGenes);
+    componentsAction1->setMaximum(numofIntGenes);
+    componentsAction1->setValue(numofIntGenes);
+
+    auto componentsAction2 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Number of PCA components"));
+    if (!componentsAction2) {
+        qDebug() << "Number of PCA components action not found";
+        setStatusMessage("E", "PCA components action not found", "");
+        return false;
+    }
+    componentsAction2->setMaximum(numofIntGenes);
+    componentsAction2->setValue(numofIntGenes);
 
     QApplication::processEvents();
 
-    auto startAction = dynamic_cast<TriggerAction*>(_pcaDataset->findChildByPath("PCA/Start analysis"));
-    if (startAction) {
-        startAction->trigger();
-        qDebug() << "PCA analysis started";
+    auto startAction1 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Start analysis"));
+    auto startAction2 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Start analysis"));
+    if (startAction1) {
+        startAction1->trigger();
+        qDebug() << "PCA analysis 1 started";
         QEventLoop loop;
         loop.processEvents();
-        _pcaDataset->setSelectionIndices({});
-        mv::events().notifyDatasetDataSelectionChanged(_pcaDataset);
+        _pcaCommonGenesDataset1->setSelectionIndices({});
+        mv::events().notifyDatasetDataSelectionChanged(_pcaCommonGenesDataset1);
         
     }
     else {
@@ -2296,9 +2866,23 @@ bool Computation::setupAndTriggerPCA()
         setStatusMessage("E", "PCA start action not found", "");
         return false;
     }
+    if (startAction2) {
+        startAction2->trigger();
+        qDebug() << "PCA analysis 2 started";
+        QEventLoop loop;
+        loop.processEvents();
+        _pcaCommonGenesDataset2->setSelectionIndices({});
+        mv::events().notifyDatasetDataSelectionChanged(_pcaCommonGenesDataset2);
+
+    }
+    else {
+        qDebug() << "Start analysis action not found in PCA dataset";
+        setStatusMessage("E", "PCA start action not found", "");
+        return false;
+    }
     QApplication::processEvents();
-    qDebug() << "PCA analysis triggered successfully";
-    setStatusMessage("C", "PCA analysis completed", "#28a745");
+
+    
     return true;
 }
 
@@ -2371,7 +2955,8 @@ void Computation::setupTableModelAndSelection(const QStringList& topGenes)
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(index, Qt::DisplayRole).toString();
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
         }
     );
 }
@@ -2451,7 +3036,8 @@ void Computation::setupTableModelAndSelection(
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
         }
     );
 }
@@ -2529,7 +3115,8 @@ void Computation::setupTableModelAndSelection()
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
             QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
-             _settingsAction.getSelectionOptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
         }
     );
 }
