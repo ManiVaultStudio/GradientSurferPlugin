@@ -148,5 +148,6 @@ protected:
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
     int _numOfPointsInLine=0;
+    QString    _selectedGene = "";
     friend class ChannelAction;
 };
