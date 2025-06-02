@@ -67,6 +67,7 @@ bool cohenSutherlandClip(double& x0, double& y0, double& x1, double& y1, double 
 } // end anonymous namespace
 
 // Static member definition
+// NOTE: Not thread-safe! If used in multi-threaded context, protect with mutex.
 std::unordered_map<int, QString> LineData::groupStringMap;
 
 // --- Merged binary normalization helper ---
@@ -326,8 +327,8 @@ QVector<QPointF> HighPerfLineChart::filterNoise(const QVector<QPointF>& points) 
     QVector<QPointF> filtered;
     int w = m_noiseRemovalWindow;
     for (int i = 0; i < points.size(); ++i) {
-        int start = static_cast<int>(std::max(0.0, static_cast<double>(i - w)));
-        int end = static_cast<int>(std::min(static_cast<double>(points.size() - 1), static_cast<double>(i + w)));
+        int start = std::max(0, i - w);
+        int end = std::min(int(points.size() - 1), i + w);
         double sumX = 0, sumY = 0;
         int count = 0;
         for (int j = start; j <= end; ++j) {
@@ -552,6 +553,9 @@ void HighPerfLineChart::initializeGL() {
 }
 
 void HighPerfLineChart::paintGL() {
+    if (!context() || !context()->isValid()) return;
+    initializeOpenGLFunctions();
+
     glClearColor(m_backgroundColor.redF(), m_backgroundColor.greenF(), m_backgroundColor.blueF(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -592,6 +596,270 @@ void HighPerfLineChart::paintGL() {
         return;
     }
 
+    drawChartWithOpenGL();
+
+    QPainter painter(this);
+    drawAxesAndLabels(painter);
+
+    drawLegend(painter);
+    drawAverageLabel(painter);
+
+}
+
+void HighPerfLineChart::resizeGL(int w, int h) {
+    glViewport(0, 0, w, h);
+}
+
+QPointF HighPerfLineChart::screenToChart(const QPoint& p) const {
+    if (width() <= 0 || height() <= 0 || m_xMax == m_xMin || m_yMax == m_yMin)
+        return QPointF(0, 0);
+    float x = m_xMin + (float(p.x()) / width()) * (m_xMax - m_xMin);
+    float y = m_yMax - (float(p.y()) / height()) * (m_yMax - m_yMin);
+    if (m_interchangeXY)
+        return QPointF(y, x);
+    else
+        return QPointF(x, y);
+}
+
+int HighPerfLineChart::findLineAt(const QPoint& pos) const {
+    if (m_lines.isEmpty() || width() <= 0)
+        return -1;
+    QPointF chartPt = screenToChart(pos);
+    double minDist = 5.0 * (m_xMax - m_xMin) / width(); // tolerance in chart units
+    int found = -1;
+    for (int i = 0; i < m_lines.size(); ++i) {
+        const auto& line = m_lines[i];
+        if (line.points.isEmpty())
+            continue;
+        for (const QPointF& pt : line.points) {
+            if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
+                continue;
+            if (qAbs(pt.x() - chartPt.x()) < minDist && qAbs(pt.y() - chartPt.y()) < minDist) {
+                found = i;
+                break;
+            }
+        }
+        if (found != -1) break;
+    }
+    return found;
+}
+
+void HighPerfLineChart::clear() {
+    m_lines.clear();
+    m_selectedLine = -1;
+    m_hoveredLine = -1;
+    m_xMin = 0; m_xMax = 1;
+    m_yMin = 0; m_yMax = 1;
+    m_emptyMessage = "No data to display"; // Ensure the no data message is shown
+    update();
+}
+
+void HighPerfLineChart::setEmptyMessage(const QString& msg) {
+    m_emptyMessage = msg;
+    update();
+}
+
+void HighPerfLineChart::mouseMoveEvent(QMouseEvent* event) {
+    int idx = findLineAt(event->pos());
+    if (idx != m_hoveredLine) {
+        m_hoveredLine = idx;
+        emit lineHovered(idx);
+        update();
+    }
+}
+
+void HighPerfLineChart::mousePressEvent(QMouseEvent* event) {
+    int idx = findLineAt(event->pos());
+    if (idx != m_selectedLine) {
+        m_selectedLine = idx;
+        emit lineSelected(idx);
+        update();
+    }
+}
+
+void HighPerfLineChart::setShowAverageLine(bool show) {
+    m_showAverageLine = show;
+    update();
+}
+
+bool HighPerfLineChart::showAverageLine() const {
+    return m_showAverageLine;
+}
+
+void HighPerfLineChart::setShowMedianLine(bool show) {
+    m_showMedianLine = show;
+    update();
+}
+
+bool HighPerfLineChart::showMedianLine() const {
+    return m_showMedianLine;
+}
+
+void HighPerfLineChart::setShowPercentileLines(bool show, double lower, double upper) {
+    m_showPercentileLines = show;
+    m_percentileLower = lower;
+    m_percentileUpper = upper;
+    update();
+}
+
+bool HighPerfLineChart::showPercentileLines() const {
+    return m_showPercentileLines;
+}
+
+double HighPerfLineChart::percentileLower() const {
+    return m_percentileLower;
+}
+
+double HighPerfLineChart::percentileUpper() const {
+    return m_percentileUpper;
+}
+
+void HighPerfLineChart::setShowMinLine(bool show) {
+    m_showMinLine = show;
+    update();
+}
+
+bool HighPerfLineChart::showMinLine() const {
+    return m_showMinLine;
+}
+
+void HighPerfLineChart::setShowMaxLine(bool show) {
+    m_showMaxLine = show;
+    update();
+}
+
+bool HighPerfLineChart::showMaxLine() const {
+    return m_showMaxLine;
+}
+
+void HighPerfLineChart::setShowStddevLines(bool show) {
+    m_showStddevLines = show;
+    update();
+}
+
+bool HighPerfLineChart::showStddevLines() const {
+    return m_showStddevLines;
+}
+
+void HighPerfLineChart::setShowAllLines(bool show) {
+    m_showAllLines = show;
+    update();
+}
+
+bool HighPerfLineChart::showAllLines() const {
+    return m_showAllLines;
+}
+
+void HighPerfLineChart::setGlobalLineColor(const QColor& color) {
+    m_globalLineColor = color;
+    update();
+}
+
+QColor HighPerfLineChart::globalLineColor() const {
+    return m_globalLineColor;
+}
+
+void HighPerfLineChart::setGlobalLineWidth(float width) {
+    m_globalLineWidth = width;
+    update();
+}
+
+float HighPerfLineChart::globalLineWidth() const {
+    return m_globalLineWidth;
+}
+
+void HighPerfLineChart::setGlobalLineOpacity(float opacity) {
+    m_globalLineOpacity = opacity;
+    update();
+}
+
+float HighPerfLineChart::globalLineOpacity() const {
+    return m_globalLineOpacity;
+}
+
+// --- Statistical line legend label setters ---
+void HighPerfLineChart::setAverageLineLabel(const QString& label) { m_averageLineLabel = label; update(); }
+void HighPerfLineChart::setMedianLineLabel(const QString& label) { m_medianLineLabel = label; update(); }
+void HighPerfLineChart::setPercentileLineLabels(const QString& lowerLabel, const QString& upperLabel) {
+    m_percentileLowerLabel = lowerLabel; m_percentileUpperLabel = upperLabel; update();
+}
+void HighPerfLineChart::setMinLineLabel(const QString& label) { m_minLineLabel = label; update(); }
+void HighPerfLineChart::setMaxLineLabel(const QString& label) { m_maxLineLabel = label; update(); }
+void HighPerfLineChart::setStddevLineLabel(const QString& label) { m_stddevLineLabel = label; update(); }
+
+// --- Additional statistical line setters/getters ---
+void HighPerfLineChart::setShowModeLine(bool show) { m_showModeLine = show; update(); }
+bool HighPerfLineChart::showModeLine() const { return m_showModeLine; }
+void HighPerfLineChart::setShowVarianceLine(bool show) { m_showVarianceLine = show; update(); }
+bool HighPerfLineChart::showVarianceLine() const { return m_showVarianceLine; }
+void HighPerfLineChart::setShowLowerQuartileLine(bool show) { m_showLowerQuartileLine = show; update(); }
+bool HighPerfLineChart::showLowerQuartileLine() const { return m_showLowerQuartileLine; }
+void HighPerfLineChart::setShowUpperQuartileLine(bool show) { m_showUpperQuartileLine = show; update(); }
+bool HighPerfLineChart::showUpperQuartileLine() const { return m_showUpperQuartileLine; }
+void HighPerfLineChart::setShowMADLine(bool show) { m_showMADLine = show; update(); }
+bool HighPerfLineChart::showMADLine() const { return m_showMADLine; }
+void HighPerfLineChart::setShowSkewnessLine(bool show) { m_showSkewnessLine = show; update(); }
+bool HighPerfLineChart::showSkewnessLine() const { return m_showSkewnessLine; }
+void HighPerfLineChart::setShowKurtosisLine(bool show) { m_showKurtosisLine = show; update(); }
+bool HighPerfLineChart::showKurtosisLine() const { return m_showKurtosisLine; }
+
+// --- Additional statistical line legend label setters ---
+void HighPerfLineChart::setModeLineLabel(const QString& label) { m_modeLineLabel = label; update(); }
+void HighPerfLineChart::setVarianceLineLabel(const QString& label) { m_varianceLineLabel = label; update(); }
+void HighPerfLineChart::setLowerQuartileLineLabel(const QString& label) { m_lowerQuartileLineLabel = label; update(); }
+void HighPerfLineChart::setUpperQuartileLineLabel(const QString& label) { m_upperQuartileLineLabel = label; update(); }
+void HighPerfLineChart::setMADLineLabel(const QString& label) { m_madLineLabel = label; update(); }
+void HighPerfLineChart::setSkewnessLineLabel(const QString& label) { m_skewnessLineLabel = label; update(); }
+void HighPerfLineChart::setKurtosisLineLabel(const QString& label) { m_kurtosisLineLabel = label; update(); }
+
+// --- Connect stats line setters/getters ---
+void HighPerfLineChart::setConnectStatsLineEnabled(bool enabled) { m_connectStatsLineEnabled = enabled; update(); }
+bool HighPerfLineChart::connectStatsLineEnabled() const { return m_connectStatsLineEnabled; }
+void HighPerfLineChart::setConnectStatsLineN(int n) { m_connectStatsLineN = std::max(1, n); update(); }
+int HighPerfLineChart::connectStatsLineN() const { return m_connectStatsLineN; }
+void HighPerfLineChart::setConnectStatsLineType(ConnectStatsType type) { m_connectStatsLineType = type; update(); }
+HighPerfLineChart::ConnectStatsType HighPerfLineChart::connectStatsLineType() const { return m_connectStatsLineType; }
+
+// --- Legend visibility setters/getters ---
+void HighPerfLineChart::setShowLegend(bool show) { m_showLegend = show; update(); }
+bool HighPerfLineChart::showLegend() const { return m_showLegend; }
+
+// --- Average number of points label visibility setters/getters ---
+void HighPerfLineChart::setShowAvgNumPointsLabel(bool show) {
+    m_showAvgNumPointsLabel = show;
+    update();
+}
+
+bool HighPerfLineChart::showAvgNumPointsLabel() const {
+    return m_showAvgNumPointsLabel;
+}
+
+// --- Moving average smoothing ---
+QVector<QPointF> HighPerfLineChart::movingAverage(const QVector<QPointF>& points, int window) const {
+    if (points.size() < 2 || window < 1)
+        return points;
+    QVector<QPointF> smoothed;
+    int n = points.size();
+    int half = window / 2;
+    for (int i = 0; i < n; ++i) {
+        int start = std::max(0, i - half);
+        int end = std::min(n - 1, i + half);
+        double sumX = 0, sumY = 0;
+        int count = 0;
+        for (int j = start; j <= end; ++j) {
+            sumX += points[j].x();
+            sumY += points[j].y();
+            ++count;
+        }
+        smoothed.append(QPointF(sumX / count, sumY / count));
+    }
+    return smoothed;
+}
+
+void HighPerfLineChart::drawChartWithOpenGL()
+{
+    if (!context() || !context()->isValid()) return;
+
     // --- Chart area margins and rect ---
     const int leftMargin = m_leftMargin;
     const int rightMargin = m_rightMargin;
@@ -619,10 +887,14 @@ void HighPerfLineChart::paintGL() {
 
     // Helper lambda: map chart (data) coordinates to chartRect (screen) coordinates
     auto chartToScreen = [&](const QPointF& pt) -> QPointF {
+        double xDenom = (m_xMax - m_xMin);
+        double yDenom = (m_yMax - m_yMin);
+        if (xDenom == 0.0) xDenom = 1e-12;
+        if (yDenom == 0.0) yDenom = 1e-12;
         double xval = m_logTransformX ? logX(pt.x()) : pt.x();
         double yval = m_logTransformY ? logY(pt.y()) : pt.y();
-        double xFrac = (xval - m_xMin) / (m_xMax - m_xMin);
-        double yFrac = (yval - m_yMin) / (m_yMax - m_yMin);
+        double xFrac = (xval - m_xMin) / xDenom;
+        double yFrac = (yval - m_yMin) / yDenom;
         double x = chartRect.left() + xFrac * chartRect.width();
         double y = chartRect.bottom() - yFrac * chartRect.height();
         return QPointF(x, y);
@@ -651,10 +923,12 @@ void HighPerfLineChart::paintGL() {
             if (line.dashStyle == LineDashStyle::Dash) {
                 glEnable(GL_LINE_STIPPLE);
                 glLineStipple(1, 0x00FF);
-            } else if (line.dashStyle == LineDashStyle::Dot) {
+            }
+            else if (line.dashStyle == LineDashStyle::Dot) {
                 glEnable(GL_LINE_STIPPLE);
                 glLineStipple(1, 0x0101);
-            } else {
+            }
+            else {
                 glDisable(GL_LINE_STIPPLE);
             }
 
@@ -717,7 +991,8 @@ void HighPerfLineChart::paintGL() {
                             glEnd();
                         }
                     }
-                } else {
+                }
+                else {
                     for (int j = 1; j < pts.size(); ++j) {
                         QPointF p0Orig = pts[j - 1];
                         QPointF p1Orig = pts[j];
@@ -984,7 +1259,7 @@ void HighPerfLineChart::paintGL() {
                 }
             }
         }
-    QPainter painter(this);
+        QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing, true);
         // Average line
         if (m_showAverageLine && avgPoints.size() > 1) {
@@ -1232,8 +1507,20 @@ void HighPerfLineChart::paintGL() {
         }
     }
 
+
+}
+
+void HighPerfLineChart::drawAxesAndLabels(QPainter& painter)
+{
     // --- Draw axes and labels using QPainter for text ---
-    QPainter painter(this);
+
+    // Use margins and chartRect as in drawChartWithOpenGL
+    const int leftMargin = m_leftMargin;
+    const int rightMargin = m_rightMargin;
+    const int topMargin = m_topMargin;
+    const int bottomMargin = m_bottomMargin;
+    QRect chartRect(leftMargin, topMargin, width() - leftMargin - rightMargin, height() - topMargin - bottomMargin);
+
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     // Draw X and Y axis lines with custom width and color
@@ -1322,30 +1609,36 @@ void HighPerfLineChart::paintGL() {
         painter.drawText(QRect(0, 0, chartRect.height(), 20), Qt::AlignHCenter | Qt::AlignVCenter, yAxisLabel);
         painter.restore();
     }
+}
+
+void HighPerfLineChart::drawLegend(QPainter& painter)
+{
+    // --- Chart area margins and rect ---
+    const int leftMargin = m_leftMargin;
+    const int rightMargin = m_rightMargin;
+    const int topMargin = m_topMargin;
+    const int bottomMargin = m_bottomMargin;
+    QRect chartRect(leftMargin, topMargin, width() - leftMargin - rightMargin, height() - topMargin - bottomMargin);
 
     // --- Draw average number of points and total lines label ABOVE the legend ---
     int legendTopY = -1; // Will be set if legend is shown
     int legendBottomY = -1; // Will be set if legend is shown
+
+    // Fix: avgLabelY and avgLabelHeight must be declared and initialized here
     int avgLabelY = m_topMargin - 10;
     int avgLabelHeight = 0;
-    int legendMargin = 10;
-    int statLegendHeight = 0;
-    int statLegendX = 0, statLegendY = 0;
-    int statLegendWidth = 160;
-
-    QString avgLabel;
     if (m_showAvgNumPointsLabel && !m_lines.isEmpty()) {
         int totalPoints = 0;
         int numLines = 0;
         for (const auto& line : m_lines) {
-            totalPoints += line.points.size();
+            totalPoints += int(line.points.size());
             ++numLines;
         }
         if (numLines > 0) {
             double avgPoints = double(totalPoints) / numLines;
-            avgLabel = QString("Average points per line: %1    Total lines: %2")
-                           .arg(avgPoints, 0, 'f', 2)
-                           .arg(numLines);
+            QString avgLabel = QString("Average points per line: %1    Total lines: %2")
+                .arg(avgPoints, 0, 'f', 2)
+                .arg(numLines);
             QFont avgFont = painter.font();
             avgFont.setBold(true);
             painter.setFont(avgFont);
@@ -1358,6 +1651,10 @@ void HighPerfLineChart::paintGL() {
         }
     }
 
+    int legendMargin = 10;
+    int statLegendHeight = 0;
+    int statLegendX = 0, statLegendY = 0;
+    int statLegendWidth = 160;
     // --- Draw legend below the average label ---
     if (m_showLegend) {
         // --- Compute average slope of main stat line (average or median) ---
@@ -1378,9 +1675,9 @@ void HighPerfLineChart::paintGL() {
                     const QVector<QPointF>& pts = line.points;
                     if (pts.size() < 2) continue;
                     for (int j = 1; j < pts.size(); ++j) {
-                        double x0 = m_logTransformX ? logX(pts[j-1].x()) : pts[j-1].x();
+                        double x0 = m_logTransformX ? logX(pts[j - 1].x()) : pts[j - 1].x();
                         double x1 = m_logTransformX ? logX(pts[j].x()) : pts[j].x();
-                        double y0 = m_logTransformY ? logY(pts[j-1].y()) : pts[j-1].y();
+                        double y0 = m_logTransformY ? logY(pts[j - 1].y()) : pts[j - 1].y();
                         double y1 = m_logTransformY ? logY(pts[j].y()) : pts[j].y();
                         if ((x0 <= x && x <= x1) || (x1 <= x && x <= x0)) {
                             double t = (x1 - x0) != 0 ? (x - x0) / (x1 - x0) : 0.0;
@@ -1398,7 +1695,7 @@ void HighPerfLineChart::paintGL() {
                     if (m_showMedianLine) {
                         std::sort(yVals.begin(), yVals.end());
                         int n = yVals.size();
-                        double med = (n % 2 == 1) ? yVals[n/2] : 0.5 * (yVals[n/2-1] + yVals[n/2]);
+                        double med = (n % 2 == 1) ? yVals[n / 2] : 0.5 * (yVals[n / 2 - 1] + yVals[n / 2]);
                         medianPoints.append(QPointF(x, med));
                     }
                 }
@@ -1410,8 +1707,8 @@ void HighPerfLineChart::paintGL() {
         }
         if (statLinePoints.size() > 1) {
             for (int i = 1; i < statLinePoints.size(); ++i) {
-                double dx = statLinePoints[i].x() - statLinePoints[i-1].x();
-                double dy = statLinePoints[i].y() - statLinePoints[i-1].y();
+                double dx = statLinePoints[i].x() - statLinePoints[i - 1].x();
+                double dy = statLinePoints[i].y() - statLinePoints[i - 1].y();
                 if (std::abs(dx) > 1e-8) {
                     statSlope += dy / dx;
                     ++statSlopeCount;
@@ -1453,11 +1750,12 @@ void HighPerfLineChart::paintGL() {
             statLegendX = chartRect.right() + legendMargin;
             if (statLegendX + statLegendWidth > width())
                 statLegendX = width() - statLegendWidth - legendMargin;
-        } else {
+        }
+        else {
             // Upward or flat: put legend to the right of y axis (not overlapping)
             statLegendX = chartRect.left() + legendMargin;
             if (statLegendX + statLegendWidth > chartRect.right() - legendMargin)
-                statLegendX = std::max(legendMargin, chartRect.right() - statLegendWidth - legendMargin);
+                statLegendX = std::max(legendMargin, int(chartRect.right() - statLegendWidth - legendMargin));
         }
         // Place legend vertically just below the average label
         statLegendY = avgLabelY + avgLabelHeight + legendMargin;
@@ -1467,7 +1765,7 @@ void HighPerfLineChart::paintGL() {
         painter.setFont(statLegendFont);
         painter.setPen(m_legendColor);
 
-        // Draw header
+        // --- Draw header ---
         if (anyStatLine) {
             painter.drawText(statLegendX, statLegendY - 10, "Statistical Lines:");
         }
@@ -1580,10 +1878,10 @@ void HighPerfLineChart::paintGL() {
             QPen pen(Qt::darkCyan, 2, Qt::DashDotLine);
             QString label = "Connect ";
             switch (m_connectStatsLineType) {
-                case ConnectStatsType::Average: label += "Avg"; break;
-                case ConnectStatsType::Median: label += "Median"; break;
-                case ConnectStatsType::Mode: label += "Mode"; break;
-                default: break;
+            case ConnectStatsType::Average: label += "Avg"; break;
+            case ConnectStatsType::Median: label += "Median"; break;
+            case ConnectStatsType::Mode: label += "Mode"; break;
+            default: break;
             }
             // Show the actual value of n in the legend, e.g., (n=5)
             label += QString(" (n=%1)").arg(m_connectStatsLineN);
@@ -1603,254 +1901,42 @@ void HighPerfLineChart::paintGL() {
     }
 }
 
-void HighPerfLineChart::resizeGL(int w, int h) {
-    glViewport(0, 0, w, h);
-}
+void HighPerfLineChart::drawAverageLabel(QPainter& painter)
+{
+    // --- Chart area margins and rect ---
+    const int leftMargin = m_leftMargin;
+    const int rightMargin = m_rightMargin;
+    const int topMargin = m_topMargin;
+    const int bottomMargin = m_bottomMargin;
+    QRect chartRect(leftMargin, topMargin, width() - leftMargin - rightMargin, height() - topMargin - bottomMargin);
 
-QPointF HighPerfLineChart::screenToChart(const QPoint& p) const {
-    if (width() <= 0 || height() <= 0 || m_xMax == m_xMin || m_yMax == m_yMin)
-        return QPointF(0, 0);
-    float x = m_xMin + (float(p.x()) / width()) * (m_xMax - m_xMin);
-    float y = m_yMax - (float(p.y()) / height()) * (m_yMax - m_yMin);
-    if (m_interchangeXY)
-        return QPointF(y, x);
-    else
-        return QPointF(x, y);
-}
+    int avgLabelY = m_topMargin - 10;
+    int avgLabelHeight = 0;
 
-int HighPerfLineChart::findLineAt(const QPoint& pos) const {
-    if (m_lines.isEmpty() || width() <= 0)
-        return -1;
-    QPointF chartPt = screenToChart(pos);
-    double minDist = 5.0 * (m_xMax - m_xMin) / width(); // tolerance in chart units
-    int found = -1;
-    for (int i = 0; i < m_lines.size(); ++i) {
-        const auto& line = m_lines[i];
-        if (line.points.isEmpty())
-            continue;
-        for (const QPointF& pt : line.points) {
-            if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
-                continue;
-            if (qAbs(pt.x() - chartPt.x()) < minDist && qAbs(pt.y() - chartPt.y()) < minDist) {
-                found = i;
-                break;
+    QString avgLabel;
+    if (m_showAvgNumPointsLabel && !m_lines.isEmpty()) {
+        int totalPoints = 0;
+        int numLines = 0;
+        for (const auto& line : m_lines) {
+            totalPoints += int(line.points.size());
+            ++numLines;
+        }
+        if (numLines > 0) {
+            double avgPoints = double(totalPoints) / numLines;
+            avgLabel = QString("Average points per line: %1    Total lines: %2")
+                .arg(avgPoints, 0, 'f', 2)
+                .arg(numLines);
+            QFont avgFont = painter.font();
+            avgFont.setBold(true);
+            painter.setFont(avgFont);
+            painter.setPen(QColor(80, 80, 80));
+            if (!m_chartTitle.isEmpty()) {
+                avgLabelY += 18; // leave space for title font
             }
+            avgLabelHeight = painter.fontMetrics().height();
+            painter.drawText(m_leftMargin, avgLabelY, avgLabel);
         }
-        if (found != -1) break;
     }
-    return found;
-}
-
-void HighPerfLineChart::clear() {
-    m_lines.clear();
-    m_selectedLine = -1;
-    m_hoveredLine = -1;
-    m_xMin = 0; m_xMax = 1;
-    m_yMin = 0; m_yMax = 1;
-    m_emptyMessage = "No data to display"; // Ensure the no data message is shown
-    update();
-}
-
-void HighPerfLineChart::setEmptyMessage(const QString& msg) {
-    m_emptyMessage = msg;
-    update();
-}
-
-void HighPerfLineChart::mouseMoveEvent(QMouseEvent* event) {
-    int idx = findLineAt(event->pos());
-    if (idx != m_hoveredLine) {
-        m_hoveredLine = idx;
-        emit lineHovered(idx);
-        update();
-    }
-}
-
-void HighPerfLineChart::mousePressEvent(QMouseEvent* event) {
-    int idx = findLineAt(event->pos());
-    if (idx != m_selectedLine) {
-        m_selectedLine = idx;
-        emit lineSelected(idx);
-        update();
-    }
-}
-
-void HighPerfLineChart::setShowAverageLine(bool show) {
-    m_showAverageLine = show;
-    update();
-}
-
-bool HighPerfLineChart::showAverageLine() const {
-    return m_showAverageLine;
-}
-
-void HighPerfLineChart::setShowMedianLine(bool show) {
-    m_showMedianLine = show;
-    update();
-}
-
-bool HighPerfLineChart::showMedianLine() const {
-    return m_showMedianLine;
-}
-
-void HighPerfLineChart::setShowPercentileLines(bool show, double lower, double upper) {
-    m_showPercentileLines = show;
-    m_percentileLower = lower;
-    m_percentileUpper = upper;
-    update();
-}
-
-bool HighPerfLineChart::showPercentileLines() const {
-    return m_showPercentileLines;
-}
-
-double HighPerfLineChart::percentileLower() const {
-    return m_percentileLower;
-}
-
-double HighPerfLineChart::percentileUpper() const {
-    return m_percentileUpper;
-}
-
-void HighPerfLineChart::setShowMinLine(bool show) {
-    m_showMinLine = show;
-    update();
-}
-
-bool HighPerfLineChart::showMinLine() const {
-    return m_showMinLine;
-}
-
-void HighPerfLineChart::setShowMaxLine(bool show) {
-    m_showMaxLine = show;
-    update();
-}
-
-bool HighPerfLineChart::showMaxLine() const {
-    return m_showMaxLine;
-}
-
-void HighPerfLineChart::setShowStddevLines(bool show) {
-    m_showStddevLines = show;
-    update();
-}
-
-bool HighPerfLineChart::showStddevLines() const {
-    return m_showStddevLines;
-}
-
-void HighPerfLineChart::setShowAllLines(bool show) {
-    m_showAllLines = show;
-    update();
-}
-
-bool HighPerfLineChart::showAllLines() const {
-    return m_showAllLines;
-}
-
-void HighPerfLineChart::setGlobalLineColor(const QColor& color) {
-    m_globalLineColor = color;
-    update();
-}
-
-QColor HighPerfLineChart::globalLineColor() const {
-    return m_globalLineColor;
-}
-
-void HighPerfLineChart::setGlobalLineWidth(float width) {
-    m_globalLineWidth = width;
-    update();
-}
-
-float HighPerfLineChart::globalLineWidth() const {
-    return m_globalLineWidth;
-}
-
-void HighPerfLineChart::setGlobalLineOpacity(float opacity) {
-    m_globalLineOpacity = opacity;
-    update();
-}
-
-float HighPerfLineChart::globalLineOpacity() const {
-    return m_globalLineOpacity;
-}
-
-// --- Statistical line legend label setters ---
-void HighPerfLineChart::setAverageLineLabel(const QString& label) { m_averageLineLabel = label; update(); }
-void HighPerfLineChart::setMedianLineLabel(const QString& label) { m_medianLineLabel = label; update(); }
-void HighPerfLineChart::setPercentileLineLabels(const QString& lowerLabel, const QString& upperLabel) {
-    m_percentileLowerLabel = lowerLabel; m_percentileUpperLabel = upperLabel; update();
-}
-void HighPerfLineChart::setMinLineLabel(const QString& label) { m_minLineLabel = label; update(); }
-void HighPerfLineChart::setMaxLineLabel(const QString& label) { m_maxLineLabel = label; update(); }
-void HighPerfLineChart::setStddevLineLabel(const QString& label) { m_stddevLineLabel = label; update(); }
-
-// --- Additional statistical line setters/getters ---
-void HighPerfLineChart::setShowModeLine(bool show) { m_showModeLine = show; update(); }
-bool HighPerfLineChart::showModeLine() const { return m_showModeLine; }
-void HighPerfLineChart::setShowVarianceLine(bool show) { m_showVarianceLine = show; update(); }
-bool HighPerfLineChart::showVarianceLine() const { return m_showVarianceLine; }
-void HighPerfLineChart::setShowLowerQuartileLine(bool show) { m_showLowerQuartileLine = show; update(); }
-bool HighPerfLineChart::showLowerQuartileLine() const { return m_showLowerQuartileLine; }
-void HighPerfLineChart::setShowUpperQuartileLine(bool show) { m_showUpperQuartileLine = show; update(); }
-bool HighPerfLineChart::showUpperQuartileLine() const { return m_showUpperQuartileLine; }
-void HighPerfLineChart::setShowMADLine(bool show) { m_showMADLine = show; update(); }
-bool HighPerfLineChart::showMADLine() const { return m_showMADLine; }
-void HighPerfLineChart::setShowSkewnessLine(bool show) { m_showSkewnessLine = show; update(); }
-bool HighPerfLineChart::showSkewnessLine() const { return m_showSkewnessLine; }
-void HighPerfLineChart::setShowKurtosisLine(bool show) { m_showKurtosisLine = show; update(); }
-bool HighPerfLineChart::showKurtosisLine() const { return m_showKurtosisLine; }
-
-// --- Additional statistical line legend label setters ---
-void HighPerfLineChart::setModeLineLabel(const QString& label) { m_modeLineLabel = label; update(); }
-void HighPerfLineChart::setVarianceLineLabel(const QString& label) { m_varianceLineLabel = label; update(); }
-void HighPerfLineChart::setLowerQuartileLineLabel(const QString& label) { m_lowerQuartileLineLabel = label; update(); }
-void HighPerfLineChart::setUpperQuartileLineLabel(const QString& label) { m_upperQuartileLineLabel = label; update(); }
-void HighPerfLineChart::setMADLineLabel(const QString& label) { m_madLineLabel = label; update(); }
-void HighPerfLineChart::setSkewnessLineLabel(const QString& label) { m_skewnessLineLabel = label; update(); }
-void HighPerfLineChart::setKurtosisLineLabel(const QString& label) { m_kurtosisLineLabel = label; update(); }
-
-// --- Connect stats line setters/getters ---
-void HighPerfLineChart::setConnectStatsLineEnabled(bool enabled) { m_connectStatsLineEnabled = enabled; update(); }
-bool HighPerfLineChart::connectStatsLineEnabled() const { return m_connectStatsLineEnabled; }
-void HighPerfLineChart::setConnectStatsLineN(int n) { m_connectStatsLineN = std::max(1, n); update(); }
-int HighPerfLineChart::connectStatsLineN() const { return m_connectStatsLineN; }
-void HighPerfLineChart::setConnectStatsLineType(ConnectStatsType type) { m_connectStatsLineType = type; update(); }
-HighPerfLineChart::ConnectStatsType HighPerfLineChart::connectStatsLineType() const { return m_connectStatsLineType; }
-
-// --- Legend visibility setters/getters ---
-void HighPerfLineChart::setShowLegend(bool show) { m_showLegend = show; update(); }
-bool HighPerfLineChart::showLegend() const { return m_showLegend; }
-
-// --- Average number of points label visibility setters/getters ---
-void HighPerfLineChart::setShowAvgNumPointsLabel(bool show) {
-    m_showAvgNumPointsLabel = show;
-    update();
-}
-
-bool HighPerfLineChart::showAvgNumPointsLabel() const {
-    return m_showAvgNumPointsLabel;
-}
-
-// --- Moving average smoothing ---
-QVector<QPointF> HighPerfLineChart::movingAverage(const QVector<QPointF>& points, int window) const {
-    if (points.size() < 2 || window < 1)
-        return points;
-    QVector<QPointF> smoothed;
-    int n = points.size();
-    int half = window / 2;
-    for (int i = 0; i < n; ++i) {
-        int start = std::max(0, i - half);
-        int end = std::min(n - 1, i + half);
-        double sumX = 0, sumY = 0;
-        int count = 0;
-        for (int j = start; j <= end; ++j) {
-            sumX += points[j].x();
-            sumY += points[j].y();
-            ++count;
-        }
-        smoothed.append(QPointF(sumX / count, sumY / count));
-    }
-    return smoothed;
 }
 
 // --- Moving average smoothing setters/getters ---

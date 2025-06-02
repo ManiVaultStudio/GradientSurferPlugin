@@ -32,7 +32,6 @@ struct LineData {
     LineDashStyle dashStyle = LineDashStyle::Solid; // New: per-line dash style
 };
 
-
 enum class BinaryNormAxis { X, Y };
 
 class HighPerfLineChart : public QOpenGLWidget, protected QOpenGLFunctions {
@@ -361,4 +360,10 @@ private:
     int m_movingAverageWindow = 5;
     QVector<QPointF> movingAverage(const QVector<QPointF>& points, int window) const;
     QString m_movingAverageLineLabel;
+
+    // --- New helper methods for refactored paintGL ---
+    void drawChartWithOpenGL();
+    void drawAxesAndLabels(QPainter& painter);
+    void drawLegend(QPainter& painter);
+    void drawAverageLabel(QPainter& painter);
 };
