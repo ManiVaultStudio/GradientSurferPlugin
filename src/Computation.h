@@ -72,6 +72,7 @@ private:
     std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols);
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
     void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
+    void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector);
     void setupTableModelAndSelection();
     void setupTableModelAndSelection(const QStringList& topGenes,
         const std::vector<QString>& allGenes,
