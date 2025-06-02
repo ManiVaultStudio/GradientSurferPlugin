@@ -40,17 +40,29 @@ void LayerSurferPlugin::init()
     auto* topLayout = new QHBoxLayout();
     topLayout->setContentsMargins(0, 0, 0, 0);
     topLayout->setSpacing(0);
-    topLayout->addWidget(_settingsAction.getTableView1Action(),50);
+    topLayout->addWidget(_settingsAction.getTableView1Action());
     topLayout->addWidget(_settingsAction.getLineChart1Widget(),50);
 
     auto* bottomLayout = new QHBoxLayout();
     bottomLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setSpacing(0);
-    bottomLayout->addWidget(_settingsAction.getTableView2Action(), 50);
+    bottomLayout->addWidget(_settingsAction.getTableView2Action());
     bottomLayout->addWidget(_settingsAction.getLineChart2Widget(), 50);
 
-    mainLayout->addLayout(topLayout,50);
-    mainLayout->addLayout(bottomLayout,50);
+    auto* combinedLayout = new QVBoxLayout();
+
+    combinedLayout->addLayout(topLayout);
+
+    // Add a horizontal separator between topLayout and bottomLayout
+    auto* separator = new QFrame();
+    separator->setFrameShape(QFrame::HLine);
+    separator->setFrameShadow(QFrame::Sunken);
+    separator->setLineWidth(1);
+    combinedLayout->addWidget(separator);
+
+    combinedLayout->addLayout(bottomLayout);
+
+    mainLayout->addLayout(combinedLayout,90);
 
     auto* computeStatusLayout = new QHBoxLayout();
     computeStatusLayout->setContentsMargins(0, 0, 0, 0);

@@ -115,111 +115,6 @@ static QString getContrastingTextColor(const QString& bgColor) {
     double luminance = (0.299 * color.red() + 0.587 * color.green() + 0.114 * color.blue()) / 255.0;
     return (luminance > 0.5) ? "black" : "white";
 }
-QVector<QPointF> convertToQPointF(const std::vector<float>& vec,
-    int pointsPerLine,
-    int numOfLines) {
-    QVector<QPointF> points;
-
-    if (pointsPerLine < 1) {
-        throw std::invalid_argument("At least 1 point per line is required.");
-    }
-
-    if (static_cast<size_t>(pointsPerLine * numOfLines * 2) > vec.size()) {
-        throw std::invalid_argument("Input vector size is smaller than expected.");
-    }
-
-    // Total points = numOfLines * pointsPerLine
-    points.reserve(numOfLines * pointsPerLine);
-
-    for (int pointIdx = 0; pointIdx < pointsPerLine; ++pointIdx) {
-        for (int lineIdx = 0; lineIdx < numOfLines; ++lineIdx) {
-            // Calculate position in the flat array
-            size_t pos = pointIdx * numOfLines * 2 + lineIdx * 2;
-            float x = vec[pos];
-            float y = vec[pos + 1];
-            points.append(QPointF(x, y));
-        }
-    }
-
-    return points;
-}
-QVector<LineData> convertToLineData(const std::vector<float>& vec,
-    int pointsPerLine,
-    int numOfLines,
-    const QVector<QColor>& colors = QVector<QColor>()) {
-    QVector<LineData> lines;
-
-    qDebug() << "Conversion started. Total elements:" << vec.size()
-        << "Points per line:" << pointsPerLine
-        << "Number of lines:" << numOfLines;
-
-    // Validate input
-    if (pointsPerLine < 1 || numOfLines < 1) {
-        qWarning() << "Invalid parameters - pointsPerLine:" << pointsPerLine
-            << "numOfLines:" << numOfLines;
-        return lines;
-    }
-
-    const size_t requiredSize = static_cast<size_t>(pointsPerLine * numOfLines * 2);
-    if (vec.size() < requiredSize) {
-        qWarning() << "Insufficient data - Got:" << vec.size()
-            << "Need:" << requiredSize;
-        return lines;
-    }
-
-    lines.reserve(numOfLines);
-
-    for (int lineIdx = 0; lineIdx < numOfLines; ++lineIdx) {
-        LineData line;
-
-        // Set color
-        if (!colors.isEmpty() && lineIdx < colors.size()) {
-            line.color = colors[lineIdx];
-        }
-        else {
-            static const QVector<QColor> defaultColors = {
-                Qt::blue, Qt::green, Qt::red, Qt::cyan,
-                Qt::magenta, Qt::yellow, Qt::gray
-            };
-            line.color = defaultColors[lineIdx % defaultColors.size()];
-        }
-
-        line.points.reserve(pointsPerLine);
-
-        for (int pointIdx = 0; pointIdx < pointsPerLine; ++pointIdx) {
-            size_t pos = pointIdx * numOfLines * 2 + lineIdx * 2;
-
-            // Bounds checking
-            if (pos + 1 >= vec.size()) {
-                qWarning() << "Index out of bounds at line" << lineIdx
-                    << "point" << pointIdx;
-                continue;
-            }
-
-            float x = vec[pos];
-            float y = vec[pos + 1];
-
-            if (!std::isfinite(x) || !std::isfinite(y)) {
-                qWarning() << "Non-finite point at line" << lineIdx
-                    << "point" << pointIdx << ":" << x << y;
-                continue;
-            }
-
-            line.points.append(QPointF(x, y));
-        }
-
-        if (!line.points.isEmpty()) {
-            lines.append(line);
-            qDebug() << "Added line" << lineIdx << "with" << line.points.size() << "points";
-        }
-        else {
-            qWarning() << "Skipping empty line" << lineIdx;
-        }
-    }
-
-    qDebug() << "Conversion complete. Generated" << lines.size() << "lines";
-    return lines;
-}
 
 QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std::vector<float>& vecCoord,
     int pointsPerLine,
@@ -1852,30 +1747,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 }
 
-void Computation::removeDatasets()
-{
-    const std::vector<int>& groupIds = { 666 };
-    auto allDatasets = mv::data().getAllDatasets();
-
-    Datasets datasetsFilteredAndSorted;
-
-    for (int groupId : groupIds) {
-        std::copy_if(allDatasets.begin(), allDatasets.end(), std::back_inserter(datasetsFilteredAndSorted), [groupId](Dataset<DatasetImpl> dataset) {
-            return dataset->getGroupIndex() == groupId;
-            });
-    }
-
-    std::sort(datasetsFilteredAndSorted.begin(), datasetsFilteredAndSorted.end(), [](Dataset<DatasetImpl> lhs, Dataset<DatasetImpl> rhs) -> bool {
-        return rhs->getDataHierarchyItem().getDepth() < lhs->getDataHierarchyItem().getDepth();
-        });
-
-    for (auto dataset : datasetsFilteredAndSorted)
-    {
-        if (dataset.isValid())
-            mv::data().removeDataset(dataset);
-    }
-}
-
 
 void Computation::AutoCompute()
 {
@@ -2113,62 +1984,6 @@ std::vector<int> Computation::getSortedCellIndices(const std::vector<float>& yCo
     return indices;
 }
 
-// Computes a correlation matrix from a cell-by-gene matrix
-std::vector<int> Computation::computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols) {
-    // Pearson correlation between each gene (column)
-    // Output: vector of correlation scores (e.g., sum of absolute correlations for each gene)
-    // The result is a vector<int> for compatibility with downstream code, so we will scale and cast the float scores.
-
-    std::vector<float> means(noOfCols, 0.0f);
-    std::vector<float> stddevs(noOfCols, 0.0f);
-
-    // Compute mean for each gene
-    for (int col = 0; col < noOfCols; ++col) {
-        float sum = 0.0f;
-        for (int row = 0; row < numOfRows; ++row) {
-            sum += cellbygenematrix[row * noOfCols + col];
-        }
-        means[col] = sum / static_cast<float>(numOfRows);
-    }
-
-    // Compute stddev for each gene
-    for (int col = 0; col < noOfCols; ++col) {
-        float sumSq = 0.0f;
-        for (int row = 0; row < numOfRows; ++row) {
-            float v = cellbygenematrix[row * noOfCols + col] - means[col];
-            sumSq += v * v;
-        }
-        stddevs[col] = std::sqrt(sumSq / static_cast<float>(numOfRows));
-        if (stddevs[col] == 0.0f) stddevs[col] = 1.0f; // Prevent division by zero
-    }
-
-    // For each gene, compute the sum of absolute Pearson correlations with all other genes
-    std::vector<float> geneCorrSum(noOfCols, 0.0f);
-
-    for (int i = 0; i < noOfCols; ++i) {
-        for (int j = 0; j < noOfCols; ++j) {
-            if (i == j) continue;
-            float num = 0.0f;
-            for (int row = 0; row < numOfRows; ++row) {
-                float xi = cellbygenematrix[row * noOfCols + i];
-                float xj = cellbygenematrix[row * noOfCols + j];
-                num += (xi - means[i]) * (xj - means[j]);
-            }
-            float denom = static_cast<float>(numOfRows) * stddevs[i] * stddevs[j];
-            float corr = (denom != 0.0f) ? (num / denom) : 0.0f;
-            geneCorrSum[i] += std::abs(corr);
-        }
-    }
-
-    // Convert to int vector (e.g., scale by 1000 for ranking)
-    std::vector<int> correlation(noOfCols, 0);
-    for (int i = 0; i < noOfCols; ++i) {
-        correlation[i] = static_cast<int>(geneCorrSum[i] * 1000.0f);
-    }
-
-    return correlation;
-}
-
 void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector)
 {
     const int numGenes = dataset->getNumDimensions();
@@ -2302,58 +2117,6 @@ void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDatase
     }
 
     //qDebug() << "Correlation between gene and selected PC completed";
-}
-
-
-// Filters the top N genes by correlation
-QStringList Computation::filterTopNGenesByCorrelation(const std::vector<float>& correlationVector, int N, std::vector<QString>  geneNameOrdered) {
-    QStringList topGenes;
-
-
-    // Defensive: correlationMatrix and geneNames should have the same size
-    int count = std::min<int>(std::min<int>(N, static_cast<int>(correlationVector.size())), geneNameOrdered.size());
-    if (count == 0) return topGenes;
-
-    // Create a vector of indices
-    std::vector<int> indices(correlationVector.size());
-    std::iota(indices.begin(), indices.end(), 0);
-
-    // Sort indices by descending correlation value
-    std::partial_sort(
-        indices.begin(), indices.begin() + count, indices.end(),
-        [&](int a, int b) { return correlationVector[a] > correlationVector[b]; }
-    );
-
-    // Map top indices to gene names
-    for (int i = 0; i < count; ++i) {
-        int idx = indices[i];
-        if (idx >= 0 && idx < geneNameOrdered.size())
-            topGenes << geneNameOrdered[idx];
-    }
-
-    return topGenes;
-}
-
-QStringList Computation::filterGenesByCorrelationRange(
-    const std::vector<float>& correlationVector,
-    float min,
-    float max,
-    std::vector<QString> geneNameOrdered)
-{
-    QStringList filteredGenes;
-
-    // Defensive: correlationVector and geneNameOrdered should have the same size
-    int count = std::min(static_cast<int>(correlationVector.size()), static_cast<int>(geneNameOrdered.size()));
-    if (count == 0) return filteredGenes;
-
-    for (int i = 0; i < count; ++i) {
-        float corr = correlationVector[i];
-        if (corr >= min && corr <= max) {
-            filteredGenes << geneNameOrdered[i];
-        }
-    }
-
-    return filteredGenes;
 }
 
 void Computation::populateGenesByCorrelationRange(
@@ -2708,64 +2471,6 @@ bool Computation::populateAndUpdateDatasets(
     return true;
 }
 
-// Setup and trigger PCA
-//bool Computation::setupAndTriggerPCA(int noOfDimensions)
-//{
-//    
-//    if (!_pcaDataset.isValid()) {
-//        _pcaDataset = mv::data().createDataset("Points", "PCA Data");
-//        _pcaDataset->setGroupIndex(666);
-//        mv::events().notifyDatasetAdded(_pcaDataset);
-//    }
-//
-//    if (!_pcaDataset.isValid()) {
-//        qDebug() << "Failed to create PCA dataset";
-//        setStatusMessage("E", "Error occurred during dataset creation", "");
-//        return false;
-//    }
-//
-//
-//    std::vector<float> emptyData(_filteredSelectionIndices.size() * noOfDimensions, 0.0f);
-//    _pcaDataset->setData(emptyData.data(), _filteredSelectionIndices.size(), noOfDimensions);
-//    mv::events().notifyDatasetDataChanged(_pcaDataset);
-//
-//    if (!_pcaAnalysisPlugin) {
-//        _pcaAnalysisPlugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedPointDataset }, { _pcaDataset });
-//    }
-//
-//    if (!_pcaAnalysisPlugin) {
-//        qDebug() << "PCA Analysis Plugin not found";
-//        setStatusMessage("E", "PCA plugin not found", "");
-//        return false;
-//    }
-//
-//
-//    
-//    auto componentsAction = dynamic_cast<IntegralAction*>(_pcaDataset->findChildByPath("PCA/Number of PCA components"));
-//    if (!componentsAction) {
-//        qDebug() << "Number of PCA components action not found";
-//        setStatusMessage("E", "PCA components action not found", "");
-//        return false;
-//    }
-//    componentsAction->setValue(noOfDimensions);
-//
-//    auto startAction = dynamic_cast<TriggerAction*>(_pcaDataset->findChildByPath("PCA/Start analysis"));
-//    if (startAction) {
-//        startAction->trigger();
-//        qDebug() << "PCA analysis started";
-//        QEventLoop loop;
-//        loop.processEvents();
-//        _pcaDataset->setSelectionIndices({});
-//    }
-//    else {
-//        qDebug() << "Start analysis action not found in PCA dataset";
-//        setStatusMessage("E", "PCA start action not found", "");
-//        return false;
-//    }
-//    qDebug() << "PCA analysis triggered successfully";
-//    setStatusMessage("C", "PCA analysis completed", "#28a745");
-//    return true;
-//}
 
 bool Computation::setupAndTriggerPCA()
 {
@@ -3019,124 +2724,6 @@ void Computation::setSelectionAndAutoCompute()
     AutoCompute();
 }
 
-
-// Setup table model and connect selection
-void Computation::setupTableModelAndSelection(const QStringList& topGenes)
-{
-    QStandardItemModel* model = new QStandardItemModel(topGenes.size(), 1, _settingsAction.getTableView1Action());
-    model->setHorizontalHeaderLabels(QStringList() << "Gene");
-    for (int i = 0; i < topGenes.size(); ++i) {
-        model->setItem(i, 0, new QStandardItem(topGenes.at(i)));
-    }
-    _settingsAction.getTableView1Action()->setModel(model);
-    _settingsAction.getTableView1Action()->resizeColumnsToContents();
-    _settingsAction.getTableView1Action()->resizeRowsToContents();
-    _settingsAction.getTableView1Action()->setColumnWidth(0, 200);
-
-    if (_settingsAction.getTableView1Action()->selectionModel())
-        disconnect(_settingsAction.getTableView1Action()->selectionModel(), nullptr, this, nullptr);
-
-    connect(
-        _settingsAction.getTableView1Action()->selectionModel(),
-        &QItemSelectionModel::selectionChanged,
-        this,
-        [this](const QItemSelection& selected, const QItemSelection&) {
-            auto model = _settingsAction.getTableView1Action()->model();
-            if (!model) return;
-            QModelIndexList selectedIndexes = _settingsAction.getTableView1Action()->selectionModel()->selectedIndexes();
-            if (selectedIndexes.isEmpty()) return;
-            const QModelIndex& index = selectedIndexes.first();
-            if (!index.isValid()) return;
-            QString value = model->data(index, Qt::DisplayRole).toString();
-             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
-             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
-        }
-    );
-}
-
-void Computation::setupTableModelAndSelection(
-    const QStringList& topGenes,
-    const std::vector<QString>& allGenes,
-    const std::vector<float>& correlationVector)
-{
-    // Pair each gene with its correlation
-    std::vector<std::pair<float, QString>> geneCorrPairs;
-    for (size_t i = 0; i < allGenes.size(); ++i) {
-        float corr = (i < correlationVector.size()) ? correlationVector[i] : 0.0f;
-        geneCorrPairs.emplace_back(corr, allGenes[i]);
-    }
-
-    // Sort by correlation descending
-    std::sort(geneCorrPairs.begin(), geneCorrPairs.end(),
-        [](const auto& a, const auto& b) { return a.first > b.first; });
-
-    QStandardItemModel* model = new QStandardItemModel(static_cast<int>(geneCorrPairs.size()), 2, _settingsAction.getTableView1Action());
-    model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation");
-
-    QSet<QString> topGeneSet(topGenes.begin(), topGenes.end());
-
-    float minCorr = std::numeric_limits<float>::max();
-    float maxCorr = std::numeric_limits<float>::lowest();
-    for (const auto& pair : geneCorrPairs) {
-        minCorr = std::min(minCorr, pair.first);
-        maxCorr = std::max(maxCorr, pair.first);
-    }
-
-    for (int i = 0; i < static_cast<int>(geneCorrPairs.size()); ++i) {
-        const QString& gene = geneCorrPairs[i].second;
-        float corr = geneCorrPairs[i].first;
-
-        QStandardItem* geneItem = new QStandardItem(gene);
-        QStandardItem* corrItem = new QStandardItem;
-        corrItem->setData(QVariant::fromValue(corr), Qt::UserRole + 1); // Store value for delegate
-        corrItem->setData(QVariant::fromValue(corr), Qt::DisplayRole);  // Set value for sorting
-
-        if (topGeneSet.contains(gene)) {
-            QFont font = geneItem->font();
-            font.setBold(true);
-            geneItem->setFont(font);
-            geneItem->setBackground(QColor("#FFFACD"));
-            geneItem->setForeground(QColor("#000000"));
-        }
-
-        model->setItem(i, 0, geneItem);
-        model->setItem(i, 1, corrItem);
-    }
-
-    _settingsAction.getTableView1Action()->setModel(model);
-    _settingsAction.getTableView1Action()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
-    _settingsAction.getTableView1Action()->resizeColumnsToContents();
-    _settingsAction.getTableView1Action()->resizeRowsToContents();
-    _settingsAction.getTableView1Action()->setColumnWidth(0, 200);
-
-    // Enable sorting
-    _settingsAction.getTableView1Action()->setSortingEnabled(true);
-    // Sort by correlation column (descending) by default
-    _settingsAction.getTableView1Action()->sortByColumn(1, Qt::DescendingOrder);
-
-    if (_settingsAction.getTableView1Action()->selectionModel())
-        disconnect(_settingsAction.getTableView1Action()->selectionModel(), nullptr, this, nullptr);
-
-    connect(
-        _settingsAction.getTableView1Action()->selectionModel(),
-        &QItemSelectionModel::selectionChanged,
-        this,
-        [this](const QItemSelection& selected, const QItemSelection&) {
-            auto model = _settingsAction.getTableView1Action()->model();
-            if (!model) return;
-            QModelIndexList selectedIndexes = _settingsAction.getTableView1Action()->selectionModel()->selectedIndexes();
-            if (selectedIndexes.isEmpty()) return;
-            const QModelIndex& index = selectedIndexes.first();
-            if (!index.isValid()) return;
-            QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
-             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
-             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
-        }
-    );
-}
-
-
-
 void Computation::setupTableModelAndSelection()
 {
     QStandardItemModel* model = new QStandardItemModel(static_cast<int>(_geneCorrValues.size()), 3, _settingsAction.getTableView1Action());
@@ -3187,7 +2774,7 @@ void Computation::setupTableModelAndSelection()
     _settingsAction.getTableView1Action()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
     _settingsAction.getTableView1Action()->resizeColumnsToContents();
     _settingsAction.getTableView1Action()->resizeRowsToContents();
-    _settingsAction.getTableView1Action()->setColumnWidth(0, 100);
+    //_settingsAction.getTableView1Action()->setColumnWidth(0, 100);
 
     // Enable sorting and set default sort order
     _settingsAction.getTableView1Action()->setSortingEnabled(true);
