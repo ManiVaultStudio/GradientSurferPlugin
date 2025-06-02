@@ -2250,6 +2250,61 @@ void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndic
     qDebug() << "Correlation computation completed";
 }
 
+void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector)
+{
+    // check
+    const int numGenes = fullDataset->getNumDimensions();
+    const int numCells = fullDataset->getNumPoints();
+    const int numCellsInPC = selectedPC.size();
+    qDebug() << "Number of genes:" << numGenes << "Number of cells:" << numCells << "Number of cells in PC:" << numCellsInPC;
+    assert(numCells == numCellsInPC);
+
+    float meanCoord = 0.0f;
+    for (float val : selectedPC)
+        meanCoord += val;
+    meanCoord /= numCells;
+
+    std::vector<float> centeredCoords(numCells);
+    float normCoord = 0.0f;
+    for (int i = 0; i < numCells; ++i) {
+        float c = selectedPC[i] - meanCoord;
+        centeredCoords[i] = c;
+        normCoord += c * c;
+    }
+
+    corrVector.clear();
+    corrVector.resize(numGenes);
+
+    for (int geneIdx = 0; geneIdx < numGenes; ++geneIdx) {
+        std::vector<float> geneVals(numCells);
+
+        fullDataset->extractDataForDimension(geneVals, geneIdx);
+        
+        float sumGene = 0.0f;
+        for (float v : geneVals) sumGene += v;
+        float meanGene = sumGene / numCells;
+
+        float normGene = 0.0f;
+        float dotProd = 0.0f;
+        for (int i = 0; i < numCells; ++i) {
+            float centered = geneVals[i] - meanGene;
+            normGene += centered * centered;
+            dotProd += centered * centeredCoords[i];
+        }
+
+        float corr = (normGene > 0.0f && normCoord > 0.0f)
+            ? (dotProd / std::sqrt(normGene * normCoord))
+            : 0.0f;
+
+        if (std::isnan(corr)) corr = 0.0f;
+
+        corrVector[geneIdx] = corr;
+    }
+
+    //qDebug() << "Correlation between gene and selected PC completed";
+}
+
+
 // Filters the top N genes by correlation
 QStringList Computation::filterTopNGenesByCorrelation(const std::vector<float>& correlationVector, int N, std::vector<QString>  geneNameOrdered) {
     QStringList topGenes;
@@ -2530,6 +2585,21 @@ void Computation::processAfterPCAComplete()
     //wait for the two pca finished events to complete std::cout << "PCA Plugin: Finished." << std::endl;
     qDebug() << "PCA analysis completed successfully";
     setStatusMessage("C", "PCA analysis completed", "#28a745");
+
+    Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
+
+    int selectedPCDimension2 = 0;
+    int numAllCells2 = fullDataset2->getNumPoints();
+
+    std::vector<float> selectedPC(numAllCells2);
+    std::vector<int> allCellIndices2(numAllCells2);
+    std::iota(allCellIndices2.begin(), allCellIndices2.end(), 0);
+    _pcaCommonGenesDataset2->extractDataForDimension(selectedPC, selectedPCDimension2);
+
+    // compute the correlation between genes and selected PC
+    std::vector<float> correlationGenePC;
+    computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC);
+    setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
 }
 
 //Retrieve rotation angle from plugin
