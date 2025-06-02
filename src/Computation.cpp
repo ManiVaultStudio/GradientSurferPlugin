@@ -580,7 +580,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     //_settingsAction.getLineChart1Widget()->setShowMinLine(true);
                     _settingsAction.getLineChart1Widget()->setShowPoints(false);
                     _settingsAction.getLineChart1Widget()->setShowLines(false);
-                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(5);
+                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(2);//_numOfPointsInLine/100*10);
                     _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(true);
 
                     //_settingsAction.getLineChart1Widget()->setShowKurtosisLine(true);
