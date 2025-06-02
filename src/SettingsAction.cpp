@@ -76,7 +76,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _lineChartOptionsHolder.getConnectStatsLineAction().setMaximum(1.0);
     _lineChartOptionsHolder.getConnectStatsLineAction().setMinimum(0.0);
     _lineChartOptionsHolder.getConnectStatsLineAction().setValue(0.5);
-    _lineChartOptionsHolder.getConnectStatsLineAction().setSingleStep(0.1);
+    _lineChartOptionsHolder.getConnectStatsLineAction().setSingleStep(0.01);
 
     _scatterplotOptionsHolder.getFocusSelectionAction().setChecked(false);
     _scatterplotOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
