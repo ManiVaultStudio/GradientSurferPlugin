@@ -22,13 +22,19 @@ LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
 
 void LayerSurferPlugin::init()
 {
-    
+
     GroupsAction* groupForAction = new GroupsAction(this, "Settings");
+    _settingsAction.getDataset1OptionsHolder().setExpanded(false);
     groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
+    _settingsAction.getDataset2OptionsHolder().setExpanded(false);
     groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
+    _settingsAction.getSelectionOptionsHolder().setExpanded(true);
     groupForAction->addGroupAction(&_settingsAction.getSelectionOptionsHolder());
+    _settingsAction.getScatterplotOptionsHolder().setExpanded(true);
     groupForAction->addGroupAction(&_settingsAction.getScatterplotOptionsHolder());
+    _settingsAction.getLineChartOptionsHolder().setExpanded(true);
     groupForAction->addGroupAction(&_settingsAction.getLineChartOptionsHolder());
+    _settingsAction.getTableOptionsHolder().setExpanded(false);
     groupForAction->addGroupAction(&_settingsAction.getTableOptionsHolder(),false);
 
     addDockingAction(groupForAction, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
