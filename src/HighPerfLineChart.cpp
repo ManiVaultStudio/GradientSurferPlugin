@@ -809,133 +809,163 @@ void HighPerfLineChart::paintGL() {
         }
     }
 
-    // --- Draw average/median/percentile/min/max/stddev lines using QPainter ---
     if ((!m_lines.isEmpty()) && (m_showAverageLine || m_showMedianLine || m_showPercentileLines || m_showMinLine || m_showMaxLine || m_showStddevLines || m_showModeLine || m_showVarianceLine || m_showLowerQuartileLine || m_showUpperQuartileLine || m_showMADLine || m_showSkewnessLine || m_showKurtosisLine)) {
         const int N = 200;
         QVector<QPointF> avgPoints, medianPoints, percLowPoints, percHighPoints, minPoints, maxPoints, stddevLowPoints, stddevHighPoints;
         QVector<QPointF> modePoints, variancePoints, lowerQuartilePoints, upperQuartilePoints, madPoints, skewnessPoints, kurtosisPoints;
         double xStart = m_xMin, xEnd = m_xMax;
-        for (int i = 0; i < N; ++i) {
-            double x = xStart + (xEnd - xStart) * i / (N - 1);
+
+        // --- Special case: if only one line, use its points directly for all enabled stat lines ---
+        if (m_lines.size() == 1 && m_lines[0].points.size() > 1) {
+            const QVector<QPointF>& pts = m_lines[0].points;
             QVector<double> yVals;
-            double ySum = 0;
-            int yCount = 0;
-            // For each line, interpolate y at this x (if possible)
-            for (const auto& line : m_lines) {
-                const QVector<QPointF>& pts = line.points;
-                if (pts.size() < 2) continue;
-                for (int j = 1; j < pts.size(); ++j) {
-                    double x0 = m_logTransformX ? logX(pts[j-1].x()) : pts[j-1].x();
-                    double x1 = m_logTransformX ? logX(pts[j].x()) : pts[j].x();
-                    double y0 = m_logTransformY ? logY(pts[j-1].y()) : pts[j-1].y();
-                    double y1 = m_logTransformY ? logY(pts[j].y()) : pts[j].y();
-                    if ((x0 <= x && x <= x1) || (x1 <= x && x <= x0)) {
-                        double t = (x1 - x0) != 0 ? (x - x0) / (x1 - x0) : 0.0;
-                        double y = y0 + t * (y1 - y0);
-                        yVals.append(y);
-                        ySum += y;
-                        yCount++;
-                        break;
+            for (const QPointF& pt : pts) {
+                double x = m_logTransformX ? logX(pt.x()) : pt.x();
+                double y = m_logTransformY ? logY(pt.y()) : pt.y();
+                if (m_showAverageLine) avgPoints.append(QPointF(x, y));
+                if (m_showMedianLine) medianPoints.append(QPointF(x, y));
+                if (m_showPercentileLines) {
+                    percLowPoints.append(QPointF(x, y));
+                    percHighPoints.append(QPointF(x, y));
+                }
+                if (m_showMinLine) minPoints.append(QPointF(x, y));
+                if (m_showMaxLine) maxPoints.append(QPointF(x, y));
+                if (m_showStddevLines) {
+                    stddevLowPoints.append(QPointF(x, y));
+                    stddevHighPoints.append(QPointF(x, y));
+                }
+                if (m_showModeLine) modePoints.append(QPointF(x, y));
+                if (m_showVarianceLine) variancePoints.append(QPointF(x, 0.0)); // Variance is 0 for a single value
+                if (m_showLowerQuartileLine) lowerQuartilePoints.append(QPointF(x, y));
+                if (m_showUpperQuartileLine) upperQuartilePoints.append(QPointF(x, y));
+                if (m_showMADLine) madPoints.append(QPointF(x, 0.0)); // MAD is 0 for a single value
+                if (m_showSkewnessLine) skewnessPoints.append(QPointF(x, 0.0)); // Skewness is 0 for a single value
+                if (m_showKurtosisLine) kurtosisPoints.append(QPointF(x, 0.0)); // Kurtosis is 0 for a single value
+            }
+        }
+        else {
+            for (int i = 0; i < N; ++i) {
+                double x = xStart + (xEnd - xStart) * i / (N - 1);
+                QVector<double> yVals;
+                double ySum = 0;
+                int yCount = 0;
+                // For each line, interpolate y at this x (if possible)
+                for (const auto& line : m_lines) {
+                    const QVector<QPointF>& pts = line.points;
+                    if (pts.size() < 2) continue;
+                    for (int j = 1; j < pts.size(); ++j) {
+                        double x0 = m_logTransformX ? logX(pts[j - 1].x()) : pts[j - 1].x();
+                        double x1 = m_logTransformX ? logX(pts[j].x()) : pts[j].x();
+                        double y0 = m_logTransformY ? logY(pts[j - 1].y()) : pts[j - 1].y();
+                        double y1 = m_logTransformY ? logY(pts[j].y()) : pts[j].y();
+                        if ((x0 <= x && x <= x1) || (x1 <= x && x <= x0)) {
+                            double t = (x1 - x0) != 0 ? (x - x0) / (x1 - x0) : 0.0;
+                            double y = y0 + t * (y1 - y0);
+                            yVals.append(y);
+                            ySum += y;
+                            yCount++;
+                            break;
+                        }
                     }
                 }
-            }
-            if (yCount > 0) {
-                if (m_showAverageLine)
-                    avgPoints.append(QPointF(x, ySum / yCount));
-                if (m_showMedianLine || m_showPercentileLines || m_showMinLine || m_showMaxLine || m_showStddevLines || m_showModeLine || m_showVarianceLine || m_showLowerQuartileLine || m_showUpperQuartileLine || m_showMADLine || m_showSkewnessLine || m_showKurtosisLine) {
-                    std::sort(yVals.begin(), yVals.end());
-                    int n = yVals.size();
-                    // Median
-                    if (m_showMedianLine) {
-                        double med = (n % 2 == 1) ? yVals[n/2] : 0.5 * (yVals[n/2-1] + yVals[n/2]);
-                        medianPoints.append(QPointF(x, med));
-                    }
-                    // Percentiles
-                    if (m_showPercentileLines) {
-                        int idxLow = std::clamp(int(m_percentileLower * n), 0, n-1);
-                        int idxHigh = std::clamp(int(m_percentileUpper * n), 0, n-1);
-                        percLowPoints.append(QPointF(x, yVals[idxLow]));
-                        percHighPoints.append(QPointF(x, yVals[idxHigh]));
-                    }
-                    // Min/Max
-                    if (m_showMinLine)
-                        minPoints.append(QPointF(x, yVals.first()));
-                    if (m_showMaxLine)
-                        maxPoints.append(QPointF(x, yVals.last()));
-                    // Stddev
-                    if (m_showStddevLines) {
-                        double mean = ySum / yCount;
-                        double var = 0;
-                        for (double y : yVals) var += (y - mean) * (y - mean);
-                        double stddev = std::sqrt(var / yCount);
-                        stddevLowPoints.append(QPointF(x, mean - stddev));
-                        stddevHighPoints.append(QPointF(x, mean + stddev));
-                    }
-                    // Mode
-                    if (m_showModeLine) {
-                        std::map<double, int> freqMap;
-                        for (double y : yVals) freqMap[y]++;
-                        auto modeIt = std::max_element(freqMap.begin(), freqMap.end(), [](const auto& a, const auto& b) { return a.second < b.second; });
-                        if (modeIt != freqMap.end())
-                            modePoints.append(QPointF(x, modeIt->first));
-                    }
-                    // Variance
-                    if (m_showVarianceLine) {
-                        double mean = ySum / yCount;
-                        double var = 0;
-                        for (double y : yVals) var += (y - mean) * (y - mean);
-                        variancePoints.append(QPointF(x, var / yCount));
-                    }
-                    // Lower/Upper Quartiles
-                    if (m_showLowerQuartileLine) {
-                        int idxLQ = std::clamp(int(0.25 * n), 0, n-1);
-                        lowerQuartilePoints.append(QPointF(x, yVals[idxLQ]));
-                    }
-                    if (m_showUpperQuartileLine) {
-                        int idxUQ = std::clamp(int(0.75 * n), 0, n-1);
-                        upperQuartilePoints.append(QPointF(x, yVals[idxUQ]));
-                    }
-                    // MAD
-                    if (m_showMADLine) {
-                        double mean = ySum / yCount;
-                        QVector<double> absDevs;
-                        for (double y : yVals) absDevs.append(std::abs(y - mean));
-                        std::sort(absDevs.begin(), absDevs.end());
-                        double mad = (n % 2 == 1) ? absDevs[n/2] : 0.5 * (absDevs[n/2-1] + absDevs[n/2]);
-                        madPoints.append(QPointF(x, mad));
-                    }
-                    // Skewness
-                    if (m_showSkewnessLine) {
-                        double mean = ySum / yCount;
-                        double m3 = 0, m2 = 0;
-                        for (double y : yVals) {
-                            double dev = y - mean;
-                            m3 += dev * dev * dev;
-                            m2 += dev * dev;
+                if (yCount > 0) {
+                    if (m_showAverageLine)
+                        avgPoints.append(QPointF(x, ySum / yCount));
+                    if (m_showMedianLine || m_showPercentileLines || m_showMinLine || m_showMaxLine || m_showStddevLines || m_showModeLine || m_showVarianceLine || m_showLowerQuartileLine || m_showUpperQuartileLine || m_showMADLine || m_showSkewnessLine || m_showKurtosisLine) {
+                        std::sort(yVals.begin(), yVals.end());
+                        int n = yVals.size();
+                        // Median
+                        if (m_showMedianLine) {
+                            double med = (n % 2 == 1) ? yVals[n / 2] : 0.5 * (yVals[n / 2 - 1] + yVals[n / 2]);
+                            medianPoints.append(QPointF(x, med));
                         }
-                        m3 /= yCount;
-                        m2 = std::pow(m2 / yCount, 1.5);
-                        double skewness = (m2 != 0) ? m3 / m2 : 0.0;
-                        skewnessPoints.append(QPointF(x, skewness));
-                    }
-                    // Kurtosis
-                    if (m_showKurtosisLine) {
-                        double mean = ySum / yCount;
-                        double m4 = 0, m2 = 0;
-                        for (double y : yVals) {
-                            double dev = y - mean;
-                            m4 += dev * dev * dev * dev;
-                            m2 += dev * dev;
+                        // Percentiles
+                        if (m_showPercentileLines) {
+                            int idxLow = std::clamp(int(m_percentileLower * n), 0, n - 1);
+                            int idxHigh = std::clamp(int(m_percentileUpper * n), 0, n - 1);
+                            percLowPoints.append(QPointF(x, yVals[idxLow]));
+                            percHighPoints.append(QPointF(x, yVals[idxHigh]));
                         }
-                        m4 /= yCount;
-                        m2 = std::pow(m2 / yCount, 2.0);
-                        double kurtosis = (m2 != 0) ? m4 / m2 : 0.0;
-                        kurtosisPoints.append(QPointF(x, kurtosis));
+                        // Min/Max
+                        if (m_showMinLine)
+                            minPoints.append(QPointF(x, yVals.first()));
+                        if (m_showMaxLine)
+                            maxPoints.append(QPointF(x, yVals.last()));
+                        // Stddev
+                        if (m_showStddevLines) {
+                            double mean = ySum / yCount;
+                            double var = 0;
+                            for (double y : yVals) var += (y - mean) * (y - mean);
+                            double stddev = std::sqrt(var / yCount);
+                            stddevLowPoints.append(QPointF(x, mean - stddev));
+                            stddevHighPoints.append(QPointF(x, mean + stddev));
+                        }
+                        // Mode
+                        if (m_showModeLine) {
+                            std::map<double, int> freqMap;
+                            for (double y : yVals) freqMap[y]++;
+                            auto modeIt = std::max_element(freqMap.begin(), freqMap.end(), [](const auto& a, const auto& b) { return a.second < b.second; });
+                            if (modeIt != freqMap.end())
+                                modePoints.append(QPointF(x, modeIt->first));
+                        }
+                        // Variance
+                        if (m_showVarianceLine) {
+                            double mean = ySum / yCount;
+                            double var = 0;
+                            for (double y : yVals) var += (y - mean) * (y - mean);
+                            variancePoints.append(QPointF(x, var / yCount));
+                        }
+                        // Lower/Upper Quartiles
+                        if (m_showLowerQuartileLine) {
+                            int idxLQ = std::clamp(int(0.25 * n), 0, n - 1);
+                            lowerQuartilePoints.append(QPointF(x, yVals[idxLQ]));
+                        }
+                        if (m_showUpperQuartileLine) {
+                            int idxUQ = std::clamp(int(0.75 * n), 0, n - 1);
+                            upperQuartilePoints.append(QPointF(x, yVals[idxUQ]));
+                        }
+                        // MAD
+                        if (m_showMADLine) {
+                            double mean = ySum / yCount;
+                            QVector<double> absDevs;
+                            for (double y : yVals) absDevs.append(std::abs(y - mean));
+                            std::sort(absDevs.begin(), absDevs.end());
+                            double mad = (n % 2 == 1) ? absDevs[n / 2] : 0.5 * (absDevs[n / 2 - 1] + absDevs[n / 2]);
+                            madPoints.append(QPointF(x, mad));
+                        }
+                        // Skewness
+                        if (m_showSkewnessLine) {
+                            double mean = ySum / yCount;
+                            double m3 = 0, m2 = 0;
+                            for (double y : yVals) {
+                                double dev = y - mean;
+                                m3 += dev * dev * dev;
+                                m2 += dev * dev;
+                            }
+                            m3 /= yCount;
+                            m2 = std::pow(m2 / yCount, 1.5);
+                            double skewness = (m2 != 0) ? m3 / m2 : 0.0;
+                            skewnessPoints.append(QPointF(x, skewness));
+                        }
+                        // Kurtosis
+                        if (m_showKurtosisLine) {
+                            double mean = ySum / yCount;
+                            double m4 = 0, m2 = 0;
+                            for (double y : yVals) {
+                                double dev = y - mean;
+                                m4 += dev * dev * dev * dev;
+                                m2 += dev * dev;
+                            }
+                            m4 /= yCount;
+                            m2 = std::pow(m2 / yCount, 2.0);
+                            double kurtosis = (m2 != 0) ? m4 / m2 : 0.0;
+                            kurtosisPoints.append(QPointF(x, kurtosis));
+                        }
                     }
                 }
             }
         }
-        QPainter painter(this);
+    QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing, true);
         // Average line
         if (m_showAverageLine && avgPoints.size() > 1) {
