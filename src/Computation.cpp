@@ -573,13 +573,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     /*_settingsAction.getLineChart1Widget()->setBinaryNormalizeXThreshold(0.95f);
                     _settingsAction.getLineChart1Widget()->setBinaryNormalizeX(true);*/
                     //_settingsAction.getLineChart1Widget()->setShowAverageLine(true);
-                    _settingsAction.getLineChart1Widget()->setShowMedianLine(true);
+                   // _settingsAction.getLineChart1Widget()->setShowMedianLine(true);
                     //_settingsAction.getLineChart1Widget()->setShowPercentileLines(true);
                     //_settingsAction.getLineChart1Widget()->setShowStddevLines(true);
                     //_settingsAction.getLineChart1Widget()->setShowMaxLine(true);
                     //_settingsAction.getLineChart1Widget()->setShowMinLine(true);
                     _settingsAction.getLineChart1Widget()->setShowPoints(false);
                     _settingsAction.getLineChart1Widget()->setShowLines(false);
+                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(5);
+                    _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(true);
+
                     //_settingsAction.getLineChart1Widget()->setShowKurtosisLine(true);
                     //_settingsAction.getLineChart1Widget()->setShowLowerQuartileLine(true);
                     //_settingsAction.getLineChart1Widget()->setShowMADLine(true);
@@ -588,10 +591,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     //_settingsAction.getLineChart1Widget()->setShowUpperQuartileLine(true);
                     //_settingsAction.getLineChart1Widget()->setShowVarianceLine(true);
                     //_settingsAction.getLineChart1Widget()->setGradientLineEnabled(true);
-                    _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(true);
+                    
                     _numOfPointsInLine = lineData.first().points.size();
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
+                    _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(true);
                     _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
                     _settingsAction.getLineChart1Widget()->setXAxisName("Rotated Y coordinates");
                     _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression "+ _selectedGene);

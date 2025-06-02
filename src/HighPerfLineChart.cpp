@@ -107,7 +107,7 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_noiseRemovalThreshold = 0.0;
     m_lineWidth = 1.0f;
     m_pointSize = 6.0f;
-    m_axisFont = QFont();
+    m_axisFont = QFont("Arial", 10);
     m_axisColor = Qt::black;
     m_numXTicks = 5;
     m_numYTicks = 5;
@@ -115,17 +115,17 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_gridColor = QColor(220,220,220);
     m_backgroundColor = Qt::white;
     m_showPoints = true;
-    m_showLines = true; // NEW: default to show lines
+    m_showLines = true; 
     m_axisLineWidth = 1.0f;
     m_xAxisLineColor = Qt::black;
     m_yAxisLineColor = Qt::black;
-    m_tickLabelFont = QFont();
+    m_tickLabelFont = QFont("Arial", 8);
     m_tickLabelColor = Qt::black;
     m_leftMargin = 50;
     m_rightMargin = 20;
     m_topMargin = 40;
     m_bottomMargin = 40;
-    m_legendFont = QFont();
+    m_legendFont = QFont("Arial", 9);
     m_legendColor = Qt::black;
     m_legendX = -1;
     m_legendY = -1;
@@ -146,8 +146,8 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_globalLineColor = QColor();
     m_globalLineWidth = 0.0f;
     m_globalLineOpacity = 1.0f;
-    m_showLegend = true; // NEW: default to show legend
-    m_showAvgNumPointsLabel = false; // NEW: default to hide average points label
+    m_showLegend = true; 
+    m_showAvgNumPointsLabel = false; 
 
     // Initialize statistical line labels
     m_averageLineLabel = "Average";
@@ -180,6 +180,12 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     m_connectStatsLineEnabled = false;
     m_connectStatsLineN = 5;
     m_connectStatsLineType = ConnectStatsType::None;
+
+    // --- Moving average smoothing ---
+    m_showMovingAverageLine = false;
+    m_movingAverageWindow = 5;
+    m_movingAverageLineLabel = "Moving Average";
+
 }
 
 // log transform setter/getter
@@ -749,8 +755,6 @@ void HighPerfLineChart::paintGL() {
             glDisable(GL_LINE_STIPPLE); // Always disable after drawing
         }
     }
-
-    // --- Draw line between statistic of first n and last n points ---
     if (m_connectStatsLineEnabled && m_connectStatsLineType != ConnectStatsType::None && !m_lines.isEmpty()) {
         // Use the first line for simplicity (or could average across all lines)
         const auto& line = m_lines[0];
@@ -761,33 +765,33 @@ void HighPerfLineChart::paintGL() {
                 for (const auto& pt : pts) { xs.append(pt.x()); ys.append(pt.y()); }
                 double x = 0, y = 0;
                 switch (type) {
-                    case ConnectStatsType::Average:
-                        x = std::accumulate(xs.begin(), xs.end(), 0.0) / xs.size();
-                        y = std::accumulate(ys.begin(), ys.end(), 0.0) / ys.size();
-                        break;
-                    case ConnectStatsType::Median: {
-                        std::sort(xs.begin(), xs.end());
-                        std::sort(ys.begin(), ys.end());
-                        int n = xs.size();
-                        x = (n % 2 == 1) ? xs[n/2] : 0.5 * (xs[n/2-1] + xs[n/2]);
-                        y = (n % 2 == 1) ? ys[n/2] : 0.5 * (ys[n/2-1] + ys[n/2]);
-                        break;
-                    }
-                    case ConnectStatsType::Mode: {
-                        auto mode = [](const QVector<double>& vals) -> double {
-                            std::map<double, int> freq;
-                            for (double v : vals) freq[v]++;
-                            auto it = std::max_element(freq.begin(), freq.end(), [](const auto& a, const auto& b) { return a.second < b.second; });
-                            return (it != freq.end()) ? it->first : vals[0];
+                case ConnectStatsType::Average:
+                    x = std::accumulate(xs.begin(), xs.end(), 0.0) / xs.size();
+                    y = std::accumulate(ys.begin(), ys.end(), 0.0) / ys.size();
+                    break;
+                case ConnectStatsType::Median: {
+                    std::sort(xs.begin(), xs.end());
+                    std::sort(ys.begin(), ys.end());
+                    int n = xs.size();
+                    x = (n % 2 == 1) ? xs[n / 2] : 0.5 * (xs[n / 2 - 1] + xs[n / 2]);
+                    y = (n % 2 == 1) ? ys[n / 2] : 0.5 * (ys[n / 2 - 1] + ys[n / 2]);
+                    break;
+                }
+                case ConnectStatsType::Mode: {
+                    auto mode = [](const QVector<double>& vals) -> double {
+                        std::map<double, int> freq;
+                        for (double v : vals) freq[v]++;
+                        auto it = std::max_element(freq.begin(), freq.end(), [](const auto& a, const auto& b) { return a.second < b.second; });
+                        return (it != freq.end()) ? it->first : vals[0];
                         };
-                        x = mode(xs);
-                        y = mode(ys);
-                        break;
-                    }
-                    default: break;
+                    x = mode(xs);
+                    y = mode(ys);
+                    break;
+                }
+                default: break;
                 }
                 return QPointF(x, y);
-            };
+                };
             QVector<QPointF> firstN(line.points.mid(0, m_connectStatsLineN));
             QVector<QPointF> lastN(line.points.mid(line.points.size() - m_connectStatsLineN, m_connectStatsLineN));
             QPointF statFirst = statFunc(firstN, m_connectStatsLineType);
@@ -809,10 +813,17 @@ void HighPerfLineChart::paintGL() {
         }
     }
 
-    if ((!m_lines.isEmpty()) && (m_showAverageLine || m_showMedianLine || m_showPercentileLines || m_showMinLine || m_showMaxLine || m_showStddevLines || m_showModeLine || m_showVarianceLine || m_showLowerQuartileLine || m_showUpperQuartileLine || m_showMADLine || m_showSkewnessLine || m_showKurtosisLine)) {
+    if ((!m_lines.isEmpty()) && (
+        m_showAverageLine || m_showMedianLine || m_showPercentileLines ||
+        m_showMinLine || m_showMaxLine || m_showStddevLines ||
+        m_showModeLine || m_showVarianceLine || m_showLowerQuartileLine ||
+        m_showUpperQuartileLine || m_showMADLine || m_showSkewnessLine ||
+        m_showKurtosisLine || m_showMovingAverageLine)) // <-- add moving average
+    {
         const int N = 200;
         QVector<QPointF> avgPoints, medianPoints, percLowPoints, percHighPoints, minPoints, maxPoints, stddevLowPoints, stddevHighPoints;
         QVector<QPointF> modePoints, variancePoints, lowerQuartilePoints, upperQuartilePoints, madPoints, skewnessPoints, kurtosisPoints;
+        QVector<QPointF> movingAvgPoints;
         double xStart = m_xMin, xEnd = m_xMax;
 
         // --- Special case: if only one line, use its points directly for all enabled stat lines ---
@@ -841,6 +852,14 @@ void HighPerfLineChart::paintGL() {
                 if (m_showMADLine) madPoints.append(QPointF(x, 0.0)); // MAD is 0 for a single value
                 if (m_showSkewnessLine) skewnessPoints.append(QPointF(x, 0.0)); // Skewness is 0 for a single value
                 if (m_showKurtosisLine) kurtosisPoints.append(QPointF(x, 0.0)); // Kurtosis is 0 for a single value
+            }
+            if (m_showMovingAverageLine) {
+                movingAvgPoints = movingAverage(pts, m_movingAverageWindow);
+                // Transform for log axes if needed
+                for (QPointF& pt : movingAvgPoints) {
+                    pt.setX(m_logTransformX ? logX(pt.x()) : pt.x());
+                    pt.setY(m_logTransformY ? logY(pt.y()) : pt.y());
+                }
             }
         }
         else {
@@ -1195,6 +1214,22 @@ void HighPerfLineChart::paintGL() {
             }
             painter.drawPolyline(poly);
         }
+        // Moving average line
+        if (m_showMovingAverageLine && movingAvgPoints.size() > 1) {
+            QPen maPen(QColor(255, 140, 0), 2, Qt::SolidLine);
+            painter.setPen(maPen);
+            QPolygonF poly;
+            for (const QPointF& pt : movingAvgPoints) {
+                if (pt.x() < m_xMin || pt.x() > m_xMax || pt.y() < m_yMin || pt.y() > m_yMax)
+                    continue;
+                QPointF screenPt(
+                    chartRect.left() + ((pt.x() - m_xMin) / (m_xMax - m_xMin)) * chartRect.width(),
+                    chartRect.bottom() - ((pt.y() - m_yMin) / (m_yMax - m_yMin)) * chartRect.height()
+                );
+                poly << screenPt;
+            }
+            painter.drawPolyline(poly);
+        }
     }
 
     // --- Draw axes and labels using QPainter for text ---
@@ -1407,6 +1442,7 @@ void HighPerfLineChart::paintGL() {
         if (m_showMADLine) ++statLineCount;
         if (m_showSkewnessLine) ++statLineCount;
         if (m_showKurtosisLine) ++statLineCount;
+        if (m_showMovingAverageLine) ++statLineCount; // <-- add moving average
         bool anyStatLine = statLineCount > 0;
 
         statLegendHeight = (statLineCount + 1) * (statBoxSize + statSpacing);
@@ -1508,6 +1544,10 @@ void HighPerfLineChart::paintGL() {
         if (m_showKurtosisLine) {
             QPen kurtPen(QColor(120, 0, 120), 1, Qt::DashLine);
             drawStatLegendEntry(kurtPen, m_kurtosisLineLabel.isEmpty() ? "Kurtosis" : m_kurtosisLineLabel);
+        }
+        if (m_showMovingAverageLine) {
+            QPen maPen(QColor(255, 140, 0), 2, Qt::SolidLine);
+            drawStatLegendEntry(maPen, m_movingAverageLineLabel);
         }
 
         // --- Draw group legend below statistical legend if enabled ---
@@ -1789,4 +1829,42 @@ void HighPerfLineChart::setShowAvgNumPointsLabel(bool show) {
 
 bool HighPerfLineChart::showAvgNumPointsLabel() const {
     return m_showAvgNumPointsLabel;
+}
+
+// --- Moving average smoothing ---
+QVector<QPointF> HighPerfLineChart::movingAverage(const QVector<QPointF>& points, int window) const {
+    if (points.size() < 2 || window < 1)
+        return points;
+    QVector<QPointF> smoothed;
+    int n = points.size();
+    int half = window / 2;
+    for (int i = 0; i < n; ++i) {
+        int start = std::max(0, i - half);
+        int end = std::min(n - 1, i + half);
+        double sumX = 0, sumY = 0;
+        int count = 0;
+        for (int j = start; j <= end; ++j) {
+            sumX += points[j].x();
+            sumY += points[j].y();
+            ++count;
+        }
+        smoothed.append(QPointF(sumX / count, sumY / count));
+    }
+    return smoothed;
+}
+
+// --- Moving average smoothing setters/getters ---
+void HighPerfLineChart::setShowMovingAverageLine(bool show) {
+    m_showMovingAverageLine = show;
+    update();
+}
+bool HighPerfLineChart::showMovingAverageLine() const {
+    return m_showMovingAverageLine;
+}
+void HighPerfLineChart::setMovingAverageWindow(int window) {
+    m_movingAverageWindow = std::max(1, window);
+    update();
+}
+int HighPerfLineChart::movingAverageWindow() const {
+    return m_movingAverageWindow;
 }

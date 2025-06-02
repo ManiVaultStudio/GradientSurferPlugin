@@ -208,6 +208,12 @@ public:
     void setShowAvgNumPointsLabel(bool show);
     bool showAvgNumPointsLabel() const;
 
+    // --- Moving average smoothing ---
+    void setShowMovingAverageLine(bool show);
+    bool showMovingAverageLine() const;
+    void setMovingAverageWindow(int window);
+    int movingAverageWindow() const;
+
 signals:
     void lineSelected(int index);
     void lineHovered(int index);
@@ -349,4 +355,10 @@ private:
 
     // Legend show/hide
     bool m_showLegend = true; // Show/hide legend
+
+    // --- Moving average smoothing ---
+    bool m_showMovingAverageLine = false;
+    int m_movingAverageWindow = 5;
+    QVector<QPointF> movingAverage(const QVector<QPointF>& points, int window) const;
+    QString m_movingAverageLineLabel;
 };
