@@ -2244,7 +2244,7 @@ void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndic
         if (std::isnan(corr)) corr = 0.0f;
 
         //corrVector[geneIdx] = corr;
-        corrVector[geneIdx] = std::abs(corr); // Use absolute correlation for ranking
+        corrVector[geneIdx] = corr;//std::abs(corr); // Use absolute correlation for ranking
     }
 
     qDebug() << "Correlation computation completed";
