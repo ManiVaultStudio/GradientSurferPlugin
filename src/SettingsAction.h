@@ -279,9 +279,10 @@ public: // Serialization
     void fromVariantMap(const QVariantMap& variantMap) override;
     QVariantMap toVariantMap() const override;
 
-    QTableView* getTableViewAction() { return _tableViewAction; }
-    HighPerfLineChart* getLineChartWidget() { return _lineChartWidget; }
-
+    QTableView* getTableView1Action() { return _tableView1Action; }
+    HighPerfLineChart* getLineChart1Widget() { return _lineChart1Widget; }
+    QTableView* getTableView2Action() { return _tableView2Action; }
+    HighPerfLineChart* getLineChart2Widget() { return _lineChart2Widget; }
 
 protected:
     LayerSurferPlugin& _viewerPlugin;
@@ -293,7 +294,9 @@ protected:
     LineChartOptionsHolder              _lineChartOptionsHolder;
     TableOptionsHolder              _tableOptionsHolder;
     ComputeHolder               _computeHolder;
-    QTableView*                 _tableViewAction = nullptr;
-    HighPerfLineChart*          _lineChartWidget = nullptr;
+    QTableView*                 _tableView1Action = nullptr;
+    HighPerfLineChart*          _lineChart1Widget = nullptr;
+    QTableView*                 _tableView2Action = nullptr;
+    HighPerfLineChart*          _lineChart2Widget = nullptr;
     friend class ChannelAction;
 };

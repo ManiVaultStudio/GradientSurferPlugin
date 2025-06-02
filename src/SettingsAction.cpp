@@ -113,47 +113,89 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset2OptionsHolder.getScatterplotViewSelection2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
 
 
-    _tableViewAction = new QTableView();
-    _tableViewAction->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    _tableViewAction->setSelectionBehavior(QAbstractItemView::SelectRows);
-    _tableViewAction->setSelectionMode(QAbstractItemView::SingleSelection);
-    _tableViewAction->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    _tableViewAction->setAlternatingRowColors(false);
-    _tableViewAction->setSortingEnabled(true);
-    _tableViewAction->setShowGrid(true);
-    _tableViewAction->setGridStyle(Qt::SolidLine);
-    _tableViewAction->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-    _tableViewAction->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-    _tableViewAction->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    _tableViewAction->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    _tableViewAction->setCornerButtonEnabled(false);
-    _tableViewAction->setWordWrap(false);
-    _tableViewAction->setTabKeyNavigation(false);
-    _tableViewAction->setAcceptDrops(false);
-    _tableViewAction->setDropIndicatorShown(false);
-    _tableViewAction->setDragEnabled(false);
-    _tableViewAction->setDragDropMode(QAbstractItemView::NoDragDrop);
-    _tableViewAction->setDragDropOverwriteMode(false);
-    _tableViewAction->setAutoScroll(false);
-    _tableViewAction->setAutoScrollMargin(16);
-    _tableViewAction->setAutoFillBackground(true);
-    _tableViewAction->setFrameShape(QFrame::NoFrame);
-    _tableViewAction->setFrameShadow(QFrame::Plain);
-    _tableViewAction->setLineWidth(0);
-    _tableViewAction->setMidLineWidth(0);
-    _tableViewAction->setFocusPolicy(Qt::NoFocus);
-    _tableViewAction->setContextMenuPolicy(Qt::NoContextMenu);
-    _tableViewAction->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    _tableViewAction->setMinimumSize(QSize(0, 0));
-    _tableViewAction->setMaximumSize(QSize(16777215, 16777215));
-    _tableViewAction->setBaseSize(QSize(0, 0));
-    _tableViewAction->setFocusPolicy(Qt::StrongFocus);
-    _tableViewAction->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView1Action = new QTableView();
+    _tableView1Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView1Action->setSelectionBehavior(QAbstractItemView::SelectRows);
+    _tableView1Action->setSelectionMode(QAbstractItemView::SingleSelection);
+    _tableView1Action->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    _tableView1Action->setAlternatingRowColors(false);
+    _tableView1Action->setSortingEnabled(true);
+    _tableView1Action->setShowGrid(true);
+    _tableView1Action->setGridStyle(Qt::SolidLine);
+    _tableView1Action->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView1Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView1Action->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView1Action->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView1Action->setCornerButtonEnabled(false);
+    _tableView1Action->setWordWrap(false);
+    _tableView1Action->setTabKeyNavigation(false);
+    _tableView1Action->setAcceptDrops(false);
+    _tableView1Action->setDropIndicatorShown(false);
+    _tableView1Action->setDragEnabled(false);
+    _tableView1Action->setDragDropMode(QAbstractItemView::NoDragDrop);
+    _tableView1Action->setDragDropOverwriteMode(false);
+    _tableView1Action->setAutoScroll(false);
+    _tableView1Action->setAutoScrollMargin(16);
+    _tableView1Action->setAutoFillBackground(true);
+    _tableView1Action->setFrameShape(QFrame::NoFrame);
+    _tableView1Action->setFrameShadow(QFrame::Plain);
+    _tableView1Action->setLineWidth(0);
+    _tableView1Action->setMidLineWidth(0);
+    _tableView1Action->setFocusPolicy(Qt::NoFocus);
+    _tableView1Action->setContextMenuPolicy(Qt::NoContextMenu);
+    _tableView1Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView1Action->setMinimumSize(QSize(0, 0));
+    _tableView1Action->setMaximumSize(QSize(16777215, 16777215));
+    _tableView1Action->setBaseSize(QSize(0, 0));
+    _tableView1Action->setFocusPolicy(Qt::StrongFocus);
+    _tableView1Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 
     //only highlight multiple rows if shiuft is pressed
-    _tableViewAction->setSelectionBehavior(QAbstractItemView::SelectRows);
+    _tableView1Action->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-    _lineChartWidget = new HighPerfLineChart();
+    _tableView2Action = new QTableView();
+    _tableView2Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView2Action->setSelectionBehavior(QAbstractItemView::SelectRows);
+    _tableView2Action->setSelectionMode(QAbstractItemView::SingleSelection);
+    _tableView2Action->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    _tableView2Action->setAlternatingRowColors(false);
+    _tableView2Action->setSortingEnabled(true);
+    _tableView2Action->setShowGrid(true);
+    _tableView2Action->setGridStyle(Qt::SolidLine);
+    _tableView2Action->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView2Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView2Action->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView2Action->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView2Action->setCornerButtonEnabled(false);
+    _tableView2Action->setWordWrap(false);
+    _tableView2Action->setTabKeyNavigation(false);
+    _tableView2Action->setAcceptDrops(false);
+    _tableView2Action->setDropIndicatorShown(false);
+    _tableView2Action->setDragEnabled(false);
+    _tableView2Action->setDragDropMode(QAbstractItemView::NoDragDrop);
+    _tableView2Action->setDragDropOverwriteMode(false);
+    _tableView2Action->setAutoScroll(false);
+    _tableView2Action->setAutoScrollMargin(16);
+    _tableView2Action->setAutoFillBackground(true);
+    _tableView2Action->setFrameShape(QFrame::NoFrame);
+    _tableView2Action->setFrameShadow(QFrame::Plain);
+    _tableView2Action->setLineWidth(0);
+    _tableView2Action->setMidLineWidth(0);
+    _tableView2Action->setFocusPolicy(Qt::NoFocus);
+    _tableView2Action->setContextMenuPolicy(Qt::NoContextMenu);
+    _tableView2Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView2Action->setMinimumSize(QSize(0, 0));
+    _tableView2Action->setMaximumSize(QSize(16777215, 16777215));
+    _tableView2Action->setBaseSize(QSize(0, 0));
+    _tableView2Action->setFocusPolicy(Qt::StrongFocus);
+    _tableView2Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+    //only highlight multiple rows if shiuft is pressed
+    _tableView2Action->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    _lineChart1Widget = new HighPerfLineChart();
+
+    _lineChart2Widget = new HighPerfLineChart();
 
 }
 

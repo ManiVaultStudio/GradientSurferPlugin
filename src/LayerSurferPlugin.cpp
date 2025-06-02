@@ -36,8 +36,21 @@ void LayerSurferPlugin::init()
     auto* mainLayout = new QVBoxLayout(&getWidget());
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
-    mainLayout->addWidget(_settingsAction.getTableViewAction(), 70);
-    mainLayout->addWidget(_settingsAction.getLineChartWidget(), 90);
+
+    auto* topLayout = new QHBoxLayout();
+    topLayout->setContentsMargins(0, 0, 0, 0);
+    topLayout->setSpacing(0);
+    topLayout->addWidget(_settingsAction.getTableView1Action(),50);
+    topLayout->addWidget(_settingsAction.getLineChart1Widget(),50);
+
+    auto* bottomLayout = new QHBoxLayout();
+    bottomLayout->setContentsMargins(0, 0, 0, 0);
+    bottomLayout->setSpacing(0);
+    bottomLayout->addWidget(_settingsAction.getTableView2Action(), 50);
+    bottomLayout->addWidget(_settingsAction.getLineChart2Widget(), 50);
+
+    mainLayout->addLayout(topLayout,50);
+    mainLayout->addLayout(bottomLayout,50);
 
     auto* computeStatusLayout = new QHBoxLayout();
     computeStatusLayout->setContentsMargins(0, 0, 0, 0);

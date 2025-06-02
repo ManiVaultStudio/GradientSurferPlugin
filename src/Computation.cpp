@@ -596,9 +596,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
              _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
-        if (_settingsAction.getLineChartWidget())
+        if (_settingsAction.getLineChart1Widget())
         {
-            _settingsAction.getLineChartWidget()->clear();
+            _settingsAction.getLineChart1Widget()->clear();
             _numOfPointsInLine = 0;
 
         }
@@ -609,7 +609,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
              _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
-        if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _settingsAction.getLineChartWidget() && _filteredSelectionIndices.size() > 0)
+        if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _settingsAction.getLineChart1Widget() && _filteredSelectionIndices.size() > 0)
         {
 
 
@@ -674,39 +674,39 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     
                     // 5. Send to chart
-                    _settingsAction.getLineChartWidget()->setLines(lineData);
-                    /*_settingsAction.getLineChartWidget()->setBinaryNormalizeXThreshold(0.95f);
-                    _settingsAction.getLineChartWidget()->setBinaryNormalizeX(true);*/
-                    //_settingsAction.getLineChartWidget()->setShowAverageLine(true);
-                    _settingsAction.getLineChartWidget()->setShowMedianLine(true);
-                    //_settingsAction.getLineChartWidget()->setShowPercentileLines(true);
-                    //_settingsAction.getLineChartWidget()->setShowStddevLines(true);
-                    //_settingsAction.getLineChartWidget()->setShowMaxLine(true);
-                    //_settingsAction.getLineChartWidget()->setShowMinLine(true);
-                    _settingsAction.getLineChartWidget()->setShowPoints(false);
-                    _settingsAction.getLineChartWidget()->setShowLines(false);
-                    //_settingsAction.getLineChartWidget()->setShowKurtosisLine(true);
-                    //_settingsAction.getLineChartWidget()->setShowLowerQuartileLine(true);
-                    //_settingsAction.getLineChartWidget()->setShowMADLine(true);
-                    //_settingsAction.getLineChartWidget()->setShowModeLine(true);
-                    //_settingsAction.getLineChartWidget()->setShowSkewnessLine(true);
-                    //_settingsAction.getLineChartWidget()->setShowUpperQuartileLine(true);
-                    //_settingsAction.getLineChartWidget()->setShowVarianceLine(true);
-                    //_settingsAction.getLineChartWidget()->setGradientLineEnabled(true);
-                    _settingsAction.getLineChartWidget()->setConnectStatsLineEnabled(true);
+                    _settingsAction.getLineChart1Widget()->setLines(lineData);
+                    /*_settingsAction.getLineChart1Widget()->setBinaryNormalizeXThreshold(0.95f);
+                    _settingsAction.getLineChart1Widget()->setBinaryNormalizeX(true);*/
+                    //_settingsAction.getLineChart1Widget()->setShowAverageLine(true);
+                    _settingsAction.getLineChart1Widget()->setShowMedianLine(true);
+                    //_settingsAction.getLineChart1Widget()->setShowPercentileLines(true);
+                    //_settingsAction.getLineChart1Widget()->setShowStddevLines(true);
+                    //_settingsAction.getLineChart1Widget()->setShowMaxLine(true);
+                    //_settingsAction.getLineChart1Widget()->setShowMinLine(true);
+                    _settingsAction.getLineChart1Widget()->setShowPoints(false);
+                    _settingsAction.getLineChart1Widget()->setShowLines(false);
+                    //_settingsAction.getLineChart1Widget()->setShowKurtosisLine(true);
+                    //_settingsAction.getLineChart1Widget()->setShowLowerQuartileLine(true);
+                    //_settingsAction.getLineChart1Widget()->setShowMADLine(true);
+                    //_settingsAction.getLineChart1Widget()->setShowModeLine(true);
+                    //_settingsAction.getLineChart1Widget()->setShowSkewnessLine(true);
+                    //_settingsAction.getLineChart1Widget()->setShowUpperQuartileLine(true);
+                    //_settingsAction.getLineChart1Widget()->setShowVarianceLine(true);
+                    //_settingsAction.getLineChart1Widget()->setGradientLineEnabled(true);
+                    _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(true);
                     _numOfPointsInLine = lineData.first().points.size();
-                    _settingsAction.getLineChartWidget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
-                    _settingsAction.getLineChartWidget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
-                    _settingsAction.getLineChartWidget()->setShowAvgNumPointsLabel(true);
-                    _settingsAction.getLineChartWidget()->setXAxisName("Rotated Y coordinates");
-                    _settingsAction.getLineChartWidget()->setYAxisName("Gene expression "+ _selectedGene);
+                    _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
+                    _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
+                    _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
+                    _settingsAction.getLineChart1Widget()->setXAxisName("Rotated Y coordinates");
+                    _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression "+ _selectedGene);
    
-                    _settingsAction.getLineChartWidget()->setAxisFont(QFont("Arial", 12));
-                    _settingsAction.getLineChartWidget()->setTickLabelFont(QFont("Arial", 10));
-                    _settingsAction.getLineChartWidget()->setAxisColor(Qt::black);
-                    _settingsAction.getLineChartWidget()->setTickLabelColor(Qt::black);
-                    _settingsAction.getLineChartWidget()->setShowLegend(true); 
-                    _settingsAction.getLineChartWidget()->setShowAvgNumPointsLabel(true);
+                    _settingsAction.getLineChart1Widget()->setAxisFont(QFont("Arial", 12));
+                    _settingsAction.getLineChart1Widget()->setTickLabelFont(QFont("Arial", 10));
+                    _settingsAction.getLineChart1Widget()->setAxisColor(Qt::black);
+                    _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::black);
+                    _settingsAction.getLineChart1Widget()->setShowLegend(true); 
+                    _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
                 }
 
 
@@ -975,12 +975,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getComputeHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
 
     const auto updateConnectStatsLine = [this]() -> void {
-        if (!_settingsAction.getLineChartWidget())
+        if (!_settingsAction.getLineChart1Widget())
         {
             qDebug() << "No line chart widget available";
             return;
         }
-        _settingsAction.getLineChartWidget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
+        _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
         };
 
     connect(&_settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction(), &DecimalAction::triggered, this, updateConnectStatsLine);
@@ -1544,11 +1544,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged2);
 
     const auto deselectRow = [this]() -> void {
-        auto selectedIndex = _settingsAction.getTableViewAction()->currentIndex();
+        auto selectedIndex = _settingsAction.getTableView1Action()->currentIndex();
         if (selectedIndex.isValid())
         {
-            _settingsAction.getTableViewAction()->selectionModel()->clearSelection();
-            _settingsAction.getTableViewAction()->setCurrentIndex(QModelIndex());
+            _settingsAction.getTableView1Action()->selectionModel()->clearSelection();
+            _settingsAction.getTableView1Action()->setCurrentIndex(QModelIndex());
              _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName("");
              _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName("");
         }
@@ -1708,7 +1708,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
         }
-        _settingsAction.getLineChartWidget()->clear();
+        _settingsAction.getLineChart1Widget()->clear();
         _numOfPointsInLine = 0;
         };
 
@@ -1882,12 +1882,12 @@ void Computation::AutoCompute()
     try
     {
         // Remove all rows in one call if model exists
-        if (auto* model = _settingsAction.getTableViewAction()->model()) {
+        if (auto* model = _settingsAction.getTableView1Action()->model()) {
             int rowCount = model->rowCount();
             if (rowCount > 0)
                 model->removeRows(0, rowCount);
         }
-        _settingsAction.getLineChartWidget()->clear();
+        _settingsAction.getLineChart1Widget()->clear();
         _numOfPointsInLine = 0;
         QApplication::processEvents();
 
@@ -2013,7 +2013,7 @@ void Computation::AutoCompute()
         setupTableModelAndSelection();
         //select the first row of the table
         {
-            auto* tableView = _settingsAction.getTableViewAction();
+            auto* tableView = _settingsAction.getTableView1Action();
             auto* model = tableView->model();
             if (model && model->rowCount() > 0) {
                 QModelIndex firstIndex = model->index(0, 0);
@@ -2585,7 +2585,7 @@ void Computation::processAfterPCAComplete()
     //wait for the two pca finished events to complete std::cout << "PCA Plugin: Finished." << std::endl;
     qDebug() << "PCA analysis completed successfully";
     setStatusMessage("C", "PCA analysis completed", "#28a745");
-
+    setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
     Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
 
     int selectedPCDimension2 = 0;
@@ -2998,7 +2998,7 @@ void Computation::resetupCorrelationTable()
     setupTableModelAndSelection();
     //select the first row of the table
     {
-        auto* tableView = _settingsAction.getTableViewAction();
+        auto* tableView = _settingsAction.getTableView1Action();
         auto* model = tableView->model();
         if (model && model->rowCount() > 0) {
             QModelIndex firstIndex = model->index(0, 0);
@@ -3023,27 +3023,27 @@ void Computation::setSelectionAndAutoCompute()
 // Setup table model and connect selection
 void Computation::setupTableModelAndSelection(const QStringList& topGenes)
 {
-    QStandardItemModel* model = new QStandardItemModel(topGenes.size(), 1, _settingsAction.getTableViewAction());
+    QStandardItemModel* model = new QStandardItemModel(topGenes.size(), 1, _settingsAction.getTableView1Action());
     model->setHorizontalHeaderLabels(QStringList() << "Gene");
     for (int i = 0; i < topGenes.size(); ++i) {
         model->setItem(i, 0, new QStandardItem(topGenes.at(i)));
     }
-    _settingsAction.getTableViewAction()->setModel(model);
-    _settingsAction.getTableViewAction()->resizeColumnsToContents();
-    _settingsAction.getTableViewAction()->resizeRowsToContents();
-    _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
+    _settingsAction.getTableView1Action()->setModel(model);
+    _settingsAction.getTableView1Action()->resizeColumnsToContents();
+    _settingsAction.getTableView1Action()->resizeRowsToContents();
+    _settingsAction.getTableView1Action()->setColumnWidth(0, 200);
 
-    if (_settingsAction.getTableViewAction()->selectionModel())
-        disconnect(_settingsAction.getTableViewAction()->selectionModel(), nullptr, this, nullptr);
+    if (_settingsAction.getTableView1Action()->selectionModel())
+        disconnect(_settingsAction.getTableView1Action()->selectionModel(), nullptr, this, nullptr);
 
     connect(
-        _settingsAction.getTableViewAction()->selectionModel(),
+        _settingsAction.getTableView1Action()->selectionModel(),
         &QItemSelectionModel::selectionChanged,
         this,
         [this](const QItemSelection& selected, const QItemSelection&) {
-            auto model = _settingsAction.getTableViewAction()->model();
+            auto model = _settingsAction.getTableView1Action()->model();
             if (!model) return;
-            QModelIndexList selectedIndexes = _settingsAction.getTableViewAction()->selectionModel()->selectedIndexes();
+            QModelIndexList selectedIndexes = _settingsAction.getTableView1Action()->selectionModel()->selectedIndexes();
             if (selectedIndexes.isEmpty()) return;
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
@@ -3070,7 +3070,7 @@ void Computation::setupTableModelAndSelection(
     std::sort(geneCorrPairs.begin(), geneCorrPairs.end(),
         [](const auto& a, const auto& b) { return a.first > b.first; });
 
-    QStandardItemModel* model = new QStandardItemModel(static_cast<int>(geneCorrPairs.size()), 2, _settingsAction.getTableViewAction());
+    QStandardItemModel* model = new QStandardItemModel(static_cast<int>(geneCorrPairs.size()), 2, _settingsAction.getTableView1Action());
     model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation");
 
     QSet<QString> topGeneSet(topGenes.begin(), topGenes.end());
@@ -3103,28 +3103,28 @@ void Computation::setupTableModelAndSelection(
         model->setItem(i, 1, corrItem);
     }
 
-    _settingsAction.getTableViewAction()->setModel(model);
-    _settingsAction.getTableViewAction()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
-    _settingsAction.getTableViewAction()->resizeColumnsToContents();
-    _settingsAction.getTableViewAction()->resizeRowsToContents();
-    _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
+    _settingsAction.getTableView1Action()->setModel(model);
+    _settingsAction.getTableView1Action()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
+    _settingsAction.getTableView1Action()->resizeColumnsToContents();
+    _settingsAction.getTableView1Action()->resizeRowsToContents();
+    _settingsAction.getTableView1Action()->setColumnWidth(0, 200);
 
     // Enable sorting
-    _settingsAction.getTableViewAction()->setSortingEnabled(true);
+    _settingsAction.getTableView1Action()->setSortingEnabled(true);
     // Sort by correlation column (descending) by default
-    _settingsAction.getTableViewAction()->sortByColumn(1, Qt::DescendingOrder);
+    _settingsAction.getTableView1Action()->sortByColumn(1, Qt::DescendingOrder);
 
-    if (_settingsAction.getTableViewAction()->selectionModel())
-        disconnect(_settingsAction.getTableViewAction()->selectionModel(), nullptr, this, nullptr);
+    if (_settingsAction.getTableView1Action()->selectionModel())
+        disconnect(_settingsAction.getTableView1Action()->selectionModel(), nullptr, this, nullptr);
 
     connect(
-        _settingsAction.getTableViewAction()->selectionModel(),
+        _settingsAction.getTableView1Action()->selectionModel(),
         &QItemSelectionModel::selectionChanged,
         this,
         [this](const QItemSelection& selected, const QItemSelection&) {
-            auto model = _settingsAction.getTableViewAction()->model();
+            auto model = _settingsAction.getTableView1Action()->model();
             if (!model) return;
-            QModelIndexList selectedIndexes = _settingsAction.getTableViewAction()->selectionModel()->selectedIndexes();
+            QModelIndexList selectedIndexes = _settingsAction.getTableView1Action()->selectionModel()->selectedIndexes();
             if (selectedIndexes.isEmpty()) return;
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
@@ -3139,7 +3139,7 @@ void Computation::setupTableModelAndSelection(
 
 void Computation::setupTableModelAndSelection()
 {
-    QStandardItemModel* model = new QStandardItemModel(static_cast<int>(_geneCorrValues.size()), 3, _settingsAction.getTableViewAction());
+    QStandardItemModel* model = new QStandardItemModel(static_cast<int>(_geneCorrValues.size()), 3, _settingsAction.getTableView1Action());
     model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
 
     float minCorr = std::numeric_limits<float>::max();
@@ -3183,27 +3183,27 @@ void Computation::setupTableModelAndSelection()
         model->setItem(i, 2, rankItem);
     }
 
-    _settingsAction.getTableViewAction()->setModel(model);
-    _settingsAction.getTableViewAction()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
-    _settingsAction.getTableViewAction()->resizeColumnsToContents();
-    _settingsAction.getTableViewAction()->resizeRowsToContents();
-    _settingsAction.getTableViewAction()->setColumnWidth(0, 200);
+    _settingsAction.getTableView1Action()->setModel(model);
+    _settingsAction.getTableView1Action()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
+    _settingsAction.getTableView1Action()->resizeColumnsToContents();
+    _settingsAction.getTableView1Action()->resizeRowsToContents();
+    _settingsAction.getTableView1Action()->setColumnWidth(0, 100);
 
     // Enable sorting and set default sort order
-    _settingsAction.getTableViewAction()->setSortingEnabled(true);
-    _settingsAction.getTableViewAction()->sortByColumn(1, Qt::DescendingOrder);
+    _settingsAction.getTableView1Action()->setSortingEnabled(true);
+    _settingsAction.getTableView1Action()->sortByColumn(1, Qt::DescendingOrder);
 
-    if (_settingsAction.getTableViewAction()->selectionModel())
-        disconnect(_settingsAction.getTableViewAction()->selectionModel(), nullptr, this, nullptr);
+    if (_settingsAction.getTableView1Action()->selectionModel())
+        disconnect(_settingsAction.getTableView1Action()->selectionModel(), nullptr, this, nullptr);
 
     connect(
-        _settingsAction.getTableViewAction()->selectionModel(),
+        _settingsAction.getTableView1Action()->selectionModel(),
         &QItemSelectionModel::selectionChanged,
         this,
         [this](const QItemSelection& selected, const QItemSelection&) {
-            auto model = _settingsAction.getTableViewAction()->model();
+            auto model = _settingsAction.getTableView1Action()->model();
             if (!model) return;
-            QModelIndexList selectedIndexes = _settingsAction.getTableViewAction()->selectionModel()->selectedIndexes();
+            QModelIndexList selectedIndexes = _settingsAction.getTableView1Action()->selectionModel()->selectedIndexes();
             if (selectedIndexes.isEmpty()) return;
             const QModelIndex& index = selectedIndexes.first();
             if (!index.isValid()) return;
