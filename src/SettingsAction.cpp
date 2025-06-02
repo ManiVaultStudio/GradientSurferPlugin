@@ -158,7 +158,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 }
 
 inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Settings options"),
+    VerticalGroupAction(&settingsAction, "Dataset1 Options"),
     _settingsOptions(settingsAction),
     _clusterDatasetAction(this, "Cluster dataset"),
     _pointDatasetAction(this, "Point dataset"),
@@ -168,7 +168,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _embeddingDimensionYAction(this, "Embedding Dimension Y"),
     _geneSelectionAction(this, "Gene Selection")
 {
-    setText("Settings Options");
+    setText("Dataset1 Options");
     setIcon(mv::util::StyledIcon("braille"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
@@ -182,7 +182,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
 
 
 inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Settings options"),
+    VerticalGroupAction(&settingsAction, "Dataset2 Options"),
     _settingsOptions(settingsAction),
     _clusterDataset2Action(this, "Cluster dataset 2"),
     _pointDataset2Action(this, "Point dataset 2"),
@@ -192,7 +192,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     _embeddingDimension2YAction(this, "Embedding Dimension 2 Y"),
     _geneSelection2Action(this, "Gene Selection 2")
 {
-    setText("Settings Options");
+    setText("Dataset2 Options");
     setIcon(mv::util::StyledIcon("braille"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
@@ -206,14 +206,14 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
 }
 
 inline SettingsAction::SelectionOptionsHolder::SelectionOptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Settings options"),
+    VerticalGroupAction(&settingsAction, "Selection Options"),
     _settingsOptions(settingsAction),
     _clusterSelectionAction(this, "Cluster selection"),
     _statusMessageAction(this, "Status message"),
     _deSelectRowAction(this, "DeSelect Row"),
     _correlationRangeAction(this, "Correlation Range")
 {
-    setText("Settings Options");
+    setText("Selection Options");
     setIcon(mv::util::StyledIcon("braille"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
@@ -224,13 +224,13 @@ inline SettingsAction::SelectionOptionsHolder::SelectionOptionsHolder(SettingsAc
 }
 
 inline SettingsAction::ScatterplotOptionsHolder::ScatterplotOptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Settings options"),
+    VerticalGroupAction(&settingsAction, "Scatterplot Options"),
     _settingsOptions(settingsAction),
     _focusSelectionAction(this, "Focus Selection"),
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
     _freezeSelectionAction(this, "Freeze Selection")
 {
-    setText("Settings Options");
+    setText("Scatterplot Options");
     setIcon(mv::util::StyledIcon("braille"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
@@ -243,7 +243,7 @@ inline SettingsAction::ScatterplotOptionsHolder::ScatterplotOptionsHolder(Settin
 
 
 inline SettingsAction::LineChartOptionsHolder::LineChartOptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Line options"),
+    VerticalGroupAction(&settingsAction, "Line Options"),
     _settingsOptions(settingsAction),
     _connectStatsLineAction(this, "Stats Line Top Bottom N")
 {
@@ -258,10 +258,10 @@ inline SettingsAction::LineChartOptionsHolder::LineChartOptionsHolder(SettingsAc
 
 
 inline SettingsAction::TableOptionsHolder::TableOptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Table options"),
+    VerticalGroupAction(&settingsAction, "Table Options"),
     _settingsOptions(settingsAction)
 {
-    setText("Settings Options");
+    setText("Table Options");
     setIcon(mv::util::StyledIcon("braille"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
@@ -272,11 +272,11 @@ inline SettingsAction::TableOptionsHolder::TableOptionsHolder(SettingsAction& se
 
 
 inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsAction) :
-    HorizontalGroupAction(&settingsAction, "Compute options"),
+    HorizontalGroupAction(&settingsAction, "Compute Options"),
     _settingsOptions(settingsAction),
     _computeAction(this, "Compute")
 {
-    setText("Color Options");
+    setText("Compute Options");
     setIcon(mv::util::StyledIcon("braille"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
