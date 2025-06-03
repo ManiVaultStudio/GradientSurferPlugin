@@ -210,10 +210,10 @@ public:
         const OptionsAction& getClusterSelectionAction() const { return _clusterSelectionAction; }
         OptionsAction& getClusterSelectionAction() { return _clusterSelectionAction; }
 
-        const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
-        StringAction& getStatusMessageAction() { return _statusMessageAction; }
 
 
+        const TriggerAction& getComputeAction() const { return _computeAction; }
+        TriggerAction& getComputeAction() { return _computeAction; }
 
 
 
@@ -223,38 +223,38 @@ public:
 
         //Selection Options
 
-        StringAction                        _statusMessageAction;
+        
         OptionsAction                       _clusterSelectionAction;
-
+        TriggerAction              _computeAction;
 
     };
 
 
 
 
-    class ComputeHolder : public HorizontalGroupAction
+    class StatusHolder : public HorizontalGroupAction
     {
     public:
-        ComputeHolder(SettingsAction& settingsAction);
+        StatusHolder(SettingsAction& settingsAction);
 
         const QStatusBar& getStatusBarAction() const { return *_statusBarAction; }
         QStatusBar* getStatusBarAction() { return _statusBarAction; }
-        
-        const TriggerAction& getComputeAction() const { return _computeAction; }
-        TriggerAction& getComputeAction() { return _computeAction; }
+        const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
+        StringAction& getStatusMessageAction() { return _statusMessageAction; }
+
 
     protected:
         SettingsAction& _settingsOptions;
         
         //Computation Options
         QStatusBar*                 _statusBarAction;
-        TriggerAction              _computeAction;
+        StringAction                        _statusMessageAction;
     };
 
 public:
     SettingsAction(LayerSurferPlugin& LayerSurferPlugin);
 
-    ComputeHolder& getComputeHolder() { return _computeHolder; }
+    StatusHolder& getStatusHolder() { return _statusHolder; }
     Dataset1OptionsHolder& getDataset1OptionsHolder() { return _dataset1OptionsHolder; }
     Dataset2OptionsHolder& getDataset2OptionsHolder() { return _dataset2OptionsHolder; }
     CommonOptionsHolder& getCommonOptionsHolder() { return _commonOptionsHolder; }
@@ -267,7 +267,6 @@ public: // Serialization
     QTableView* getTableView1Action() { return _tableView1Action; }
     HighPerfLineChart* getLineChart1Widget() { return _lineChart1Widget; }
     QTableView* getTableView2Action() { return _tableView2Action; }
-    HighPerfLineChart* getLineChart2Widget() { return _lineChart2Widget; }
 
 protected:
     LayerSurferPlugin& _viewerPlugin;
@@ -275,10 +274,9 @@ protected:
     Dataset1OptionsHolder              _dataset1OptionsHolder;
     Dataset2OptionsHolder              _dataset2OptionsHolder;
     CommonOptionsHolder              _commonOptionsHolder;
-    ComputeHolder               _computeHolder;
+    StatusHolder                   _statusHolder;
     QTableView*                 _tableView1Action = nullptr;
     HighPerfLineChart*          _lineChart1Widget = nullptr;
     QTableView*                 _tableView2Action = nullptr;
-    HighPerfLineChart*          _lineChart2Widget = nullptr;
     friend class ChannelAction;
 };

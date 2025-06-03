@@ -70,11 +70,7 @@ private:
     void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector);
     void setupTableModelAndSelection(int datasetNumber);
 
-    void populateGenesByCorrelationRange(
-        const std::vector<float>& correlationVector,
-        float min,
-        float max,
-        const std::vector<QString>& geneNameOrdered);
+    void populateGenesByCorrelationRange(const std::vector<float>& correlationVector,float min,float max,const std::vector<QString>& geneNameOrdered, int datasetNumber);
     void ManualCompute();
     void AutoCompute();
 

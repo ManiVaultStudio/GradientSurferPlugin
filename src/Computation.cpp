@@ -333,7 +333,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     _correlationRangeDebounceTimer2.setSingleShot(true);
 
     const auto updateStatus = [this]() -> void {
-        auto stringFull = _settingsAction.getCommonOptionsHolder().getStatusMessageAction().getString();
+        auto stringFull = _settingsAction.getStatusHolder().getStatusMessageAction().getString();
 
         QJsonParseError parseError;
         QJsonDocument doc = QJsonDocument::fromJson(stringFull.toUtf8(), &parseError);
@@ -413,7 +413,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         statusLabel->setFont(font);
 
         // Clear previous widgets and set new label in status bar
-        QStatusBar* statusBar = _settingsAction.getComputeHolder().getStatusBarAction();
+        QStatusBar* statusBar = _settingsAction.getStatusHolder().getStatusBarAction();
         if (statusBar) {
             // Remove all previous widgets
             QList<QWidget*> children = statusBar->findChildren<QWidget*>();
@@ -425,7 +425,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
 
         };
-    connect(&_settingsAction.getCommonOptionsHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
+    connect(&_settingsAction.getStatusHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
     const auto scatterplotSelectionOptions = [this]() -> void
         {
             QStringList scatterplotNames = {};
@@ -549,7 +549,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getDataset2OptionsHolder().getPointDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset2);
 
-    const auto updateGeneSelection = [this]() -> void {
+    const auto updateGeneSelection1 = [this]() -> void {
         if ( _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
         {
             qDebug() << "No gene selected";
@@ -739,7 +739,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         };
 
-    connect(& _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection);
+    connect(& _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection1);
+
+
 
     const auto updateGeneSelection2 = [this]() -> void {
 
@@ -750,6 +752,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().setEnabled(false);
             return;
         }
+
+        auto selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
+        if (selectedGene == "")
+        {
+            qDebug() << "No gene selected";
+            _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
+            return;
+        }
+
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
         mv::gui::DatasetPickerAction* pointDatasetPickerAction;
@@ -872,12 +883,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
                     }
                     setStatusMessage("R", "Computation in progress", "");
-                    _settingsAction.getComputeHolder().getComputeAction().setDisabled(true);
+                    _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
                     QApplication::processEvents();
 
                     AutoCompute();
 
-                    _settingsAction.getComputeHolder().getComputeAction().setDisabled(false);
+                    _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
 
 
                     };
@@ -923,15 +934,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto computeInfo = [this]() -> void {
 
         setStatusMessage("R", "Computation in progress", "");
-        _settingsAction.getComputeHolder().getComputeAction().setDisabled(true);
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
         QApplication::processEvents();
 
         ManualCompute();
 
-        _settingsAction.getComputeHolder().getComputeAction().setDisabled(false);
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         };
 
-    connect(&_settingsAction.getComputeHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
+    connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
 
     const auto updateConnectStatsLine1 = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
@@ -965,13 +976,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_clusterSelectionDebounceTimer, &QTimer::timeout, this, [this]() {
         //setStatusMessage("M", "Cluster selection updated", "");
         setStatusMessage("R", "Computation in progress", "");
-        _settingsAction.getComputeHolder().getComputeAction().setDisabled(true);
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
         QApplication::processEvents();
 
         
         setSelectionAndAutoCompute();
 
-        _settingsAction.getComputeHolder().getComputeAction().setDisabled(false);
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         });
 
 
@@ -1828,7 +1839,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
         }
-        _settingsAction.getLineChart1Widget()->clear();
+       
         _numOfPointsInLine2 = 0;
         };
 
@@ -2064,40 +2075,8 @@ void Computation::AutoCompute()
         computeCorrelationGeneCoords(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
 
         
-
-        /*
-        * // TODO: integrate the following part with setupTableModelAndSelection(), to avoid repetitive code
-        * 
-        * 
-        * 
-        * 
-        // Sort genes by correlation and output top 5
-        int numGenes = corrGeneCoords.size();
-        _geneCorrPairs.clear();
-        _geneCorrPairs.reserve(numGenes);
-        for (int i = 0; i < numGenes; ++i) {
-            _geneCorrPairs[i] = std::make_pair(corrGeneCoords[i], i);
-        }
-        std::sort(_geneCorrPairs.begin(), _geneCorrPairs.end(), std::greater<std::pair<float, int>>());
-        qDebug() << "Top 5 genes with highest correlation:";
-        for (int i = 0; i < 5 && i < numGenes; ++i) {
-            int geneIdx = _geneCorrPairs[i].second;
-            QString geneSymbol = fullPointDataset->getDimensionNames()[geneIdx];
-            qDebug() << "Gene:" << geneSymbol << "Correlation:" << _geneCorrPairs[i].first;
-        }
-        // Filter top N genes by correlation and store the gene symbols
-        int tempNumGenesOfInterest = 20; // FIXME: this is a hardcoded value, should be replaced with a proper setting
-        _geneOfInterestIndices.clear();
-        for (int i = 0; i < tempNumGenesOfInterest; ++i) {
-            int geneIdx = geneCorrPairs[i].second;
-            _geneOfInterestIndices.push_back(geneIdx);
-        }
-        qDebug() << "Gene of interest indices:" << _geneOfInterestIndices;
-        */
-
-        
         try {
-            populateGenesByCorrelationRange(corrGeneCoords, minCorrelation, maxCorrelation, dimensionNames);
+            populateGenesByCorrelationRange(corrGeneCoords, minCorrelation, maxCorrelation, dimensionNames,1);
         }
         catch (const std::exception& ex) {
             qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -2108,20 +2087,7 @@ void Computation::AutoCompute()
         // Setup table model and connect selection
         setupTableModelAndSelection(1);
         //select the first row of the table
-        {
-            auto* tableView = _settingsAction.getTableView1Action();
-            auto* model = tableView->model();
-            if (model && model->rowCount() > 0) {
-                QModelIndex firstIndex = model->index(0, 0);
-                if (firstIndex.isValid()) {
-                    tableView->setCurrentIndex(firstIndex);
-                    tableView->selectionModel()->select(
-                        firstIndex,
-                        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
-                    );
-                }
-            }
-        }
+
 
         setStatusMessage("C", "Computation completed", "#28a745");
     }
@@ -2344,56 +2310,103 @@ void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDatase
     //qDebug() << "Correlation between gene and selected PC completed";
 }
 
-void Computation::populateGenesByCorrelationRange(
-    const std::vector<float>& correlationVector,
-    float min,
-    float max,
-    const std::vector<QString>& geneNameOrdered)
+void Computation::populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float min, float max, const std::vector<QString>& geneNameOrdered, int datasetNumber)
 {
-    _geneOfInterestIndices1.clear();
-    constexpr float epsilon = 1e-6f;
-    const int count = std::min(static_cast<int>(correlationVector.size()),
-        static_cast<int>(geneNameOrdered.size()));
-    if (count == 0) return;
+    if (datasetNumber == 2)
+    {
+        _geneOfInterestIndices2.clear();
+        constexpr float epsilon = 1e-6f;
+        const int count = std::min(static_cast<int>(correlationVector.size()),
+            static_cast<int>(geneNameOrdered.size()));
+        if (count == 0) return;
 
-    // Prepare vector of pointers to original indices for sorting
-    std::vector<int> indices(count);
-    std::iota(indices.begin(), indices.end(), 0);
+        // Prepare vector of pointers to original indices for sorting
+        std::vector<int> indices(count);
+        std::iota(indices.begin(), indices.end(), 0);
 
-    // Sort indices by descending correlation value
-    std::sort(indices.begin(), indices.end(),
-        [&correlationVector](int a, int b) {
-            return correlationVector[a] > correlationVector[b];
-        });
+        // Sort indices by descending correlation value
+        std::sort(indices.begin(), indices.end(),
+            [&correlationVector](int a, int b) {
+                return correlationVector[a] > correlationVector[b];
+            });
 
-    _geneCorrValues1.clear();
-    _geneCorrValues1.reserve(count);
+        _geneCorrValues2.clear();
+        _geneCorrValues2.reserve(count);
 
-    // Assign ranks: same correlation value gets same rank (dense ranking)
-    int rank = 1;
-    float prevCorr = std::numeric_limits<float>::quiet_NaN();
-    for (int i = 0; i < count; ++i) {
-        int idx = indices[i];
-        float corr = correlationVector[idx];
-        bool inRange = (corr > min - epsilon) && (corr < max + epsilon);
+        // Assign ranks: same correlation value gets same rank (dense ranking)
+        int rank = 1;
+        float prevCorr = std::numeric_limits<float>::quiet_NaN();
+        for (int i = 0; i < count; ++i) {
+            int idx = indices[i];
+            float corr = correlationVector[idx];
+            bool inRange = (corr > min - epsilon) && (corr < max + epsilon);
 
-        // If this is the first entry or the correlation value has changed, update the rank
-        if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
-            rank = i + 1;
-            prevCorr = corr;
-        }
+            // If this is the first entry or the correlation value has changed, update the rank
+            if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
+                rank = i + 1;
+                prevCorr = corr;
+            }
 
-        _geneCorrValues1.emplace_back(CorrelationGeneCoords{
-            idx,
-            geneNameOrdered[idx],
-            corr,
-            rank,
-            inRange
-        });
-        if (inRange) {
-            _geneOfInterestIndices1.push_back(idx);
+            _geneCorrValues2.emplace_back(CorrelationGeneCoords{
+                idx,
+                geneNameOrdered[idx],
+                corr,
+                rank,
+                inRange
+                });
+            if (inRange) {
+                _geneOfInterestIndices2.push_back(idx);
+            }
         }
     }
+    else
+    {
+        _geneOfInterestIndices1.clear();
+        constexpr float epsilon = 1e-6f;
+        const int count = std::min(static_cast<int>(correlationVector.size()),
+            static_cast<int>(geneNameOrdered.size()));
+        if (count == 0) return;
+
+        // Prepare vector of pointers to original indices for sorting
+        std::vector<int> indices(count);
+        std::iota(indices.begin(), indices.end(), 0);
+
+        // Sort indices by descending correlation value
+        std::sort(indices.begin(), indices.end(),
+            [&correlationVector](int a, int b) {
+                return correlationVector[a] > correlationVector[b];
+            });
+
+        _geneCorrValues1.clear();
+        _geneCorrValues1.reserve(count);
+
+        // Assign ranks: same correlation value gets same rank (dense ranking)
+        int rank = 1;
+        float prevCorr = std::numeric_limits<float>::quiet_NaN();
+        for (int i = 0; i < count; ++i) {
+            int idx = indices[i];
+            float corr = correlationVector[idx];
+            bool inRange = (corr > min - epsilon) && (corr < max + epsilon);
+
+            // If this is the first entry or the correlation value has changed, update the rank
+            if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
+                rank = i + 1;
+                prevCorr = corr;
+            }
+
+            _geneCorrValues1.emplace_back(CorrelationGeneCoords{
+                idx,
+                geneNameOrdered[idx],
+                corr,
+                rank,
+                inRange
+                });
+            if (inRange) {
+                _geneOfInterestIndices1.push_back(idx);
+            }
+        }
+    }
+
 }
 
 void Computation::setStatusMessage(const QString& status, const QString& message, const QString& color) {
@@ -2409,7 +2422,7 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     obj["status"] = status;
     obj["message"] = message;
     obj["color"] = resolvedColor;
-    _settingsAction.getCommonOptionsHolder().getStatusMessageAction().setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+    _settingsAction.getStatusHolder().getStatusMessageAction().setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 }
 
 //Validate and retrieve datasets and indices
@@ -2587,6 +2600,22 @@ void Computation::processAfterPCAComplete()
     // compute the correlation between genes and selected PC
     std::vector<float> correlationGenePC;
     computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC);
+    auto minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
+    auto maxCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
+    std::vector<QString> dimensionNames = fullDataset2->getDimensionNames();
+    try {
+        populateGenesByCorrelationRange(correlationGenePC, minCorrelation, maxCorrelation, dimensionNames, 2);
+    }
+    catch (const std::exception& ex) {
+        qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
+        setStatusMessage("E", "Error occurred during filtering genes", "");
+        return;
+    }
+
+    // Setup table model and connect selection
+    setupTableModelAndSelection(2);
+
+
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
 }
 
@@ -3087,6 +3116,22 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
                 _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
             }
         );
+
+        {
+            auto* tableView = _settingsAction.getTableView2Action();
+            auto* model = tableView->model();
+            if (model && model->rowCount() > 0) {
+                QModelIndex firstIndex = model->index(0, 0);
+                if (firstIndex.isValid()) {
+                    tableView->setCurrentIndex(firstIndex);
+                    tableView->selectionModel()->select(
+                        firstIndex,
+                        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                    );
+                }
+            }
+        }
+
     }
     else
     {
@@ -3151,6 +3196,20 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
 
             }
         );
+        {
+            auto* tableView = _settingsAction.getTableView1Action();
+            auto* model = tableView->model();
+            if (model && model->rowCount() > 0) {
+                QModelIndex firstIndex = model->index(0, 0);
+                if (firstIndex.isValid()) {
+                    tableView->setCurrentIndex(firstIndex);
+                    tableView->selectionModel()->select(
+                        firstIndex,
+                        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                    );
+                }
+            }
+        }
     
     }
     

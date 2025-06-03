@@ -36,7 +36,7 @@ void LayerSurferPlugin::init()
     auto* mainLayout = new QVBoxLayout(&getWidget());
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
-
+    
     auto* topLayout = new QHBoxLayout();
     topLayout->setContentsMargins(0, 0, 0, 0);
     topLayout->setSpacing(0);
@@ -47,11 +47,13 @@ void LayerSurferPlugin::init()
     bottomLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setSpacing(0);
     bottomLayout->addWidget(_settingsAction.getTableView2Action());
-    bottomLayout->addWidget(_settingsAction.getLineChart2Widget(), 50);
+    //bottomLayout->addWidget(_settingsAction.getLineChart2Widget(), 50);
 
     auto* combinedLayout = new QVBoxLayout();
+    
 
     combinedLayout->addLayout(topLayout);
+
 
     // Add a horizontal separator between topLayout and bottomLayout
     auto* separator = new QFrame();
@@ -66,11 +68,13 @@ void LayerSurferPlugin::init()
 
     mainLayout->addLayout(combinedLayout,90);
 
+    
+
     auto* computeStatusLayout = new QHBoxLayout();
     computeStatusLayout->setContentsMargins(0, 0, 0, 0);
     computeStatusLayout->setSpacing(0);
-    computeStatusLayout->addWidget(_settingsAction.getComputeHolder().getStatusBarAction(),90);
-    computeStatusLayout->addWidget(_settingsAction.getComputeHolder().createWidget(&getWidget()));
+    computeStatusLayout->addWidget(_settingsAction.getStatusHolder().getStatusBarAction(),90);
+    computeStatusLayout->addWidget(_settingsAction.getStatusHolder().createWidget(&getWidget()));
 
     mainLayout->addLayout(computeStatusLayout);
 

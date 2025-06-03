@@ -24,7 +24,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder(*this),
     _dataset2OptionsHolder(*this),
     _commonOptionsHolder(*this),
-    _computeHolder(*this)
+    _statusHolder(*this)
 {
     setSerializationName("LayerSurfer:Settings");
     _dataset1OptionsHolder.getClusterDatasetAction().setSerializationName("LayerSurfer:Clusterdataset");
@@ -52,9 +52,9 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getClusterSelectionAction().setToolTip("Cluster Selection");
     _dataset1OptionsHolder.getGeneSelectionAction().setToolTip("Gene Selection");
     _dataset2OptionsHolder.getGeneSelection2Action().setToolTip("Gene Selection2");
-    _commonOptionsHolder.getStatusMessageAction().setToolTip("Status Message");
-    _computeHolder.getComputeAction().setToolTip("Compute Action");
-    _computeHolder.getStatusBarAction()->setToolTip("Status Bar Action");
+    _statusHolder.getStatusMessageAction().setToolTip("Status Message");
+    _commonOptionsHolder.getComputeAction().setToolTip("Compute Action");
+    _statusHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
     _dataset1OptionsHolder.getDeSelectRowAction().setToolTip("DeSelect Row Action");
     _dataset2OptionsHolder.getDeSelectRow2Action().setToolTip("DeSelect Row Action 2");
@@ -112,10 +112,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset2OptionsHolder.getGeneSelection2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getStatusMessageAction().setDefaultWidgetFlags(StringAction::Label);
-    _computeHolder.getComputeAction().setDefaultWidgetFlags(TriggerAction::IconText);
-    _computeHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
-    _computeHolder.getComputeAction().setText("Compute");
+    _statusHolder.getStatusMessageAction().setDefaultWidgetFlags(StringAction::Label);
+    _commonOptionsHolder.getComputeAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    _commonOptionsHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
+    _commonOptionsHolder.getComputeAction().setText("Compute");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
     _dataset1OptionsHolder.getDeSelectRowAction().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
@@ -223,7 +223,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _lineChart1Widget = new HighPerfLineChart();
 
-    _lineChart2Widget = new HighPerfLineChart();
 
 }
 
@@ -301,36 +300,34 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
 inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& settingsAction) :
     VerticalGroupAction(&settingsAction, "Shared Options"),
     _settingsOptions(settingsAction),
-    _clusterSelectionAction(this, "Cluster selection"),
-    _statusMessageAction(this, "Status message")
+    _computeAction(this, "Compute"),
+    _clusterSelectionAction(this, "Cluster selection")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
-
+    addAction(&_computeAction);
 
 }
 
 
 
 
-inline SettingsAction::ComputeHolder::ComputeHolder(SettingsAction& settingsAction) :
+inline SettingsAction::StatusHolder::StatusHolder(SettingsAction& settingsAction) :
     HorizontalGroupAction(&settingsAction, "Compute Options"),
     _settingsOptions(settingsAction),
-    _computeAction(this, "Compute")
+
+    _statusMessageAction(this, "Status message")
 {
     setText("Compute Options");
     setIcon(mv::util::StyledIcon("braille"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
-    addAction(&_computeAction);
     _statusBarAction = new QStatusBar();
     _statusBarAction->setStatusTip("Status");
     _statusBarAction->setMaximumHeight(22);
-    //_statusBarAction->setFixedWidth(120);
-    //_statusBarAction->setMinimumWidth(100);
     _statusBarAction->setMaximumWidth(800);
     _statusBarAction->setAutoFillBackground(true);
     _statusBarAction->setSizeGripEnabled(false);
