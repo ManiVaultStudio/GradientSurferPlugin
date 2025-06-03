@@ -2564,26 +2564,33 @@ void Computation::processAfterPCAComplete()
 {
     _pcaDataset1Complete = false;
     _pcaDataset2Complete = false;
-    //wait for the two pca finished events to complete std::cout << "PCA Plugin: Finished." << std::endl;
+    int selectedPCDimension2 = 0;
     qDebug() << "PCA analysis completed successfully";
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
-    Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
 
-    int selectedPCDimension2 = 0;
-    int numAllCells2 = fullDataset2->getNumPoints();
+    Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
+    if (!fullDataset2.isValid()) {
+        setStatusMessage("E", "Point dataset 2 is invalid", "");
+        return;
+    }
+
+    const int numAllCells2 = fullDataset2->getNumPoints();
+    if (numAllCells2 <= 0) {
+        setStatusMessage("E", "No cells in point dataset 2", "");
+        return;
+    }
 
     std::vector<float> selectedPC(numAllCells2);
-    std::vector<int> allCellIndices2(numAllCells2);
-    std::iota(allCellIndices2.begin(), allCellIndices2.end(), 0);
     _pcaCommonGenesDataset2->extractDataForDimension(selectedPC, selectedPCDimension2);
 
-    // compute the correlation between genes and selected PC
     std::vector<float> correlationGenePC;
     computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC);
-    float minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
-    float maxCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
-    std::vector<QString> dimensionNames = fullDataset2->getDimensionNames();
+
+    const float minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
+    const float maxCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
+    const auto dimensionNames = fullDataset2->getDimensionNames();
+
     try {
         populateGenesByCorrelationRange(correlationGenePC, minCorrelation, maxCorrelation, dimensionNames, 2);
     }
@@ -2593,9 +2600,7 @@ void Computation::processAfterPCAComplete()
         return;
     }
 
-    // Setup table model and connect selection
     setupTableModelAndSelection(2);
-
 
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
 }
