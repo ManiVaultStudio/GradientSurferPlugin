@@ -956,17 +956,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction(), &DecimalAction::triggered, this, updateConnectStatsLine1);
 
 
-    const auto updateConnectStatsLine2 = [this]() -> void {
-        if (!_settingsAction.getLineChart1Widget())
-        {
-            qDebug() << "No line chart widget available";
-            return;
-        }
-        _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine2 * _settingsAction.getDataset2OptionsHolder().getConnectStatsLine2Action().getValue());
-        };
-
-    connect(&_settingsAction.getDataset2OptionsHolder().getConnectStatsLine2Action(), &DecimalAction::triggered, this, updateConnectStatsLine2);
-
     connect(& _settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
         &OptionsAction::selectedOptionsChanged,
         this,

@@ -79,12 +79,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getConnectStatsLineAction().setValue(0.5);
     _dataset1OptionsHolder.getConnectStatsLineAction().setSingleStep(0.01);
 
-    _dataset2OptionsHolder.getConnectStatsLine2Action().setToolTip("Connect Stats Line Action 2");
-    _dataset2OptionsHolder.getConnectStatsLine2Action().setMaximum(1.00);
-    _dataset2OptionsHolder.getConnectStatsLine2Action().setMinimum(0.00);
-    _dataset2OptionsHolder.getConnectStatsLine2Action().setValue(0.50);
-    _dataset2OptionsHolder.getConnectStatsLine2Action().setSingleStep(0.01);
-
     _dataset1OptionsHolder.getFocusSelectionAction().setChecked(false);
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
     _dataset1OptionsHolder.getFreezeSelectionAction().setChecked(false);
@@ -276,8 +270,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     _deSelectRow2Action(this, "DeSelect Row 2"),
     _focusSelection2Action(this, "Focus Selection 2"),
     _hidePointSelection2Action(this, "Hide Point Selection Outline 2"),
-    _freezeSelection2Action(this, "Freeze Selection 2"),
-    _connectStatsLine2Action(this, "Stats Line Top Bottom N 2")
+    _freezeSelection2Action(this, "Freeze Selection 2")
 {
     setText("Dataset2 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -294,7 +287,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     addAction(&_focusSelection2Action);
     addAction(&_hidePointSelection2Action);
     addAction(&_freezeSelection2Action);
-    addAction(&_connectStatsLine2Action);
+
 }
 
 inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& settingsAction) :

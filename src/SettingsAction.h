@@ -173,9 +173,6 @@ public:
         const ToggleAction& getFreezeSelection2Action() const { return _freezeSelection2Action; }
         ToggleAction& getFreezeSelection2Action() { return _freezeSelection2Action; }
 
-        const DecimalAction& getConnectStatsLine2Action() const { return _connectStatsLine2Action; }
-        DecimalAction& getConnectStatsLine2Action() { return _connectStatsLine2Action; }
-
         const TriggerAction& getDeSelectRow2Action() const { return _deSelectRow2Action; }
         TriggerAction& getDeSelectRow2Action() { return _deSelectRow2Action; }
 
@@ -196,7 +193,7 @@ public:
         ToggleAction                        _focusSelection2Action;
         ToggleAction                        _hidePointSelection2Action;
         ToggleAction                        _freezeSelection2Action;
-        DecimalAction                       _connectStatsLine2Action;
+
         TriggerAction                       _deSelectRow2Action;
 
     };
