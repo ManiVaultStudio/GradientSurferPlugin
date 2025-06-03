@@ -2517,47 +2517,36 @@ bool Computation::createDatasetsIfNeeded()
 
 void Computation::updateClusterOptions()
 {
-    QStringList clusterNamesCommon = {};
-    QStringList clusterNames1 = {};
-    QStringList clusterNames2 = {};
-    if (_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().isValid() )
-    {
-        auto clusterFullDataset1 = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
-        auto clusters1 = clusterFullDataset1->getClusters();
-        
-        if (!clusters1.isEmpty())
-        {
-            for (auto cluster : clusters1)
-            {
-                clusterNames1.append(cluster.getName());
-            }
-        }
+    // Use QSet for efficient intersection and avoid unnecessary sorting
+    QSet<QString> clusterNames1, clusterNames2;
 
+    // Collect cluster names for dataset 1
+    if (_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().isValid())
+    {
+        auto clusterFullDataset1 = mv::data().getDataset<Clusters>(
+            _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+        const auto clusters1 = clusterFullDataset1->getClusters();
+        for (const auto& cluster : clusters1)
+            clusterNames1.insert(cluster.getName());
     }
+
+    // Collect cluster names for dataset 2
     if (_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().isValid())
     {
-        auto clusterFullDataset2 = mv::data().getDataset<Clusters>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
-        auto clusters2 = clusterFullDataset2->getClusters();
-
-        if (!clusters2.isEmpty())
-        {
-            for (auto cluster : clusters2)
-            {
-                clusterNames2.append(cluster.getName());
-            }
-        }
-
+        auto clusterFullDataset2 = mv::data().getDataset<Clusters>(
+            _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
+        const auto clusters2 = clusterFullDataset2->getClusters();
+        for (const auto& cluster : clusters2)
+            clusterNames2.insert(cluster.getName());
     }
-   
-    std::sort(clusterNames1.begin(), clusterNames1.end());
-    std::sort(clusterNames2.begin(), clusterNames2.end());
-    std::set_intersection(clusterNames1.begin(), clusterNames1.end(),
-        clusterNames2.begin(), clusterNames2.end(),
-        std::back_inserter(clusterNamesCommon));
 
+    // Compute intersection and sort only once
+    QStringList clusterNamesCommon = (clusterNames1 & clusterNames2).values();
+    std::sort(clusterNamesCommon.begin(), clusterNamesCommon.end(), Qt::CaseInsensitive);
 
-    _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().setOptions(clusterNamesCommon);
-    _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().setSelectedOptions(clusterNamesCommon);
+    auto& clusterSelectionAction = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction();
+    clusterSelectionAction.setOptions(clusterNamesCommon);
+    clusterSelectionAction.setSelectedOptions(clusterNamesCommon);
 }
 
 void Computation::processAfterPCAComplete()
