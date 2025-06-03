@@ -943,6 +943,93 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
 
+    const auto pcaDimensionSelectionChange = [this]() -> void {
+
+        correlationAfterPCA();
+        };
+
+    connect(&_settingsAction.getCommonOptionsHolder().getDataset1PcSelectionForComputationAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaDimensionSelectionChange);
+
+
+    const auto pcaColorsToScatterplot = [this]() -> void {
+        int selectedDimInd = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
+        QString selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
+        if (selectedDimInd < 0 || selectedDimName.isEmpty()) {
+            qDebug() << "No PCA dimension selected for coloring";
+            return;
+        }
+        auto options = _settingsAction.getCommonOptionsHolder().getDualPCAColoringAction().getSelectedOptions();
+        if (options.isEmpty()) {
+            qDebug() << "No PCA coloring options selected";
+            return;
+        }
+
+        auto setScatterplotColorAndGene = [&](const QString& scatterplotName, mv::Dataset<Points>& dataset) {
+            if (!dataset.isValid()) {
+                qDebug() << "PCA common genes dataset is not valid";
+                return false;
+            }
+            if (scatterplotName.isEmpty()) {
+                qDebug() << "No scatterplot view selected";
+                return false;
+            }
+            auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+            if (!scatterplotViewFactory)
+                return false;
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
+                if (plugin->getGuiName() == scatterplotName) {
+                    auto pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    if (pointDatasetPickerAction && pointDatasetPickerAction->getCurrentDataset().isValid()) {
+                        auto colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                        if (colorDatasetPickerAction) {
+                            colorDatasetPickerAction->setCurrentDataset(dataset);
+                        }
+                        auto geneSelectionAction = dynamic_cast<DimensionPickerAction*>(plugin->findChildByPath("Settings/Coloring/Dimension"));
+                        if (geneSelectionAction) {
+                            geneSelectionAction->setCurrentDimensionName(selectedDimName);
+                        }
+                        else {
+                            qDebug() << "Gene selection action not found";
+                        }
+                    }
+                    break;
+                }
+            }
+            return true;
+            };
+
+        if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()) {
+            bool doDataset1 = options.contains("Dataset1");
+            bool doDataset2 = options.contains("Dataset2");
+            if (doDataset1) {
+                setScatterplotColorAndGene(
+                    _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(),
+                    _pcaCommonGenesDataset1
+                );
+            }
+            if (doDataset2) {
+                setScatterplotColorAndGene(
+                    _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(),
+                    _pcaCommonGenesDataset2
+                );
+            }
+        }
+        else {
+            if (options.contains("Dataset1") && options.contains("Dataset2")) {
+                _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().trigger();
+                _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().trigger();
+            }
+            else if (options.contains("Dataset1")) {
+                _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().trigger();
+            }
+            else if (options.contains("Dataset2")) {
+                _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().trigger();
+            }
+        }
+        };
+
+    connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToScatterplot);
+
     const auto updateConnectStatsLine1 = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
@@ -2539,9 +2626,39 @@ void Computation::processAfterPCAComplete()
 {
     _pcaDataset1Complete = false;
     _pcaDataset2Complete = false;
-    int selectedPCDimension2 = 0;
+    
     qDebug() << "PCA analysis completed successfully";
+
+
+    {
+
+        _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
+        _settingsAction.getCommonOptionsHolder().getDataset1PcSelectionForComputationAction().setPointsDataset(_pcaCommonGenesDataset2);
+        if (_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions() > 0)
+        {
+            _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(0);
+   
+        }
+        if (_settingsAction.getCommonOptionsHolder().getDataset1PcSelectionForComputationAction().getNumberOfDimensions() > 0)
+        {
+
+            _settingsAction.getCommonOptionsHolder().getDataset1PcSelectionForComputationAction().setCurrentDimensionIndex(0);
+        }
+    }
+
+    if (_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions() < 0)
+    {
+        qDebug() << "No PCA dimensions available for coloring";
+        setStatusMessage("E", "No PCA dimensions available for coloring", "");
+        return;
+    }
+
     setStatusMessage("C", "PCA analysis completed", "#28a745");
+    correlationAfterPCA();
+}
+void Computation::correlationAfterPCA()
+{
+
     setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
 
     Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
@@ -2549,7 +2666,14 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "Point dataset 2 is invalid", "");
         return;
     }
+   
 
+    int selectedPCDimension2 = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
+    if (selectedPCDimension2 < 0)
+    {
+                setStatusMessage("E", "No PCA dimension selected for dataset 2", "");
+                return;
+    }
     const int numAllCells2 = fullDataset2->getNumPoints();
     if (numAllCells2 <= 0) {
         setStatusMessage("E", "No cells in point dataset 2", "");
@@ -2579,7 +2703,6 @@ void Computation::processAfterPCAComplete()
 
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
 }
-
 bool Computation::getRotationAngle(const QString& scatterplotViewName, float& rotationAngle)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");

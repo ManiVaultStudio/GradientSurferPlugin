@@ -227,8 +227,8 @@ public:
         const OptionAction& getCorrelationCalculationTypeAction() const { return _correlationCalculationTypeAction; }
         OptionAction& getCorrelationCalculationTypeAction() { return _correlationCalculationTypeAction; }
 
-        const OptionAction& getDataset1PcSelectionForComputationAction() const { return _dataset1PcSelectionForComputationAction; }
-        OptionAction& getDataset1PcSelectionForComputationAction() { return _dataset1PcSelectionForComputationAction; }
+        const DimensionPickerAction& getDataset1PcSelectionForComputationAction() const { return _dataset1PcSelectionForComputationAction; }
+        DimensionPickerAction& getDataset1PcSelectionForComputationAction() { return _dataset1PcSelectionForComputationAction; }
 
 
 
@@ -247,7 +247,7 @@ public:
         OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
-        OptionAction                 _dataset1PcSelectionForComputationAction;
+        DimensionPickerAction                 _dataset1PcSelectionForComputationAction;
 
     };
 

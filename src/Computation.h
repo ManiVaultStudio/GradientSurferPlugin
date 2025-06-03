@@ -106,6 +106,7 @@ private:
     bool setupAndTriggerPCA();
     void resetupCorrelationTable(int datasetNumber);
     void setSelectionAndAutoCompute();
+    void correlationAfterPCA();
 
 protected:
     LayerSurferPlugin&          _viewerPlugin;
@@ -130,8 +131,6 @@ protected:
     QTimer _clusterSelectionDebounceTimer;
 
     QTimer _correlationRangeDebounceTimer2;
-
-
 
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
