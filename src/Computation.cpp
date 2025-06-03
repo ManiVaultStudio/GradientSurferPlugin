@@ -1030,6 +1030,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToScatterplot);
 
+
+    connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToScatterplot);
+
     const auto updateConnectStatsLine1 = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
