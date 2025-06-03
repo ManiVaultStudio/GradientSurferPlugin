@@ -2600,39 +2600,33 @@ void Computation::processAfterPCAComplete()
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
 }
 
-//Retrieve rotation angle from plugin
 bool Computation::getRotationAngle(const QString& scatterplotViewName, float& rotationAngle)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-    if (scatterplotViewFactory) {
-        bool foundPlugin = false;
-        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
-            if (plugin->getGuiName() == scatterplotViewName) {
-                foundPlugin = true;
-                auto* angleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Line angle"));
-                if (angleAction) {
-                    rotationAngle = angleAction->getValue();
-                }
-                else {
-                    qDebug() << "Angle action not found";
-                    setStatusMessage("E", "Angle action not found", "");
-                    return false;
-                }
-                break;
-            }
-        }
-        if (!foundPlugin) {
-            qDebug() << "Scatterplot plugin not found";
-            setStatusMessage("E", "Scatterplot plugin not found", "");
-            return false;
-        }
-    }
-    else {
+    if (!scatterplotViewFactory) {
         qDebug() << "Scatterplot view factory not found";
         setStatusMessage("E", "Scatterplot view factory not found", "");
         return false;
     }
-    return true;
+
+    // Use range-based for and early return for clarity and efficiency
+    for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
+        if (plugin->getGuiName() == scatterplotViewName) {
+            auto* angleAction = dynamic_cast<DecimalAction*>(
+                plugin->findChildByPath("Settings/Selection/Point Selection/Line angle"));
+            if (!angleAction) {
+                qDebug() << "Angle action not found";
+                setStatusMessage("E", "Angle action not found", "");
+                return false;
+            }
+            rotationAngle = angleAction->getValue();
+            return true;
+        }
+    }
+
+    qDebug() << "Scatterplot plugin not found";
+    setStatusMessage("E", "Scatterplot plugin not found", "");
+    return false;
 }
 
 bool Computation::populateEmbeddingCoordinates(int xEmbeddingIndex, int yEmbeddingIndex, std::vector<float>& XYCoordinates)
