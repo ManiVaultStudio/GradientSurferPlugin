@@ -2300,104 +2300,6 @@ void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDatase
     //qDebug() << "Correlation between gene and selected PC completed";
 }
 
-void Computation::populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, int datasetNumber)
-{
-    if (datasetNumber == 2)
-    {
-        _geneOfInterestIndices2.clear();
-        constexpr float epsilon = 1e-6f;
-        const int count = std::min(static_cast<int>(correlationVector.size()),
-            static_cast<int>(geneNameOrdered.size()));
-        if (count == 0) return;
-
-        // Prepare vector of pointers to original indices for sorting
-        std::vector<int> indices(count);
-        std::iota(indices.begin(), indices.end(), 0);
-
-        // Sort indices by descending correlation value
-        std::sort(indices.begin(), indices.end(),
-            [&correlationVector](int a, int b) {
-                return correlationVector[a] > correlationVector[b];
-            });
-
-        _geneCorrValues2.clear();
-        _geneCorrValues2.reserve(count);
-
-        // Assign ranks: same correlation value gets same rank (dense ranking)
-        int rank = 1;
-        float prevCorr = std::numeric_limits<float>::quiet_NaN();
-        for (int i = 0; i < count; ++i) {
-            int idx = indices[i];
-            float corr = correlationVector[idx];
-            bool inRange = (corr < minCorr - epsilon) || (corr > maxCorr + epsilon);
-
-            // If this is the first entry or the correlation value has changed, update the rank
-            if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
-                rank = i + 1;
-                prevCorr = corr;
-            }
-
-            _geneCorrValues2.emplace_back(CorrelationGeneCoords{
-                idx,
-                geneNameOrdered[idx],
-                corr,
-                rank,
-                inRange
-                });
-            if (inRange) {
-                _geneOfInterestIndices2.push_back(idx);
-            }
-        }
-    }
-    else
-    {
-        _geneOfInterestIndices1.clear();
-        constexpr float epsilon = 1e-6f;
-        const int count = std::min(static_cast<int>(correlationVector.size()),
-            static_cast<int>(geneNameOrdered.size()));
-        if (count == 0) return;
-
-        // Prepare vector of pointers to original indices for sorting
-        std::vector<int> indices(count);
-        std::iota(indices.begin(), indices.end(), 0);
-
-        // Sort indices by descending correlation value
-        std::sort(indices.begin(), indices.end(),
-            [&correlationVector](int a, int b) {
-                return correlationVector[a] > correlationVector[b];
-            });
-
-        _geneCorrValues1.clear();
-        _geneCorrValues1.reserve(count);
-
-        // Assign ranks: same correlation value gets same rank (dense ranking)
-        int rank = 1;
-        float prevCorr = std::numeric_limits<float>::quiet_NaN();
-        for (int i = 0; i < count; ++i) {
-            int idx = indices[i];
-            float corr = correlationVector[idx];
-            bool inRange = (corr < minCorr - epsilon) || (corr > maxCorr + epsilon);
-
-            // If this is the first entry or the correlation value has changed, update the rank
-            if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
-                rank = i + 1;
-                prevCorr = corr;
-            }
-
-            _geneCorrValues1.emplace_back(CorrelationGeneCoords{
-                idx,
-                geneNameOrdered[idx],
-                corr,
-                rank,
-                inRange
-                });
-            if (inRange) {
-                _geneOfInterestIndices1.push_back(idx);
-            }
-        }
-    }
-
-}
 
 void Computation::setStatusMessage(const QString& status, const QString& message, const QString& color) {
     QString resolvedColor = color;
@@ -2517,6 +2419,60 @@ bool Computation::createDatasetsIfNeeded()
 
 
 
+
+
+void Computation::populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, int datasetNumber)
+{
+    constexpr float epsilon = 1e-6f;
+    const int count = std::min(static_cast<int>(correlationVector.size()), static_cast<int>(geneNameOrdered.size()));
+    if (count == 0) return;
+
+    // Prepare vector of indices for sorting
+    std::vector<int> indices(count);
+    std::iota(indices.begin(), indices.end(), 0);
+
+    // Sort indices by descending correlation value
+    std::sort(indices.begin(), indices.end(),
+        [&correlationVector](int a, int b) {
+            return correlationVector[a] > correlationVector[b];
+        });
+
+    // Select appropriate output containers
+    auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2 : _geneCorrValues1;
+    auto& geneOfInterestIndices = (datasetNumber == 2) ? _geneOfInterestIndices2 : _geneOfInterestIndices1;
+
+    geneCorrValues.clear();
+    geneCorrValues.reserve(count);
+    geneOfInterestIndices.clear();
+    geneOfInterestIndices.reserve(count);
+
+    // Assign ranks and fill output in a single pass
+    int rank = 1;
+    float prevCorr = std::numeric_limits<float>::quiet_NaN();
+    for (int i = 0; i < count; ++i) {
+        int idx = indices[i];
+        float corr = correlationVector[idx];
+        // In-range means within [minCorr, maxCorr] (inclusive, with epsilon)
+        bool isWithinRange = (corr >= minCorr - epsilon) && (corr <= maxCorr + epsilon);
+
+        // Dense ranking: same value gets same rank
+        if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
+            rank = i + 1;
+            prevCorr = corr;
+        }
+
+        geneCorrValues.emplace_back(CorrelationGeneCoords{
+            idx,
+            geneNameOrdered[idx],
+            corr,
+            rank,
+            isWithinRange
+            });
+        if (isWithinRange) {
+            geneOfInterestIndices.push_back(idx);
+        }
+    }
+}
 
 void Computation::updateClusterOptions()
 {
