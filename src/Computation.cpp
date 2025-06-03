@@ -2299,7 +2299,7 @@ void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDatase
     //qDebug() << "Correlation between gene and selected PC completed";
 }
 
-void Computation::populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float min, float max, const std::vector<QString>& geneNameOrdered, int datasetNumber)
+void Computation::populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, int datasetNumber)
 {
     if (datasetNumber == 2)
     {
@@ -2328,7 +2328,7 @@ void Computation::populateGenesByCorrelationRange(const std::vector<float>& corr
         for (int i = 0; i < count; ++i) {
             int idx = indices[i];
             float corr = correlationVector[idx];
-            bool inRange = (corr > min - epsilon) && (corr < max + epsilon);
+            bool inRange = (corr < minCorr - epsilon) || (corr > maxCorr + epsilon);
 
             // If this is the first entry or the correlation value has changed, update the rank
             if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
@@ -2375,7 +2375,7 @@ void Computation::populateGenesByCorrelationRange(const std::vector<float>& corr
         for (int i = 0; i < count; ++i) {
             int idx = indices[i];
             float corr = correlationVector[idx];
-            bool inRange = (corr > min - epsilon) && (corr < max + epsilon);
+            bool inRange = (corr < minCorr - epsilon) || (corr > maxCorr + epsilon);
 
             // If this is the first entry or the correlation value has changed, update the rank
             if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
@@ -2589,8 +2589,8 @@ void Computation::processAfterPCAComplete()
     // compute the correlation between genes and selected PC
     std::vector<float> correlationGenePC;
     computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC);
-    auto minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
-    auto maxCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
+    float minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
+    float maxCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
     std::vector<QString> dimensionNames = fullDataset2->getDimensionNames();
     try {
         populateGenesByCorrelationRange(correlationGenePC, minCorrelation, maxCorrelation, dimensionNames, 2);
@@ -2929,7 +2929,7 @@ bool Computation::setupAndTriggerPCA()
 
 void Computation::resetupCorrelationTable(int datasetNumber)
 {
-    int minRange, maxRange;
+    float minRange, maxRange;
     if (datasetNumber==2)
     {
         minRange = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
@@ -2944,12 +2944,12 @@ void Computation::resetupCorrelationTable(int datasetNumber)
 
     
     
-
+    constexpr float epsilon = 1e-6f;
     if (datasetNumber == 2)
     {
         _geneOfInterestIndices2.clear();
         for (auto& gene : _geneCorrValues2) {
-            bool isWithinRange = (gene.correlationValue <= minRange && gene.correlationValue <= maxRange);
+            bool isWithinRange = (gene.correlationValue <= (minRange- epsilon) || gene.correlationValue >= (maxRange+ epsilon));
 
             gene.isWithinRange = isWithinRange;
             if (isWithinRange) {
@@ -2961,7 +2961,7 @@ void Computation::resetupCorrelationTable(int datasetNumber)
     {
         _geneOfInterestIndices1.clear();
         for (auto& gene : _geneCorrValues1) {
-            bool isWithinRange = (gene.correlationValue <= minRange && gene.correlationValue <= maxRange);
+            bool isWithinRange = (gene.correlationValue <= (minRange- epsilon) || gene.correlationValue >= (maxRange+ epsilon));
 
             gene.isWithinRange = isWithinRange;
             if (isWithinRange) {
