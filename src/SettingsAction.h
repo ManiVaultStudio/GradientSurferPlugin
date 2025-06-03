@@ -223,8 +223,8 @@ public:
         const DimensionPickerAction& getPcaDimensionForColoringAction() const { return _pcaDimensionForColoringAction; }
         DimensionPickerAction& getPcaDimensionForColoringAction() { return _pcaDimensionForColoringAction; }
 
-        const ToggleAction& getAutoSelectionUpdateAction() const { return _autoSelectionUpdateActionAction; }
-        ToggleAction& getAutoSelectionUpdateAction() { return _autoSelectionUpdateActionAction; }
+        const ToggleAction& getAutoSelectionUpdateAction() const { return _autoSelectionUpdateAction; }
+        ToggleAction& getAutoSelectionUpdateAction() { return _autoSelectionUpdateAction; }
 
         const OptionAction& getCorrelationCalculationTypeAction() const { return _correlationCalculationTypeAction; }
         OptionAction& getCorrelationCalculationTypeAction() { return _correlationCalculationTypeAction; }
