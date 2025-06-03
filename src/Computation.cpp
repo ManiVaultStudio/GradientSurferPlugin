@@ -2635,7 +2635,6 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
     return true;
 }
 
-// Populate embedding coordinates
 bool Computation::populateEmbeddingCoordinates(int xEmbeddingIndex, int yEmbeddingIndex, std::vector<float>& XYCoordinates)
 {
     if (_filteredSelectionIndices.empty()) {
@@ -2643,14 +2642,21 @@ bool Computation::populateEmbeddingCoordinates(int xEmbeddingIndex, int yEmbeddi
         setStatusMessage("E", "No indices selected", "");
         return false;
     }
-    XYCoordinates.resize(_filteredSelectionIndices.size() * 2);
-    std::vector<int> preComputedEmbeddingColumnIndices{ xEmbeddingIndex, yEmbeddingIndex };
-    if (XYCoordinates.size() != _filteredSelectionIndices.size() * 2) {
-        qDebug() << "XYCoordinates size mismatch";
-        setStatusMessage("E", "XYCoordinates size mismatch", "");
-        return false;
-    }
-    _embeddingDataset->populateDataForDimensions(XYCoordinates, preComputedEmbeddingColumnIndices, _filteredSelectionIndices);
+
+    const size_t numPoints = _filteredSelectionIndices.size();
+    XYCoordinates.resize(numPoints * 2);
+
+    // Avoid unnecessary size check (resize always sets correct size)
+    // Use stack allocation for small fixed-size vector
+    int embeddingIndices[2] = { xEmbeddingIndex, yEmbeddingIndex };
+
+    // Directly use std::vector<int> constructor from array for clarity and efficiency
+    _embeddingDataset->populateDataForDimensions(
+        XYCoordinates,
+        std::vector<int>(embeddingIndices, embeddingIndices + 2),
+        _filteredSelectionIndices
+    );
+
     return true;
 }
 
