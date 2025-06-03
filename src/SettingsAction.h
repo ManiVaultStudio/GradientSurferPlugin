@@ -220,14 +220,18 @@ public:
         const OptionsAction& getDualPCAColoringAction() const { return _dualPCAColoringAction; }
         OptionsAction& getDualPCAColoringAction() { return _dualPCAColoringAction; }
 
-        const DimensionPickerAction& getPcaDimensionForColoring() const { return _pcaDimensionForColoring; }
-        DimensionPickerAction& getPcaDimensionForColoring() { return _pcaDimensionForColoring; }
+        const DimensionPickerAction& getPcaDimensionForColoringAction() const { return _pcaDimensionForColoringAction; }
+        DimensionPickerAction& getPcaDimensionForColoringAction() { return _pcaDimensionForColoringAction; }
 
-        const ToggleAction& getAutoSelectionUpdateAction() const { return _autoSelectionUpdateAction; }
-        ToggleAction& getAutoSelectionUpdateAction() { return _autoSelectionUpdateAction; }
+        const ToggleAction& getAutoSelectionUpdateAction() const { return _autoSelectionUpdateActionAction; }
+        ToggleAction& getAutoSelectionUpdateAction() { return _autoSelectionUpdateActionAction; }
 
-        const OptionAction& getCorrelationCalculationType() const { return _correlationCalculationType; }
-        OptionAction& getCorrelationCalculationType() { return _correlationCalculationType; }
+        const OptionAction& getCorrelationCalculationTypeAction() const { return _correlationCalculationTypeAction; }
+        OptionAction& getCorrelationCalculationTypeAction() { return _correlationCalculationTypeAction; }
+
+        const OptionAction& getDataset1PcSelectionForComputationAction() const { return _dataset1PcSelectionForComputationAction; }
+        OptionAction& getDataset1PcSelectionForComputationAction() { return _dataset1PcSelectionForComputationAction; }
+
 
 
     protected:
@@ -243,8 +247,9 @@ public:
         ToggleAction                _autoComputeAction;
         ToggleAction                 _pcaColoringAction;
         OptionsAction                 _dualPCAColoringAction;
-        DimensionPickerAction        _pcaDimensionForColoring;
-        OptionAction                 _correlationCalculationType;
+        DimensionPickerAction        _pcaDimensionForColoringAction;
+        OptionAction                 _correlationCalculationTypeAction;
+        OptionAction                 _dataset1PcSelectionForComputationAction;
 
     };
 
