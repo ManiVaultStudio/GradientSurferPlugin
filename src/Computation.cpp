@@ -2446,14 +2446,14 @@ void Computation::populateGenesByCorrelationRange(const std::vector<float>& corr
     geneOfInterestIndices.clear();
     geneOfInterestIndices.reserve(count);
 
-    // Assign ranks and fill output in a single pass
+    // Assign ranks and fill output in a single loop
     int rank = 1;
     float prevCorr = std::numeric_limits<float>::quiet_NaN();
     for (int i = 0; i < count; ++i) {
         int idx = indices[i];
         float corr = correlationVector[idx];
-        // In-range means within [minCorr, maxCorr] (inclusive, with epsilon)
-        bool isWithinRange = (corr >= minCorr - epsilon) && (corr <= maxCorr + epsilon);
+        // Mark as within range if in [minCorr, maxCorr] (inclusive, with epsilon)
+        bool isWithinRange = (corr <= minCorr - epsilon) || (corr >= maxCorr + epsilon);
 
         // Dense ranking: same value gets same rank
         if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
@@ -2871,7 +2871,7 @@ void Computation::resetupCorrelationTable(int datasetNumber)
     // Use a single loop for marking and collecting indices
     for (auto& gene : geneCorrValues) {
         // Corrected logic: isWithinRange should be true if value is inside [minRange, maxRange]
-        bool isWithinRange = (gene.correlationValue >= (minRange - epsilon) && gene.correlationValue <= (maxRange + epsilon));
+        bool isWithinRange = (gene.correlationValue <= (minRange - epsilon) || gene.correlationValue >= (maxRange + epsilon));
         gene.isWithinRange = isWithinRange;
         if (isWithinRange) {
             geneOfInterestIndices.push_back(gene.geneIndex);
