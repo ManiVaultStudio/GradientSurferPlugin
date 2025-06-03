@@ -68,7 +68,7 @@ private:
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
     void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
     void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector);
-    void setupTableModelAndSelection();
+    void setupTableModelAndSelection(int datasetNumber);
 
     void populateGenesByCorrelationRange(
         const std::vector<float>& correlationVector,
@@ -108,7 +108,7 @@ private:
         const std::vector<QString>& dimensionNames);
 
     bool setupAndTriggerPCA();
-    void resetupCorrelationTable();
+    void resetupCorrelationTable(int datasetNumber);
     void setSelectionAndAutoCompute();
 
 protected:
@@ -121,18 +121,27 @@ protected:
     mv::Dataset<Points>         _selectedGenePointDataset1 = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset2 = nullptr;
     std::vector<int>            _filteredSelectionIndices;
-    std::vector<CorrelationGeneCoords> _geneCorrValues;
-    std::vector<int>            _geneOfInterestIndices;
+    std::vector<CorrelationGeneCoords> _geneCorrValues1;
+    std::vector<CorrelationGeneCoords> _geneCorrValues2;
+    std::vector<int>            _geneOfInterestIndices1;
+    std::vector<int>            _geneOfInterestIndices2;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
 
-    QTimer _correlationRangeDebounceTimer;
+    QTimer _correlationRangeDebounceTimer1;
     QTimer _clusterSelectionDebounceTimer;
+
+    QTimer _correlationRangeDebounceTimer2;
+
+
+
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
-    int _numOfPointsInLine=0;
-    QString    _selectedGene = "";
+    int             _numOfPointsInLine1=0;
+    int             _numOfPointsInLine2 = 0;
+    QString    _selectedGene1 = "";
+    QString    _selectedGene2 = "";
     friend class ChannelAction;
 };

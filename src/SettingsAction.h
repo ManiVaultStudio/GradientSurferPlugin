@@ -92,6 +92,24 @@ public:
         const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
+        //new options
+        const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
+        DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
+
+        const ToggleAction& getFocusSelectionAction() const { return _focusSelectionAction; }
+        ToggleAction& getFocusSelectionAction() { return _focusSelectionAction; }
+
+        const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
+        ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
+
+        const ToggleAction& getFreezeSelectionAction() const { return _freezeSelectionAction; }
+        ToggleAction& getFreezeSelectionAction() { return _freezeSelectionAction; }
+
+        const DecimalAction& getConnectStatsLineAction() const { return _connectStatsLineAction; }
+        DecimalAction& getConnectStatsLineAction() { return _connectStatsLineAction; }
+        const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
+        TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
+
     protected:
         SettingsAction&                     _settingsOptions;
         
@@ -104,6 +122,14 @@ public:
         DimensionPickerAction               _embeddingDimensionXAction;
         DimensionPickerAction               _embeddingDimensionYAction;
         DimensionPickerAction               _geneSelectionAction;
+
+        //new options
+        DecimalRangeAction                  _correlationRangeAction;
+        ToggleAction                        _focusSelectionAction;
+        ToggleAction                        _hidePointSelectionAction;
+        ToggleAction                        _freezeSelectionAction;
+        DecimalAction                       _connectStatsLineAction;
+        TriggerAction                       _deSelectRowAction;
 
     };
 
@@ -135,6 +161,24 @@ public:
         const DimensionPickerAction& getGeneSelection2Action() const { return _geneSelection2Action; }
         DimensionPickerAction& getGeneSelection2Action() { return _geneSelection2Action; }
 
+        const DecimalRangeAction& getCorrelationRange2Action() const { return _correlationRange2Action; }
+        DecimalRangeAction& getCorrelationRange2Action() { return _correlationRange2Action; }
+
+        const ToggleAction& getFocusSelection2Action() const { return _focusSelection2Action; }
+        ToggleAction& getFocusSelection2Action() { return _focusSelection2Action; }
+
+        const ToggleAction& getHidePointSelectionOutline2Action() const { return _hidePointSelection2Action; }
+        ToggleAction& getHidePointSelectionOutline2Action() { return _hidePointSelection2Action; }
+
+        const ToggleAction& getFreezeSelection2Action() const { return _freezeSelection2Action; }
+        ToggleAction& getFreezeSelection2Action() { return _freezeSelection2Action; }
+
+        const DecimalAction& getConnectStatsLine2Action() const { return _connectStatsLine2Action; }
+        DecimalAction& getConnectStatsLine2Action() { return _connectStatsLine2Action; }
+
+        const TriggerAction& getDeSelectRow2Action() const { return _deSelectRow2Action; }
+        TriggerAction& getDeSelectRow2Action() { return _deSelectRow2Action; }
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -148,12 +192,19 @@ public:
         DimensionPickerAction               _embeddingDimension2YAction;
         DimensionPickerAction               _geneSelection2Action;
 
+        DecimalRangeAction                  _correlationRange2Action;
+        ToggleAction                        _focusSelection2Action;
+        ToggleAction                        _hidePointSelection2Action;
+        ToggleAction                        _freezeSelection2Action;
+        DecimalAction                       _connectStatsLine2Action;
+        TriggerAction                       _deSelectRow2Action;
+
     };
 
-    class SelectionOptionsHolder : public VerticalGroupAction
+    class CommonOptionsHolder : public VerticalGroupAction
     {
     public:
-        SelectionOptionsHolder(SettingsAction& settingsAction);
+        CommonOptionsHolder(SettingsAction& settingsAction);
 
 
         const OptionsAction& getClusterSelectionAction() const { return _clusterSelectionAction; }
@@ -164,12 +215,6 @@ public:
 
 
 
-        const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
-        TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
-
-
-        const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
-        DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
 
 
 
@@ -177,72 +222,15 @@ public:
         SettingsAction& _settingsOptions;
 
         //Selection Options
-        TriggerAction                       _deSelectRowAction;
+
         StringAction                        _statusMessageAction;
-        DecimalRangeAction                  _correlationRangeAction;
         OptionsAction                       _clusterSelectionAction;
 
 
     };
 
-    class ScatterplotOptionsHolder : public VerticalGroupAction
-    {
-    public:
-        ScatterplotOptionsHolder(SettingsAction& settingsAction);
-
-        const ToggleAction& getFocusSelectionAction() const { return _focusSelectionAction; }
-        ToggleAction& getFocusSelectionAction() { return _focusSelectionAction; }
-
-        const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
-        ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
-
-        const ToggleAction& getFreezeSelectionAction() const { return _freezeSelectionAction; }
-        ToggleAction& getFreezeSelectionAction() { return _freezeSelectionAction; }
 
 
-    protected:
-        SettingsAction& _settingsOptions;
-
-
-        //Scatterplot options
-        ToggleAction                        _focusSelectionAction;
-        ToggleAction                        _hidePointSelectionAction;
-        ToggleAction                        _freezeSelectionAction;
-
-        //Table view options
-
-        //Line chart options
-
-    };
-
-    class LineChartOptionsHolder : public VerticalGroupAction
-    {
-    public:
-        LineChartOptionsHolder(SettingsAction& settingsAction);
-
-        const DecimalAction& getConnectStatsLineAction() const { return _connectStatsLineAction; }
-        DecimalAction& getConnectStatsLineAction() { return _connectStatsLineAction; }
-
-    protected:
-        SettingsAction& _settingsOptions;
-
-
-        //Line chart options
-        DecimalAction                       _connectStatsLineAction;
-    };
-
-    class TableOptionsHolder : public VerticalGroupAction
-    {
-    public:
-        TableOptionsHolder(SettingsAction& settingsAction);
-
-
-    protected:
-        SettingsAction& _settingsOptions;
-
-        //Table view options
-
-    };
 
     class ComputeHolder : public HorizontalGroupAction
     {
@@ -269,10 +257,7 @@ public:
     ComputeHolder& getComputeHolder() { return _computeHolder; }
     Dataset1OptionsHolder& getDataset1OptionsHolder() { return _dataset1OptionsHolder; }
     Dataset2OptionsHolder& getDataset2OptionsHolder() { return _dataset2OptionsHolder; }
-    SelectionOptionsHolder& getSelectionOptionsHolder() { return _selectionOptionsHolder; }
-    ScatterplotOptionsHolder& getScatterplotOptionsHolder() { return _scatterplotOptionsHolder; }
-    LineChartOptionsHolder& getLineChartOptionsHolder() { return _lineChartOptionsHolder; }
-    TableOptionsHolder& getTableOptionsHolder() { return _tableOptionsHolder; }
+    CommonOptionsHolder& getCommonOptionsHolder() { return _commonOptionsHolder; }
 
 
 public: // Serialization
@@ -289,10 +274,7 @@ protected:
     mv::CoreInterface* _core;
     Dataset1OptionsHolder              _dataset1OptionsHolder;
     Dataset2OptionsHolder              _dataset2OptionsHolder;
-    SelectionOptionsHolder              _selectionOptionsHolder;
-    ScatterplotOptionsHolder              _scatterplotOptionsHolder;
-    LineChartOptionsHolder              _lineChartOptionsHolder;
-    TableOptionsHolder              _tableOptionsHolder;
+    CommonOptionsHolder              _commonOptionsHolder;
     ComputeHolder               _computeHolder;
     QTableView*                 _tableView1Action = nullptr;
     HighPerfLineChart*          _lineChart1Widget = nullptr;

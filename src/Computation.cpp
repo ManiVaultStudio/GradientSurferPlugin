@@ -328,12 +328,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     _settingsAction(SettingsAction)
 {
 
-    _correlationRangeDebounceTimer.setSingleShot(true);
+    _correlationRangeDebounceTimer1.setSingleShot(true);
     _clusterSelectionDebounceTimer.setSingleShot(true);
-
+    _correlationRangeDebounceTimer2.setSingleShot(true);
 
     const auto updateStatus = [this]() -> void {
-        auto stringFull = _settingsAction.getSelectionOptionsHolder().getStatusMessageAction().getString();
+        auto stringFull = _settingsAction.getCommonOptionsHolder().getStatusMessageAction().getString();
 
         QJsonParseError parseError;
         QJsonDocument doc = QJsonDocument::fromJson(stringFull.toUtf8(), &parseError);
@@ -425,7 +425,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
 
         };
-    connect(&_settingsAction.getSelectionOptionsHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
+    connect(&_settingsAction.getCommonOptionsHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
     const auto scatterplotSelectionOptions = [this]() -> void
         {
             QStringList scatterplotNames = {};
@@ -553,20 +553,20 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         if ( _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
         {
             qDebug() << "No gene selected";
-             _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
+             _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
         if (_settingsAction.getLineChart1Widget())
         {
             _settingsAction.getLineChart1Widget()->clear();
-            _numOfPointsInLine = 0;
+            _numOfPointsInLine1 = 0;
 
         }
         auto selectedGene =  _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
         if (selectedGene == "")
         {
             qDebug() << "No gene selected";
-             _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
+             _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
         if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _settingsAction.getLineChart1Widget() && _filteredSelectionIndices.size() > 0)
@@ -638,8 +638,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     _settingsAction.getLineChart1Widget()->setShowPoints(false);
                     _settingsAction.getLineChart1Widget()->setShowLines(false);
 
-                    _numOfPointsInLine = lineData.first().points.size();
-                    _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
+                    _numOfPointsInLine1 = lineData.first().points.size();
+                    _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(true);
                     
@@ -647,7 +647,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
    
    
 
-                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(std::max(1, int(_numOfPointsInLine * _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue())));
+                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(std::max(1, int(_numOfPointsInLine1 * _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue())));
                     _settingsAction.getLineChart1Widget()->setMovingAverageWindow(10);
                     _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(true);
                     mv::theme().isSystemDarkColorSchemeActive() ?
@@ -663,7 +663,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::white) :
                         _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::black);
                     _settingsAction.getLineChart1Widget()->setXAxisName("Rotated Y coordinates");
-                    _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression " + _selectedGene);
+                    _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression " + _selectedGene1);
                     _settingsAction.getLineChart1Widget()->setShowLegend(true);
                     _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
                 }
@@ -689,7 +689,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         mv::gui::DatasetPickerAction* pointDatasetPickerAction;
 
         DimensionPickerAction* geneSelectionAction;
-         _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(true);
+         _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(true);
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
@@ -747,7 +747,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         if (selectedGene2 == "")
         {
             qDebug() << "No gene selected";
-            _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
+            _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().setEnabled(false);
             return;
         }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -828,7 +828,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     if (fullclusterDataset.isValid() && _embeddingDataset.isValid())
                     {
                         auto clusters = fullclusterDataset->getClusters();
-                        auto selectedClusters =  _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().getSelectedOptions();
+                        auto selectedClusters =  _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
                         auto selectedIndices = _embeddingDataset->getSelectionIndices();
                         if (!selectedClusters.isEmpty())
                         {
@@ -933,19 +933,30 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getComputeHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
 
-    const auto updateConnectStatsLine = [this]() -> void {
+    const auto updateConnectStatsLine1 = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
             qDebug() << "No line chart widget available";
             return;
         }
-        _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
+        _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
         };
 
-    connect(&_settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction(), &DecimalAction::triggered, this, updateConnectStatsLine);
+    connect(&_settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction(), &DecimalAction::triggered, this, updateConnectStatsLine1);
 
 
-    connect(& _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction(),
+    const auto updateConnectStatsLine2 = [this]() -> void {
+        if (!_settingsAction.getLineChart1Widget())
+        {
+            qDebug() << "No line chart widget available";
+            return;
+        }
+        _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine2 * _settingsAction.getDataset2OptionsHolder().getConnectStatsLine2Action().getValue());
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getConnectStatsLine2Action(), &DecimalAction::triggered, this, updateConnectStatsLine2);
+
+    connect(& _settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
         &OptionsAction::selectedOptionsChanged,
         this,
         [this]() {
@@ -965,50 +976,54 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
 
-    connect(& _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction(),
+    connect(& _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction(),
         &DecimalRangeAction::rangeChanged,
         this,
         [this]() {
-            _correlationRangeDebounceTimer.start(300);
+            _correlationRangeDebounceTimer1.start(300);
         });
-    connect(&_correlationRangeDebounceTimer, &QTimer::timeout, this, [this]() {
-        setStatusMessage("R", "Updating correlation table", "");
-        resetupCorrelationTable();
-        setStatusMessage("C", "Correlation table updated", "");
+    connect(&_correlationRangeDebounceTimer1, &QTimer::timeout, this, [this]() {
+        setStatusMessage("R", "Updating correlation 1 table", "");
+        resetupCorrelationTable(1);
+        setStatusMessage("C", "Correlation table 1 updated", "");
         });
 
 
-    const auto showPointSelectionChanged = [this]() -> void {
+    connect(&_settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action(),
+        &DecimalRangeAction::rangeChanged,
+        this,
+        [this]() {
+            _correlationRangeDebounceTimer2.start(300);
+        });
+    connect(&_correlationRangeDebounceTimer2, &QTimer::timeout, this, [this]() {
+        setStatusMessage("R", "Updating correlation 2 table", "");
+        resetupCorrelationTable(2);
+        setStatusMessage("C", "Correlation table 2 updated", "");
+        });
+
+    const auto showPointSelectionChanged1 = [this]() -> void {
 
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
-        if (scatterplotName2.isEmpty() && scatterplotName1.isEmpty())
-        {
-            qDebug() << "No scatterplot view selected";
-            return;
-        }
+
+
         if (scatterplotName1.isEmpty())
         {
             qDebug() << "No scatterplot view 1 selected";
 
         }
-        if (scatterplotName2.isEmpty())
-        {
-            qDebug() << "No scatterplot view 2 selected";
 
-        }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == scatterplotName1 || plugin->getGuiName() == scatterplotName2)
+                if (plugin->getGuiName() == scatterplotName1)
                 {
                     auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
                     auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
                     if (pointSelectionScaleAction)
                     {
-                        if ( _settingsAction.getScatterplotOptionsHolder().getHidePointSelectionOutlineAction().isChecked())
+                        if ( _settingsAction.getDataset1OptionsHolder().getHidePointSelectionOutlineAction().isChecked())
                         {
                             pointSelectionScaleAction->setValue(100.0);
                         }
@@ -1024,7 +1039,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     if (pointSelectionOpacityAction)
                     {
-                        if ( _settingsAction.getScatterplotOptionsHolder().getHidePointSelectionOutlineAction().isChecked())
+                        if ( _settingsAction.getDataset1OptionsHolder().getHidePointSelectionOutlineAction().isChecked())
                         {
                             pointSelectionOpacityAction->setValue(0.0);
                         }
@@ -1043,38 +1058,30 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         };
 
-    connect(& _settingsAction.getScatterplotOptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged);
+    connect(& _settingsAction.getDataset1OptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged1);
 
-    const auto freezeSelectionChanged = [this]() -> void {
+    const auto freezeSelectionChanged1 = [this]() -> void {
 
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
-        if (scatterplotName2.isEmpty() && scatterplotName1.isEmpty())
-        {
-            qDebug() << "No scatterplot view selected";
-            return;
-        }
+
+ 
         if (scatterplotName1.isEmpty())
         {
             qDebug() << "No scatterplot view 1 selected";
 
         }
-        if (scatterplotName2.isEmpty())
-        {
-            qDebug() << "No scatterplot view 2 selected";
 
-        }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == scatterplotName1 || plugin->getGuiName() == scatterplotName2)
+                if (plugin->getGuiName() == scatterplotName1 )
                 {
                     auto freezeAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Freeze selection"));
                     if (freezeAction)
                     {
-                        freezeAction->setChecked( _settingsAction.getScatterplotOptionsHolder().getFreezeSelectionAction().isChecked());
+                        freezeAction->setChecked( _settingsAction.getDataset1OptionsHolder().getFreezeSelectionAction().isChecked());
                     }
                     else
                     {
@@ -1086,39 +1093,31 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
 
-    connect(& _settingsAction.getScatterplotOptionsHolder().getFreezeSelectionAction(), &ToggleAction::toggled, this, freezeSelectionChanged);
+    connect(& _settingsAction.getDataset1OptionsHolder().getFreezeSelectionAction(), &ToggleAction::toggled, this, freezeSelectionChanged1);
 
 
-    const auto focusSelectionChanged = [this]() -> void {
+    const auto focusSelectionChanged1 = [this]() -> void {
 
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
-        if (scatterplotName2.isEmpty() && scatterplotName1.isEmpty())
-        {
-            qDebug() << "No scatterplot view selected";
-            return;
-        }
+
+
         if (scatterplotName1.isEmpty())
         {
             qDebug() << "No scatterplot view 1 selected";
 
         }
-        if (scatterplotName2.isEmpty())
-        {
-            qDebug() << "No scatterplot view 2 selected";
 
-        }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == scatterplotName1 || plugin->getGuiName() == scatterplotName2)
+                if (plugin->getGuiName() == scatterplotName1 )
                 {
                     auto focusAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Plot/Point/Focus selection"));
                     if (focusAction)
                     {
-                        focusAction->setChecked(_settingsAction.getScatterplotOptionsHolder().getFocusSelectionAction().isChecked());
+                        focusAction->setChecked(_settingsAction.getDataset1OptionsHolder().getFocusSelectionAction().isChecked());
                     }
                     else
                     {
@@ -1130,7 +1129,135 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
 
-    connect(& _settingsAction.getScatterplotOptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged);
+    connect(& _settingsAction.getDataset1OptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged1);
+
+
+
+    const auto showPointSelectionChanged2 = [this]() -> void {
+
+        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
+
+
+        if (scatterplotName2.isEmpty())
+        {
+            qDebug() << "No scatterplot view 2 selected";
+
+        }
+
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName2 )
+                {
+                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
+                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                    if (pointSelectionScaleAction)
+                    {
+                        if (_settingsAction.getDataset2OptionsHolder().getHidePointSelectionOutline2Action().isChecked())
+                        {
+                            pointSelectionScaleAction->setValue(100.0);
+                        }
+                        else
+                        {
+                            pointSelectionScaleAction->setValue(160.0);
+                        }
+
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection scale action not found";
+                    }
+                    if (pointSelectionOpacityAction)
+                    {
+                        if (_settingsAction.getDataset2OptionsHolder().getHidePointSelectionOutline2Action().isChecked())
+                        {
+                            pointSelectionOpacityAction->setValue(0.0);
+                        }
+                        else
+                        {
+                            pointSelectionOpacityAction->setValue(100.0);
+                        }
+
+                    }
+                    else
+                    {
+                        qDebug() << "Point selection opacity action not found";
+                    }
+                }
+            }
+        }
+        };
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged2);
+
+    const auto freezeSelectionChanged2 = [this]() -> void {
+
+        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
+
+        if (scatterplotName2.isEmpty())
+        {
+            qDebug() << "No scatterplot view 2 selected";
+
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName2)
+                {
+                    auto freezeAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Freeze selection"));
+                    if (freezeAction)
+                    {
+                        freezeAction->setChecked(_settingsAction.getDataset2OptionsHolder().getFreezeSelection2Action().isChecked());
+                    }
+                    else
+                    {
+                        qDebug() << "Freeze selection action not found";
+                    }
+                }
+            }
+        }
+
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getFreezeSelection2Action(), &ToggleAction::toggled, this, freezeSelectionChanged2);
+
+
+    const auto focusSelectionChanged2 = [this]() -> void {
+
+        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
+
+        if (scatterplotName2.isEmpty())
+        {
+            qDebug() << "No scatterplot view 2 selected";
+
+        }
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName2)
+                {
+                    auto focusAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Plot/Point/Focus selection"));
+                    if (focusAction)
+                    {
+                        focusAction->setChecked(_settingsAction.getDataset2OptionsHolder().getFocusSelection2Action().isChecked());
+                    }
+                    else
+                    {
+                        qDebug() << "Focus selection action not found";
+                    }
+                }
+            }
+        }
+
+        };
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getFocusSelection2Action(), &ToggleAction::toggled, this, focusSelectionChanged2);
 
 
     const auto embeddingDimensionYActionChanged1 = [this]() -> void {
@@ -1502,22 +1629,22 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged2);
 
-    const auto deselectRow = [this]() -> void {
+    const auto deselectRow1 = [this]() -> void {
         auto selectedIndex = _settingsAction.getTableView1Action()->currentIndex();
         if (selectedIndex.isValid())
         {
             _settingsAction.getTableView1Action()->selectionModel()->clearSelection();
             _settingsAction.getTableView1Action()->setCurrentIndex(QModelIndex());
              _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName("");
-             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName("");
+            
         }
         else
         {
             qDebug() << "No row selected";
         }
-         _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction().setEnabled(false);
+         _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
          _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
-         _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
+         
 
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
@@ -1596,7 +1723,41 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
 
                 }
-                else if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
+            }
+        }
+        _settingsAction.getLineChart1Widget()->clear();
+        _numOfPointsInLine1 = 0;
+        };
+
+    connect(& _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow1);
+
+    const auto deselectRow2 = [this]() -> void {
+        auto selectedIndex = _settingsAction.getTableView1Action()->currentIndex();
+        if (selectedIndex.isValid())
+        {
+            _settingsAction.getTableView1Action()->selectionModel()->clearSelection();
+            _settingsAction.getTableView1Action()->setCurrentIndex(QModelIndex());
+            
+            _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName("");
+        }
+        else
+        {
+            qDebug() << "No row selected";
+        }
+        _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().setEnabled(false);
+       
+        _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
+
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+          
+                 if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
                 {
 
                     pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
@@ -1668,10 +1829,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
         }
         _settingsAction.getLineChart1Widget()->clear();
-        _numOfPointsInLine = 0;
+        _numOfPointsInLine2 = 0;
         };
 
-    connect(& _settingsAction.getSelectionOptionsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow);
+    connect(&_settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action(), &TriggerAction::triggered, this, deselectRow2);
     const auto scatterplotviewSelectionChanged1= [this]() -> void {
 
         setStatusMessage("M", "Scatterplotview selection 1 updated", "");
@@ -1823,7 +1984,7 @@ void Computation::AutoCompute()
                 model->removeRows(0, rowCount);
         }
         _settingsAction.getLineChart1Widget()->clear();
-        _numOfPointsInLine = 0;
+        _numOfPointsInLine1 = 0;
         QApplication::processEvents();
 
         //Validate and retrieve datasets and indices
@@ -1945,7 +2106,7 @@ void Computation::AutoCompute()
         }
 
         // Setup table model and connect selection
-        setupTableModelAndSelection();
+        setupTableModelAndSelection(1);
         //select the first row of the table
         {
             auto* tableView = _settingsAction.getTableView1Action();
@@ -2189,7 +2350,7 @@ void Computation::populateGenesByCorrelationRange(
     float max,
     const std::vector<QString>& geneNameOrdered)
 {
-    _geneOfInterestIndices.clear();
+    _geneOfInterestIndices1.clear();
     constexpr float epsilon = 1e-6f;
     const int count = std::min(static_cast<int>(correlationVector.size()),
         static_cast<int>(geneNameOrdered.size()));
@@ -2205,8 +2366,8 @@ void Computation::populateGenesByCorrelationRange(
             return correlationVector[a] > correlationVector[b];
         });
 
-    _geneCorrValues.clear();
-    _geneCorrValues.reserve(count);
+    _geneCorrValues1.clear();
+    _geneCorrValues1.reserve(count);
 
     // Assign ranks: same correlation value gets same rank (dense ranking)
     int rank = 1;
@@ -2222,7 +2383,7 @@ void Computation::populateGenesByCorrelationRange(
             prevCorr = corr;
         }
 
-        _geneCorrValues.emplace_back(CorrelationGeneCoords{
+        _geneCorrValues1.emplace_back(CorrelationGeneCoords{
             idx,
             geneNameOrdered[idx],
             corr,
@@ -2230,7 +2391,7 @@ void Computation::populateGenesByCorrelationRange(
             inRange
         });
         if (inRange) {
-            _geneOfInterestIndices.push_back(idx);
+            _geneOfInterestIndices1.push_back(idx);
         }
     }
 }
@@ -2248,7 +2409,7 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     obj["status"] = status;
     obj["message"] = message;
     obj["color"] = resolvedColor;
-    _settingsAction.getSelectionOptionsHolder().getStatusMessageAction().setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+    _settingsAction.getCommonOptionsHolder().getStatusMessageAction().setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 }
 
 //Validate and retrieve datasets and indices
@@ -2292,7 +2453,7 @@ bool Computation::validateAndRetrieveDatasets(
         return false;
     }
 
-    auto selectedClusterValues = _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().getSelectedOptions();
+    auto selectedClusterValues = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
     if (selectedClusterValues.isEmpty()) {
         qDebug() << "No selected cluster values";
         setStatusMessage("E", "No clusters selected", "");
@@ -2306,9 +2467,9 @@ bool Computation::validateAndRetrieveDatasets(
         return false;
     }
 
-    minCorrelation = _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction().getMinimum();
-    maxCorrelation = _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction().getMaximum();
-    if (minCorrelation < 0.0f || maxCorrelation > 1.0f || minCorrelation >= maxCorrelation) {
+    minCorrelation = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum();
+    maxCorrelation = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum();
+    if (minCorrelation < -1.0f || maxCorrelation > 1.0f || minCorrelation >= maxCorrelation) {
         qDebug() << "Invalid correlation range";
         setStatusMessage("E", "Invalid correlation range", "");
         return false;
@@ -2401,8 +2562,8 @@ void Computation::updateClusterOptions()
         std::back_inserter(clusterNamesCommon));
 
 
-    _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setOptions(clusterNamesCommon);
-    _settingsAction.getSelectionOptionsHolder().getClusterSelectionAction().setSelectedOptions(clusterNamesCommon);
+    _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().setOptions(clusterNamesCommon);
+    _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().setSelectedOptions(clusterNamesCommon);
 }
 
 void Computation::processAfterPCAComplete()
@@ -2552,7 +2713,7 @@ bool Computation::setupAndTriggerPCA()
 
     auto numAllCells1 = fullPointDataset1->getNumPoints();
     auto numAllCells2 = fullPointDataset2->getNumPoints();
-    auto numofIntGenes = _geneOfInterestIndices.size();
+    auto numofIntGenes = _geneOfInterestIndices1.size();
     auto dimensionNames1 = fullPointDataset1->getDimensionNames();
     auto dimensionNames2 = fullPointDataset2->getDimensionNames();
 
@@ -2569,7 +2730,7 @@ bool Computation::setupAndTriggerPCA()
     std::vector<QString> dimensionNamesOfInterest;
     std::vector<int> geneDataset1;
     std::vector<int> geneDataset2;
-    for (int idx : _geneOfInterestIndices) {
+    for (int idx : _geneOfInterestIndices1) {
         QString geneName = (idx >= 0 && idx < dimensionNames1.size()) ? dimensionNames1[idx] : QString();
         //check if geneName is present in std::vector<QString> dimensionNames2 if yes then get the gene id
         auto it2 = std::find(dimensionNames2.begin(), dimensionNames2.end(), geneName);
@@ -2748,25 +2909,70 @@ bool Computation::setupAndTriggerPCA()
     return true;
 }
 
-void Computation::resetupCorrelationTable()
+void Computation::resetupCorrelationTable(int datasetNumber)
 {
-    auto minRange =  _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction().getMinimum();
-    auto maxRange =  _settingsAction.getSelectionOptionsHolder().getCorrelationRangeAction().getMaximum();
+    int minRange, maxRange;
+    if (datasetNumber==2)
+    {
+        minRange = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
+        maxRange = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
 
-    _geneOfInterestIndices.clear();
-    //change the _geneCorrValues isWithinRange flag based on the min and max range
-    for (auto& gene : _geneCorrValues) {
-        bool isWithinRange = (gene.correlationValue >= minRange && gene.correlationValue <= maxRange);
+    }
+    else
+    {
+        minRange = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum();
+        maxRange = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum();
+    }
 
-        gene.isWithinRange = isWithinRange;
-        if (isWithinRange) {
-            _geneOfInterestIndices.push_back(gene.geneIndex);
+    
+    
+
+    if (datasetNumber == 2)
+    {
+        _geneOfInterestIndices2.clear();
+        for (auto& gene : _geneCorrValues2) {
+            bool isWithinRange = (gene.correlationValue >= minRange && gene.correlationValue <= maxRange);
+
+            gene.isWithinRange = isWithinRange;
+            if (isWithinRange) {
+                _geneOfInterestIndices2.push_back(gene.geneIndex);
+            }
+        }
+    }
+    else
+    {
+        _geneOfInterestIndices1.clear();
+        for (auto& gene : _geneCorrValues1) {
+            bool isWithinRange = (gene.correlationValue >= minRange && gene.correlationValue <= maxRange);
+
+            gene.isWithinRange = isWithinRange;
+            if (isWithinRange) {
+                _geneOfInterestIndices1.push_back(gene.geneIndex);
+            }
         }
     }
 
-    setupTableModelAndSelection();
+
+
+
+
+    setupTableModelAndSelection(datasetNumber);
     //select the first row of the table
-    {
+    if (datasetNumber == 2){
+        auto* tableView = _settingsAction.getTableView2Action();
+        auto* model = tableView->model();
+        if (model && model->rowCount() > 0) {
+            QModelIndex firstIndex = model->index(0, 0);
+            if (firstIndex.isValid()) {
+                tableView->setCurrentIndex(firstIndex);
+                tableView->selectionModel()->select(
+                    firstIndex,
+                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                );
+            }
+        }
+    }
+    else {
         auto* tableView = _settingsAction.getTableView1Action();
         auto* model = tableView->model();
         if (model && model->rowCount() > 0) {
@@ -2788,79 +2994,165 @@ void Computation::setSelectionAndAutoCompute()
     AutoCompute();
 }
 
-void Computation::setupTableModelAndSelection()
+void Computation::setupTableModelAndSelection(int datasetNumber)
 {
-    QStandardItemModel* model = new QStandardItemModel(static_cast<int>(_geneCorrValues.size()), 3, _settingsAction.getTableView1Action());
+    QStandardItemModel* model;
+    if (datasetNumber==2)
+    {
+        model = new QStandardItemModel(static_cast<int>(_geneCorrValues2.size()), 3, _settingsAction.getTableView1Action());
+    }
+    else {
+        model = new QStandardItemModel(static_cast<int>(_geneCorrValues1.size()), 3, _settingsAction.getTableView1Action());
+    }
+
     model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
 
     float minCorr = std::numeric_limits<float>::max();
     float maxCorr = std::numeric_limits<float>::lowest();
 
-    for (const auto& entry : _geneCorrValues) {
-        minCorr = std::min(minCorr, entry.correlationValue);
-        maxCorr = std::max(maxCorr, entry.correlationValue);
+    if (datasetNumber == 2)
+    {
+        for (const auto& entry : _geneCorrValues2) {
+            minCorr = std::min(minCorr, entry.correlationValue);
+            maxCorr = std::max(maxCorr, entry.correlationValue);
+        }
     }
 
-    for (int i = 0; i < static_cast<int>(_geneCorrValues.size()); ++i) {
-        const auto& entry = _geneCorrValues[i];
-
-        QStandardItem* geneItem = new QStandardItem(entry.geneName);
-        QStandardItem* corrItem = new QStandardItem;
-        QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
-
-        corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::UserRole + 1); // For delegate
-        corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::DisplayRole);  // For sorting
-
-        // Consistent formatting: only highlight and bold if isWithinRange
-        if (entry.isWithinRange) {
-            QFont fontG = geneItem->font();
-            fontG.setBold(true);
-            geneItem->setFont(fontG);
-            geneItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
-            geneItem->setForeground(QColor("#000000"));
-            QFont fontR = rankItem->font();
-            fontR.setBold(true);
-            rankItem->setFont(fontR);
-            rankItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
-            rankItem->setForeground(QColor("#000000"));
-
-
+    else
+    {
+        for (const auto& entry : _geneCorrValues1) {
+            minCorr = std::min(minCorr, entry.correlationValue);
+            maxCorr = std::max(maxCorr, entry.correlationValue);
         }
-        // Always set text color for visibility
-        corrItem->setForeground(QColor("#000000"));
-
-        model->setItem(i, 0, geneItem);
-        model->setItem(i, 1, corrItem);
-        model->setItem(i, 2, rankItem);
     }
+    if (datasetNumber == 2)
+    {
+        for (int i = 0; i < static_cast<int>(_geneCorrValues2.size()); ++i) {
+            const auto& entry = _geneCorrValues2[i];
 
-    _settingsAction.getTableView1Action()->setModel(model);
-    _settingsAction.getTableView1Action()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
-    _settingsAction.getTableView1Action()->resizeColumnsToContents();
-    _settingsAction.getTableView1Action()->resizeRowsToContents();
-    //_settingsAction.getTableView1Action()->setColumnWidth(0, 100);
+            QStandardItem* geneItem = new QStandardItem(entry.geneName);
+            QStandardItem* corrItem = new QStandardItem;
+            QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
 
-    // Enable sorting and set default sort order
-    _settingsAction.getTableView1Action()->setSortingEnabled(true);
-    _settingsAction.getTableView1Action()->sortByColumn(1, Qt::DescendingOrder);
+            corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::UserRole + 1); // For delegate
+            corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::DisplayRole);  // For sorting
 
-    if (_settingsAction.getTableView1Action()->selectionModel())
-        disconnect(_settingsAction.getTableView1Action()->selectionModel(), nullptr, this, nullptr);
+            // Consistent formatting: only highlight and bold if isWithinRange
+            if (entry.isWithinRange) {
+                QFont fontG = geneItem->font();
+                fontG.setBold(true);
+                geneItem->setFont(fontG);
+                geneItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
+                geneItem->setForeground(QColor("#000000"));
+                QFont fontR = rankItem->font();
+                fontR.setBold(true);
+                rankItem->setFont(fontR);
+                rankItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
+                rankItem->setForeground(QColor("#000000"));
 
-    connect(
-        _settingsAction.getTableView1Action()->selectionModel(),
-        &QItemSelectionModel::selectionChanged,
-        this,
-        [this](const QItemSelection& selected, const QItemSelection&) {
-            auto model = _settingsAction.getTableView1Action()->model();
-            if (!model) return;
-            QModelIndexList selectedIndexes = _settingsAction.getTableView1Action()->selectionModel()->selectedIndexes();
-            if (selectedIndexes.isEmpty()) return;
-            const QModelIndex& index = selectedIndexes.first();
-            if (!index.isValid()) return;
-            QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
-             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
-             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
+
+            }
+            // Always set text color for visibility
+            corrItem->setForeground(QColor("#000000"));
+
+            model->setItem(i, 0, geneItem);
+            model->setItem(i, 1, corrItem);
+            model->setItem(i, 2, rankItem);
         }
-    );
+
+
+        _settingsAction.getTableView2Action()->setModel(model);
+        _settingsAction.getTableView2Action()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
+        _settingsAction.getTableView2Action()->resizeColumnsToContents();
+        _settingsAction.getTableView2Action()->resizeRowsToContents();
+
+        _settingsAction.getTableView2Action()->setSortingEnabled(true);
+        _settingsAction.getTableView2Action()->sortByColumn(1, Qt::DescendingOrder);
+
+        if (_settingsAction.getTableView2Action()->selectionModel())
+            disconnect(_settingsAction.getTableView2Action()->selectionModel(), nullptr, this, nullptr);
+
+        connect(
+            _settingsAction.getTableView2Action()->selectionModel(),
+            &QItemSelectionModel::selectionChanged,
+            this,
+            [this](const QItemSelection& selected, const QItemSelection&) {
+                auto model = _settingsAction.getTableView2Action()->model();
+                if (!model) return;
+                QModelIndexList selectedIndexes = _settingsAction.getTableView2Action()->selectionModel()->selectedIndexes();
+                if (selectedIndexes.isEmpty()) return;
+                const QModelIndex& index = selectedIndexes.first();
+                if (!index.isValid()) return;
+                QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
+                _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
+            }
+        );
+    }
+    else
+    {
+        for (int i = 0; i < static_cast<int>(_geneCorrValues1.size()); ++i) {
+            const auto& entry = _geneCorrValues1[i];
+
+            QStandardItem* geneItem = new QStandardItem(entry.geneName);
+            QStandardItem* corrItem = new QStandardItem;
+            QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
+
+            corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::UserRole + 1); // For delegate
+            corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::DisplayRole);  // For sorting
+
+            // Consistent formatting: only highlight and bold if isWithinRange
+            if (entry.isWithinRange) {
+                QFont fontG = geneItem->font();
+                fontG.setBold(true);
+                geneItem->setFont(fontG);
+                geneItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
+                geneItem->setForeground(QColor("#000000"));
+                QFont fontR = rankItem->font();
+                fontR.setBold(true);
+                rankItem->setFont(fontR);
+                rankItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
+                rankItem->setForeground(QColor("#000000"));
+
+
+            }
+            // Always set text color for visibility
+            corrItem->setForeground(QColor("#000000"));
+
+            model->setItem(i, 0, geneItem);
+            model->setItem(i, 1, corrItem);
+            model->setItem(i, 2, rankItem);
+        }
+    
+
+        _settingsAction.getTableView1Action()->setModel(model);
+        _settingsAction.getTableView1Action()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
+        _settingsAction.getTableView1Action()->resizeColumnsToContents();
+        _settingsAction.getTableView1Action()->resizeRowsToContents();
+        //_settingsAction.getTableView1Action()->setColumnWidth(0, 100);
+        _settingsAction.getTableView1Action()->setSortingEnabled(true);
+        _settingsAction.getTableView1Action()->sortByColumn(1, Qt::DescendingOrder);
+
+        if (_settingsAction.getTableView1Action()->selectionModel())
+            disconnect(_settingsAction.getTableView1Action()->selectionModel(), nullptr, this, nullptr);
+
+        connect(
+            _settingsAction.getTableView1Action()->selectionModel(),
+            &QItemSelectionModel::selectionChanged,
+            this,
+            [this](const QItemSelection& selected, const QItemSelection&) {
+                auto model = _settingsAction.getTableView1Action()->model();
+                if (!model) return;
+                QModelIndexList selectedIndexes = _settingsAction.getTableView1Action()->selectionModel()->selectedIndexes();
+                if (selectedIndexes.isEmpty()) return;
+                const QModelIndex& index = selectedIndexes.first();
+                if (!index.isValid()) return;
+                QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
+                _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+
+            }
+        );
+    
+    }
+    
+
 }
