@@ -985,6 +985,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         setStatusMessage("R", "Updating correlation 1 table", "");
         resetupCorrelationTable(1);
         setStatusMessage("C", "Correlation table 1 updated", "");
+        if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
+        {
+            setStatusMessage("R", "Computation in progress", "");
+            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
+            QApplication::processEvents();
+
+            ManualCompute();
+
+            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        }
         });
 
 
@@ -2078,6 +2088,18 @@ void Computation::AutoCompute()
 
 
         setStatusMessage("C", "Computation completed", "#28a745");
+
+        if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
+        {
+            setStatusMessage("R", "Computation in progress", "");
+            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
+            QApplication::processEvents();
+
+            ManualCompute();
+
+            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        }
+
     }
     catch (const std::exception& ex)
     {

@@ -206,10 +206,11 @@ public:
         const OptionsAction& getClusterSelectionAction() const { return _clusterSelectionAction; }
         OptionsAction& getClusterSelectionAction() { return _clusterSelectionAction; }
 
-
-
         const TriggerAction& getComputeAction() const { return _computeAction; }
         TriggerAction& getComputeAction() { return _computeAction; }
+
+
+
 
         const ToggleAction& getAutoComputeAction() const { return _autoComputeAction; }
         ToggleAction& getAutoComputeAction() { return _autoComputeAction; }
@@ -222,9 +223,6 @@ public:
 
         const DimensionPickerAction& getPcaDimensionForColoringAction() const { return _pcaDimensionForColoringAction; }
         DimensionPickerAction& getPcaDimensionForColoringAction() { return _pcaDimensionForColoringAction; }
-
-        const ToggleAction& getAutoSelectionUpdateAction() const { return _autoSelectionUpdateAction; }
-        ToggleAction& getAutoSelectionUpdateAction() { return _autoSelectionUpdateAction; }
 
         const OptionAction& getCorrelationCalculationTypeAction() const { return _correlationCalculationTypeAction; }
         OptionAction& getCorrelationCalculationTypeAction() { return _correlationCalculationTypeAction; }
@@ -243,7 +241,7 @@ public:
         OptionsAction                       _clusterSelectionAction;
         TriggerAction              _computeAction;
 
-        ToggleAction                _autoSelectionUpdateAction;
+
         ToggleAction                _autoComputeAction;
         ToggleAction                 _pcaColoringAction;
         OptionsAction                 _dualPCAColoringAction;

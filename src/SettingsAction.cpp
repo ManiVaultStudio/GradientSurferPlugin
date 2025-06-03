@@ -46,6 +46,15 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset2OptionsHolder.getEmbeddingDimension2YAction().setSerializationName("LayerSurfer:EmbeddingDimension2Y");
 
 
+
+    //_commonOptionsHolder.getAutoComputeAction().setSerializationName("LayerSurfer:AutoCompute");
+    //_commonOptionsHolder.getPcaColoringAction().setSerializationName("LayerSurfer:PcaColoring");
+    //_commonOptionsHolder.getDualPCAColoringAction().setSerializationName("LayerSurfer:DualPcaColoring");
+    //_commonOptionsHolder.getPcaDimensionForColoringAction().setSerializationName("LayerSurfer:PcaDimensionForColoring");
+    //_commonOptionsHolder.getCorrelationCalculationTypeAction().setSerializationName("LayerSurfer:CorrelationCalculationType");
+    //_commonOptionsHolder.getDataset1PcSelectionForComputationAction().setSerializationName("LayerSurfer:Dataset1PcSelectionForComputation");
+
+
     _dataset1OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
     _dataset1OptionsHolder.getPointDatasetAction().setToolTip("Point Dataset");
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setToolTip("Embedding Dataset");
@@ -74,6 +83,21 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset2OptionsHolder.getEmbeddingDimension2YAction().setToolTip("Embedding Dimension 2 Y");
 
     _dataset1OptionsHolder.getConnectStatsLineAction().setToolTip("Connect Stats Line Action");
+
+
+    _commonOptionsHolder.getAutoComputeAction().setToolTip("Auto Compute Action");
+    _commonOptionsHolder.getPcaColoringAction().setToolTip("PCA Coloring Action");
+    _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
+    _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension for Coloring Action");
+    _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
+    _commonOptionsHolder.getDataset1PcSelectionForComputationAction().setToolTip("Dataset1 PCA Selection for Computation Action");
+
+    _commonOptionsHolder.getAutoComputeAction().setChecked(false);
+    _commonOptionsHolder.getPcaColoringAction().setChecked(false);
+
+
+
+
     _dataset1OptionsHolder.getConnectStatsLineAction().setMaximum(1.0);
     _dataset1OptionsHolder.getConnectStatsLineAction().setMinimum(0.0);
     _dataset1OptionsHolder.getConnectStatsLineAction().setValue(0.5);
@@ -110,6 +134,16 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getComputeAction().setDefaultWidgetFlags(TriggerAction::IconText);
     _commonOptionsHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
     _commonOptionsHolder.getComputeAction().setText("Compute");
+
+
+    _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
+    _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getCorrelationCalculationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getDataset1PcSelectionForComputationAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+
+
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
     _dataset1OptionsHolder.getDeSelectRowAction().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
@@ -299,7 +333,6 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _dualPCAColoringAction(this, "PCA Coloring"),
     _pcaColoringAction(this, "PCA Coloring"),
     _autoComputeAction(this, "Auto Compute"),
-    _autoSelectionUpdateAction(this, "Auto Selection Update"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
     _dataset1PcSelectionForComputationAction(this, "Dataset1 PCA Selection for Computation")
 {
@@ -312,7 +345,6 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_autoComputeAction);
-    addAction(&_autoSelectionUpdateAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_dataset1PcSelectionForComputationAction);
     addAction(&_computeAction);
@@ -365,7 +397,12 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset2OptionsHolder.getEmbeddingDimension2XAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimension2YAction().fromParentVariantMap(variantMap);
 
-
+    //_commonOptionsHolder.getAutoComputeAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getPcaColoringAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getDualPCAColoringAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getPcaDimensionForColoringAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getCorrelationCalculationTypeAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getDataset1PcSelectionForComputationAction().fromParentVariantMap(variantMap);
 }
 
 QVariantMap SettingsAction::toVariantMap() const
@@ -392,6 +429,13 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset2OptionsHolder.getScatterplotViewSelection2Action().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimension2XAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimension2YAction().insertIntoVariantMap(variantMap);
+
+    //_commonOptionsHolder.getAutoComputeAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getPcaColoringAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getDualPCAColoringAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getPcaDimensionForColoringAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getCorrelationCalculationTypeAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getDataset1PcSelectionForComputationAction().insertIntoVariantMap(variantMap);
 
     return variantMap;
 }
