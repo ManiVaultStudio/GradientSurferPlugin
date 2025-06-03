@@ -2930,68 +2930,42 @@ bool Computation::setupAndTriggerPCA()
 void Computation::resetupCorrelationTable(int datasetNumber)
 {
     float minRange, maxRange;
-    if (datasetNumber==2)
-    {
+    if (datasetNumber == 2) {
         minRange = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
         maxRange = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
-
     }
-    else
-    {
+    else {
         minRange = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum();
         maxRange = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum();
     }
 
-    
-    
     constexpr float epsilon = 1e-6f;
-    if (datasetNumber == 2)
-    {
-        _geneOfInterestIndices2.clear();
-        for (auto& gene : _geneCorrValues2) {
-            bool isWithinRange = (gene.correlationValue <= (minRange- epsilon) || gene.correlationValue >= (maxRange+ epsilon));
 
-            gene.isWithinRange = isWithinRange;
-            if (isWithinRange) {
-                _geneOfInterestIndices2.push_back(gene.geneIndex);
-            }
+    // Use references to avoid code duplication
+    auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2 : _geneCorrValues1;
+    auto& geneOfInterestIndices = (datasetNumber == 2) ? _geneOfInterestIndices2 : _geneOfInterestIndices1;
+
+    geneOfInterestIndices.clear();
+    geneOfInterestIndices.reserve(geneCorrValues.size());
+
+    // Use a single loop for marking and collecting indices
+    for (auto& gene : geneCorrValues) {
+        // Corrected logic: isWithinRange should be true if value is inside [minRange, maxRange]
+        bool isWithinRange = (gene.correlationValue >= (minRange - epsilon) && gene.correlationValue <= (maxRange + epsilon));
+        gene.isWithinRange = isWithinRange;
+        if (isWithinRange) {
+            geneOfInterestIndices.push_back(gene.geneIndex);
         }
     }
-    else
-    {
-        _geneOfInterestIndices1.clear();
-        for (auto& gene : _geneCorrValues1) {
-            bool isWithinRange = (gene.correlationValue <= (minRange- epsilon) || gene.correlationValue >= (maxRange+ epsilon));
-
-            gene.isWithinRange = isWithinRange;
-            if (isWithinRange) {
-                _geneOfInterestIndices1.push_back(gene.geneIndex);
-            }
-        }
-    }
-
-
-
-
 
     setupTableModelAndSelection(datasetNumber);
-    //select the first row of the table
-    if (datasetNumber == 2){
-        auto* tableView = _settingsAction.getTableView2Action();
-        auto* model = tableView->model();
-        if (model && model->rowCount() > 0) {
-            QModelIndex firstIndex = model->index(0, 0);
-            if (firstIndex.isValid()) {
-                tableView->setCurrentIndex(firstIndex);
-                tableView->selectionModel()->select(
-                    firstIndex,
-                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
-                );
-            }
-        }
-    }
-    else {
-        auto* tableView = _settingsAction.getTableView1Action();
+
+    // Select the first row of the table if available
+    QTableView* tableView = (datasetNumber == 2)
+        ? _settingsAction.getTableView2Action()
+        : _settingsAction.getTableView1Action();
+
+    if (tableView) {
         auto* model = tableView->model();
         if (model && model->rowCount() > 0) {
             QModelIndex firstIndex = model->index(0, 0);
