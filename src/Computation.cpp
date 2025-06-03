@@ -3014,193 +3014,103 @@ void Computation::setSelectionAndAutoCompute()
 
 void Computation::setupTableModelAndSelection(int datasetNumber)
 {
-    QStandardItemModel* model;
-    if (datasetNumber==2)
-    {
-        model = new QStandardItemModel(static_cast<int>(_geneCorrValues2.size()), 3, _settingsAction.getTableView1Action());
-    }
-    else {
-        model = new QStandardItemModel(static_cast<int>(_geneCorrValues1.size()), 3, _settingsAction.getTableView1Action());
-    }
+    // Select appropriate data and view pointers
+    const auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2 : _geneCorrValues1;
+    QTableView* tableView = (datasetNumber == 2)
+        ? _settingsAction.getTableView2Action()
+        : _settingsAction.getTableView1Action();
 
+    // Create model
+    auto rowCount = static_cast<int>(geneCorrValues.size());
+    QStandardItemModel* model = new QStandardItemModel(rowCount, 3, tableView);
     model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
 
+    // Find min/max correlation in a single pass
     float minCorr = std::numeric_limits<float>::max();
     float maxCorr = std::numeric_limits<float>::lowest();
-
-    if (datasetNumber == 2)
-    {
-        for (const auto& entry : _geneCorrValues2) {
-            minCorr = std::min(minCorr, entry.correlationValue);
-            maxCorr = std::max(maxCorr, entry.correlationValue);
-        }
+    for (const auto& entry : geneCorrValues) {
+        minCorr = std::min(minCorr, entry.correlationValue);
+        maxCorr = std::max(maxCorr, entry.correlationValue);
     }
 
-    else
-    {
-        for (const auto& entry : _geneCorrValues1) {
-            minCorr = std::min(minCorr, entry.correlationValue);
-            maxCorr = std::max(maxCorr, entry.correlationValue);
+    // Preallocate row items for efficiency
+    QVector<QStandardItem*> rowItems(3);
+    for (int i = 0; i < rowCount; ++i) {
+        const auto& entry = geneCorrValues[i];
+
+        QStandardItem* geneItem = new QStandardItem(entry.geneName);
+        QStandardItem* corrItem = new QStandardItem;
+        QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
+
+        corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::UserRole + 1); // For delegate
+        corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::DisplayRole);  // For sorting
+
+        // Highlight and bold if isWithinRange
+        if (entry.isWithinRange) {
+            QFont fontG = geneItem->font();
+            fontG.setBold(true);
+            geneItem->setFont(fontG);
+            geneItem->setBackground(QColor("#FFFACD"));
+            geneItem->setForeground(QColor("#000000"));
+            QFont fontR = rankItem->font();
+            fontR.setBold(true);
+            rankItem->setFont(fontR);
+            rankItem->setBackground(QColor("#FFFACD"));
+            rankItem->setForeground(QColor("#000000"));
         }
+        corrItem->setForeground(QColor("#000000"));
+
+        rowItems[0] = geneItem;
+        rowItems[1] = corrItem;
+        rowItems[2] = rankItem;
+        for (int col = 0; col < 3; ++col)
+            model->setItem(i, col, rowItems[col]);
     }
-    if (datasetNumber == 2)
-    {
-        for (int i = 0; i < static_cast<int>(_geneCorrValues2.size()); ++i) {
-            const auto& entry = _geneCorrValues2[i];
 
-            QStandardItem* geneItem = new QStandardItem(entry.geneName);
-            QStandardItem* corrItem = new QStandardItem;
-            QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
+    // Set up the view
+    tableView->setModel(model);
+    tableView->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
+    tableView->resizeColumnsToContents();
+    tableView->resizeRowsToContents();
+    tableView->setSortingEnabled(true);
+    tableView->sortByColumn(1, Qt::DescendingOrder);
 
-            corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::UserRole + 1); // For delegate
-            corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::DisplayRole);  // For sorting
+    // Disconnect previous selection handler if any
+    if (tableView->selectionModel())
+        disconnect(tableView->selectionModel(), nullptr, this, nullptr);
 
-            // Consistent formatting: only highlight and bold if isWithinRange
-            if (entry.isWithinRange) {
-                QFont fontG = geneItem->font();
-                fontG.setBold(true);
-                geneItem->setFont(fontG);
-                geneItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
-                geneItem->setForeground(QColor("#000000"));
-                QFont fontR = rankItem->font();
-                fontR.setBold(true);
-                rankItem->setFont(fontR);
-                rankItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
-                rankItem->setForeground(QColor("#000000"));
-
-
-            }
-            // Always set text color for visibility
-            corrItem->setForeground(QColor("#000000"));
-
-            model->setItem(i, 0, geneItem);
-            model->setItem(i, 1, corrItem);
-            model->setItem(i, 2, rankItem);
-        }
-
-
-        _settingsAction.getTableView2Action()->setModel(model);
-        _settingsAction.getTableView2Action()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
-        _settingsAction.getTableView2Action()->resizeColumnsToContents();
-        _settingsAction.getTableView2Action()->resizeRowsToContents();
-
-        _settingsAction.getTableView2Action()->setSortingEnabled(true);
-        _settingsAction.getTableView2Action()->sortByColumn(1, Qt::DescendingOrder);
-
-        if (_settingsAction.getTableView2Action()->selectionModel())
-            disconnect(_settingsAction.getTableView2Action()->selectionModel(), nullptr, this, nullptr);
-
-        connect(
-            _settingsAction.getTableView2Action()->selectionModel(),
-            &QItemSelectionModel::selectionChanged,
-            this,
-            [this](const QItemSelection& selected, const QItemSelection&) {
-                auto model = _settingsAction.getTableView2Action()->model();
-                if (!model) return;
-                QModelIndexList selectedIndexes = _settingsAction.getTableView2Action()->selectionModel()->selectedIndexes();
-                if (selectedIndexes.isEmpty()) return;
-                const QModelIndex& index = selectedIndexes.first();
-                if (!index.isValid()) return;
-                QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
+    // Connect selection handler
+    connect(
+        tableView->selectionModel(),
+        &QItemSelectionModel::selectionChanged,
+        this,
+        [this, datasetNumber](const QItemSelection&, const QItemSelection&) {
+            QTableView* tv = (datasetNumber == 2)
+                ? _settingsAction.getTableView2Action()
+                : _settingsAction.getTableView1Action();
+            auto* mdl = tv->model();
+            if (!mdl) return;
+            QModelIndexList selectedIndexes = tv->selectionModel()->selectedIndexes();
+            if (selectedIndexes.isEmpty()) return;
+            const QModelIndex& index = selectedIndexes.first();
+            if (!index.isValid()) return;
+            QString value = mdl->data(mdl->index(index.row(), 0), Qt::DisplayRole).toString();
+            if (datasetNumber == 2)
                 _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
-            }
-        );
-
-        {
-            auto* tableView = _settingsAction.getTableView2Action();
-            auto* model = tableView->model();
-            if (model && model->rowCount() > 0) {
-                QModelIndex firstIndex = model->index(0, 0);
-                if (firstIndex.isValid()) {
-                    tableView->setCurrentIndex(firstIndex);
-                    tableView->selectionModel()->select(
-                        firstIndex,
-                        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
-                    );
-                }
-            }
-        }
-
-    }
-    else
-    {
-        for (int i = 0; i < static_cast<int>(_geneCorrValues1.size()); ++i) {
-            const auto& entry = _geneCorrValues1[i];
-
-            QStandardItem* geneItem = new QStandardItem(entry.geneName);
-            QStandardItem* corrItem = new QStandardItem;
-            QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
-
-            corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::UserRole + 1); // For delegate
-            corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::DisplayRole);  // For sorting
-
-            // Consistent formatting: only highlight and bold if isWithinRange
-            if (entry.isWithinRange) {
-                QFont fontG = geneItem->font();
-                fontG.setBold(true);
-                geneItem->setFont(fontG);
-                geneItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
-                geneItem->setForeground(QColor("#000000"));
-                QFont fontR = rankItem->font();
-                fontR.setBold(true);
-                rankItem->setFont(fontR);
-                rankItem->setBackground(QColor("#FFFACD")); // LemonChiffon (same as reference)
-                rankItem->setForeground(QColor("#000000"));
-
-
-            }
-            // Always set text color for visibility
-            corrItem->setForeground(QColor("#000000"));
-
-            model->setItem(i, 0, geneItem);
-            model->setItem(i, 1, corrItem);
-            model->setItem(i, 2, rankItem);
-        }
-    
-
-        _settingsAction.getTableView1Action()->setModel(model);
-        _settingsAction.getTableView1Action()->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
-        _settingsAction.getTableView1Action()->resizeColumnsToContents();
-        _settingsAction.getTableView1Action()->resizeRowsToContents();
-        //_settingsAction.getTableView1Action()->setColumnWidth(0, 100);
-        _settingsAction.getTableView1Action()->setSortingEnabled(true);
-        _settingsAction.getTableView1Action()->sortByColumn(1, Qt::DescendingOrder);
-
-        if (_settingsAction.getTableView1Action()->selectionModel())
-            disconnect(_settingsAction.getTableView1Action()->selectionModel(), nullptr, this, nullptr);
-
-        connect(
-            _settingsAction.getTableView1Action()->selectionModel(),
-            &QItemSelectionModel::selectionChanged,
-            this,
-            [this](const QItemSelection& selected, const QItemSelection&) {
-                auto model = _settingsAction.getTableView1Action()->model();
-                if (!model) return;
-                QModelIndexList selectedIndexes = _settingsAction.getTableView1Action()->selectionModel()->selectedIndexes();
-                if (selectedIndexes.isEmpty()) return;
-                const QModelIndex& index = selectedIndexes.first();
-                if (!index.isValid()) return;
-                QString value = model->data(model->index(index.row(), 0), Qt::DisplayRole).toString();
+            else
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
-
-            }
-        );
-        {
-            auto* tableView = _settingsAction.getTableView1Action();
-            auto* model = tableView->model();
-            if (model && model->rowCount() > 0) {
-                QModelIndex firstIndex = model->index(0, 0);
-                if (firstIndex.isValid()) {
-                    tableView->setCurrentIndex(firstIndex);
-                    tableView->selectionModel()->select(
-                        firstIndex,
-                        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
-                    );
-                }
-            }
         }
-    
-    }
-    
+    );
 
+    // Select the first row if available
+    if (model->rowCount() > 0) {
+        QModelIndex firstIndex = model->index(0, 0);
+        if (firstIndex.isValid()) {
+            tableView->setCurrentIndex(firstIndex);
+            tableView->selectionModel()->select(
+                firstIndex,
+                QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+            );
+        }
+    }
 }
