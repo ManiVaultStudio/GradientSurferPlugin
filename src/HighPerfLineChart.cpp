@@ -832,9 +832,20 @@ void HighPerfLineChart::drawChartWithOpenGL()
                 };
             QPointF screenFirst = chartToScreen(QPointF(firstX, firstY));
             QPointF screenLast = chartToScreen(QPointF(lastX, lastY));
-            int ellipseW = 14, ellipseH = 14;
-            auto drawPointBundle = [&](const QPointF& center) {
-                int numPoints = 40;
+
+            // Calculate bundle sizes
+            int numFirstPoints = int(firstXs.size());
+            int numLastPoints = int(lastXs.size());
+            // Scale factor for ellipse size (tweak as needed)
+            double scale = 2.0;
+            int minEllipse = 6, maxEllipse = 60;
+            auto ellipseSize = [&](int n) {
+                int size = int(scale * std::sqrt(std::max(n, 1)));
+                size = std::clamp(size, minEllipse, maxEllipse);
+                return size;
+                };
+
+            auto drawPointBundle = [&](const QPointF& center, int numPoints, int ellipseW, int ellipseH) {
                 double a = ellipseW / 2.0;
                 double b = ellipseH / 2.0;
                 std::mt19937 rng(static_cast<unsigned>(center.x() * 1000 + center.y()));
@@ -850,9 +861,8 @@ void HighPerfLineChart::drawChartWithOpenGL()
                 }
                 };
 
-            // Instead of painter.drawEllipse(...):
-            drawPointBundle(screenFirst);
-            drawPointBundle(screenLast);
+            drawPointBundle(screenFirst, numFirstPoints, ellipseSize(numFirstPoints), ellipseSize(numFirstPoints));
+            drawPointBundle(screenLast, numLastPoints, ellipseSize(numLastPoints), ellipseSize(numLastPoints));
             painter.end();
 
             // Draw the straight line in OpenGL
