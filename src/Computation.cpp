@@ -40,10 +40,34 @@ public:
         const QModelIndex& index) const override {
         if (index.column() == 1) { // Correlation column
             float value = index.data(Qt::UserRole + 1).toFloat();
-            float norm = (maxValue > minValue) ? (value - minValue) / (maxValue - minValue) : 0.0f;
-            int barWidth = static_cast<int>(norm * (option.rect.width() - 8));
-            // Make the bar taller by reducing the vertical margins (e.g., 4px top/bottom)
+
+            // --- Begin: Modified normalization and bar logic for negative/positive values ---
+            float minV = minValue, maxV = maxValue;
+            if (minV == maxV) {
+                minV = -1.0f; maxV = 1.0f;
+            }
+            value = std::max(std::min(value, maxV), minV);
+
             QRect barRect = option.rect.adjusted(4, 4, -4, -4);
+
+            float zeroFrac = (0.0f - minV) / (maxV - minV);
+            int zeroX = barRect.left() + static_cast<int>(zeroFrac * barRect.width());
+
+            int barStartX, barEndX;
+            int valueX = barRect.left() + static_cast<int>(((value - minV) / (maxV - minV)) * barRect.width());
+            if (value >= 0.0f) {
+                barStartX = zeroX;
+                barEndX = valueX;
+            }
+            else {
+                barStartX = valueX;
+                barEndX = zeroX;
+            }
+            if (barStartX > barEndX) std::swap(barStartX, barEndX);
+
+            QRect filledRect = barRect;
+            filledRect.setLeft(barStartX);
+            filledRect.setRight(barEndX);
 
             painter->save();
             painter->setRenderHint(QPainter::Antialiasing, true);
@@ -58,23 +82,63 @@ public:
             }
             painter->fillRect(option.rect, bgColor);
 
-            // Bar color: use Highlight for normal, or a contrasting color if selected
-            QColor barColor;
-            if (option.state & QStyle::State_Selected) {
-                // Use a color that contrasts with the selection background
-                barColor = option.palette.color(QPalette::HighlightedText);
-                if (barColor == bgColor) barColor = QColor("#ffffff");
+            // --- Dotted y-axis line: white on black bg, black on white bg, else contrast ---
+            QColor axisColor;
+            auto isColorClose = [](const QColor& c1, const QColor& c2, int threshold = 16) {
+                return (std::abs(c1.red() - c2.red()) < threshold &&
+                    std::abs(c1.green() - c2.green()) < threshold &&
+                    std::abs(c1.blue() - c2.blue()) < threshold);
+                };
+            bool bgIsBlack = isColorClose(bgColor, QColor(Qt::black));
+            bool bgIsWhite = isColorClose(bgColor, QColor(Qt::white));
+            if (bgIsBlack) {
+                axisColor = QColor(Qt::white);
+            }
+            else if (bgIsWhite) {
+                axisColor = QColor(Qt::black);
             }
             else {
-                barColor = option.palette.color(QPalette::Highlight);
-                if (barColor == bgColor) barColor = QColor("#87ceeb");
+                // Use a high-contrast color (black or white) based on luminance
+                double luminance = (0.299 * bgColor.red() + 0.587 * bgColor.green() + 0.114 * bgColor.blue()) / 255.0;
+                axisColor = (luminance > 0.5) ? QColor(Qt::black) : QColor(Qt::white);
             }
 
-            QRect filledRect = barRect;
-            filledRect.setWidth(barWidth);
-            painter->setPen(Qt::NoPen);
-            painter->setBrush(barColor);
-            painter->drawRect(filledRect);
+            QPen axisPen(axisColor);
+            axisPen.setWidth(2);
+            axisPen.setStyle(Qt::DotLine);
+
+            int axisExtra = std::max(2, barRect.height() / 8);
+            int axisTop = barRect.top() - axisExtra;
+            int axisBottom = barRect.bottom() + axisExtra;
+
+            painter->setPen(axisPen);
+            painter->drawLine(zeroX, axisTop, zeroX, axisBottom);
+
+            // --- Bar color: not blue, contrast to both axis and background ---
+            QColor barColor;
+            // Pick a color that is not blue, and is contrastive to both bg and axis
+            // Use orange for dark backgrounds, purple for light backgrounds, fallback to green
+            if (bgIsBlack || axisColor == QColor(Qt::white)) {
+                barColor = QColor(255, 140, 0); // Orange
+            }
+            else if (bgIsWhite || axisColor == QColor(Qt::black)) {
+                barColor = QColor(128, 0, 128); // Purple
+            }
+            else {
+                // Fallback: pick a color with high contrast to both
+                double axisLuminance = (0.299 * axisColor.red() + 0.587 * axisColor.green() + 0.114 * axisColor.blue()) / 255.0;
+                if (axisLuminance > 0.5)
+                    barColor = QColor(0, 128, 0); // Green
+                else
+                    barColor = QColor(255, 165, 0); // Orange
+            }
+
+            // Draw the bar only if value is not zero
+            if (std::abs(value) > 1e-6f) {
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(barColor);
+                painter->drawRect(filledRect.normalized());
+            }
 
             // Draw focus rect if needed
             if (option.state & QStyle::State_HasFocus) {
@@ -87,6 +151,7 @@ public:
             }
 
             painter->restore();
+            // --- End: Modified normalization and bar logic ---
         }
         else {
             QStyledItemDelegate::paint(painter, option, index);
@@ -580,8 +645,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     //_settingsAction.getLineChart1Widget()->setShowMinLine(true);
                     _settingsAction.getLineChart1Widget()->setShowPoints(false);
                     _settingsAction.getLineChart1Widget()->setShowLines(false);
-                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(2);//_numOfPointsInLine/100*10);
-                    _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(true);
+                    ////_numOfPointsInLine/100*10);
+
 
                     //_settingsAction.getLineChart1Widget()->setShowKurtosisLine(true);
                     //_settingsAction.getLineChart1Widget()->setShowLowerQuartileLine(true);
@@ -597,14 +662,20 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(true);
                     _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
-                    _settingsAction.getLineChart1Widget()->setXAxisName("Rotated Y coordinates");
-                    _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression "+ _selectedGene);
    
+   
+
+                    //_settingsAction.getLineChart1Widget()->setMovingAverageWindow(std::max(1, int(_numOfPointsInLine * _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue())));
+                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(10);
+                    _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(true);
+
                     _settingsAction.getLineChart1Widget()->setAxisFont(QFont("Arial", 12));
                     _settingsAction.getLineChart1Widget()->setTickLabelFont(QFont("Arial", 10));
                     _settingsAction.getLineChart1Widget()->setAxisColor(Qt::black);
                     _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::black);
-                    _settingsAction.getLineChart1Widget()->setShowLegend(true); 
+                    _settingsAction.getLineChart1Widget()->setXAxisName("Rotated Y coordinates");
+                    _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression " + _selectedGene);
+                    _settingsAction.getLineChart1Widget()->setShowLegend(true);
                     _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
                 }
 

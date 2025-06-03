@@ -62,8 +62,10 @@ void LayerSurferPlugin::init()
     // Add a horizontal separator between topLayout and bottomLayout
     auto* separator = new QFrame();
     separator->setFrameShape(QFrame::HLine);
-    separator->setFrameShadow(QFrame::Sunken);
+    separator->setFrameShadow(QFrame::Plain); // Use plain instead of sunken
     separator->setLineWidth(1);
+    separator->setFixedHeight(1); // Make the line thinner
+    separator->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;"); // Light gray
     combinedLayout->addWidget(separator);
 
     combinedLayout->addLayout(bottomLayout);
