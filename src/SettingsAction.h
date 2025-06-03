@@ -193,7 +193,6 @@ public:
         ToggleAction                        _focusSelection2Action;
         ToggleAction                        _hidePointSelection2Action;
         ToggleAction                        _freezeSelection2Action;
-
         TriggerAction                       _deSelectRow2Action;
 
     };
@@ -227,6 +226,9 @@ public:
         const ToggleAction& getAutoSelectionUpdateAction() const { return _autoSelectionUpdateAction; }
         ToggleAction& getAutoSelectionUpdateAction() { return _autoSelectionUpdateAction; }
 
+        const OptionAction& getCorrelationCalculationType() const { return _correlationCalculationType; }
+        OptionAction& getCorrelationCalculationType() { return _correlationCalculationType; }
+
 
     protected:
         SettingsAction& _settingsOptions;
@@ -242,6 +244,7 @@ public:
         ToggleAction                 _pcaColoringAction;
         OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoring;
+        OptionAction                 _correlationCalculationType;
 
     };
 

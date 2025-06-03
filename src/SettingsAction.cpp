@@ -89,14 +89,14 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
     _dataset1OptionsHolder.getCorrelationRangeAction().setLimitsMaximum(1.00);
-    _dataset1OptionsHolder.getCorrelationRangeAction().setLimitsMinimum(0.00);
-    _dataset1OptionsHolder.getCorrelationRangeAction().setMaximum(1.00);
-    _dataset1OptionsHolder.getCorrelationRangeAction().setMinimum(0.50);
+    _dataset1OptionsHolder.getCorrelationRangeAction().setLimitsMinimum(-1.00);
+    _dataset1OptionsHolder.getCorrelationRangeAction().setMaximum(0.50);
+    _dataset1OptionsHolder.getCorrelationRangeAction().setMinimum(-1.00);
 
     _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMaximum(1.00);
-    _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMinimum(0.00);
-    _dataset2OptionsHolder.getCorrelationRange2Action().setMaximum(1.00);
-    _dataset2OptionsHolder.getCorrelationRange2Action().setMinimum(0.50);
+    _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMinimum(-1.00);
+    _dataset2OptionsHolder.getCorrelationRange2Action().setMaximum(0.50);
+    _dataset2OptionsHolder.getCorrelationRange2Action().setMinimum(-1.00);
 
     _dataset1OptionsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -299,7 +299,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _dualPCAColoringAction(this, "PCA Coloring"),
     _pcaColoringAction(this, "PCA Coloring"),
     _autoComputeAction(this, "Auto Compute"),
-    _autoSelectionUpdateAction(this, "Auto Selection Update")
+    _autoSelectionUpdateAction(this, "Auto Selection Update"),
+    _correlationCalculationType(this, "Correlation Calculation Type")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -311,6 +312,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_pcaColoringAction);
     addAction(&_autoComputeAction);
     addAction(&_autoSelectionUpdateAction);
+    addAction(&_correlationCalculationType);
 
     addAction(&_computeAction);
 

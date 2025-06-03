@@ -2949,7 +2949,7 @@ void Computation::resetupCorrelationTable(int datasetNumber)
     {
         _geneOfInterestIndices2.clear();
         for (auto& gene : _geneCorrValues2) {
-            bool isWithinRange = (gene.correlationValue >= minRange && gene.correlationValue <= maxRange);
+            bool isWithinRange = (gene.correlationValue <= minRange && gene.correlationValue >= maxRange);
 
             gene.isWithinRange = isWithinRange;
             if (isWithinRange) {
@@ -2961,7 +2961,7 @@ void Computation::resetupCorrelationTable(int datasetNumber)
     {
         _geneOfInterestIndices1.clear();
         for (auto& gene : _geneCorrValues1) {
-            bool isWithinRange = (gene.correlationValue >= minRange && gene.correlationValue <= maxRange);
+            bool isWithinRange = (gene.correlationValue <= minRange && gene.correlationValue >= maxRange);
 
             gene.isWithinRange = isWithinRange;
             if (isWithinRange) {
