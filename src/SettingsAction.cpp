@@ -301,13 +301,24 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     VerticalGroupAction(&settingsAction, "Shared Options"),
     _settingsOptions(settingsAction),
     _computeAction(this, "Compute"),
-    _clusterSelectionAction(this, "Cluster selection")
+    _clusterSelectionAction(this, "Cluster selection"),
+    _pcaDimensionForColoring(this, "PCA Dimension for Coloring"),
+    _dualPCAColoringAction(this, "PCA Coloring"),
+    _pcaColoringAction(this, "PCA Coloring"),
+    _autoComputeAction(this, "Auto Compute"),
+    _autoSelectionUpdateAction(this, "Auto Selection Update")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
+    addAction(&_dualPCAColoringAction);
+    addAction(&_pcaDimensionForColoring);
+    addAction(&_pcaColoringAction);
+    addAction(&_autoComputeAction);
+    addAction(&_autoSelectionUpdateAction);
+
     addAction(&_computeAction);
 
 }

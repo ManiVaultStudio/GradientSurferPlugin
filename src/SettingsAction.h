@@ -215,7 +215,20 @@ public:
         const TriggerAction& getComputeAction() const { return _computeAction; }
         TriggerAction& getComputeAction() { return _computeAction; }
 
+        const ToggleAction& getAutoComputeAction() const { return _autoComputeAction; }
+        ToggleAction& getAutoComputeAction() { return _autoComputeAction; }
 
+        const ToggleAction& getPcaColoringAction() const { return _pcaColoringAction; }
+        ToggleAction& getPcaColoringAction() { return _pcaColoringAction; }
+
+        const OptionsAction& getDualPCAColoringAction() const { return _dualPCAColoringAction; }
+        OptionsAction& getDualPCAColoringAction() { return _dualPCAColoringAction; }
+
+        const DimensionPickerAction& getPcaDimensionForColoring() const { return _pcaDimensionForColoring; }
+        DimensionPickerAction& getPcaDimensionForColoring() { return _pcaDimensionForColoring; }
+
+        const ToggleAction& getAutoSelectionUpdateAction() const { return _autoSelectionUpdateAction; }
+        ToggleAction& getAutoSelectionUpdateAction() { return _autoSelectionUpdateAction; }
 
 
     protected:
@@ -226,6 +239,12 @@ public:
         
         OptionsAction                       _clusterSelectionAction;
         TriggerAction              _computeAction;
+
+        ToggleAction                _autoSelectionUpdateAction;
+        ToggleAction                _autoComputeAction;
+        ToggleAction                 _pcaColoringAction;
+        OptionsAction                 _dualPCAColoringAction;
+        DimensionPickerAction        _pcaDimensionForColoring;
 
     };
 

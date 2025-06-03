@@ -836,25 +836,37 @@ void HighPerfLineChart::drawChartWithOpenGL()
             // Calculate bundle sizes
             int numFirstPoints = int(firstXs.size());
             int numLastPoints = int(lastXs.size());
+            int totalPoints = numFirstPoints + numLastPoints;
+
+            // Avoid division by zero
+            auto percent = [&](int n) -> double {
+                return (totalPoints > 0) ? (double(n) / totalPoints) : 0.0;
+                };
+
             // Scale factor for ellipse size (tweak as needed)
-            double scale = 2.0;
-            int minEllipse = 6, maxEllipse = 60;
+            int minEllipse = 1, maxEllipse = 100;
+            int baseEllipse = 50; // This is the maximum ellipse size at 100%
+
             auto ellipseSize = [&](int n) {
-                int size = int(scale * std::sqrt(std::max(n, 1)));
+                double p = percent(n);
+                int size = int(baseEllipse * p);
                 size = std::clamp(size, minEllipse, maxEllipse);
                 return size;
                 };
 
             auto drawPointBundle = [&](const QPointF& center, int numPoints, int ellipseW, int ellipseH) {
-                double a = ellipseW / 2.0;
-                double b = ellipseH / 2.0;
+                // Compute a radius that shrinks as numPoints increases (tweak the formula as needed)
+                double maxRadius = std::max(8.0, 40.0 / std::sqrt(std::max(1, numPoints))); // e.g. 8px min, 40px for 1 point
+                double a = std::min(ellipseW / 2.0, maxRadius);
+                double b = std::min(ellipseH / 2.0, maxRadius);
+
                 std::mt19937 rng(static_cast<unsigned>(center.x() * 1000 + center.y()));
                 std::uniform_real_distribution<double> distAngle(0, 2 * M_PI);
                 std::uniform_real_distribution<double> distRadius(0, 1);
 
                 for (int i = 0; i < numPoints; ++i) {
                     double theta = distAngle(rng);
-                    double r = std::sqrt(distRadius(rng)); // sqrt for uniform density
+                    double r = std::pow(distRadius(rng), 4.0); // strong bias towards center
                     double x = a * r * std::cos(theta);
                     double y = b * r * std::sin(theta);
                     painter.drawEllipse(QPointF(center.x() + x, center.y() + y), 2.0, 2.0); // 2.0 is the point radius
