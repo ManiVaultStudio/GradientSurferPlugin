@@ -144,8 +144,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getDataset1PcSelectionForComputationAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-
-
+    _commonOptionsHolder.getCorrelationCalculationTypeAction().setOptions({ "Absolute","NonAbsolute" });
+    _commonOptionsHolder.getCorrelationCalculationTypeAction().setCurrentText("NonAbsolute");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
     _dataset1OptionsHolder.getDeSelectRowAction().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
