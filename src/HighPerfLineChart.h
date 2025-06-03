@@ -199,9 +199,4 @@ private:
     void drawLegend(QPainter& painter);
     void drawAverageLabel(QPainter& painter);
 
-    // Add missing log/antilog methods
-    double logX(double x) const;
-    double invLogX(double lx) const;
-    double logY(double y) const;
-    double invLogY(double ly) const;
 };

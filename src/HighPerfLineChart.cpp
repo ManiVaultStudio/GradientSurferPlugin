@@ -224,31 +224,6 @@ int HighPerfLineChart::movingAverageWindow() const
     return m_movingAverageWindow;
 }
 
-double HighPerfLineChart::logX(double x) const
-{
-    // If log scale is not used, just return x
-
-    return std::log10(std::max(x, 1e-12));
-}
-
-double HighPerfLineChart::invLogX(double lx) const
-{
-
-    return std::pow(10.0, lx);
-}
-
-double HighPerfLineChart::logY(double y) const
-{
-
-    return std::log10(std::max(y, 1e-12));
-}
-
-double HighPerfLineChart::invLogY(double ly) const
-{
-
-    return std::pow(10.0, ly);
-}
-
 void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
     m_lines = lines;
     qDebug() << "[HighPerfLineChart] setLines called. Number of lines:" << m_lines.size();
