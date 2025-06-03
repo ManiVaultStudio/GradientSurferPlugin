@@ -635,44 +635,32 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     
                     // 5. Send to chart
                     _settingsAction.getLineChart1Widget()->setLines(lineData);
-                    /*_settingsAction.getLineChart1Widget()->setBinaryNormalizeXThreshold(0.95f);
-                    _settingsAction.getLineChart1Widget()->setBinaryNormalizeX(true);*/
-                    //_settingsAction.getLineChart1Widget()->setShowAverageLine(true);
-                   // _settingsAction.getLineChart1Widget()->setShowMedianLine(true);
-                    //_settingsAction.getLineChart1Widget()->setShowPercentileLines(true);
-                    //_settingsAction.getLineChart1Widget()->setShowStddevLines(true);
-                    //_settingsAction.getLineChart1Widget()->setShowMaxLine(true);
-                    //_settingsAction.getLineChart1Widget()->setShowMinLine(true);
                     _settingsAction.getLineChart1Widget()->setShowPoints(false);
                     _settingsAction.getLineChart1Widget()->setShowLines(false);
                     ////_numOfPointsInLine/100*10);
-
-
-                    //_settingsAction.getLineChart1Widget()->setShowKurtosisLine(true);
-                    //_settingsAction.getLineChart1Widget()->setShowLowerQuartileLine(true);
-                    //_settingsAction.getLineChart1Widget()->setShowMADLine(true);
-                    //_settingsAction.getLineChart1Widget()->setShowModeLine(true);
-                    //_settingsAction.getLineChart1Widget()->setShowSkewnessLine(true);
-                    //_settingsAction.getLineChart1Widget()->setShowUpperQuartileLine(true);
-                    //_settingsAction.getLineChart1Widget()->setShowVarianceLine(true);
-                    //_settingsAction.getLineChart1Widget()->setGradientLineEnabled(true);
-                    
                     _numOfPointsInLine = lineData.first().points.size();
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
-                    _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Median);
+                    _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(true);
+                    
                     _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
    
    
 
-                    //_settingsAction.getLineChart1Widget()->setMovingAverageWindow(std::max(1, int(_numOfPointsInLine * _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue())));
+                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(std::max(1, int(_numOfPointsInLine * _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue())));
                     _settingsAction.getLineChart1Widget()->setMovingAverageWindow(10);
                     _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(true);
-
+                    mv::theme().isSystemDarkColorSchemeActive() ?
+                        _settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::black) :
+                        _settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::white);
+                    //_settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::white);
                     _settingsAction.getLineChart1Widget()->setAxisFont(QFont("Arial", 12));
                     _settingsAction.getLineChart1Widget()->setTickLabelFont(QFont("Arial", 10));
-                    _settingsAction.getLineChart1Widget()->setAxisColor(Qt::black);
-                    _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::black);
+                    mv::theme().isSystemDarkColorSchemeActive()?
+                        _settingsAction.getLineChart1Widget()->setAxisColor(Qt::white) :
+                        _settingsAction.getLineChart1Widget()->setAxisColor(Qt::black);
+                    mv::theme().isSystemDarkColorSchemeActive() ?
+                        _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::black) : _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::white);
                     _settingsAction.getLineChart1Widget()->setXAxisName("Rotated Y coordinates");
                     _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression " + _selectedGene);
                     _settingsAction.getLineChart1Widget()->setShowLegend(true);

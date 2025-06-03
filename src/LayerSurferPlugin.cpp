@@ -91,69 +91,7 @@ void LayerSurferPlugin::init()
 
 void LayerSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 {
-    //// Get smart pointer to dataset that changed
-    //const auto changedDataSet = dataEvent->getDataset();
 
-    //// Get GUI name of the dataset that changed
-    //const auto datasetGuiName = changedDataSet->getGuiName();
-
-    //// The data event has a type so that we know what type of data event occurred (e.g. data added, changed, removed, renamed, selection changes)
-    //switch (dataEvent->getType()) {
-
-    //    // A points dataset was added
-    //    case EventType::DatasetAdded:
-    //    {
-    //        // Cast the data event to a data added event
-    //        const auto dataAddedEvent = static_cast<DatasetAddedEvent*>(dataEvent);
-
-    //        // Get the GUI name of the added points dataset and print to the console
-    //        qDebug() << datasetGuiName << "was added";
-
-    //        break;
-    //    }
-
-    //    // Points dataset data has changed
-    //    case EventType::DatasetDataChanged:
-    //    {
-    //        // Cast the data event to a data changed event
-    //        const auto dataChangedEvent = static_cast<DatasetDataChangedEvent*>(dataEvent);
-
-    //        // Get the name of the points dataset of which the data changed and print to the console
-    //        qDebug() << datasetGuiName << "data changed";
-
-    //        break;
-    //    }
-
-    //    // Points dataset data was removed
-    //    case EventType::DatasetRemoved:
-    //    {
-    //        // Cast the data event to a data removed event
-    //        const auto dataRemovedEvent = static_cast<DatasetRemovedEvent*>(dataEvent);
-
-    //        // Get the name of the removed points dataset and print to the console
-    //        qDebug() << datasetGuiName << "was removed";
-
-    //        break;
-    //    }
-
-    //    // Points dataset selection has changed
-    //    case EventType::DatasetDataSelectionChanged:
-    //    {
-    //        // Cast the data event to a data selection changed event
-    //        const auto dataSelectionChangedEvent = static_cast<DatasetDataSelectionChangedEvent*>(dataEvent);
-
-    //        // Get the selection set that changed
-    //        const auto& selectionSet = changedDataSet->getSelection<Points>();
-
-    //        // Print to the console
-    //        qDebug() << datasetGuiName << "selection has changed";
-
-    //        break;
-    //    }
-
-    //    default:
-    //        break;
-    //}
 }
 
 LayerSurferPluginFactory::LayerSurferPluginFactory()
