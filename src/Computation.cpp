@@ -172,7 +172,6 @@ private:
     float minValue, maxValue;
 };
 
-
 static QString getContrastingTextColor(const QString& bgColor) {
     QColor color(bgColor);
     if (!color.isValid()) return "white";
@@ -2101,7 +2100,8 @@ void Computation::ManualCompute()
         return;
 }
 
-// Rotates the XY coordinates by a given angle
+
+
 std::vector<float> Computation::rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue) {
     std::vector<float> rotated(xyCoordinates.size());
     const double angle = degreeValue * M_PI / 180.0;
@@ -2144,7 +2144,8 @@ std::vector<float> Computation::rotateAxis(const std::vector<float>& xyCoordinat
 
     return rotated;
 }
-// Extracts either X or Y coordinates from the rotated coordinates
+
+
 std::vector<float> Computation::getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis) {
     std::vector<float> coords;
     int offset = (axis == "Y") ? 1 : 0;
@@ -2154,7 +2155,7 @@ std::vector<float> Computation::getCoordinatesOfCells(const std::vector<float>& 
     return coords;
 }
 
-// Sorts gene indices based on the provided Y coordinates
+
 std::vector<int> Computation::getSortedCellIndices(const std::vector<float>& yCoordinates) {
     std::vector<int> indices(yCoordinates.size());
     std::iota(indices.begin(), indices.end(), 0);
@@ -2415,16 +2416,7 @@ void Computation::setStatusMessage(const QString& status, const QString& message
 }
 
 //Validate and retrieve datasets and indices
-bool Computation::validateAndRetrieveDatasets(
-    mv::Dataset<Points>& fullPointDataset,
-    mv::Dataset<Clusters>& fullClusterDataset,
-    int& xEmbeddingIndex,
-    int& yEmbeddingIndex,
-    std::vector<int>& selectedIndices,
-    QString& scatterplotViewName,
-    float& minCorrelation,
-    float& maxCorrelation
-)
+bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointDataset, mv::Dataset<Clusters>& fullClusterDataset, int& xEmbeddingIndex, int& yEmbeddingIndex, std::vector<int>& selectedIndices, QString& scatterplotViewName, float& minCorrelation, float& maxCorrelation)
 {
 
     fullPointDataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
@@ -2644,9 +2636,7 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
 }
 
 // Populate embedding coordinates
-bool Computation::populateEmbeddingCoordinates(
-    int xEmbeddingIndex, int yEmbeddingIndex,
-    std::vector<float>& XYCoordinates)
+bool Computation::populateEmbeddingCoordinates(int xEmbeddingIndex, int yEmbeddingIndex, std::vector<float>& XYCoordinates)
 {
     if (_filteredSelectionIndices.empty()) {
         qDebug() << "No filtered selection indices";
@@ -2664,32 +2654,28 @@ bool Computation::populateEmbeddingCoordinates(
     return true;
 }
 
-//Populate and update datasets
-bool Computation::populateAndUpdateDatasets(
-    mv::Dataset<Points>& fullPointDataset,
-    const std::vector<float>& rotatedXYCordinates,
-    const std::vector<float>& XYCordinates,
-    int noOfDimensions,
-    const std::vector<int>& columnIndices,
-    const std::vector<QString>& dimensionNames)
+bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDataset, const std::vector<float>& rotatedXYCordinates, const std::vector<float>& XYCordinates, int noOfDimensions, const std::vector<int>& columnIndices, const std::vector<QString>& dimensionNames)
 {
-
+    // Validate datasets and input sizes
     if (!_selectedCellPointDataset.isValid() ||
-        !_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid() ||
-        !_selectedEmbeddingDataset.isValid()) {
-        qDebug() << "One or more datasets are invalid!";
-        setStatusMessage("E", "Internal error: invalid dataset pointer", "");
-        return false;
-    }
-    if (_filteredSelectionIndices.empty() ||
+        !_rotatedSelectedEmbeddingDataset.isValid() ||
+        !_selectedGenePointDataset1.isValid() ||
+        !_selectedGenePointDataset2.isValid() ||
+        !_selectedEmbeddingDataset.isValid() ||
+        _filteredSelectionIndices.empty() ||
         columnIndices.empty() ||
-        dimensionNames.size() != static_cast<size_t>(noOfDimensions)) {
-        qDebug() << "Invalid input sizes!";
-        setStatusMessage("E", "Internal error: invalid input sizes", "");
+        dimensionNames.size() != static_cast<size_t>(noOfDimensions))
+    {
+        qDebug() << "Invalid dataset pointers or input sizes!";
+        setStatusMessage("E", "Internal error: invalid dataset pointer or input sizes", "");
         return false;
     }
 
-    std::vector<float> cellbygenematrix(_filteredSelectionIndices.size() * columnIndices.size());
+    // Prepare cell-by-gene matrix
+    const size_t numCells = _filteredSelectionIndices.size();
+    const size_t numGenes = columnIndices.size();
+    std::vector<float> cellbygenematrix(numCells * numGenes);
+
     try {
         fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, _filteredSelectionIndices);
     }
@@ -2699,21 +2685,21 @@ bool Computation::populateAndUpdateDatasets(
         return false;
     }
 
-    _selectedCellPointDataset->setData(cellbygenematrix.data(), _filteredSelectionIndices.size(), noOfDimensions);
+    // Update datasets in a cache-friendly order
+    _selectedCellPointDataset->setData(cellbygenematrix.data(), static_cast<int>(numCells), noOfDimensions);
     _selectedCellPointDataset->setDimensionNames(dimensionNames);
     mv::events().notifyDatasetDataChanged(_selectedCellPointDataset);
 
-    _rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), _filteredSelectionIndices.size(), 2);
-    _rotatedSelectedEmbeddingDataset->setDimensionNames({ "X","Y" });
+    _rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), static_cast<int>(numCells), 2);
+    _rotatedSelectedEmbeddingDataset->setDimensionNames({ QStringLiteral("X"), QStringLiteral("Y") });
     mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
 
-    _selectedEmbeddingDataset->setData(XYCordinates.data(), _filteredSelectionIndices.size(), 2);
-    _selectedEmbeddingDataset->setDimensionNames({ "X","Y" });
+    _selectedEmbeddingDataset->setData(XYCordinates.data(), static_cast<int>(numCells), 2);
+    _selectedEmbeddingDataset->setDimensionNames({ QStringLiteral("X"), QStringLiteral("Y") });
     mv::events().notifyDatasetDataChanged(_selectedEmbeddingDataset);
 
     return true;
 }
-
 
 bool Computation::setupAndTriggerPCA()
 {
