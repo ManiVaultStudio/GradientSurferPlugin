@@ -295,12 +295,13 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _settingsOptions(settingsAction),
     _computeAction(this, "Compute"),
     _clusterSelectionAction(this, "Cluster selection"),
-    _pcaDimensionForColoring(this, "PCA Dimension for Coloring"),
+    _pcaDimensionForColoringAction(this, "PCA Dimension for Coloring"),
     _dualPCAColoringAction(this, "PCA Coloring"),
     _pcaColoringAction(this, "PCA Coloring"),
     _autoComputeAction(this, "Auto Compute"),
     _autoSelectionUpdateAction(this, "Auto Selection Update"),
-    _correlationCalculationType(this, "Correlation Calculation Type")
+    _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
+    _dataset1PcSelectionForComputationAction(this, "Dataset1 PCA Selection for Computation"),
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -308,12 +309,12 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
     addAction(&_dualPCAColoringAction);
-    addAction(&_pcaDimensionForColoring);
+    addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_autoComputeAction);
     addAction(&_autoSelectionUpdateAction);
-    addAction(&_correlationCalculationType);
-
+    addAction(&_correlationCalculationTypeAction);
+    addAction(&_dataset1PcSelectionForComputationAction);
     addAction(&_computeAction);
 
 }
