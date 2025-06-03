@@ -407,6 +407,7 @@ void HighPerfLineChart::paintGL() {
     if (m_xMax == m_xMin || m_yMax == m_yMin || width() <= 0 || height() <= 0) {
         QPainter painter(this);
         painter.setPen(Qt::red);
+        painter.setFont(QFont("Arial", 16, QFont::Bold));
         painter.drawText(rect(), Qt::AlignCenter, "Invalid axis range");
         qDebug() << "[HighPerfLineChart] Invalid axis range or widget size!";
         return;
@@ -415,6 +416,7 @@ void HighPerfLineChart::paintGL() {
     if (m_lines.isEmpty()) {
         QPainter painter(this);
         painter.setPen(Qt::darkGray);
+        painter.setFont(QFont("Arial", 16, QFont::Bold));
         painter.drawText(rect(), Qt::AlignCenter, m_emptyMessage.isEmpty() ? "No data to display" : m_emptyMessage);
         return;
     }
@@ -435,6 +437,7 @@ void HighPerfLineChart::paintGL() {
     if (!anyPoints) {
         QPainter painter(this);
         painter.setPen(Qt::darkGray);
+        painter.setFont(QFont("Arial", 16, QFont::Bold));
         painter.drawText(rect(), Qt::AlignCenter, m_emptyMessage.isEmpty() ? "No points in line data" : m_emptyMessage);
         qDebug() << "[HighPerfLineChart] No points in line data!";
         return;
@@ -442,12 +445,19 @@ void HighPerfLineChart::paintGL() {
 
     drawChartWithOpenGL();
 
+    // --- Ensure QPainter is used after OpenGL drawing ---
     QPainter painter(this);
+    painter.setRenderHint(QPainter::TextAntialiasing, true);
+
+    // --- Debug: confirm text drawing functions are called ---
+    qDebug() << "[HighPerfLineChart] Calling drawAxesAndLabels";
     drawAxesAndLabels(painter);
 
+    qDebug() << "[HighPerfLineChart] Calling drawLegend";
     drawLegend(painter);
-    drawAverageLabel(painter);
 
+    qDebug() << "[HighPerfLineChart] Calling drawAverageLabel";
+    drawAverageLabel(painter);
 }
 
 void HighPerfLineChart::resizeGL(int w, int h) {
@@ -915,6 +925,7 @@ void HighPerfLineChart::drawAxesAndLabels(QPainter& painter)
 
     // Tick labels
     QFont tickFont = m_tickLabelFont.family().isEmpty() ? painter.font() : m_tickLabelFont;
+    if (tickFont.pointSize() < 6) tickFont.setPointSize(8); // Ensure readable font size
     painter.setFont(tickFont);
     painter.setPen(m_tickLabelColor);
     QFontMetrics fmTick(tickFont);
@@ -948,14 +959,16 @@ void HighPerfLineChart::drawAxesAndLabels(QPainter& painter)
     }
 
     // Axis labels and title
-    painter.setFont(m_axisFont);
+    QFont axisFont = m_axisFont;
+    if (axisFont.pointSize() < 8) axisFont.setPointSize(10);
+    painter.setFont(axisFont);
     painter.setPen(m_axisColor);
 
     // Draw chart title at the top center
     if (!m_chartTitle.isEmpty()) {
         QFont titleFont = painter.font();
         titleFont.setBold(true);
-        titleFont.setPointSize(titleFont.pointSize() + 2);
+        if (titleFont.pointSize() < 10) titleFont.setPointSize(14);
         painter.setFont(titleFont);
         painter.drawText(QRect(0, 0, width(), topMargin), Qt::AlignHCenter | Qt::AlignVCenter, m_chartTitle);
         painter.setFont(m_axisFont);
@@ -982,12 +995,18 @@ void HighPerfLineChart::drawLegend(QPainter& painter)
     if (!m_showLegend || m_lines.isEmpty())
         return;
 
+    // Ensure legend text is visible
+    QColor legendColor = m_legendColor;
+    if (legendColor == m_backgroundColor) legendColor = Qt::black;
+
     const int legendMargin = 10;
     int x = m_legendX >= 0 ? m_legendX : width() - m_rightMargin - 120;
     int y = m_legendY >= 0 ? m_legendY : m_topMargin + legendMargin;
 
-    painter.setFont(m_legendFont);
-    painter.setPen(m_legendColor);
+    QFont legendFont = m_legendFont;
+    if (legendFont.pointSize() < 8) legendFont.setPointSize(10);
+    painter.setFont(legendFont);
+    painter.setPen(legendColor);
 
     int lineHeight = painter.fontMetrics().height() + 4;
     int i = 0;
@@ -995,7 +1014,7 @@ void HighPerfLineChart::drawLegend(QPainter& painter)
         QColor c = m_globalLineColor.isValid() ? m_globalLineColor : (line.color.isValid() ? line.color : Qt::black);
         painter.setPen(QPen(c, 2));
         painter.drawLine(x, y + i * lineHeight + lineHeight / 2, x + 20, y + i * lineHeight + lineHeight / 2);
-        painter.setPen(m_legendColor);
+        painter.setPen(legendColor);
         painter.drawText(x + 28, y + (i + 1) * lineHeight - 4, QString("Line %1").arg(i + 1));
         ++i;
         if (i > 10) break; // Limit legend size
@@ -1005,7 +1024,7 @@ void HighPerfLineChart::drawLegend(QPainter& painter)
         QColor avgColor = Qt::darkMagenta;
         painter.setPen(QPen(avgColor, 2, Qt::DashLine));
         painter.drawLine(x, y + i * lineHeight + lineHeight / 2, x + 20, y + i * lineHeight + lineHeight / 2);
-        painter.setPen(m_legendColor);
+        painter.setPen(legendColor);
         painter.drawText(x + 28, y + (i + 1) * lineHeight - 4, QString("Moving Average (window=%1)").arg(m_movingAverageWindow));
         ++i;
     }
@@ -1014,7 +1033,7 @@ void HighPerfLineChart::drawLegend(QPainter& painter)
         QColor statColor = Qt::darkGreen;
         painter.setPen(QPen(statColor, 3));
         painter.drawLine(x, y + i * lineHeight + lineHeight / 2, x + 20, y + i * lineHeight + lineHeight / 2);
-        painter.setPen(m_legendColor);
+        painter.setPen(legendColor);
         QString statTypeStr = "Mean";
         if (m_connectStatsLineType == ConnectStatsType::Median) statTypeStr = "Median";
         painter.drawText(x + 28, y + (i + 1) * lineHeight - 4, QString("Connect Stats (%1)").arg(statTypeStr));
@@ -1049,8 +1068,11 @@ void HighPerfLineChart::drawAverageLabel(QPainter& painter)
                 .arg(numLines);
             QFont avgFont = painter.font();
             avgFont.setBold(true);
+            if (avgFont.pointSize() < 8) avgFont.setPointSize(10);
             painter.setFont(avgFont);
-            painter.setPen(QColor(80, 80, 80));
+            QColor avgColor(80, 80, 80);
+            if (avgColor == m_backgroundColor) avgColor = Qt::black;
+            painter.setPen(avgColor);
             if (!m_chartTitle.isEmpty()) {
                 avgLabelY += 18; // leave space for title font
             }

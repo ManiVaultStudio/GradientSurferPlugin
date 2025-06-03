@@ -637,7 +637,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     _settingsAction.getLineChart1Widget()->setLines(lineData);
                     _settingsAction.getLineChart1Widget()->setShowPoints(false);
                     _settingsAction.getLineChart1Widget()->setShowLines(false);
-                    ////_numOfPointsInLine/100*10);
+
                     _numOfPointsInLine = lineData.first().points.size();
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine* _settingsAction.getLineChartOptionsHolder().getConnectStatsLineAction().getValue());
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
@@ -653,14 +653,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     mv::theme().isSystemDarkColorSchemeActive() ?
                         _settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::black) :
                         _settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::white);
-                    //_settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::white);
                     _settingsAction.getLineChart1Widget()->setAxisFont(QFont("Arial", 12));
                     _settingsAction.getLineChart1Widget()->setTickLabelFont(QFont("Arial", 10));
-                    mv::theme().isSystemDarkColorSchemeActive()?
+                    mv::theme().isSystemDarkColorSchemeActive() ?
                         _settingsAction.getLineChart1Widget()->setAxisColor(Qt::white) :
                         _settingsAction.getLineChart1Widget()->setAxisColor(Qt::black);
+                    // Fix tick label color for correct contrast
                     mv::theme().isSystemDarkColorSchemeActive() ?
-                        _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::black) : _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::white);
+                        _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::white) :
+                        _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::black);
                     _settingsAction.getLineChart1Widget()->setXAxisName("Rotated Y coordinates");
                     _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression " + _selectedGene);
                     _settingsAction.getLineChart1Widget()->setShowLegend(true);
