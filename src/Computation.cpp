@@ -2515,6 +2515,9 @@ bool Computation::createDatasetsIfNeeded()
     return true;
 }
 
+
+
+
 void Computation::updateClusterOptions()
 {
     // Use QSet for efficient intersection and avoid unnecessary sorting
@@ -2540,10 +2543,15 @@ void Computation::updateClusterOptions()
             clusterNames2.insert(cluster.getName());
     }
 
-    // Compute intersection and sort only once
+    // Compute intersection and sort result
     QStringList clusterNamesCommon = (clusterNames1 & clusterNames2).values();
-    std::sort(clusterNamesCommon.begin(), clusterNamesCommon.end(), Qt::CaseInsensitive);
+    // FIX: Use a lambda for case-insensitive sorting instead of Qt::CaseInsensitive enum
+    std::sort(clusterNamesCommon.begin(), clusterNamesCommon.end(),
+        [](const QString& a, const QString& b) {
+            return a.compare(b, Qt::CaseInsensitive) < 0;
+        });
 
+    // Update options and selection
     auto& clusterSelectionAction = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction();
     clusterSelectionAction.setOptions(clusterNamesCommon);
     clusterSelectionAction.setSelectedOptions(clusterNamesCommon);

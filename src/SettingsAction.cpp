@@ -301,7 +301,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _autoComputeAction(this, "Auto Compute"),
     _autoSelectionUpdateAction(this, "Auto Selection Update"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
-    _dataset1PcSelectionForComputationAction(this, "Dataset1 PCA Selection for Computation"),
+    _dataset1PcSelectionForComputationAction(this, "Dataset1 PCA Selection for Computation")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
