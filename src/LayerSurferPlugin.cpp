@@ -22,28 +22,59 @@ LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
 
 void LayerSurferPlugin::init()
 {
-    
-    GroupsAction* groupForAction = new GroupsAction(this, "Settings");
-    groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
-    groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
-    groupForAction->addGroupAction(&_settingsAction.getSelectionOptionsHolder());
-    groupForAction->addGroupAction(&_settingsAction.getScatterplotOptionsHolder());
-    groupForAction->addGroupAction(&_settingsAction.getLineChartOptionsHolder());
-    groupForAction->addGroupAction(&_settingsAction.getTableOptionsHolder(),false);
 
+    GroupsAction* groupForAction = new GroupsAction(this, "Settings");
+    _settingsAction.getDataset1OptionsHolder().setExpanded(false);
+    groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
+    _settingsAction.getDataset2OptionsHolder().setExpanded(false);
+    groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
+    _settingsAction.getCommonOptionsHolder().setExpanded(true);
+    groupForAction->addGroupAction(&_settingsAction.getCommonOptionsHolder());
+ 
     addDockingAction(groupForAction, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
 
     auto* mainLayout = new QVBoxLayout(&getWidget());
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
-    mainLayout->addWidget(_settingsAction.getTableViewAction(), 70);
-    mainLayout->addWidget(_settingsAction.getLineChartWidget(), 90);
+    
+    auto* topLayout = new QHBoxLayout();
+    topLayout->setContentsMargins(0, 0, 0, 0);
+    topLayout->setSpacing(0);
+    topLayout->addWidget(_settingsAction.getTableView1Action());
+    topLayout->addWidget(_settingsAction.getLineChart1Widget(),50);
+
+    auto* bottomLayout = new QHBoxLayout();
+    bottomLayout->setContentsMargins(0, 0, 0, 0);
+    bottomLayout->setSpacing(0);
+    bottomLayout->addWidget(_settingsAction.getTableView2Action());
+    //bottomLayout->addWidget(_settingsAction.getLineChart2Widget(), 50);
+
+    auto* combinedLayout = new QVBoxLayout();
+    
+
+    combinedLayout->addLayout(topLayout);
+
+
+    // Add a horizontal separator between topLayout and bottomLayout
+    auto* separator = new QFrame();
+    separator->setFrameShape(QFrame::HLine);
+    separator->setFrameShadow(QFrame::Plain); // Use plain instead of sunken
+    separator->setLineWidth(1);
+    separator->setFixedHeight(1); // Make the line thinner
+    separator->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;"); // Light gray
+    combinedLayout->addWidget(separator);
+
+    combinedLayout->addLayout(bottomLayout);
+
+    mainLayout->addLayout(combinedLayout,90);
+
+    
 
     auto* computeStatusLayout = new QHBoxLayout();
     computeStatusLayout->setContentsMargins(0, 0, 0, 0);
     computeStatusLayout->setSpacing(0);
-    computeStatusLayout->addWidget(_settingsAction.getComputeHolder().getStatusBarAction(),90);
-    computeStatusLayout->addWidget(_settingsAction.getComputeHolder().createWidget(&getWidget()));
+    computeStatusLayout->addWidget(_settingsAction.getStatusHolder().getStatusBarAction(),90);
+    computeStatusLayout->addWidget(_settingsAction.getStatusHolder().createWidget(&getWidget()));
 
     mainLayout->addLayout(computeStatusLayout);
 
@@ -58,69 +89,7 @@ void LayerSurferPlugin::init()
 
 void LayerSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 {
-    //// Get smart pointer to dataset that changed
-    //const auto changedDataSet = dataEvent->getDataset();
 
-    //// Get GUI name of the dataset that changed
-    //const auto datasetGuiName = changedDataSet->getGuiName();
-
-    //// The data event has a type so that we know what type of data event occurred (e.g. data added, changed, removed, renamed, selection changes)
-    //switch (dataEvent->getType()) {
-
-    //    // A points dataset was added
-    //    case EventType::DatasetAdded:
-    //    {
-    //        // Cast the data event to a data added event
-    //        const auto dataAddedEvent = static_cast<DatasetAddedEvent*>(dataEvent);
-
-    //        // Get the GUI name of the added points dataset and print to the console
-    //        qDebug() << datasetGuiName << "was added";
-
-    //        break;
-    //    }
-
-    //    // Points dataset data has changed
-    //    case EventType::DatasetDataChanged:
-    //    {
-    //        // Cast the data event to a data changed event
-    //        const auto dataChangedEvent = static_cast<DatasetDataChangedEvent*>(dataEvent);
-
-    //        // Get the name of the points dataset of which the data changed and print to the console
-    //        qDebug() << datasetGuiName << "data changed";
-
-    //        break;
-    //    }
-
-    //    // Points dataset data was removed
-    //    case EventType::DatasetRemoved:
-    //    {
-    //        // Cast the data event to a data removed event
-    //        const auto dataRemovedEvent = static_cast<DatasetRemovedEvent*>(dataEvent);
-
-    //        // Get the name of the removed points dataset and print to the console
-    //        qDebug() << datasetGuiName << "was removed";
-
-    //        break;
-    //    }
-
-    //    // Points dataset selection has changed
-    //    case EventType::DatasetDataSelectionChanged:
-    //    {
-    //        // Cast the data event to a data selection changed event
-    //        const auto dataSelectionChangedEvent = static_cast<DatasetDataSelectionChangedEvent*>(dataEvent);
-
-    //        // Get the selection set that changed
-    //        const auto& selectionSet = changedDataSet->getSelection<Points>();
-
-    //        // Print to the console
-    //        qDebug() << datasetGuiName << "selection has changed";
-
-    //        break;
-    //    }
-
-    //    default:
-    //        break;
-    //}
 }
 
 LayerSurferPluginFactory::LayerSurferPluginFactory()

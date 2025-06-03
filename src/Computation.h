@@ -29,10 +29,6 @@
 #include <string>
 #include<QRadioButton>
 #include <event/Event.h>
-#include <PointData/DimensionPickerAction.h>
-#include <QDebug>
-#include <QLabel>
-#include <string>
 #include<actions/ColorMap1DAction.h>
 #include <set>
 #include <actions/HorizontalToolbarAction.h>
@@ -69,29 +65,14 @@ private:
     std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float angle);
     std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
     std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
-    std::vector<int> computeCorrelation(const std::vector<float>& cellbygenematrix, int numOfRows, int noOfCols);
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
     void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
     void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector);
-    void setupTableModelAndSelection();
-    void setupTableModelAndSelection(const QStringList& topGenes,
-        const std::vector<QString>& allGenes,
-        const std::vector<float>& correlationVector);
-    //QStringList filterTopNGenesByCorrelation(const std::vector<int>& correlationMatrix, int N, std::vector<QString> geneNameOrdered);
-    QStringList filterTopNGenesByCorrelation(const std::vector<float>& correlationVector, int N, std::vector<QString> geneNameOrdered);
-    QStringList filterGenesByCorrelationRange(
-        const std::vector<float>& correlationVector,
-        float min,
-        float max,
-        std::vector<QString> geneNameOrdered);
-    void populateGenesByCorrelationRange(
-        const std::vector<float>& correlationVector,
-        float min,
-        float max,
-        const std::vector<QString>& geneNameOrdered);
+    void setupTableModelAndSelection(int datasetNumber);
+
+    void populateGenesByCorrelationRange(const std::vector<float>& correlationVector,float min,float max,const std::vector<QString>& geneNameOrdered, int datasetNumber);
     void ManualCompute();
     void AutoCompute();
-    void removeDatasets();
 
     // Helper functions for AutoCompute refactor
     bool validateAndRetrieveDatasets(
@@ -123,9 +104,9 @@ private:
         const std::vector<QString>& dimensionNames);
 
     bool setupAndTriggerPCA();
-    void resetupCorrelationTable();
+    void resetupCorrelationTable(int datasetNumber);
     void setSelectionAndAutoCompute();
-    void setupTableModelAndSelection(const QStringList& topGenes);
+    void correlationAfterPCA();
 
 protected:
     LayerSurferPlugin&          _viewerPlugin;
@@ -137,18 +118,25 @@ protected:
     mv::Dataset<Points>         _selectedGenePointDataset1 = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset2 = nullptr;
     std::vector<int>            _filteredSelectionIndices;
-    std::vector<CorrelationGeneCoords> _geneCorrValues;
-    std::vector<int>            _geneOfInterestIndices;
+    std::vector<CorrelationGeneCoords> _geneCorrValues1;
+    std::vector<CorrelationGeneCoords> _geneCorrValues2;
+    std::vector<int>            _geneOfInterestIndices1;
+    std::vector<int>            _geneOfInterestIndices2;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
-    //debouncetimers
-    QTimer _correlationRangeDebounceTimer;
+
+    QTimer _correlationRangeDebounceTimer1;
     QTimer _clusterSelectionDebounceTimer;
+
+    QTimer _correlationRangeDebounceTimer2;
+
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
-    int _numOfPointsInLine=0;
-    QString    _selectedGene = "";
+    int             _numOfPointsInLine1=0;
+    int             _numOfPointsInLine2 = 0;
+    QString    _selectedGene1 = "";
+    QString    _selectedGene2 = "";
     friend class ChannelAction;
 };
