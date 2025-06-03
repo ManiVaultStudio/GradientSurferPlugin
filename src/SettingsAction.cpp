@@ -139,6 +139,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
+    _commonOptionsHolder.getDualPCAColoringAction().setOptions({ "Dataset1", "Dataset2" });
+    _commonOptionsHolder.getDualPCAColoringAction().setSelectedOptions({ "Dataset1", "Dataset2" });
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getDataset1PcSelectionForComputationAction().setDefaultWidgetFlags(OptionAction::ComboBox);
