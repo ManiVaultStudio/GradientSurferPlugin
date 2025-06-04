@@ -646,8 +646,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
    
    
 
-                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(std::max(1, int(_numOfPointsInLine1 * _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue())));
-                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(10);
+                    //_settingsAction.getLineChart1Widget()->setMovingAverageWindow(std::max(1, int(_numOfPointsInLine1 * _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue())));
+                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
                     _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(true);
                     mv::theme().isSystemDarkColorSchemeActive() ?
                         _settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::black) :
@@ -1094,7 +1094,18 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
         };
 
-    connect(&_settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction(), &DecimalAction::triggered, this, updateConnectStatsLine1);
+    connect(&_settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction(), &DecimalAction::valueChanged, this, updateConnectStatsLine1);
+
+    const auto updateLineSmoothingWindow = [this]() -> void {
+        if (!_settingsAction.getLineChart1Widget())
+        {
+            qDebug() << "No line chart widget available";
+            return;
+        }
+        _settingsAction.getLineChart1Widget()->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
+        };
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction(), &IntegralAction::valueChanged, this, updateLineSmoothingWindow);
 
 
     connect(& _settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
