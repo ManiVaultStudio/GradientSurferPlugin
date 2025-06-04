@@ -2200,6 +2200,7 @@ void Computation::AutoCompute()
             QApplication::processEvents();
 
             ManualCompute();
+            correlationAfterPCA();
 
             _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         }

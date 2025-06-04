@@ -93,7 +93,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
     _commonOptionsHolder.getDataset1PcSelectionForComputationAction().setToolTip("Dataset1 PCA Selection for Computation Action");
 
-    _commonOptionsHolder.getAutoComputeAction().setChecked(false);
+    _commonOptionsHolder.getAutoComputeAction().setChecked(true);
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
 
 
