@@ -37,6 +37,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("LayerSurfer:EmbeddingDimensionX");
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("LayerSurfer:EmbeddingDimensionY");
     _dataset1OptionsHolder.getCorrelationRangeAction().setSerializationName("LayerSurfer:CorrelationRange");
+    
     _dataset2OptionsHolder.getCorrelationRange2Action().setSerializationName("LayerSurfer:CorrelationRange2");
     _dataset2OptionsHolder.getClusterDataset2Action().setSerializationName("LayerSurfer:ClusterDataset2");
     _dataset2OptionsHolder.getPointDataset2Action().setSerializationName("LayerSurfer:PointDataset2");
@@ -75,6 +76,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getFreezeSelectionAction().setToolTip("Freeze Selection Action");
     _dataset2OptionsHolder.getFreezeSelection2Action().setToolTip("Freeze Selection Action 2");
     _dataset1OptionsHolder.getCorrelationRangeAction().setToolTip("Correlation Range Action");
+    _dataset1OptionsHolder.getLineSmoothingWindowAction().setToolTip("Line Smoothing Window Action");
     _dataset2OptionsHolder.getCorrelationRange2Action().setToolTip("Correlation Range Action 2");
     _dataset2OptionsHolder.getClusterDataset2Action().setToolTip("Cluster Dataset 2");
     _dataset2OptionsHolder.getPointDataset2Action().setToolTip("Point Dataset 2");
@@ -117,6 +119,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getCorrelationRangeAction().setLimitsMinimum(-1.00);
     _dataset1OptionsHolder.getCorrelationRangeAction().setMaximum(0.50);
     _dataset1OptionsHolder.getCorrelationRangeAction().setMinimum(-1.00);
+
+    _dataset1OptionsHolder.getLineSmoothingWindowAction().setMaximum(20);
+    _dataset1OptionsHolder.getLineSmoothingWindowAction().setMinimum(0);
+    _dataset1OptionsHolder.getLineSmoothingWindowAction().setValue(10);
 
     _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMaximum(1.00);
     _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMinimum(-1.00);
@@ -165,6 +171,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _dataset1OptionsHolder.getCorrelationRangeAction().setDefaultWidgetFlags(IntegralRangeAction::Slider  | IntegralRangeAction::MaximumSpinBox | IntegralRangeAction::MinimumSpinBox);
     _dataset2OptionsHolder.getCorrelationRange2Action().setDefaultWidgetFlags(IntegralRangeAction::Slider | IntegralRangeAction::MaximumSpinBox | IntegralRangeAction::MinimumSpinBox );
+
+    _dataset1OptionsHolder.getLineSmoothingWindowAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox );
 
     _dataset2OptionsHolder.getClusterDataset2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset2OptionsHolder.getPointDataset2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -274,7 +282,8 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _focusSelectionAction(this, "Focus Selection"),
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
     _freezeSelectionAction(this, "Freeze Selection"),
-    _connectStatsLineAction(this, "Stats Line Top Bottom N")
+    _connectStatsLineAction(this, "Stats Line Top Bottom N"),
+    _lineSmoothingWindow(this, "Line Smoothing Window")
 {
     setText("Dataset1 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -292,6 +301,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_hidePointSelectionAction);
     addAction(&_freezeSelectionAction);
     addAction(&_connectStatsLineAction);
+    addAction(&_lineSmoothingWindow);
 }
 
 

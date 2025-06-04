@@ -110,6 +110,9 @@ public:
         const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
         TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
 
+        const IntegralAction& getLineSmoothingWindowAction() const { return _lineSmoothingWindow; }
+        IntegralAction& getLineSmoothingWindowAction() { return _lineSmoothingWindow; }
+
     protected:
         SettingsAction&                     _settingsOptions;
         
@@ -130,6 +133,7 @@ public:
         ToggleAction                        _freezeSelectionAction;
         DecimalAction                       _connectStatsLineAction;
         TriggerAction                       _deSelectRowAction;
+        IntegralAction                  _lineSmoothingWindow;
 
     };
 
@@ -251,7 +255,7 @@ public:
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
         DimensionPickerAction                 _dataset1PcSelectionForComputationAction;
-
+        
     };
 
 
