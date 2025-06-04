@@ -63,6 +63,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset2OptionsHolder.getGeneSelection2Action().setToolTip("Gene Selection2");
     _statusHolder.getStatusMessageAction().setToolTip("Status Message");
     _commonOptionsHolder.getComputeAction().setToolTip("Compute Action");
+    _commonOptionsHolder.getComputePCAAction().setToolTip("Compute PCA Action");
     _statusHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
     _dataset1OptionsHolder.getDeSelectRowAction().setToolTip("DeSelect Row Action");
@@ -134,7 +135,9 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getComputeAction().setDefaultWidgetFlags(TriggerAction::IconText);
     _commonOptionsHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
     _commonOptionsHolder.getComputeAction().setText("Compute");
-
+    _commonOptionsHolder.getComputePCAAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    _commonOptionsHolder.getComputePCAAction().setIcon(mv::util::StyledIcon("play"));
+    _commonOptionsHolder.getComputePCAAction().setText("Compute PCA");
 
     _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
@@ -336,13 +339,15 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _pcaColoringAction(this, "PCA Coloring"),
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
-    _dataset1PcSelectionForComputationAction(this, "Dataset1 PCA Selection for Computation")
+    _dataset1PcSelectionForComputationAction(this, "Dataset1 PCA Selection for Computation"),
+    _computePCAAction(this, "Compute PCA")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
+    addAction(&_computePCAAction);
     addAction(&_dualPCAColoringAction);
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
