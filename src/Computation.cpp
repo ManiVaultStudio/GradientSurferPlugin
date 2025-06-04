@@ -638,6 +638,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     _settingsAction.getLineChart1Widget()->setShowLines(false);
 
                     _numOfPointsInLine1 = lineData.first().points.size();
+                    _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(_numOfPointsInLine1);
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(true);
