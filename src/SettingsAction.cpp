@@ -301,6 +301,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_hidePointSelectionAction);
     addAction(&_freezeSelectionAction);
     addAction(&_connectStatsLineAction);
+    addAction(&_lineSmoothingWindow);
 }
 
 
