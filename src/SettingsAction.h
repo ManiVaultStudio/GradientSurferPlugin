@@ -230,6 +230,9 @@ public:
         const DimensionPickerAction& getDataset1PcSelectionForComputationAction() const { return _dataset1PcSelectionForComputationAction; }
         DimensionPickerAction& getDataset1PcSelectionForComputationAction() { return _dataset1PcSelectionForComputationAction; }
 
+        const TriggerAction& getComputePCAAction() const { return _computePCAAction; }
+        TriggerAction& getComputePCAAction() { return _computePCAAction; }
+
 
 
     protected:
@@ -240,7 +243,7 @@ public:
         
         OptionsAction                       _clusterSelectionAction;
         TriggerAction              _computeAction;
-
+        TriggerAction              _computePCAAction;
 
         ToggleAction                _autoComputeAction;
         ToggleAction                 _pcaColoringAction;

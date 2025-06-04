@@ -932,16 +932,30 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto computeInfo = [this]() -> void {
 
-        setStatusMessage("R", "Computation in progress", "");
+        setStatusMessage("R", "Correlation computation in progress", "");
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
         QApplication::processEvents();
 
-        ManualCompute();
+        correlationAfterPCA(); 
 
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
+
+
+    const auto computePCATrigger = [this]() -> void {
+
+        setStatusMessage("R", "PCA Computation in progress", "");
+        _settingsAction.getCommonOptionsHolder().getComputePCAAction().setDisabled(true);
+        QApplication::processEvents();
+  
+        ManualCompute();
+
+        _settingsAction.getCommonOptionsHolder().getComputePCAAction().setDisabled(false);
+        };
+
+    connect(&_settingsAction.getCommonOptionsHolder().getComputePCAAction(), &TriggerAction::triggered, this, computePCATrigger);
 
     const auto pcaDimensionSelectionChange = [this]() -> void {
 
@@ -2186,6 +2200,7 @@ void Computation::AutoCompute()
             QApplication::processEvents();
 
             ManualCompute();
+            correlationAfterPCA();
 
             _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         }
@@ -2665,7 +2680,7 @@ void Computation::processAfterPCAComplete()
     }
 
     setStatusMessage("C", "PCA analysis completed", "#28a745");
-    correlationAfterPCA();
+    
 }
 void Computation::correlationAfterPCA()
 {
