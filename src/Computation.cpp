@@ -943,6 +943,24 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
 
+    const auto correlationCalculationTypeActionChanged = [this]() -> void {
+
+        setStatusMessage("R", "Computation in progress", "");
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
+        QApplication::processEvents();
+
+        AutoCompute();
+
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        };
+
+    connect(&_settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction(), &OptionAction::currentIndexChanged, this, correlationCalculationTypeActionChanged);
+
+
+
+
+
+
 
     const auto computePCATrigger = [this]() -> void {
 
@@ -1011,7 +1029,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
             return true;
             };
-
         if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()) {
             bool doDataset1 = options.contains("Dataset1");
             bool doDataset2 = options.contains("Dataset2");
@@ -1029,21 +1046,42 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
         }
         else {
-            if (options.contains("Dataset1") && options.contains("Dataset2")) {
-                _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().trigger();
-                _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().trigger();
+            _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().trigger();
+            _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().trigger();
+
+            // Lambda to select the first row in a table view if available
+            auto selectFirstRow = [](QTableView* tableView) {
+                if (tableView) {
+                    auto* model = tableView->model();
+                    if (model && model->rowCount() > 0) {
+                        QModelIndex firstIndex = model->index(0, 0);
+                        if (firstIndex.isValid()) {
+                            tableView->setCurrentIndex(firstIndex);
+                            tableView->selectionModel()->select(
+                                firstIndex,
+                                QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                            );
+                        }
+                    }
+                }
+                };
+
+            bool hasDataset1 = options.contains("Dataset1");
+            bool hasDataset2 = options.contains("Dataset2");
+
+            if (hasDataset1) {
+                selectFirstRow(_settingsAction.getTableView1Action());
             }
-            else if (options.contains("Dataset1")) {
-                _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().trigger();
-            }
-            else if (options.contains("Dataset2")) {
-                _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().trigger();
+            if (hasDataset2) {
+                selectFirstRow(_settingsAction.getTableView2Action());
             }
         }
+
+
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToScatterplot);
-
+    connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToScatterplot);
 
     connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToScatterplot);
 
@@ -2092,6 +2130,11 @@ void Computation::AutoCompute()
     {
         // Remove all rows in one call if model exists
         if (auto* model = _settingsAction.getTableView1Action()->model()) {
+            int rowCount = model->rowCount();
+            if (rowCount > 0)
+                model->removeRows(0, rowCount);
+        }
+        if (auto* model = _settingsAction.getTableView2Action()->model()) {
             int rowCount = model->rowCount();
             if (rowCount > 0)
                 model->removeRows(0, rowCount);
