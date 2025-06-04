@@ -121,7 +121,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getCorrelationRangeAction().setMinimum(-1.00);
 
     _dataset1OptionsHolder.getLineSmoothingWindowAction().setMaximum(20);
-    _dataset1OptionsHolder.getLineSmoothingWindowAction().setMinimum(0);
+    _dataset1OptionsHolder.getLineSmoothingWindowAction().setMinimum(2);
     _dataset1OptionsHolder.getLineSmoothingWindowAction().setValue(10);
 
     _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMaximum(1.00);
