@@ -546,14 +546,9 @@ void HighPerfLineChart::drawChartWithOpenGL()
 
     // --- Draw moving average line if enabled ---
     if (m_showMovingAverageLine && m_movingAverageWindow > 1) {
-       /* QColor avgColor = (m_backgroundColor == Qt::black)
-            ? QColor(255, 165, 0) // Orange
-            : QColor(128, 0, 128);  // Purple */
-        QColor avgColor(255, 165, 0);
+        QColor offsetColor(255, 165, 0); // Orange as the constant offset color
         float avgAlpha = 1.0f;
         float avgWidth = 2.5f;
-        glLineWidth(avgWidth);
-        glColor4f(avgColor.redF(), avgColor.greenF(), avgColor.blueF(), avgAlpha);
 
         for (int i = 0; i < m_lines.size(); ++i) {
             const auto& line = m_lines[i];
@@ -561,6 +556,20 @@ void HighPerfLineChart::drawChartWithOpenGL()
                 continue;
             QVector<QPointF> avgPts = movingAverage(line.points, m_movingAverageWindow);
             if (avgPts.size() < 2) continue;
+
+            // Blend the line color with the offset color
+            QColor baseColor = m_globalLineColor.isValid() ? m_globalLineColor
+                : (line.color.isValid() ? line.color : Qt::black);
+            // Simple blend: 60% base, 40% offset
+            QColor avgColor(
+                (baseColor.red() * 3 + offsetColor.red() * 2) / 5,
+                (baseColor.green() * 3 + offsetColor.green() * 2) / 5,
+                (baseColor.blue() * 3 + offsetColor.blue() * 2) / 5
+            );
+
+            glLineWidth(avgWidth);
+            glColor4f(avgColor.redF(), avgColor.greenF(), avgColor.blueF(), avgAlpha);
+
             for (int j = 1; j < avgPts.size(); ++j) {
                 QPointF p0 = avgPts[j - 1];
                 QPointF p1 = avgPts[j];
