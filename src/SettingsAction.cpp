@@ -102,7 +102,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
     _dataset1OptionsHolder.getConnectStatsLineAction().setMaximum(1.0);
-    _dataset1OptionsHolder.getConnectStatsLineAction().setMinimum(0.0);
+    _dataset1OptionsHolder.getConnectStatsLineAction().setMinimum(0.1);
     _dataset1OptionsHolder.getConnectStatsLineAction().setValue(0.5);
     _dataset1OptionsHolder.getConnectStatsLineAction().setSingleStep(0.01);
 
