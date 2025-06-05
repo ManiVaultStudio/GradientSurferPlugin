@@ -255,5 +255,5 @@ private:
     void drawAxesAndLabels(QPainter& painter);
     void drawLegend(QPainter& painter);
     void drawAverageLabel(QPainter& painter);
-
+    void updateAxisRange();
 };
