@@ -6,69 +6,8 @@
 #include <random>
 #include <QFont>
 #include <QPen>
-#include <algorithm> // For std::sort, std::vector
+#include <algorithm> 
 
-namespace {
-enum OutCode {
-    INSIDE = 0, // 0000
-    LEFT   = 1, // 0001
-    RIGHT  = 2, // 0010
-    BOTTOM = 4, // 0100
-    TOP    = 8  // 1000
-};
-
-int computeOutCode(double x, double y, double xmin, double xmax, double ymin, double ymax) {
-    int code = OutCode::INSIDE;
-    if (x < xmin)       code |= OutCode::LEFT;
-    else if (x > xmax)  code |= OutCode::RIGHT;
-    if (y < ymin)       code |= OutCode::BOTTOM;
-    else if (y > ymax)  code |= OutCode::TOP;
-    return code;
-}
-
-// Returns true if a clipped segment exists, and modifies (x0,y0,x1,y1) to the clipped segment
-bool cohenSutherlandClip(double& x0, double& y0, double& x1, double& y1, double xmin, double xmax, double ymin, double ymax) {
-    int outcode0 = computeOutCode(x0, y0, xmin, xmax, ymin, ymax);
-    int outcode1 = computeOutCode(x1, y1, xmin, xmax, ymin, ymax);
-    bool accept = false;
-
-    while (true) {
-        if (!(outcode0 | outcode1)) {
-            accept = true;
-            break;
-        } else if (outcode0 & outcode1) {
-            break;
-        } else {
-            double x, y;
-            int outcodeOut = outcode0 ? outcode0 : outcode1;
-            if (outcodeOut & OutCode::TOP) {
-                x = x0 + (x1 - x0) * (ymax - y0) / (y1 - y0);
-                y = ymax;
-            } else if (outcodeOut & OutCode::BOTTOM) {
-                x = x0 + (x1 - x0) * (ymin - y0) / (y1 - y0);
-                y = ymin;
-            } else if (outcodeOut & OutCode::RIGHT) {
-                y = y0 + (y1 - y0) * (xmax - x0) / (x1 - x0);
-                x = xmax;
-            } else { // LEFT
-                y = y0 + (y1 - y0) * (xmin - x0) / (x1 - x0);
-                x = xmin;
-            }
-            if (outcodeOut == outcode0) {
-                x0 = x; y0 = y;
-                outcode0 = computeOutCode(x0, y0, xmin, xmax, ymin, ymax);
-            } else {
-                x1 = x; y1 = y;
-                outcode1 = computeOutCode(x1, y1, xmin, xmax, ymin, ymax);
-            }
-        }
-    }
-    return accept;
-}
-} // end anonymous namespace
-
-// Static member definition
-std::unordered_map<int, QString> LineData::groupStringMap;
 
 HighPerfLineChart::HighPerfLineChart(QWidget* parent)
     : QOpenGLWidget(parent) {
@@ -226,71 +165,32 @@ int HighPerfLineChart::movingAverageWindow() const
 
 void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
     m_lines = lines;
+
     qDebug() << "[HighPerfLineChart] setLines called. Number of lines:" << m_lines.size();
 
-    // --- Detailed debug info ---
     int totalPoints = 0;
-    QSet<int> uniqueGroups;
     double xMin = std::numeric_limits<double>::max();
     double xMax = std::numeric_limits<double>::lowest();
     double yMin = std::numeric_limits<double>::max();
     double yMax = std::numeric_limits<double>::lowest();
 
-    for (int i = 0; i < m_lines.size(); ++i) {
-        const auto& line = m_lines[i];
-        int npts = line.points.size();
-        totalPoints += npts;
-        uniqueGroups.insert(line.group);
-        qDebug() << "  Line" << i
-            << "points:" << npts
-            << "group:" << line.group
-            << "color:" << line.color
-            << "opacity:" << line.opacity
-            << "lineWidth:" << line.lineWidth
-            << "pointSize:" << line.pointSize;
+    for (const auto& line : m_lines) {
         for (const QPointF& pt : line.points) {
             if (!qIsFinite(pt.x()) || !qIsFinite(pt.y()))
                 continue;
-            double xval = pt.x();
-            double yval = pt.y();
-            xMin = std::min(xMin, xval);
-            xMax = std::max(xMax, xval);
-            yMin = std::min(yMin, yval);
-            yMax = std::max(yMax, yval);
+            ++totalPoints;
+            if (pt.x() < xMin) xMin = pt.x();
+            if (pt.x() > xMax) xMax = pt.x();
+            if (pt.y() < yMin) yMin = pt.y();
+            if (pt.y() > yMax) yMax = pt.y();
         }
     }
-    qDebug() << "  Total points:" << totalPoints;
-    qDebug() << "  Unique groups:" << uniqueGroups.size() << uniqueGroups;
-    if (totalPoints > 0) {
-        qDebug() << "  X range:" << xMin << "to" << xMax;
-        qDebug() << "  Y range:" << yMin << "to" << yMax;
-    }
-    qDebug() << "  Chart customization:"
-        << "defaultLineWidth:" << m_lineWidth
-        << "defaultPointSize:" << m_pointSize
-        << "axisFont:" << m_axisFont
-        << "axisColor:" << m_axisColor
-        << "numXTicks:" << m_numXTicks
-        << "numYTicks:" << m_numYTicks
-        << "gridEnabled:" << m_gridEnabled
-        << "backgroundColor:" << m_backgroundColor
-        << "showPoints:" << m_showPoints;
 
-    // Auto-range axes if not explicitly set or if data is out of range
     if (!m_lines.isEmpty()) {
-        // Use the already computed xMin, xMax, yMin, yMax
         bool found = (totalPoints > 0) && qIsFinite(xMin) && qIsFinite(xMax) && qIsFinite(yMin) && qIsFinite(yMax);
         if (found) {
-            // If all points are the same or only one point, expand the range by a default margin
-            if (xMin == xMax) {
-                xMin -= 0.5;
-                xMax += 0.5;
-            }
-            if (yMin == yMax) {
-                yMin -= 0.5;
-                yMax += 0.5;
-            }
-            // small margin for better visualization
+            if (xMin == xMax) { xMin -= 0.5; xMax += 0.5; }
+            if (yMin == yMax) { yMin -= 0.5; yMax += 0.5; }
             double xMargin = (xMax - xMin) * 0.05 + 1e-6;
             double yMargin = (yMax - yMin) * 0.05 + 1e-6;
             m_xMin = xMin - xMargin;
@@ -300,13 +200,11 @@ void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
             qDebug() << "[HighPerfLineChart] Auto-ranged x:" << m_xMin << m_xMax << "y:" << m_yMin << m_yMax;
         }
         else {
-            // Fallback if no valid points
             m_xMin = 0; m_xMax = 1;
             m_yMin = 0; m_yMax = 1;
         }
     }
     else {
-        // If no data, reset axis ranges
         m_xMin = 0; m_xMax = 1;
         m_yMin = 0; m_yMax = 1;
     }
@@ -338,28 +236,6 @@ void HighPerfLineChart::setYRange(double min, double max) {
 void HighPerfLineChart::setChartTitle(const QString& title) {
     m_chartTitle = title;
     update();
-}
-
-
-void HighPerfLineChart::updateGroupColors() {
-    m_groupColorMap.clear();
-    // Assign a unique color for each group
-    std::vector<QColor> palette = {
-        QColor(31,119,180), QColor(255,127,14), QColor(44,160,44), QColor(214,39,40),
-        QColor(148,103,189), QColor(140,86,75), QColor(227,119,194), QColor(127,127,127),
-        QColor(188,189,34), QColor(23,190,207)
-    };
-    int idx = 0;
-    for (const auto& [group, str] : LineData::groupStringMap) {
-        if (idx < int(palette.size()))
-            m_groupColorMap[group] = palette[idx++];
-        else {
-            // Generate random color if palette runs out
-            std::mt19937 rng(group);
-            std::uniform_int_distribution<int> dist(0, 255);
-            m_groupColorMap[group] = QColor(dist(rng), dist(rng), dist(rng));
-        }
-    }
 }
 
 
@@ -581,12 +457,21 @@ void HighPerfLineChart::drawChartWithOpenGL()
                 continue;
             const QVector<QPointF>& pts = line.points;
 
-            QColor c = m_globalLineColor.isValid() ? m_globalLineColor : (line.color.isValid() ? line.color : Qt::black);
+            QColor c = m_globalLineColor.isValid() ? m_globalLineColor
+                : (line.color.isValid() ? line.color : Qt::black);
             float alpha = m_globalLineOpacity;
             float lw = (m_globalLineWidth > 0) ? m_globalLineWidth : ((line.lineWidth > 0) ? line.lineWidth : m_lineWidth);
             float ps = (line.pointSize > 0) ? line.pointSize : m_pointSize;
-            if (i == m_selectedLine) { c = Qt::red; alpha = 1.0f; lw = std::max(lw, 3.0f); }
-            else if (i == m_hoveredLine) { c = c.lighter(150); alpha = 1.0f; }
+            if (i == m_selectedLine) {
+                // Instead of forcing red, use a highlighted version of the existing color
+                c = c.lighter(125);  // Make 25% brighter
+                alpha = 1.0f;
+                lw = std::max(lw, 3.0f);
+            }
+            else if (i == m_hoveredLine) {
+                c = c.lighter(150);
+                alpha = 1.0f;
+            }
 
             // Set OpenGL line stipple for dash style (compatibility profile only)
             if (line.dashStyle == LineDashStyle::Dash) {
@@ -602,7 +487,7 @@ void HighPerfLineChart::drawChartWithOpenGL()
             }
 
             // --- DEBUG: Output number of points and lines being drawn ---
-            qDebug() << "[HighPerfLineChart] Drawing line" << i << "with" << pts.size() << "points, color:" << c << "alpha:" << alpha << "lw:" << lw << "ps:" << ps;
+            //qDebug() << "[HighPerfLineChart] Drawing line" << i << "with" << pts.size() << "points, color:" << c << "alpha:" << alpha << "lw:" << lw << "ps:" << ps;
 
             // Draw points (all points inside axes)
             if (m_showPoints) {
@@ -661,14 +546,9 @@ void HighPerfLineChart::drawChartWithOpenGL()
 
     // --- Draw moving average line if enabled ---
     if (m_showMovingAverageLine && m_movingAverageWindow > 1) {
-       /* QColor avgColor = (m_backgroundColor == Qt::black)
-            ? QColor(255, 165, 0) // Orange
-            : QColor(128, 0, 128);  // Purple */
-        QColor avgColor(255, 165, 0);
+        QColor offsetColor(255, 165, 0); // Orange as the constant offset color
         float avgAlpha = 1.0f;
         float avgWidth = 2.5f;
-        glLineWidth(avgWidth);
-        glColor4f(avgColor.redF(), avgColor.greenF(), avgColor.blueF(), avgAlpha);
 
         for (int i = 0; i < m_lines.size(); ++i) {
             const auto& line = m_lines[i];
@@ -676,6 +556,20 @@ void HighPerfLineChart::drawChartWithOpenGL()
                 continue;
             QVector<QPointF> avgPts = movingAverage(line.points, m_movingAverageWindow);
             if (avgPts.size() < 2) continue;
+
+            // Blend the line color with the offset color
+            QColor baseColor = m_globalLineColor.isValid() ? m_globalLineColor
+                : (line.color.isValid() ? line.color : Qt::black);
+            // Simple blend: 60% base, 40% offset
+            QColor avgColor(
+                (baseColor.red() * 3 + offsetColor.red() * 2) / 5,
+                (baseColor.green() * 3 + offsetColor.green() * 2) / 5,
+                (baseColor.blue() * 3 + offsetColor.blue() * 2) / 5
+            );
+
+            glLineWidth(avgWidth);
+            glColor4f(avgColor.redF(), avgColor.greenF(), avgColor.blueF(), avgAlpha);
+
             for (int j = 1; j < avgPts.size(); ++j) {
                 QPointF p0 = avgPts[j - 1];
                 QPointF p1 = avgPts[j];
@@ -1008,7 +902,8 @@ void HighPerfLineChart::drawLegend(QPainter& painter)
     int lineHeight = painter.fontMetrics().height() + 4;
     int i = 0;
     for (const auto& line : m_lines) {
-        QColor c = m_globalLineColor.isValid() ? m_globalLineColor : (line.color.isValid() ? line.color : Qt::black);
+        QColor c = m_globalLineColor.isValid() ? m_globalLineColor
+            : (line.color.isValid() ? line.color : Qt::black);
         painter.setPen(QPen(c, 2));
         painter.drawLine(x, y + i * lineHeight + lineHeight / 2, x + 20, y + i * lineHeight + lineHeight / 2);
         painter.setPen(legendColor);

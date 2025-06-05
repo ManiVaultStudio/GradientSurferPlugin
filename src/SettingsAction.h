@@ -110,8 +110,23 @@ public:
         const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
         TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
 
-        const IntegralAction& getLineSmoothingWindowAction() const { return _lineSmoothingWindow; }
-        IntegralAction& getLineSmoothingWindowAction() { return _lineSmoothingWindow; }
+        const IntegralAction& getLineSmoothingWindowAction() const { return _lineSmoothingWindowAction; }
+        IntegralAction& getLineSmoothingWindowAction() { return _lineSmoothingWindowAction; }
+
+        const ToggleAction& getShowAllLineSelectionInTableAction() const { return _showAllLineSelectionInTableAction; }
+        ToggleAction& getShowAllLineSelectionInTableAction() { return _showAllLineSelectionInTableAction; }
+
+        const ToggleAction& getShowDataLinesInChartAction() const { return _showDataLinesInChartAction; }
+        ToggleAction& getShowDataLinesInChartAction() { return _showDataLinesInChartAction; }
+
+        const ToggleAction& getShowDataPointsInChartAction() const { return _showDataPointsInChartAction; }
+        ToggleAction& getShowDataPointsInChartAction() { return _showDataPointsInChartAction; }
+
+        const ToggleAction& getShowConnectedStatsLineInChartAction() const { return _showConnectedStatsLineInChartAction; }
+        ToggleAction& getShowConnectedStatsLineInChartAction() { return _showConnectedStatsLineInChartAction; }
+
+        const ToggleAction& getShowMovingAverageLineInChartAction() const { return _showMovingAverageLineInChartAction; }
+        ToggleAction& getShowMovingAverageLineInChartAction() { return _showMovingAverageLineInChartAction; }
 
     protected:
         SettingsAction&                     _settingsOptions;
@@ -133,8 +148,13 @@ public:
         ToggleAction                        _freezeSelectionAction;
         DecimalAction                       _connectStatsLineAction;
         TriggerAction                       _deSelectRowAction;
-        IntegralAction                  _lineSmoothingWindow;
+        IntegralAction                  _lineSmoothingWindowAction;
+        ToggleAction                 _showAllLineSelectionInTableAction;
 
+        ToggleAction                _showDataLinesInChartAction;
+        ToggleAction                _showDataPointsInChartAction;
+        ToggleAction                _showConnectedStatsLineInChartAction;
+        ToggleAction                _showMovingAverageLineInChartAction;
     };
 
     class Dataset2OptionsHolder : public VerticalGroupAction
@@ -237,6 +257,8 @@ public:
 
 
 
+
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -252,6 +274,7 @@ public:
         OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
+       
         
     };
 

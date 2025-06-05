@@ -275,14 +275,14 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
 
         if (!line.points.isEmpty()) {
             lines.append(line);
-            qDebug() << "Added line" << lineIdx << "with" << line.points.size() << "points";
+            //qDebug() << "Added line" << lineIdx << "with" << line.points.size() << "points";
             if (!line.points.isEmpty()) {
-                qDebug() << "  First point:" << line.points.first().x() << line.points.first().y();
-                qDebug() << "  Last point:" << line.points.last().x() << line.points.last().y();
+                //qDebug() << "  First point:" << line.points.first().x() << line.points.first().y();
+                //qDebug() << "  Last point:" << line.points.last().x() << line.points.last().y();
             }
         }
         else {
-            qWarning() << "Skipping empty line" << lineIdx;
+            //qWarning() << "Skipping empty line" << lineIdx;
         }
     }
 
@@ -563,7 +563,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     int geneIndex = std::distance(dimensionNames.begin(), it);
                     LineData selectedGeneLineData;
-
+                    QVector<QColor> colorsExpVals = { QColor("#FDCC0D") };
                     std::vector<int> geneIndicesExp = { geneIndex };
                     std::vector<float> expresionValues(_filteredSelectionIndices.size() * geneIndicesExp.size());
                     QVector<QPointF> points;
@@ -616,7 +616,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         coordValues,
                         static_cast<int>(_filteredSelectionIndices.size()),
                         static_cast<int>(geneIndicesExp.size()),
-                        QVector<QColor>(), // colors
+                        colorsExpVals, // colors
                         true,              // coordIsX
                         true               // sortByX
                     );
@@ -631,14 +631,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     
                     // 5. Send to chart
                     _settingsAction.getLineChart1Widget()->setLines(lineData);
-                    _settingsAction.getLineChart1Widget()->setShowPoints(false);
-                    _settingsAction.getLineChart1Widget()->setShowLines(false);
+                    _settingsAction.getLineChart1Widget()->setShowPoints(_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction().isChecked());
+                    _settingsAction.getLineChart1Widget()->setShowLines(_settingsAction.getDataset1OptionsHolder().getShowDataLinesInChartAction().isChecked());
 
                     _numOfPointsInLine1 = lineData.first().points.size();
                     _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(_numOfPointsInLine1);
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
-                    _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(true);
+                    _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction().isChecked());
                     
                     _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
    
@@ -646,7 +646,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     //_settingsAction.getLineChart1Widget()->setMovingAverageWindow(std::max(1, int(_numOfPointsInLine1 * _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue())));
                     _settingsAction.getLineChart1Widget()->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
-                    _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(true);
+                    _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(_settingsAction.getDataset1OptionsHolder().getShowMovingAverageLineInChartAction().isChecked());
                     mv::theme().isSystemDarkColorSchemeActive() ?
                         _settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::black) :
                         _settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::white);
@@ -1123,6 +1123,58 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction(), &IntegralAction::valueChanged, this, updateLineSmoothingWindow);
+
+
+
+
+    const auto updateShowMovingAverageLine = [this]() -> void {
+        if (!_settingsAction.getLineChart1Widget())
+        {
+            qDebug() << "No line chart widget available";
+            return;
+        }
+        _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(_settingsAction.getDataset1OptionsHolder().getShowMovingAverageLineInChartAction().isChecked());
+        };
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getShowMovingAverageLineInChartAction(), &ToggleAction::toggled, this, updateShowMovingAverageLine);
+
+
+
+    const auto updateShowConnectedStatsLine = [this]() -> void {
+        if (!_settingsAction.getLineChart1Widget())
+        {
+            qDebug() << "No line chart widget available";
+            return;
+        }
+        _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction().isChecked());
+        };
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction(), &ToggleAction::toggled, this, updateShowConnectedStatsLine);
+
+
+    const auto updateShowPointsinChart = [this]() -> void {
+        if (!_settingsAction.getLineChart1Widget())
+        {
+            qDebug() << "No line chart widget available";
+            return;
+        }
+        _settingsAction.getLineChart1Widget()->setShowPoints(_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction().isChecked());
+        };
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction(), &ToggleAction::toggled, this, updateShowPointsinChart);
+
+
+    const auto updateShowLinesinChart = [this]() -> void {
+        if (!_settingsAction.getLineChart1Widget())
+        {
+            qDebug() << "No line chart widget available";
+            return;
+        }
+        _settingsAction.getLineChart1Widget()->setShowLines(_settingsAction.getDataset1OptionsHolder().getShowDataLinesInChartAction().isChecked());
+        };
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getShowDataLinesInChartAction(), &ToggleAction::toggled, this, updateShowLinesinChart);
+
 
     /*
     		    connect(&_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction(),
@@ -3222,15 +3274,33 @@ void Computation::drawCombinedLines()
     _rotatedSelectedEmbeddingDataset->extractDataForDimension(rotatedYCordinates, 1);
 
     // Get gene indices for common genes
-    std::vector<int> geneIndicesExp;
+    std::vector<int> geneIndicesExpVals;
+    QVector<QColor> colorsExpVals;
     auto dimNamesFull = fullPointDataset1->getDimensionNames();
     for (int i = 0; i < dimNamesFull.size(); i++) {
         const QString& geneName = dimNamesFull[i];
-        if (_commonGeneNames.contains(geneName)) {
-            geneIndicesExp.push_back(i);
+        if (_settingsAction.getDataset1OptionsHolder().getShowAllLineSelectionInTableAction().isChecked())
+        {
+            if (_commonGeneNames.contains(geneName)) {
+                geneIndicesExpVals.push_back(i);
+                colorsExpVals.append(QColor("#FDCC0D"));
+            }
+            else
+            {
+                geneIndicesExpVals.push_back(i);
+                colorsExpVals.append(QColor(Qt::black));
+            }
+        }
+        else
+        {
+            if (_commonGeneNames.contains(geneName)) {
+                geneIndicesExpVals.push_back(i);
+                colorsExpVals.append(QColor("#FDCC0D"));
+            }
         }
     }
-    if (geneIndicesExp.empty()) {
+
+    if (geneIndicesExpVals.empty()) {
         qDebug() << "No common gene indices found";
         setStatusMessage("E", "No common gene indices found", "");
         return;
@@ -3238,7 +3308,9 @@ void Computation::drawCombinedLines()
 
     // Prepare expression values
     size_t numPoints = _filteredSelectionIndices.size();
-    size_t numLines = geneIndicesExp.size();
+    size_t numLines = geneIndicesExpVals.size();
+
+
     if (numPoints == 0 || numLines == 0) {
         qDebug() << "No points or lines to plot";
         setStatusMessage("E", "No points or lines to plot", "");
@@ -3247,7 +3319,7 @@ void Computation::drawCombinedLines()
     std::vector<float> expresionValues(numPoints * numLines);
 
     try {
-        fullPointDataset1->populateDataForDimensions(expresionValues, geneIndicesExp, _filteredSelectionIndices);
+        fullPointDataset1->populateDataForDimensions(expresionValues, geneIndicesExpVals, _filteredSelectionIndices);
     }
     catch (const std::exception& ex) {
         qDebug() << "Exception in populateDataForDimensions:" << ex.what();
@@ -3288,7 +3360,7 @@ void Computation::drawCombinedLines()
         rotatedYCordinates,
         static_cast<int>(numPoints),
         static_cast<int>(numLines),
-        QVector<QColor>(), // colors
+        colorsExpVals, // colors
         true,              // coordIsX
         true               // sortByX
     );
@@ -3296,9 +3368,9 @@ void Computation::drawCombinedLines()
     // Debug output
     qDebug() << "Converted line data size:" << lineData.size();
     if (!lineData.empty()) {
-        qDebug() << "First line points:" << lineData.first().points.size();
+        //qDebug() << "First line points:" << lineData.first().points.size();
         if (!lineData.first().points.empty()) {
-            qDebug() << "Sample point:" << lineData.first().points.first();
+            //qDebug() << "Sample point:" << lineData.first().points.first();
         }
     }
     else {
@@ -3309,19 +3381,19 @@ void Computation::drawCombinedLines()
 
     // Send to chart
     lineChartWidget->setLines(lineData);
-    lineChartWidget->setShowPoints(false);
-    lineChartWidget->setShowLines(false);
+    lineChartWidget->setShowPoints(_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction().isChecked());
+    lineChartWidget->setShowLines(_settingsAction.getDataset1OptionsHolder().getShowDataLinesInChartAction().isChecked());
 
     auto numOfPointsInLine1 = lineData.first().points.size();
     _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(numOfPointsInLine1);
     lineChartWidget->setConnectStatsLineN(numOfPointsInLine1 * _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
     lineChartWidget->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
-    lineChartWidget->setConnectStatsLineEnabled(true);
+    lineChartWidget->setConnectStatsLineEnabled(_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction().isChecked());
 
     lineChartWidget->setShowAvgNumPointsLabel(true);
 
     lineChartWidget->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
-    lineChartWidget->setShowMovingAverageLine(true);
+    lineChartWidget->setShowMovingAverageLine(_settingsAction.getDataset1OptionsHolder().getShowMovingAverageLineInChartAction().isChecked());
     mv::theme().isSystemDarkColorSchemeActive() ?
         lineChartWidget->setBackgroundColor(Qt::black) :
         lineChartWidget->setBackgroundColor(Qt::white);
@@ -3377,12 +3449,12 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             QFont fontG = geneItem->font();
             fontG.setBold(true);
             geneItem->setFont(fontG);
-            geneItem->setBackground(QColor("#FFFACD"));
+            geneItem->setBackground(QColor("#FDCC0D"));
             geneItem->setForeground(QColor("#000000"));
             QFont fontR = rankItem->font();
             fontR.setBold(true);
             rankItem->setFont(fontR);
-            rankItem->setBackground(QColor("#FFFACD"));
+            rankItem->setBackground(QColor("#FDCC0D"));
             rankItem->setForeground(QColor("#000000"));
             _commonGeneNames.append(entry.geneName);
         }
