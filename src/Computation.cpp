@@ -585,6 +585,29 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     qDebug() << "Points per line:" << _filteredSelectionIndices.size();
                     qDebug() << "Number of lines:" << geneIndicesExp.size();
 
+                    //option to normalize expresionValues 
+                    if (false) {
+                        // Normalize expression values to [0, 1] range
+                        float minVal = *std::min_element(expresionValues.begin(), expresionValues.end());
+                        float maxVal = *std::max_element(expresionValues.begin(), expresionValues.end());
+                        if (maxVal - minVal > 0) {
+                            for (auto& val : expresionValues) {
+                                val = (val - minVal) / (maxVal - minVal);
+                            }
+                        }
+                    }
+                    //option to normalize rotatedYCordinates
+                    if (false) {
+                        // Normalize rotated Y coordinates to [0, 1] range
+                        float minY = *std::min_element(coordValues.begin(), coordValues.end());
+                        float maxY = *std::max_element(coordValues.begin(), coordValues.end());
+                        if (maxY - minY > 0) {
+                            for (auto& val : coordValues) {
+                                val = (val - minY) / (maxY - minY);
+                            }
+                        }
+                    }
+
                     // 3. Convert with debugging
                     auto lineData = convertToLineData(
                         expresionValues,
@@ -3197,6 +3220,29 @@ void Computation::drawCombinedLines()
         setStatusMessage("E", "Error occurred during populating expression values", "");
         return;
     }
+    //option to normalize expresionValues 
+    if (false) {
+        // Normalize expression values to [0, 1] range
+        float minVal = *std::min_element(expresionValues.begin(), expresionValues.end());
+        float maxVal = *std::max_element(expresionValues.begin(), expresionValues.end());
+        if (maxVal - minVal > 0) {
+            for (auto& val : expresionValues) {
+                val = (val - minVal) / (maxVal - minVal);
+            }
+        }
+    }
+    //option to normalize rotatedYCordinates
+    if (false) {
+        // Normalize rotated Y coordinates to [0, 1] range
+        float minY = *std::min_element(rotatedYCordinates.begin(), rotatedYCordinates.end());
+        float maxY = *std::max_element(rotatedYCordinates.begin(), rotatedYCordinates.end());
+        if (maxY - minY > 0) {
+            for (auto& val : rotatedYCordinates) {
+                val = (val - minY) / (maxY - minY);
+            }
+        }
+    }
+    
 
     // Debug output
     qDebug() << "Points per line:" << numPoints;
