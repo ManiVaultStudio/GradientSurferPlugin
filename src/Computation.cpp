@@ -3227,7 +3227,7 @@ void Computation::drawCombinedLines()
     auto dimNamesFull = fullPointDataset1->getDimensionNames();
     for (int i = 0; i < dimNamesFull.size(); i++) {
         const QString& geneName = dimNamesFull[i];
-        if (_settingsAction.getDataset1OptionsHolder().getShowAllLinesInTable().isChecked())
+        if (_settingsAction.getDataset1OptionsHolder().getShowAllLineSelectionInTable().isChecked())
         {
             if (_commonGeneNames.contains(geneName)) {
                 geneIndicesExpVals.push_back(i);

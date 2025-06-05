@@ -113,8 +113,8 @@ public:
         const IntegralAction& getLineSmoothingWindowAction() const { return _lineSmoothingWindow; }
         IntegralAction& getLineSmoothingWindowAction() { return _lineSmoothingWindow; }
 
-        const ToggleAction& getShowAllLinesInTable() const { return _showAllLinesInTable; }
-        ToggleAction& getShowAllLinesInTable() { return _showAllLinesInTable; }
+        const ToggleAction& getShowAllLineSelectionInTable() const { return _showAllLineSelectionInTable; }
+        ToggleAction& getShowAllLineSelectionInTable() { return _showAllLineSelectionInTable; }
 
     protected:
         SettingsAction&                     _settingsOptions;
@@ -137,7 +137,7 @@ public:
         DecimalAction                       _connectStatsLineAction;
         TriggerAction                       _deSelectRowAction;
         IntegralAction                  _lineSmoothingWindow;
-        ToggleAction                 _showAllLinesInTable;
+        ToggleAction                 _showAllLineSelectionInTable;
     };
 
     class Dataset2OptionsHolder : public VerticalGroupAction

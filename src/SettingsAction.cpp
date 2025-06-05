@@ -72,7 +72,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _dataset2OptionsHolder.getFocusSelection2Action().setToolTip("Focus Selection Action 2");
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
-    _dataset1OptionsHolder.getShowAllLinesInTable().setToolTip("Show All Lines in Table Action");
+    _dataset1OptionsHolder.getShowAllLineSelectionInTable().setToolTip("Show All Line Selections in Table Action");
     _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setToolTip("Hide Point Selection Outline Action 2");
     _dataset1OptionsHolder.getFreezeSelectionAction().setToolTip("Freeze Selection Action");
     _dataset2OptionsHolder.getFreezeSelection2Action().setToolTip("Freeze Selection Action 2");
@@ -108,7 +108,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _dataset1OptionsHolder.getFocusSelectionAction().setChecked(false);
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
-    _dataset1OptionsHolder.getShowAllLinesInTable().setChecked(false);
+    _dataset1OptionsHolder.getShowAllLineSelectionInTable().setChecked(false);
     _dataset1OptionsHolder.getFreezeSelectionAction().setChecked(false);
 
     _dataset2OptionsHolder.getFocusSelection2Action().setChecked(false);
@@ -165,7 +165,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _dataset1OptionsHolder.getShowAllLinesInTable().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _dataset1OptionsHolder.getShowAllLineSelectionInTable().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _dataset1OptionsHolder.getFreezeSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _dataset2OptionsHolder.getFreezeSelection2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
@@ -285,7 +285,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _freezeSelectionAction(this, "Freeze Selection"),
     _connectStatsLineAction(this, "Stats Line Top Bottom N"),
     _lineSmoothingWindow(this, "Line Smoothing Window"),
-    _showAllLinesInTable(this, "Show All Lines in Table")
+    _showAllLineSelectionInTable(this, "Show All Lines in Table")
 {
     setText("Dataset1 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -304,7 +304,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_freezeSelectionAction);
     addAction(&_connectStatsLineAction);
     addAction(&_lineSmoothingWindow);
-    addAction(&_showAllLinesInTable);
+    addAction(&_showAllLineSelectionInTable);
 }
 
 
