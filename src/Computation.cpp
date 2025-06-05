@@ -532,12 +532,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
              _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
-        if (_settingsAction.getLineChart1Widget())
-        {
-            _settingsAction.getLineChart1Widget()->clear();
-            _numOfPointsInLine1 = 0;
 
-        }
         auto selectedGene =  _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
         if (selectedGene == "")
         {
@@ -1110,11 +1105,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         &DecimalRangeAction::rangeChanged,
         this,
         [this]() {
-            _correlationRangeDebounceTimer1.start(300);
+            _correlationRangeDebounceTimer1.start(1000);
         });
     connect(&_correlationRangeDebounceTimer1, &QTimer::timeout, this, [this]() {
         setStatusMessage("R", "Updating correlation 1 table", "");
         resetupCorrelationTable(1);
+        drawCombinedLines();
         setStatusMessage("C", "Correlation table 1 updated", "");
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
@@ -1867,6 +1863,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         _settingsAction.getLineChart1Widget()->clear();
         _numOfPointsInLine1 = 0;
+        if (_settingsAction.getLineChart1Widget())
+        {
+            _settingsAction.getLineChart1Widget()->clear();
+            drawCombinedLines();
+            
+
+        }
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction(), &TriggerAction::triggered, this, deselectRow1);
@@ -3078,6 +3081,7 @@ void Computation::resetupCorrelationTable(int datasetNumber)
         gene.isWithinRange = isWithinRange;
         if (isWithinRange) {
             geneOfInterestIndices.push_back(gene.geneIndex);
+           
         }
     }
 
@@ -3109,6 +3113,152 @@ void Computation::setSelectionAndAutoCompute()
     AutoCompute();
 }
 
+void Computation::drawCombinedLines()
+{
+    qDebug() << "Drawing combined lines for selected genes";
+    // Check if the line chart widget is available
+    auto* lineChartWidget = _settingsAction.getLineChart1Widget();
+    if (!lineChartWidget) {
+        qDebug() << "Line chart widget is not available";
+        setStatusMessage("E", "Line chart widget is not available", "");
+        return;
+    }
+    lineChartWidget->clear();
+
+    // Validate rotated embedding dataset
+    if (!_rotatedSelectedEmbeddingDataset.isValid()) {
+        qDebug() << "Rotated selected embedding dataset is invalid";
+        setStatusMessage("E", "Rotated selected embedding dataset is invalid", "");
+        return;
+    }
+
+    // Validate selected cell point dataset
+    if (!_selectedCellPointDataset.isValid()) {
+        qDebug() << "Selected cell point dataset is invalid";
+        setStatusMessage("E", "Selected cell point dataset is invalid", "");
+        return;
+    }
+
+    // Validate point dataset 1
+    mv::Dataset<Points> fullPointDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
+    if (!fullPointDataset1.isValid()) {
+        qDebug() << "Point dataset 1 is invalid";
+        setStatusMessage("E", "Point dataset 1 is invalid", "");
+        return;
+    }
+
+    // Check filtered selection indices
+    if (_filteredSelectionIndices.empty()) {
+        qDebug() << "No filtered selection indices available";
+        setStatusMessage("E", "No filtered selection indices available", "");
+        return;
+    }
+
+    // Get rotated Y coordinates
+    auto numofPoints = _rotatedSelectedEmbeddingDataset->getNumPoints();
+    if (numofPoints <= 0) {
+        qDebug() << "No points in rotated selected embedding dataset";
+        setStatusMessage("E", "No points in rotated selected embedding dataset", "");
+        return;
+    }
+    std::vector<float> rotatedYCordinates(numofPoints);
+    _rotatedSelectedEmbeddingDataset->extractDataForDimension(rotatedYCordinates, 1);
+
+    // Get gene indices for common genes
+    std::vector<int> geneIndicesExp;
+    auto dimNamesFull = fullPointDataset1->getDimensionNames();
+    for (int i = 0; i < dimNamesFull.size(); i++) {
+        const QString& geneName = dimNamesFull[i];
+        if (_commonGeneNames.contains(geneName)) {
+            geneIndicesExp.push_back(i);
+        }
+    }
+    if (geneIndicesExp.empty()) {
+        qDebug() << "No common gene indices found";
+        setStatusMessage("E", "No common gene indices found", "");
+        return;
+    }
+
+    // Prepare expression values
+    size_t numPoints = _filteredSelectionIndices.size();
+    size_t numLines = geneIndicesExp.size();
+    if (numPoints == 0 || numLines == 0) {
+        qDebug() << "No points or lines to plot";
+        setStatusMessage("E", "No points or lines to plot", "");
+        return;
+    }
+    std::vector<float> expresionValues(numPoints * numLines);
+
+    try {
+        fullPointDataset1->populateDataForDimensions(expresionValues, geneIndicesExp, _filteredSelectionIndices);
+    }
+    catch (const std::exception& ex) {
+        qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+        setStatusMessage("E", "Error occurred during populating expression values", "");
+        return;
+    }
+
+    // Debug output
+    qDebug() << "Points per line:" << numPoints;
+    qDebug() << "Number of lines:" << numLines;
+
+    // Convert to line data
+    auto lineData = convertToLineData(
+        expresionValues,
+        rotatedYCordinates,
+        static_cast<int>(numPoints),
+        static_cast<int>(numLines),
+        QVector<QColor>(), // colors
+        true,              // coordIsX
+        true               // sortByX
+    );
+
+    // Debug output
+    qDebug() << "Converted line data size:" << lineData.size();
+    if (!lineData.empty()) {
+        qDebug() << "First line points:" << lineData.first().points.size();
+        if (!lineData.first().points.empty()) {
+            qDebug() << "Sample point:" << lineData.first().points.first();
+        }
+    }
+    else {
+        qDebug() << "No line data generated";
+        setStatusMessage("E", "No line data generated", "");
+        return;
+    }
+
+    // Send to chart
+    lineChartWidget->setLines(lineData);
+    lineChartWidget->setShowPoints(false);
+    lineChartWidget->setShowLines(false);
+
+    auto numOfPointsInLine1 = lineData.first().points.size();
+    _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(numOfPointsInLine1);
+    lineChartWidget->setConnectStatsLineN(numOfPointsInLine1 * _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
+    lineChartWidget->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
+    lineChartWidget->setConnectStatsLineEnabled(true);
+
+    lineChartWidget->setShowAvgNumPointsLabel(true);
+
+    lineChartWidget->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
+    lineChartWidget->setShowMovingAverageLine(true);
+    mv::theme().isSystemDarkColorSchemeActive() ?
+        lineChartWidget->setBackgroundColor(Qt::black) :
+        lineChartWidget->setBackgroundColor(Qt::white);
+    lineChartWidget->setAxisFont(QFont("Arial", 12));
+    lineChartWidget->setTickLabelFont(QFont("Arial", 10));
+    mv::theme().isSystemDarkColorSchemeActive() ?
+        lineChartWidget->setAxisColor(Qt::white) :
+        lineChartWidget->setAxisColor(Qt::black);
+    mv::theme().isSystemDarkColorSchemeActive() ?
+        lineChartWidget->setTickLabelColor(Qt::white) :
+        lineChartWidget->setTickLabelColor(Qt::black);
+    lineChartWidget->setXAxisName("Rotated Y coordinates");
+    lineChartWidget->setYAxisName("Gene expression");
+    lineChartWidget->setShowLegend(false);
+    lineChartWidget->setShowAvgNumPointsLabel(false);
+}
+
 void Computation::setupTableModelAndSelection(int datasetNumber)
 {
     // Select appropriate data and view pointers
@@ -3129,7 +3279,7 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
         minCorr = std::min(minCorr, entry.correlationValue);
         maxCorr = std::max(maxCorr, entry.correlationValue);
     }
-
+    _commonGeneNames.clear();
     // Preallocate row items for efficiency
     QVector<QStandardItem*> rowItems(3);
     for (int i = 0; i < rowCount; ++i) {
@@ -3154,6 +3304,7 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             rankItem->setFont(fontR);
             rankItem->setBackground(QColor("#FFFACD"));
             rankItem->setForeground(QColor("#000000"));
+            _commonGeneNames.append(entry.geneName);
         }
         corrItem->setForeground(QColor("#000000"));
 
@@ -3210,4 +3361,5 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             );
         }
     }
+    //drawCombinedLines();
 }

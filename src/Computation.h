@@ -90,7 +90,7 @@ private:
     void updateClusterOptions();
     void processAfterPCAComplete();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
-
+    void drawCombinedLines();
     bool populateEmbeddingCoordinates(
         int xEmbeddingIndex, int yEmbeddingIndex,
         std::vector<float>& XYCoordinates);
@@ -122,6 +122,7 @@ protected:
     std::vector<CorrelationGeneCoords> _geneCorrValues2;
     std::vector<int>            _geneOfInterestIndices1;
     std::vector<int>            _geneOfInterestIndices2;
+    QStringList                 _commonGeneNames;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
@@ -138,5 +139,6 @@ protected:
     int             _numOfPointsInLine2 = 0;
     QString    _selectedGene1 = "";
     QString    _selectedGene2 = "";
+
     friend class ChannelAction;
 };
