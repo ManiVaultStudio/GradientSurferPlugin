@@ -130,7 +130,8 @@ protected:
 
     QTimer _correlationRangeDebounceTimer1;
     QTimer _clusterSelectionDebounceTimer;
-
+    //QTimer _connectedStatsLineDebounceTimer;
+    //QTimer _lineSmoothingWindowDebounceTimer;
     QTimer _correlationRangeDebounceTimer2;
 
     bool      _pcaDataset1Complete = false;
