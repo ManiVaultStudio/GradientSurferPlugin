@@ -72,7 +72,11 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _dataset2OptionsHolder.getFocusSelection2Action().setToolTip("Focus Selection Action 2");
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
-    _dataset1OptionsHolder.getShowAllLineSelectionInTable().setToolTip("Show All Line Selections in Table Action");
+    _dataset1OptionsHolder.getShowAllLineSelectionInTableAction().setToolTip("Show All Line Selections in Table Action");
+    _dataset1OptionsHolder.getShowDataLinesInChartAction().setToolTip("Show Data Lines in Chart Action");
+    _dataset1OptionsHolder.getShowDataPointsInChartAction().setToolTip("Show Data Points in Chart Action");
+    _dataset1OptionsHolder.getShowConnectedStatsLineInChartAction().setToolTip("Show Connected Stats Line in Chart Action");
+    _dataset1OptionsHolder.getShowMovingAverageLineInChartAction().setToolTip("Show Moving Average Line in Chart Action");
     _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setToolTip("Hide Point Selection Outline Action 2");
     _dataset1OptionsHolder.getFreezeSelectionAction().setToolTip("Freeze Selection Action");
     _dataset2OptionsHolder.getFreezeSelection2Action().setToolTip("Freeze Selection Action 2");
@@ -108,7 +112,15 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _dataset1OptionsHolder.getFocusSelectionAction().setChecked(false);
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
-    _dataset1OptionsHolder.getShowAllLineSelectionInTable().setChecked(false);
+    _dataset1OptionsHolder.getShowAllLineSelectionInTableAction().setChecked(false);
+
+
+    _dataset1OptionsHolder.getShowDataLinesInChartAction().setChecked(false);
+    _dataset1OptionsHolder.getShowDataPointsInChartAction().setChecked(false);
+    _dataset1OptionsHolder.getShowConnectedStatsLineInChartAction().setChecked(true);
+    _dataset1OptionsHolder.getShowMovingAverageLineInChartAction().setChecked(true);
+
+
     _dataset1OptionsHolder.getFreezeSelectionAction().setChecked(false);
 
     _dataset2OptionsHolder.getFocusSelection2Action().setChecked(false);
@@ -165,7 +177,13 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _dataset1OptionsHolder.getShowAllLineSelectionInTable().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _dataset1OptionsHolder.getShowAllLineSelectionInTableAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+
+
+    _dataset1OptionsHolder.getShowDataLinesInChartAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _dataset1OptionsHolder.getShowDataPointsInChartAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _dataset1OptionsHolder.getShowConnectedStatsLineInChartAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _dataset1OptionsHolder.getShowMovingAverageLineInChartAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _dataset1OptionsHolder.getFreezeSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _dataset2OptionsHolder.getFreezeSelection2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
@@ -284,8 +302,12 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
     _freezeSelectionAction(this, "Freeze Selection"),
     _connectStatsLineAction(this, "Stats Line Top Bottom N"),
-    _lineSmoothingWindow(this, "Line Smoothing Window"),
-    _showAllLineSelectionInTable(this, "Show All Lines in Table")
+    _lineSmoothingWindowAction(this, "Line Smoothing Window"),
+    _showAllLineSelectionInTableAction(this, "Show All Lines in Table"),
+    _showDataLinesInChartAction(this, "Show Data Lines in Chart"),
+    _showDataPointsInChartAction(this, "Show Data Points in Chart"),
+    _showConnectedStatsLineInChartAction(this, "Show Connected Stats Line in Chart"),
+    _showMovingAverageLineInChartAction(this, "Show Moving Average Line in Chart")
 {
     setText("Dataset1 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -303,8 +325,14 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_hidePointSelectionAction);
     addAction(&_freezeSelectionAction);
     addAction(&_connectStatsLineAction);
-    addAction(&_lineSmoothingWindow);
-    addAction(&_showAllLineSelectionInTable);
+    addAction(&_lineSmoothingWindowAction);
+    addAction(&_showAllLineSelectionInTableAction);
+    addAction(&_showDataLinesInChartAction);
+    addAction(&_showDataPointsInChartAction);
+    addAction(&_showConnectedStatsLineInChartAction);
+    addAction(&_showMovingAverageLineInChartAction);
+
+
 }
 
 
