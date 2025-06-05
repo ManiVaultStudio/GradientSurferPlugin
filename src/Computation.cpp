@@ -41,29 +41,17 @@ public:
         if (index.column() == 1) { // Correlation column
             float value = index.data(Qt::UserRole + 1).toFloat();
 
-            // --- Begin: Modified normalization and bar logic for negative/positive values ---
-            float minV = minValue, maxV = maxValue;
-            if (minV == maxV) {
-                minV = -1.0f; maxV = 1.0f;
-            }
-            value = std::max(std::min(value, maxV), minV);
+            // --- Centered y-axis logic ---
+            float maxAbs = std::max(std::abs(minValue), std::abs(maxValue));
+            if (maxAbs < 1e-6f) maxAbs = 1.0f; // Avoid division by zero
 
             QRect barRect = option.rect.adjusted(4, 4, -4, -4);
 
-            float zeroFrac = (0.0f - minV) / (maxV - minV);
-            int zeroX = barRect.left() + static_cast<int>(zeroFrac * barRect.width());
+            int centerX = barRect.left() + barRect.width() / 2;
 
-            int barStartX, barEndX;
-            int valueX = barRect.left() + static_cast<int>(((value - minV) / (maxV - minV)) * barRect.width());
-            if (value >= 0.0f) {
-                barStartX = zeroX;
-                barEndX = valueX;
-            }
-            else {
-                barStartX = valueX;
-                barEndX = zeroX;
-            }
-            if (barStartX > barEndX) std::swap(barStartX, barEndX);
+            int barStartX = centerX;
+            int barEndX = centerX + static_cast<int>((value / maxAbs) * (barRect.width() / 2));
+            if (barEndX < barStartX) std::swap(barStartX, barEndX);
 
             QRect filledRect = barRect;
             filledRect.setLeft(barStartX);
@@ -73,16 +61,12 @@ public:
             painter->setRenderHint(QPainter::Antialiasing, true);
 
             // Draw selection or normal background
-            QColor bgColor;
-            if (option.state & QStyle::State_Selected) {
-                bgColor = option.palette.color(QPalette::Highlight);
-            }
-            else {
-                bgColor = option.palette.color(QPalette::Base);
-            }
+            QColor bgColor = (option.state & QStyle::State_Selected)
+                ? option.palette.color(QPalette::Highlight)
+                : option.palette.color(QPalette::Base);
             painter->fillRect(option.rect, bgColor);
 
-            // --- Dotted y-axis line: white on black bg, black on white bg, else contrast ---
+            // Dotted y-axis line: white on black bg, black on white bg, else contrast
             QColor axisColor;
             auto isColorClose = [](const QColor& c1, const QColor& c2, int threshold = 16) {
                 return (std::abs(c1.red() - c2.red()) < threshold &&
@@ -98,7 +82,6 @@ public:
                 axisColor = QColor(Qt::black);
             }
             else {
-                // Use a high-contrast color (black or white) based on luminance
                 double luminance = (0.299 * bgColor.red() + 0.587 * bgColor.green() + 0.114 * bgColor.blue()) / 255.0;
                 axisColor = (luminance > 0.5) ? QColor(Qt::black) : QColor(Qt::white);
             }
@@ -112,12 +95,10 @@ public:
             int axisBottom = barRect.bottom() + axisExtra;
 
             painter->setPen(axisPen);
-            painter->drawLine(zeroX, axisTop, zeroX, axisBottom);
+            painter->drawLine(centerX, axisTop, centerX, axisBottom);
 
-            // --- Bar color: not blue, contrast to both axis and background ---
+            // Bar color: not blue, contrast to both axis and background
             QColor barColor;
-            // Pick a color that is not blue, and is contrastive to both bg and axis
-            // Use orange for dark backgrounds, purple for light backgrounds, fallback to green
             if (bgIsBlack || axisColor == QColor(Qt::white)) {
                 barColor = QColor(255, 140, 0); // Orange
             }
@@ -125,12 +106,8 @@ public:
                 barColor = QColor(128, 0, 128); // Purple
             }
             else {
-                // Fallback: pick a color with high contrast to both
                 double axisLuminance = (0.299 * axisColor.red() + 0.587 * axisColor.green() + 0.114 * axisColor.blue()) / 255.0;
-                if (axisLuminance > 0.5)
-                    barColor = QColor(0, 128, 0); // Green
-                else
-                    barColor = QColor(255, 165, 0); // Orange
+                barColor = (axisLuminance > 0.5) ? QColor(0, 128, 0) : QColor(255, 165, 0);
             }
 
             // Draw the bar only if value is not zero
@@ -151,7 +128,7 @@ public:
             }
 
             painter->restore();
-            // --- End: Modified normalization and bar logic ---
+            // --- End: Centered y-axis logic ---
         }
         else {
             QStyledItemDelegate::paint(painter, option, index);
@@ -664,7 +641,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::black);
                     _settingsAction.getLineChart1Widget()->setXAxisName("Rotated Y coordinates");
                     _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression " + _selectedGene1);
-                    _settingsAction.getLineChart1Widget()->setShowLegend(true);
+                    _settingsAction.getLineChart1Widget()->setShowLegend(false);
                     _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
                 }
 
