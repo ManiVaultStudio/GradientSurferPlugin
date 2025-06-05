@@ -913,12 +913,24 @@ void HighPerfLineChart::drawLegend(QPainter& painter)
     }
     // Add moving average legend
     if (m_showMovingAverageLine && m_movingAverageWindow > 1) {
-        QColor avgColor = Qt::darkMagenta;
-        painter.setPen(QPen(avgColor, 2, Qt::DashLine));
-        painter.drawLine(x, y + i * lineHeight + lineHeight / 2, x + 20, y + i * lineHeight + lineHeight / 2);
-        painter.setPen(legendColor);
-        painter.drawText(x + 28, y + (i + 1) * lineHeight - 4, QString("Moving Average (window=%1)").arg(m_movingAverageWindow));
-        ++i;
+        QColor offsetColor(255, 165, 0); // Orange as the constant offset color
+        for (int j = 0; j < m_lines.size(); ++j) {
+            QColor baseColor = m_globalLineColor.isValid() ? m_globalLineColor
+                : (m_lines[j].color.isValid() ? m_lines[j].color : Qt::black);
+            // Simple blend: 60% base, 40% offset
+            QColor avgColor(
+                (baseColor.red() * 3 + offsetColor.red() * 2) / 5,
+                (baseColor.green() * 3 + offsetColor.green() * 2) / 5,
+                (baseColor.blue() * 3 + offsetColor.blue() * 2) / 5
+            );
+            painter.setPen(QPen(avgColor, 2, Qt::DashLine));
+            painter.drawLine(x, y + i * lineHeight + lineHeight / 2, x + 20, y + i * lineHeight + lineHeight / 2);
+            painter.setPen(legendColor);
+            painter.drawText(x + 28, y + (i + 1) * lineHeight - 4,
+                QString("Moving Average (window=%1) Line %2").arg(m_movingAverageWindow).arg(j + 1));
+            ++i;
+            if (i > 10) break; // Limit legend size
+        }
     }
     // Add connect stats legend
     if (m_connectStatsLineEnabled && m_connectStatsLineN > 1) {
