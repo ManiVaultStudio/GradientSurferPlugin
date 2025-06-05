@@ -6,66 +6,7 @@
 #include <random>
 #include <QFont>
 #include <QPen>
-#include <algorithm> // For std::sort, std::vector
-
-namespace {
-enum OutCode {
-    INSIDE = 0, // 0000
-    LEFT   = 1, // 0001
-    RIGHT  = 2, // 0010
-    BOTTOM = 4, // 0100
-    TOP    = 8  // 1000
-};
-
-int computeOutCode(double x, double y, double xmin, double xmax, double ymin, double ymax) {
-    int code = OutCode::INSIDE;
-    if (x < xmin)       code |= OutCode::LEFT;
-    else if (x > xmax)  code |= OutCode::RIGHT;
-    if (y < ymin)       code |= OutCode::BOTTOM;
-    else if (y > ymax)  code |= OutCode::TOP;
-    return code;
-}
-
-// Returns true if a clipped segment exists, and modifies (x0,y0,x1,y1) to the clipped segment
-bool cohenSutherlandClip(double& x0, double& y0, double& x1, double& y1, double xmin, double xmax, double ymin, double ymax) {
-    int outcode0 = computeOutCode(x0, y0, xmin, xmax, ymin, ymax);
-    int outcode1 = computeOutCode(x1, y1, xmin, xmax, ymin, ymax);
-    bool accept = false;
-
-    while (true) {
-        if (!(outcode0 | outcode1)) {
-            accept = true;
-            break;
-        } else if (outcode0 & outcode1) {
-            break;
-        } else {
-            double x, y;
-            int outcodeOut = outcode0 ? outcode0 : outcode1;
-            if (outcodeOut & OutCode::TOP) {
-                x = x0 + (x1 - x0) * (ymax - y0) / (y1 - y0);
-                y = ymax;
-            } else if (outcodeOut & OutCode::BOTTOM) {
-                x = x0 + (x1 - x0) * (ymin - y0) / (y1 - y0);
-                y = ymin;
-            } else if (outcodeOut & OutCode::RIGHT) {
-                y = y0 + (y1 - y0) * (xmax - x0) / (x1 - x0);
-                x = xmax;
-            } else { // LEFT
-                y = y0 + (y1 - y0) * (xmin - x0) / (x1 - x0);
-                x = xmin;
-            }
-            if (outcodeOut == outcode0) {
-                x0 = x; y0 = y;
-                outcode0 = computeOutCode(x0, y0, xmin, xmax, ymin, ymax);
-            } else {
-                x1 = x; y1 = y;
-                outcode1 = computeOutCode(x1, y1, xmin, xmax, ymin, ymax);
-            }
-        }
-    }
-    return accept;
-}
-} // end anonymous namespace
+#include <algorithm> 
 
 // Static member definition
 std::unordered_map<int, QString> LineData::groupStringMap;
