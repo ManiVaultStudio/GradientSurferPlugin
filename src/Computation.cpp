@@ -563,7 +563,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     int geneIndex = std::distance(dimensionNames.begin(), it);
                     LineData selectedGeneLineData;
-                    QVector<QColor> colorsExpVals = { QColor("#FFFACD") };
+                    QVector<QColor> colorsExpVals = { QColor("#FDCC0D") };
                     std::vector<int> geneIndicesExp = { geneIndex };
                     std::vector<float> expresionValues(_filteredSelectionIndices.size() * geneIndicesExp.size());
                     QVector<QPointF> points;
@@ -632,7 +632,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     // 5. Send to chart
                     _settingsAction.getLineChart1Widget()->setLines(lineData);
                     _settingsAction.getLineChart1Widget()->setShowPoints(false);
-                    _settingsAction.getLineChart1Widget()->setShowLines(false);
+                    _settingsAction.getLineChart1Widget()->setShowLines(true);
 
                     _numOfPointsInLine1 = lineData.first().points.size();
                     _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(_numOfPointsInLine1);
@@ -3231,7 +3231,7 @@ void Computation::drawCombinedLines()
         {
             if (_commonGeneNames.contains(geneName)) {
                 geneIndicesExpVals.push_back(i);
-                colorsExpVals.append(QColor("#FFFACD"));
+                colorsExpVals.append(QColor("#FDCC0D"));
             }
             else
             {
@@ -3243,7 +3243,7 @@ void Computation::drawCombinedLines()
         {
             if (_commonGeneNames.contains(geneName)) {
                 geneIndicesExpVals.push_back(i);
-                colorsExpVals.append(QColor("#FFFACD"));
+                colorsExpVals.append(QColor("#FDCC0D"));
             }
         }
     }
@@ -3330,7 +3330,7 @@ void Computation::drawCombinedLines()
     // Send to chart
     lineChartWidget->setLines(lineData);
     lineChartWidget->setShowPoints(false);
-    lineChartWidget->setShowLines(false);
+    lineChartWidget->setShowLines(true);
 
     auto numOfPointsInLine1 = lineData.first().points.size();
     _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(numOfPointsInLine1);
@@ -3397,12 +3397,12 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             QFont fontG = geneItem->font();
             fontG.setBold(true);
             geneItem->setFont(fontG);
-            geneItem->setBackground(QColor("#FFFACD"));
+            geneItem->setBackground(QColor("#FDCC0D"));
             geneItem->setForeground(QColor("#000000"));
             QFont fontR = rankItem->font();
             fontR.setBold(true);
             rankItem->setFont(fontR);
-            rankItem->setBackground(QColor("#FFFACD"));
+            rankItem->setBackground(QColor("#FDCC0D"));
             rankItem->setForeground(QColor("#000000"));
             _commonGeneNames.append(entry.geneName);
         }
