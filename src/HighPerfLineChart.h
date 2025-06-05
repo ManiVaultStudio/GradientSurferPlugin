@@ -89,14 +89,9 @@ struct LineData {
     QColor color = Qt::black;
     float opacity = 1.0f;
     bool selected = false;
-    int group = -1; // Group number for this line
-    // Map from group number to group string (shared across all lines)
-    static std::unordered_map<int, QString> groupStringMap;
-
-    // --- Customization options per line ---
-    float lineWidth = 0.0f;  // If >0, overrides chart default line width
-    float pointSize = 0.0f;  // If >0, overrides chart default point size
-    LineDashStyle dashStyle = LineDashStyle::Solid; // New: per-line dash style
+    float lineWidth = 0.0f;  
+    float pointSize = 0.0f;  
+    LineDashStyle dashStyle = LineDashStyle::Solid; 
 };
 
 enum class BinaryNormAxis { X, Y };
@@ -208,11 +203,6 @@ private:
     QString m_emptyMessage;
     QString m_chartTitle; 
 
-    std::unordered_map<int, QString> m_groupStringMap;
-    std::unordered_map<int, QColor> m_groupColorMap;
-    void updateGroupColors();
-
-
     QColor slopeToColor(double slope) const;
 
     QPointF screenToChart(const QPoint& p) const;
@@ -247,7 +237,7 @@ private:
     bool m_showAllLines = true;
 
     // --- Global line style members ---
-    QColor m_globalLineColor = Qt::black;
+    QColor m_globalLineColor = QColor();
     float m_globalLineWidth = 1.0f;
     float m_globalLineOpacity = 1.0f;
 

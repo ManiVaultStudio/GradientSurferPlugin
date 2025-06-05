@@ -113,6 +113,9 @@ public:
         const IntegralAction& getLineSmoothingWindowAction() const { return _lineSmoothingWindow; }
         IntegralAction& getLineSmoothingWindowAction() { return _lineSmoothingWindow; }
 
+        const ToggleAction& getShowAllLinesInTable() const { return _showAllLinesInTable; }
+        ToggleAction& getShowAllLinesInTable() { return _showAllLinesInTable; }
+
     protected:
         SettingsAction&                     _settingsOptions;
         
@@ -134,7 +137,7 @@ public:
         DecimalAction                       _connectStatsLineAction;
         TriggerAction                       _deSelectRowAction;
         IntegralAction                  _lineSmoothingWindow;
-
+        ToggleAction                 _showAllLinesInTable;
     };
 
     class Dataset2OptionsHolder : public VerticalGroupAction
@@ -237,6 +240,8 @@ public:
 
 
 
+
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -252,6 +257,7 @@ public:
         OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
+       
         
     };
 

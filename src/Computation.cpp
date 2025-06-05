@@ -275,14 +275,14 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
 
         if (!line.points.isEmpty()) {
             lines.append(line);
-            qDebug() << "Added line" << lineIdx << "with" << line.points.size() << "points";
+            //qDebug() << "Added line" << lineIdx << "with" << line.points.size() << "points";
             if (!line.points.isEmpty()) {
-                qDebug() << "  First point:" << line.points.first().x() << line.points.first().y();
-                qDebug() << "  Last point:" << line.points.last().x() << line.points.last().y();
+                //qDebug() << "  First point:" << line.points.first().x() << line.points.first().y();
+                //qDebug() << "  Last point:" << line.points.last().x() << line.points.last().y();
             }
         }
         else {
-            qWarning() << "Skipping empty line" << lineIdx;
+            //qWarning() << "Skipping empty line" << lineIdx;
         }
     }
 
@@ -563,7 +563,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     int geneIndex = std::distance(dimensionNames.begin(), it);
                     LineData selectedGeneLineData;
-
+                    QVector<QColor> colorsExpVals = { QColor("#FFFACD") };
                     std::vector<int> geneIndicesExp = { geneIndex };
                     std::vector<float> expresionValues(_filteredSelectionIndices.size() * geneIndicesExp.size());
                     QVector<QPointF> points;
@@ -616,7 +616,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         coordValues,
                         static_cast<int>(_filteredSelectionIndices.size()),
                         static_cast<int>(geneIndicesExp.size()),
-                        QVector<QColor>(), // colors
+                        colorsExpVals, // colors
                         true,              // coordIsX
                         true               // sortByX
                     );
@@ -3222,15 +3222,33 @@ void Computation::drawCombinedLines()
     _rotatedSelectedEmbeddingDataset->extractDataForDimension(rotatedYCordinates, 1);
 
     // Get gene indices for common genes
-    std::vector<int> geneIndicesExp;
+    std::vector<int> geneIndicesExpVals;
+    QVector<QColor> colorsExpVals;
     auto dimNamesFull = fullPointDataset1->getDimensionNames();
     for (int i = 0; i < dimNamesFull.size(); i++) {
         const QString& geneName = dimNamesFull[i];
-        if (_commonGeneNames.contains(geneName)) {
-            geneIndicesExp.push_back(i);
+        if (_settingsAction.getDataset1OptionsHolder().getShowAllLinesInTable().isChecked())
+        {
+            if (_commonGeneNames.contains(geneName)) {
+                geneIndicesExpVals.push_back(i);
+                colorsExpVals.append(QColor("#FFFACD"));
+            }
+            else
+            {
+                geneIndicesExpVals.push_back(i);
+                colorsExpVals.append(QColor(Qt::black));
+            }
+        }
+        else
+        {
+            if (_commonGeneNames.contains(geneName)) {
+                geneIndicesExpVals.push_back(i);
+                colorsExpVals.append(QColor("#FFFACD"));
+            }
         }
     }
-    if (geneIndicesExp.empty()) {
+
+    if (geneIndicesExpVals.empty()) {
         qDebug() << "No common gene indices found";
         setStatusMessage("E", "No common gene indices found", "");
         return;
@@ -3238,7 +3256,9 @@ void Computation::drawCombinedLines()
 
     // Prepare expression values
     size_t numPoints = _filteredSelectionIndices.size();
-    size_t numLines = geneIndicesExp.size();
+    size_t numLines = geneIndicesExpVals.size();
+
+
     if (numPoints == 0 || numLines == 0) {
         qDebug() << "No points or lines to plot";
         setStatusMessage("E", "No points or lines to plot", "");
@@ -3247,7 +3267,7 @@ void Computation::drawCombinedLines()
     std::vector<float> expresionValues(numPoints * numLines);
 
     try {
-        fullPointDataset1->populateDataForDimensions(expresionValues, geneIndicesExp, _filteredSelectionIndices);
+        fullPointDataset1->populateDataForDimensions(expresionValues, geneIndicesExpVals, _filteredSelectionIndices);
     }
     catch (const std::exception& ex) {
         qDebug() << "Exception in populateDataForDimensions:" << ex.what();
@@ -3288,7 +3308,7 @@ void Computation::drawCombinedLines()
         rotatedYCordinates,
         static_cast<int>(numPoints),
         static_cast<int>(numLines),
-        QVector<QColor>(), // colors
+        colorsExpVals, // colors
         true,              // coordIsX
         true               // sortByX
     );
@@ -3296,9 +3316,9 @@ void Computation::drawCombinedLines()
     // Debug output
     qDebug() << "Converted line data size:" << lineData.size();
     if (!lineData.empty()) {
-        qDebug() << "First line points:" << lineData.first().points.size();
+        //qDebug() << "First line points:" << lineData.first().points.size();
         if (!lineData.first().points.empty()) {
-            qDebug() << "Sample point:" << lineData.first().points.first();
+            //qDebug() << "Sample point:" << lineData.first().points.first();
         }
     }
     else {
