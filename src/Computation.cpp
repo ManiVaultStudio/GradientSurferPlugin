@@ -307,6 +307,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     _correlationRangeDebounceTimer1.setSingleShot(true);
     _clusterSelectionDebounceTimer.setSingleShot(true);
     _correlationRangeDebounceTimer2.setSingleShot(true);
+     // _connectedStatsLineDebounceTimer.setSingleShot(true);
+    // _lineSmoothingWindowDebounceTimer.setSingleShot(true);
 
     const auto updateStatus = [this]() -> void {
         auto stringFull = _settingsAction.getStatusHolder().getStatusMessageAction().getString();
@@ -971,12 +973,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getCommonOptionsHolder().getComputePCAAction(), &TriggerAction::triggered, this, computePCATrigger);
 
-    const auto pcaDimensionSelectionChange = [this]() -> void {
+    //const auto pcaDimensionSelectionChange = [this]() -> void {
 
-        correlationAfterPCA();
-        };
+    //    correlationAfterPCA();
+    //    };
 
-    connect(&_settingsAction.getCommonOptionsHolder().getDataset1PcSelectionForComputationAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaDimensionSelectionChange);
+    //connect(&_settingsAction.getCommonOptionsHolder().getDataset1PcSelectionForComputationAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaDimensionSelectionChange);
 
 
     const auto pcaColorsToScatterplot = [this]() -> void {
@@ -1092,6 +1094,25 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction(), &DecimalAction::valueChanged, this, updateConnectStatsLine1);
 
+    /*
+    		    connect(&_settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() {
+            _connectedStatsLineDebounceTimer.start(100);
+        });
+    connect(&_connectedStatsLineDebounceTimer, &QTimer::timeout, this, [this]() {
+         if (!_settingsAction.getLineChart1Widget())
+        {
+            qDebug() << "No line chart widget available";
+            return;
+        }
+        _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
+        });
+    */
+
+
+
     const auto updateLineSmoothingWindow = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
@@ -1102,6 +1123,23 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction(), &IntegralAction::valueChanged, this, updateLineSmoothingWindow);
+
+    /*
+    		    connect(&_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction(),
+        &IntegralAction::valueChanged,
+        this,
+        [this]() {
+            _lineSmoothingWindowDebounceTimer.start(100);
+        });
+    connect(&_lineSmoothingWindowDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_settingsAction.getLineChart1Widget())
+        {
+            qDebug() << "No line chart widget available";
+            return;
+        }
+        _settingsAction.getLineChart1Widget()->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
+        });
+    */
 
 
     connect(& _settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
@@ -2717,17 +2755,13 @@ void Computation::processAfterPCAComplete()
     {
 
         _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
-        _settingsAction.getCommonOptionsHolder().getDataset1PcSelectionForComputationAction().setPointsDataset(_pcaCommonGenesDataset2);
+
         if (_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions() > 0)
         {
             _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(0);
    
         }
-        if (_settingsAction.getCommonOptionsHolder().getDataset1PcSelectionForComputationAction().getNumberOfDimensions() > 0)
-        {
 
-            _settingsAction.getCommonOptionsHolder().getDataset1PcSelectionForComputationAction().setCurrentDimensionIndex(0);
-        }
     }
 
     if (_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions() < 0)

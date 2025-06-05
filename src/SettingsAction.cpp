@@ -91,9 +91,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setToolTip("Auto Compute Action");
     _commonOptionsHolder.getPcaColoringAction().setToolTip("PCA Coloring Action");
     _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
-    _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension for Coloring Action");
+    _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension Selection Action");
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
-    _commonOptionsHolder.getDataset1PcSelectionForComputationAction().setToolTip("Dataset1 PCA Selection for Computation Action");
 
     _commonOptionsHolder.getAutoComputeAction().setChecked(true);
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
@@ -152,7 +151,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getDualPCAColoringAction().setSelectedOptions({ "Dataset1", "Dataset2" });
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getDataset1PcSelectionForComputationAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setOptions({ "Absolute","NonAbsolute" });
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setCurrentText("NonAbsolute");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -344,12 +342,11 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _settingsOptions(settingsAction),
     _computeAction(this, "Compute"),
     _clusterSelectionAction(this, "Cluster selection"),
-    _pcaDimensionForColoringAction(this, "PCA Dimension for Coloring"),
+    _pcaDimensionForColoringAction(this, "PC Selection"),
     _dualPCAColoringAction(this, "PCA Coloring"),
     _pcaColoringAction(this, "PCA Coloring"),
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
-    _dataset1PcSelectionForComputationAction(this, "Dataset1 PCA Selection for Computation"),
     _computePCAAction(this, "Compute PCA")
 {
     setText("Shared Options");
@@ -363,7 +360,6 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_pcaColoringAction);
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
-    addAction(&_dataset1PcSelectionForComputationAction);
     addAction(&_computeAction);
 
 }
