@@ -51,15 +51,15 @@ HighPerfLineChart::HighPerfLineChart(QWidget* parent)
 
 
 // --- Customization setters/getters ---
-void HighPerfLineChart::setLineWidth(float w) { m_lineWidth = w; update(); }
-void HighPerfLineChart::setPointSize(float s) { m_pointSize = s; update(); }
-void HighPerfLineChart::setAxisFont(const QFont& f) { m_axisFont = f; update(); }
-void HighPerfLineChart::setAxisColor(const QColor& c) { m_axisColor = c; update(); }
-void HighPerfLineChart::setNumXTicks(int n) { m_numXTicks = n; update(); }
-void HighPerfLineChart::setNumYTicks(int n) { m_numYTicks = n; update(); }
-void HighPerfLineChart::setGridEnabled(bool en) { m_gridEnabled = en; update(); }
-void HighPerfLineChart::setGridColor(const QColor& c) { m_gridColor = c; update(); }
-void HighPerfLineChart::setBackgroundColor(const QColor& c) { m_backgroundColor = c; update(); }
+void HighPerfLineChart::setLineWidth(float w) { m_lineWidth = w; updateAxisRange(); update(); }
+void HighPerfLineChart::setPointSize(float s) { m_pointSize = s; updateAxisRange(); update(); }
+void HighPerfLineChart::setAxisFont(const QFont& f) { m_axisFont = f; updateAxisRange(); update(); }
+void HighPerfLineChart::setAxisColor(const QColor& c) { m_axisColor = c; updateAxisRange(); update(); }
+void HighPerfLineChart::setNumXTicks(int n) { m_numXTicks = n; updateAxisRange(); update(); }
+void HighPerfLineChart::setNumYTicks(int n) { m_numYTicks = n; updateAxisRange(); update(); }
+void HighPerfLineChart::setGridEnabled(bool en) { m_gridEnabled = en; updateAxisRange(); update(); }
+void HighPerfLineChart::setGridColor(const QColor& c) { m_gridColor = c; updateAxisRange(); update(); }
+void HighPerfLineChart::setBackgroundColor(const QColor& c) { m_backgroundColor = c; updateAxisRange(); update(); }
 void HighPerfLineChart::setShowPoints(bool en) {
     m_showPoints = en;
     updateAxisRange();
@@ -72,21 +72,22 @@ void HighPerfLineChart::setShowLines(bool en) { m_showLines = en; updateAxisRang
 bool HighPerfLineChart::showLines() const { return m_showLines; }
 
 // New customization setters/getters
-void HighPerfLineChart::setAxisLineWidth(float w) { m_axisLineWidth = w; update(); }
-void HighPerfLineChart::setXAxisLineColor(const QColor& c) { m_xAxisLineColor = c; update(); }
-void HighPerfLineChart::setYAxisLineColor(const QColor& c) { m_yAxisLineColor = c; update(); }
-void HighPerfLineChart::setTickLabelFont(const QFont& f) { m_tickLabelFont = f; update(); }
-void HighPerfLineChart::setTickLabelColor(const QColor& c) { m_tickLabelColor = c; update(); }
+void HighPerfLineChart::setAxisLineWidth(float w) { m_axisLineWidth = w; updateAxisRange(); update(); }
+void HighPerfLineChart::setXAxisLineColor(const QColor& c) { m_xAxisLineColor = c; updateAxisRange(); update(); }
+void HighPerfLineChart::setYAxisLineColor(const QColor& c) { m_yAxisLineColor = c; updateAxisRange(); update(); }
+void HighPerfLineChart::setTickLabelFont(const QFont& f) { m_tickLabelFont = f; updateAxisRange(); update(); }
+void HighPerfLineChart::setTickLabelColor(const QColor& c) { m_tickLabelColor = c; updateAxisRange(); update(); }
 void HighPerfLineChart::setChartMargins(int left, int right, int top, int bottom) {
-    m_leftMargin = left; m_rightMargin = right; m_topMargin = top; m_bottomMargin = bottom; update();
+    m_leftMargin = left; m_rightMargin = right; m_topMargin = top; m_bottomMargin = bottom; updateAxisRange(); update();
 }
-void HighPerfLineChart::setLegendFont(const QFont& f) { m_legendFont = f; update(); }
-void HighPerfLineChart::setLegendColor(const QColor& c) { m_legendColor = c; update(); }
-void HighPerfLineChart::setLegendPosition(int x, int y) { m_legendX = x; m_legendY = y; update(); }
+void HighPerfLineChart::setLegendFont(const QFont& f) { m_legendFont = f; updateAxisRange(); update(); }
+void HighPerfLineChart::setLegendColor(const QColor& c) { m_legendColor = c; updateAxisRange(); update(); }
+void HighPerfLineChart::setLegendPosition(int x, int y) { m_legendX = x; m_legendY = y; updateAxisRange(); update(); }
 
 void HighPerfLineChart::setShowAllLines(bool show)
 {
     m_showAllLines = show;
+    updateAxisRange();
     update();
 }
 
@@ -98,6 +99,7 @@ bool HighPerfLineChart::showAllLines() const
 void HighPerfLineChart::setShowLegend(bool show)
 {
     m_showLegend = show;
+    updateAxisRange();
     update();
 }
 
@@ -109,6 +111,7 @@ bool HighPerfLineChart::showLegend() const
 void HighPerfLineChart::setConnectStatsLineEnabled(bool enabled)
 {
     m_connectStatsLineEnabled = enabled;
+    updateAxisRange();
     update();
 }
 
@@ -120,6 +123,7 @@ bool HighPerfLineChart::connectStatsLineEnabled() const
 void HighPerfLineChart::setConnectStatsLineN(int n)
 {
     m_connectStatsLineN = n;
+    updateAxisRange();
     update();
 }
 
@@ -131,12 +135,14 @@ int HighPerfLineChart::connectStatsLineN() const
 void HighPerfLineChart::setConnectStatsLineType(ConnectStatsType type)
 {
     m_connectStatsLineType = type;
+    updateAxisRange();
     update();
 }
 
 void HighPerfLineChart::setShowAvgNumPointsLabel(bool show)
 {
     m_showAvgNumPointsLabel = show;
+    updateAxisRange();
     update();
 }
 
@@ -148,6 +154,7 @@ bool HighPerfLineChart::showAvgNumPointsLabel() const
 void HighPerfLineChart::setShowMovingAverageLine(bool show)
 {
     m_showMovingAverageLine = show;
+    updateAxisRange();
     update();
 }
 
@@ -159,6 +166,7 @@ bool HighPerfLineChart::showMovingAverageLine() const
 void HighPerfLineChart::setMovingAverageWindow(int window)
 {
     m_movingAverageWindow = window;
+    updateAxisRange();
     update();
 }
 
@@ -211,12 +219,12 @@ void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
         m_xMin = 0; m_xMax = 1;
         m_yMin = 0; m_yMax = 1;
     }
-
+    updateAxisRange();
     update();
 }
 
-void HighPerfLineChart::setXAxisName(const QString& name) { m_xAxisName = name; update(); }
-void HighPerfLineChart::setYAxisName(const QString& name) { m_yAxisName = name; update(); }
+void HighPerfLineChart::setXAxisName(const QString& name) { m_xAxisName = name; updateAxisRange(); update(); }
+void HighPerfLineChart::setYAxisName(const QString& name) { m_yAxisName = name; updateAxisRange(); update(); }
 void HighPerfLineChart::setXRange(double min, double max) { 
     if (!qIsFinite(min) || !qIsFinite(max) || min == max) {
         qWarning() << "[HighPerfLineChart] setXRange: Invalid range, ignoring.";
@@ -224,6 +232,7 @@ void HighPerfLineChart::setXRange(double min, double max) {
     }
     m_xMin = min; m_xMax = max; 
     qDebug() << "[HighPerfLineChart] setXRange:" << m_xMin << m_xMax;
+    updateAxisRange();
     update(); 
 }
 void HighPerfLineChart::setYRange(double min, double max) { 
@@ -233,11 +242,13 @@ void HighPerfLineChart::setYRange(double min, double max) {
     }
     m_yMin = min; m_yMax = max; 
     qDebug() << "[HighPerfLineChart] setYRange:" << m_yMin << m_yMax;
+    updateAxisRange();
     update(); 
 }
 
 void HighPerfLineChart::setChartTitle(const QString& title) {
     m_chartTitle = title;
+    updateAxisRange();
     update();
 }
 
@@ -361,11 +372,13 @@ void HighPerfLineChart::clear() {
     m_xMin = 0; m_xMax = 1;
     m_yMin = 0; m_yMax = 1;
     m_emptyMessage = "No data to display"; // Ensure the no data message is shown
+    //updateAxisRange();
     update();
 }
 
 void HighPerfLineChart::setEmptyMessage(const QString& msg) {
     m_emptyMessage = msg;
+    //updateAxisRange();
     update();
 }
 
@@ -374,6 +387,7 @@ void HighPerfLineChart::mouseMoveEvent(QMouseEvent* event) {
     if (idx != m_hoveredLine) {
         m_hoveredLine = idx;
         emit lineHovered(idx);
+        updateAxisRange();
         update();
     }
 }
@@ -383,6 +397,7 @@ void HighPerfLineChart::mousePressEvent(QMouseEvent* event) {
     if (idx != m_selectedLine) {
         m_selectedLine = idx;
         emit lineSelected(idx);
+        updateAxisRange();
         update();
     }
 }
