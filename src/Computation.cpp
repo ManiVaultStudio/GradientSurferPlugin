@@ -3515,3 +3515,5 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
     }
     //drawCombinedLines();
 }
+
+
