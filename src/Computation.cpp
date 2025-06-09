@@ -1680,7 +1680,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
                                 if (dataset2.isValid())
                                 {
-                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
+                                    //colorDatasetPickerAction->setCurrentDataset(dataset2);
                                     //qDebug() << "Setting dataset to color dataset";
                                 }
 
@@ -1858,7 +1858,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
                                 if (dataset2.isValid())
                                 {
-                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
+                                    //colorDatasetPickerAction->setCurrentDataset(dataset2);
                                     //qDebug() << "Setting dataset to color dataset";
                                 }
 
@@ -2700,10 +2700,6 @@ bool Computation::createDatasetsIfNeeded()
     return true;
 }
 
-
-
-
-
 void Computation::populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, int datasetNumber)
 {
     constexpr float epsilon = 1e-6f;
@@ -2854,6 +2850,7 @@ void Computation::correlationAfterPCA()
     _pcaCommonGenesDataset2->extractDataForDimension(selectedPC, selectedPCDimension2);
 
     std::vector<float> correlationGenePC;
+
     computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC);
 
     const float minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
