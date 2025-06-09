@@ -28,6 +28,10 @@
 #include <QToolTip>
 #include <QElapsedTimer>
 #include <QDebug>
+#include <QtConcurrent>
+#include <QFuture>
+#include <QFutureWatcher>
+#include <QVector>
 using namespace mv;
 using namespace mv::gui;
 
@@ -2339,7 +2343,7 @@ void Computation::AutoCompute()
 
         // Correlation and gene filtering
         std::vector<float> corrGeneCoords;
-        computeCorrelationGeneCoords(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
+        computeCorrelationGeneCoordsFast(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
 
         
         try {
@@ -2457,6 +2461,105 @@ std::vector<int> Computation::getSortedCellIndices(const std::vector<float>& yCo
     return indices;
 }
 
+void Computation::computeCorrelationGeneCoordsFast(
+    const std::vector<int>& cellIndices,
+    const mv::Dataset<Points> dataset,
+    const std::vector<float>& coords,
+    std::vector<float>& corrVector)
+{
+    FunctionTimer timer(Q_FUNC_INFO);
+
+    const int numGenes = dataset->getNumDimensions();
+    const int numCells = static_cast<int>(cellIndices.size());
+    const int numCoords = static_cast<int>(coords.size());
+
+    Q_ASSERT(numCells == numCoords);
+
+    qDebug() << "Number of genes:" << numGenes
+        << "Number of cells:" << numCells
+        << "Number of coordinates:" << numCoords;
+
+    // Sort (coord, cellIndex) pairs by coordinate value
+    std::vector<std::pair<float, int>> coordIndexPairs(numCells);
+    for (int i = 0; i < numCells; ++i)
+        coordIndexPairs[i] = { coords[i], cellIndices[i] };
+
+    std::sort(coordIndexPairs.begin(), coordIndexPairs.end());
+
+    std::vector<int> sortedCellIndices(numCells);
+    std::vector<float> sortedCoords(numCells);
+    for (int i = 0; i < numCells; ++i) {
+        sortedCoords[i] = coordIndexPairs[i].first;
+        sortedCellIndices[i] = coordIndexPairs[i].second;
+    }
+
+    // Center and normalize coordinates
+    float meanCoord = std::accumulate(sortedCoords.begin(), sortedCoords.end(), 0.0f) / numCells;
+    std::vector<float> centeredCoords(numCells);
+    float normCoord = 0.0f;
+
+    for (int i = 0; i < numCells; ++i) {
+        float c = sortedCoords[i] - meanCoord;
+        centeredCoords[i] = c;
+        normCoord += c * c;
+    }
+
+    // Prepare gene indices
+    QVector<int> geneIndices(numGenes);
+    std::iota(geneIndices.begin(), geneIndices.end(), 0);
+
+    // Correlation type
+    QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
+
+    auto computeCorrelation = [&](int geneIdx) -> float {
+        float meanGene = 0.0f;
+        std::vector<float> geneVals(numCells);
+
+        for (int i = 0; i < numCells; ++i) {
+            int rowIdx = sortedCellIndices[i];
+            float val = dataset->getValueAt(rowIdx * numGenes + geneIdx);
+            geneVals[i] = val;
+            meanGene += val;
+        }
+        meanGene /= numCells;
+
+        float normGene = 0.0f;
+        float dotProd = 0.0f;
+        for (int i = 0; i < numCells; ++i) {
+            float centered = geneVals[i] - meanGene;
+            normGene += centered * centered;
+            dotProd += centered * centeredCoords[i];
+        }
+
+        float corr = (normGene > 0.0f && normCoord > 0.0f)
+            ? (dotProd / std::sqrt(normGene * normCoord))
+            : 0.0f;
+
+        if (std::isnan(corr)) corr = 0.0f;
+
+        // Apply correlation type
+        if (corrType == "Absolute") {
+            return std::abs(corr);
+        }
+        else if (corrType == "Positive") {
+            return (corr > 0.0f) ? corr : 0.0f;
+        }
+        else if (corrType == "Negative") {
+            return (corr < 0.0f) ? corr : 0.0f;
+        }
+        else {
+            return corr;
+        }
+        };
+
+    // Parallel map
+    QFuture<float> future = QtConcurrent::mapped(geneIndices, computeCorrelation);
+    QList<float> resultList = future.results();
+    corrVector = std::vector<float>(resultList.begin(), resultList.end());
+
+    qDebug() << "Correlation computation completed";
+}
+
 void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector)
 {
     FunctionTimer timer(Q_FUNC_INFO);
@@ -2533,12 +2636,17 @@ void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndic
         if (std::isnan(corr)) corr = 0.0f;
 
         
-        if (_settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText()=="Absolute")
-        {
-            corrVector[geneIdx] = std::abs(corr); // Use absolute correlation for ranking
+        QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
+        if (corrType == "Absolute") {
+            corrVector[geneIdx] = std::abs(corr);
         }
-        else 
-        {
+        else if (corrType == "Positive") {
+            corrVector[geneIdx] = (corr > 0.0f) ? corr : 0.0f;
+        }
+        else if (corrType == "Negative") {
+            corrVector[geneIdx] = (corr < 0.0f) ? corr : 0.0f;
+        }
+        else { // "Raw" or fallback
             corrVector[geneIdx] = corr;
         }
         
@@ -2546,6 +2654,58 @@ void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndic
 
     qDebug() << "Correlation computation completed";
 }
+
+void Computation::computeCorrelationGenePCFast(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector)
+{
+    FunctionTimer timer(Q_FUNC_INFO);
+    const int numGenes = fullDataset->getNumDimensions();
+    const int numCells = fullDataset->getNumPoints();
+    const int numCellsInPC = static_cast<int>(selectedPC.size());
+    Q_ASSERT(numCells == numCellsInPC);
+
+    float meanCoord = std::accumulate(selectedPC.begin(), selectedPC.end(), 0.0f) / numCells;
+
+    std::vector<float> centeredCoords(numCells);
+    float normCoord = 0.0f;
+    for (int i = 0; i < numCells; ++i) {
+        float c = selectedPC[i] - meanCoord;
+        centeredCoords[i] = c;
+        normCoord += c * c;
+    }
+
+    QVector<int> geneIndices(numGenes);
+    std::iota(geneIndices.begin(), geneIndices.end(), 0);
+
+    auto computeCorrelation = [&](int geneIdx) -> float {
+        std::vector<float> geneVals(numCells);
+        fullDataset->extractDataForDimension(geneVals, geneIdx);
+
+        float sumGene = std::accumulate(geneVals.begin(), geneVals.end(), 0.0f);
+        float meanGene = sumGene / numCells;
+
+        float normGene = 0.0f;
+        float dotProd = 0.0f;
+        for (int i = 0; i < numCells; ++i) {
+            float centered = geneVals[i] - meanGene;
+            normGene += centered * centered;
+            dotProd += centered * centeredCoords[i];
+        }
+
+        float corr = (normGene > 0.0f && normCoord > 0.0f)
+            ? (dotProd / std::sqrt(normGene * normCoord))
+            : 0.0f;
+
+        return std::isnan(corr) ? 0.0f : corr;
+        };
+
+    // Blocking parallel computation of correlations
+    QFuture<float> future = QtConcurrent::mapped(geneIndices, computeCorrelation);
+    QList<float> resultList = future.results();
+    corrVector = std::vector<float>(resultList.begin(), resultList.end());
+
+}
+
+
 
 void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector)
 {
@@ -2871,7 +3031,7 @@ void Computation::correlationAfterPCA()
 
     std::vector<float> correlationGenePC;
 
-    computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC);
+    computeCorrelationGenePCFast(fullDataset2, selectedPC, correlationGenePC);
 
     const float minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
     const float maxCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
