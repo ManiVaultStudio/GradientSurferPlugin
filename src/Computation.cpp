@@ -26,10 +26,27 @@
 #include <QPainter>
 #include <QApplication>
 #include <QToolTip>
+#include <QElapsedTimer>
+#include <QDebug>
 using namespace mv;
 using namespace mv::gui;
 
-
+class FunctionTimer {
+public:
+    FunctionTimer(const QString& functionName)
+        : _functionName(functionName)
+    {
+        _timer.start();
+    }
+    ~FunctionTimer()
+    {
+        qDebug() << _functionName << "took"
+            << _timer.elapsed() / 1000.0 << "seconds";
+    }
+private:
+    QString _functionName;
+    QElapsedTimer _timer;
+};
 class CorrelationBarDelegate : public QStyledItemDelegate {
 public:
     CorrelationBarDelegate(float minCorr, float maxCorr, QObject* parent = nullptr)
@@ -2442,6 +2459,7 @@ std::vector<int> Computation::getSortedCellIndices(const std::vector<float>& yCo
 
 void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector)
 {
+    FunctionTimer timer(Q_FUNC_INFO);
     const int numGenes = dataset->getNumDimensions();
     const int numCells = cellIndices.size();
     const int numCoords = coords.size();
@@ -2531,6 +2549,7 @@ void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndic
 
 void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector)
 {
+    FunctionTimer timer(Q_FUNC_INFO);
     // check
     const int numGenes = fullDataset->getNumDimensions();
     const int numCells = fullDataset->getNumPoints();
@@ -2794,6 +2813,7 @@ void Computation::updateClusterOptions()
 
 void Computation::processAfterPCAComplete()
 {
+    FunctionTimer timer(Q_FUNC_INFO);
     _pcaDataset1Complete = false;
     _pcaDataset2Complete = false;
     
@@ -2824,7 +2844,7 @@ void Computation::processAfterPCAComplete()
 }
 void Computation::correlationAfterPCA()
 {
-
+    FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
 
     Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
@@ -2974,7 +2994,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
 bool Computation::setupAndTriggerPCA()
 {
     // Compute PCA on all cells with selected genes of interest
-
+    FunctionTimer timer(Q_FUNC_INFO);
     auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
     auto fullPointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
 
@@ -3410,6 +3430,7 @@ void Computation::drawCombinedLines()
 
 void Computation::setupTableModelAndSelection(int datasetNumber)
 {
+    FunctionTimer timer(Q_FUNC_INFO);
     // Select appropriate data and view pointers
     const auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2 : _geneCorrValues1;
     QTableView* tableView = (datasetNumber == 2)
