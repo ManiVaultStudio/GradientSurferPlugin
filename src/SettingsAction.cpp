@@ -165,7 +165,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getDualPCAColoringAction().setSelectedOptions({ "Dataset1", "Dataset2" });
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getCorrelationCalculationTypeAction().setOptions({ "Absolute","NonAbsolute" });
+    _commonOptionsHolder.getCorrelationCalculationTypeAction().setOptions({ "Absolute","NonAbsolute","Positive","Negative"});
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setCurrentText("NonAbsolute");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
