@@ -3127,15 +3127,26 @@ void Computation::correlationAfterPCA()
     const auto dimensionNames2 = fullDataset2->getDimensionNames();
 
     //add for debugging
-    if (false)
+    if (true)
     {
         Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
         if (fullDataset1.isValid()) {
             std::vector<float> correlationGenePC1;
             computeCorrelationGenePCFast(fullDataset1, selectedPC, correlationGenePC1);
-            //const float minCorrelation1 = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum();
-            //const float maxCorrelation1 = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum();
             const auto dimensionNames1 = fullDataset1->getDimensionNames();
+
+            // Prepare sorted indices for D2 and D1
+            std::vector<int> sortedIndicesD2(correlationGenePC2.size());
+            std::iota(sortedIndicesD2.begin(), sortedIndicesD2.end(), 0);
+            std::sort(sortedIndicesD2.begin(), sortedIndicesD2.end(), [&](int a, int b) {
+                return correlationGenePC2[a] > correlationGenePC2[b];
+                });
+
+            std::vector<int> sortedIndicesD1(correlationGenePC1.size());
+            std::iota(sortedIndicesD1.begin(), sortedIndicesD1.end(), 0);
+            std::sort(sortedIndicesD1.begin(), sortedIndicesD1.end(), [&](int a, int b) {
+                return correlationGenePC1[a] > correlationGenePC1[b];
+                });
 
             // Print table header
             qDebug() << QString("%1 | %2 | %3 | %4 | %5")
@@ -3155,23 +3166,17 @@ void Computation::correlationAfterPCA()
 
             // Print each row
             for (int i = 0; i < 10; i++) {
-                int sortedIndexD2 = std::distance(correlationGenePC2.begin(), std::max_element(correlationGenePC2.begin(), correlationGenePC2.end()));
-                int sortedIndexD1 = std::distance(correlationGenePC1.begin(), std::max_element(correlationGenePC1.begin(), correlationGenePC1.end()));
+                int idxD2 = sortedIndicesD2[i];
+                int idxD1 = sortedIndicesD1[i];
 
                 qDebug() << QString("%1 | %2 | %3 | %4 | %5")
                     .arg(i + 1, 4)
-                    .arg(dimensionNames2[sortedIndexD2], 20)
-                    .arg(QString::number(correlationGenePC2[sortedIndexD2], 'f', 6), 12)
-                    .arg(dimensionNames1[sortedIndexD1], 20)
-                    .arg(QString::number(correlationGenePC1[sortedIndexD1], 'f', 6), 12);
-
-                // Mark these as used so next iteration finds the next max
-                correlationGenePC2[sortedIndexD2] = std::numeric_limits<float>::lowest();
-                correlationGenePC1[sortedIndexD1] = std::numeric_limits<float>::lowest();
+                    .arg(dimensionNames2[idxD2], 20)
+                    .arg(QString::number(correlationGenePC2[idxD2], 'f', 6), 12)
+                    .arg(dimensionNames1[idxD1], 20)
+                    .arg(QString::number(correlationGenePC1[idxD1], 'f', 6), 12);
             }
-
         }
-
     }
 
     try {
