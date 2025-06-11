@@ -905,7 +905,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                         }
                     }
+                    auto selectedClusterDatasetName = _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset();
+
                     _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setDatasets(clusterDatasets);
+                    if (clusterDatasets.contains(selectedClusterDatasetName))
+                    {
+                        _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentDataset(selectedClusterDatasetName);
+                    }
+                    else if (clusterDatasets.size() > 0)
+                    {
+                        _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentDataset(clusterDatasets.first());
+                    }
                 }
                 else
                 {
@@ -1017,7 +1027,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             
                         }
                     }
+
+                    auto selectedClusterDatasetName = _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset();
                     _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setDatasets(clusterDatasets);
+                    if (clusterDatasets.contains(selectedClusterDatasetName))
+                    {
+                        _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setCurrentDataset(selectedClusterDatasetName);
+                    }
+                    else if (clusterDatasets.size() > 0)
+                    {
+                        _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setCurrentDataset(clusterDatasets.first());
+                    }
                 }
                 else
                 {
