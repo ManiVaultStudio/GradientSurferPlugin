@@ -479,7 +479,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
      _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
          bool validity = false;
          auto parent = dataset->getParent();
-         if (parent.isValid() && dataset->getDataType() == PointType)
+         bool checkGroup = false;
+         if (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667)
+         {
+             checkGroup = true;
+         }
+         if (parent.isValid() && dataset->getDataType() == PointType && checkGroup)
          {
              validity = true;
          }
@@ -496,7 +501,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
      _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
          bool validity = false;
          auto parent = dataset->getParent();
-         if (parent.isValid() && dataset->getDataType() == PointType)
+         bool checkGroup = false;
+         if (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667)
+         {
+             checkGroup = true;
+         }
+         if (parent.isValid() && dataset->getDataType() == PointType && checkGroup)
          {
              validity = true;
          }
