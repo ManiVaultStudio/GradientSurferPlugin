@@ -3865,20 +3865,49 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             else if (datasetNumber == 1)
             {
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+                //select the gene in the third table  find the row and select
+                QString targetGeneName = value; 
+                QTableView* thirdTableView = _settingsAction.getTableView3Action();
+                QStandardItemModel* thirdModel = qobject_cast<QStandardItemModel*>(thirdTableView->model());
+                if (thirdModel) {
+                    for (int row = 0; row < thirdModel->rowCount(); ++row) {
+                        QString geneName = thirdModel->data(thirdModel->index(row, 0), Qt::DisplayRole).toString();
+                        if (geneName == targetGeneName) {
+                            QModelIndex index = thirdModel->index(row, 0);
+                            if (index.isValid()) {
+                                thirdTableView->setCurrentIndex(index);
+                                thirdTableView->selectionModel()->select(
+                                    index,
+                                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                                );
+                                _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+                            }
+                            break;
+                        }
+                    }
+                }
             }
             else
             {
                 //_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
                 //select the gene in the first table in the first table find the row and select
+                QString targetGeneName = value; 
                 QTableView* firstTableView = _settingsAction.getTableView1Action();
                 QStandardItemModel* firstModel = qobject_cast<QStandardItemModel*>(firstTableView->model());
                 if (firstModel) {
-                    QModelIndexList firstSelectedIndexes = firstTableView->selectionModel()->selectedIndexes();
-                    if (!firstSelectedIndexes.isEmpty()) {
-                        const QModelIndex& firstIndex = firstSelectedIndexes.first();
-                        if (firstIndex.isValid()) {
-                            QString firstValue = firstModel->data(firstModel->index(firstIndex.row(), 0), Qt::DisplayRole).toString();
-                            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(firstValue);
+                    for (int row = 0; row < firstModel->rowCount(); ++row) {
+                        QString geneName = firstModel->data(firstModel->index(row, 0), Qt::DisplayRole).toString();
+                        if (geneName == targetGeneName) {
+                            QModelIndex index = firstModel->index(row, 0);
+                            if (index.isValid()) {
+                                firstTableView->setCurrentIndex(index);
+                                firstTableView->selectionModel()->select(
+                                    index,
+                                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                                );
+                                _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+                            }
+                            break;
                         }
                     }
                 }
