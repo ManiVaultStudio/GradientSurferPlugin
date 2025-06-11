@@ -896,6 +896,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 auto parent = _embeddingDataset->getParent();
                 if (parent.isValid())
                 {
+                    _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setCurrentDataset(parent);
                     auto children = parent->getChildren();
                     Datasets clusterDatasets;
                     for (const Dataset<Clusters>& child : children) {
@@ -1007,6 +1008,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 auto parent = embeddingDataset2->getParent();
                 if (parent.isValid())
                 {
+                    _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().setCurrentDataset(parent);
                     auto children = parent->getChildren();
                     Datasets clusterDatasets;
                     for (const Dataset<Clusters>& child : children) {
