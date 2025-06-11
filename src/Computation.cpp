@@ -470,9 +470,20 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, scatterplotSelectionOptions);
 
-    /*_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-        return dataset->getDataType() == ClusterType;
-        });*/
+    _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        bool validity = false;
+        Dataset<Points> sibling = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+        if (sibling.isValid())
+        {
+            if (sibling->getParent()== dataset->getParent() && dataset->getDataType() == ClusterType && (dataset->getGroupIndex()!=666 || dataset->getGroupIndex()!=667))
+            {
+                validity = true;
+            }
+        }
+        
+        
+        return validity;
+        });
      _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         return dataset->getDataType() == PointType;
         });
@@ -492,9 +503,20 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         return validity;
         });
 
-     /*_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-         return dataset->getDataType() == ClusterType;
-         });*/
+     _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        bool validity = false;
+        Dataset<Points> sibling = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+        if (sibling.isValid())
+        {
+            if (sibling->getParent()== dataset->getParent() && dataset->getDataType() == ClusterType && (dataset->getGroupIndex()!=666 || dataset->getGroupIndex()!=667))
+            {
+                validity = true;
+            }
+        }
+
+
+        return validity;
+         });
      _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
          return dataset->getDataType() == PointType;
          });
@@ -871,7 +893,27 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             if (_embeddingDataset.isValid())
             {
-                 _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
+                auto parent = _embeddingDataset->getParent();
+                if (parent.isValid())
+                {
+                    auto children = parent->getChildren();
+                    Datasets clusterDatasets;
+                    for (const Dataset<Clusters>& child : children) {
+                        if (child->getDataType() == ClusterType && (child->getGroupIndex() != 667 || child->getGroupIndex() != 666)) {
+                            clusterDatasets.append(child);
+
+                        }
+                    }
+                    _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setDatasets(clusterDatasets);
+                }
+                else
+                {
+                    _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setDatasets({});
+                }
+                
+                
+                
+                _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
                  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setPointsDataset(_embeddingDataset);
                 const auto mainSelectionChanged = [this]() -> void {
                     //qDebug() << "Main selection changed in fullEmbeddingDataset";
@@ -955,12 +997,31 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateEmbeddingDataset2 = [this]() -> void {
         if (_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().isValid())
         {
-
+            
 
             auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
 
             if (embeddingDataset2.isValid())
             {
+                
+                auto parent = embeddingDataset2->getParent();
+                if (parent.isValid())
+                {
+                    auto children = parent->getChildren();
+                    Datasets clusterDatasets;
+                    for (const Dataset<Clusters>& child : children) {
+                        if (child->getDataType() == ClusterType && (child->getGroupIndex() != 667|| child->getGroupIndex() != 666)) {
+                            clusterDatasets.append(child);
+                            
+                        }
+                    }
+                    _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setDatasets(clusterDatasets);
+                }
+                else
+                {
+                    _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setDatasets({});
+                }
+                
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setPointsDataset(embeddingDataset2);
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setPointsDataset(embeddingDataset2);
             }
