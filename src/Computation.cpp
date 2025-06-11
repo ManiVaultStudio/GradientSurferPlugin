@@ -1712,7 +1712,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
                                 if (dataset.isValid())
                                 {
-                                    colorDatasetPickerAction->setCurrentDataset(dataset);
+                                    //colorDatasetPickerAction->setCurrentDataset(dataset);
                                     //qDebug() << "Setting dataset to color dataset";
                                 }
 
@@ -1899,7 +1899,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
                                 if (dataset.isValid())
                                 {
-                                    colorDatasetPickerAction->setCurrentDataset(dataset);
+                                    //colorDatasetPickerAction->setCurrentDataset(dataset);
                                     //qDebug() << "Setting dataset to color dataset";
                                 }
 
@@ -2088,8 +2088,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
                                 if (dataset.isValid())
                                 {
-                                    colorDatasetPickerAction->setCurrentDataset(dataset);
-                                    qDebug() << "Setting dataset to color dataset";
+                                    //colorDatasetPickerAction->setCurrentDataset(dataset);
+                                    //qDebug() << "Setting dataset to color dataset";
                                 }
 
                             }
