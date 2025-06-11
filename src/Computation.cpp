@@ -470,24 +470,38 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, scatterplotSelectionOptions);
 
-    _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+    /*_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         return dataset->getDataType() == ClusterType;
-        });
+        });*/
      _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         return dataset->getDataType() == PointType;
         });
      _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-        return dataset->getDataType() == PointType;
+         bool validity = false;
+         auto parent = dataset->getParent();
+         if (parent.isValid() && dataset->getDataType() == PointType)
+         {
+             validity = true;
+         }
+         
+        return validity;
         });
 
-     _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
+     /*_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
          return dataset->getDataType() == ClusterType;
-         });
+         });*/
      _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
          return dataset->getDataType() == PointType;
          });
      _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-         return dataset->getDataType() == PointType;
+         bool validity = false;
+         auto parent = dataset->getParent();
+         if (parent.isValid() && dataset->getDataType() == PointType)
+         {
+             validity = true;
+         }
+
+         return validity;
          });
 
     const auto updateClusterDataset1 = [this]() -> void {
@@ -2265,6 +2279,7 @@ void Computation::AutoCompute()
             if (rowCount > 0)
                 model->removeRows(0, rowCount);
         }
+
         _settingsAction.getLineChart1Widget()->clear();
         _numOfPointsInLine1 = 0;
         QApplication::processEvents();
@@ -2343,7 +2358,7 @@ void Computation::AutoCompute()
 
         // Correlation and gene filtering
         std::vector<float> corrGeneCoords;
-        computeCorrelationGeneCoordsFast(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
+        computeCorrelationGeneCoords(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
 
         
         try {
@@ -3031,7 +3046,7 @@ void Computation::correlationAfterPCA()
 
     std::vector<float> correlationGenePC;
 
-    computeCorrelationGenePCFast(fullDataset2, selectedPC, correlationGenePC);
+    computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC);
 
     const float minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
     const float maxCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
