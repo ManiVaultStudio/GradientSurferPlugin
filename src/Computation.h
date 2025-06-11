@@ -122,8 +122,10 @@ protected:
     std::vector<int>            _filteredSelectionIndices;
     std::vector<CorrelationGeneCoords> _geneCorrValues1;
     std::vector<CorrelationGeneCoords> _geneCorrValues2;
+    std::vector<CorrelationGeneCoords> _geneCorrValues3;
     std::vector<int>            _geneOfInterestIndices1;
     std::vector<int>            _geneOfInterestIndices2;
+    std::vector<int>            _geneOfInterestIndices3;
     QStringList                 _commonGeneNames;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;

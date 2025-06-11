@@ -64,22 +64,22 @@ void LayerSurferPlugin::init()
     auto* table3Layout = new QVBoxLayout();
     table3Layout->setContentsMargins(0, 0, 0, 0);
     table3Layout->setSpacing(2);
-    auto* table3Label = new QLabel("Gene Table: Dataset 2 All Cells");
+    auto* table3Label = new QLabel("Gene Table: Dataset 1 All Cells");
     table3Label->setAlignment(Qt::AlignCenter);
     table3Label->setStyleSheet("font-weight: bold; padding-bottom: 2px;");
     table3Layout->addWidget(table3Label);
-    table3Layout->addWidget(_settingsAction.getTableView2Action());
+    table3Layout->addWidget(_settingsAction.getTableView3Action());
     bottomLayout->addLayout(table3Layout, 1);
 
 
     auto* table2Layout = new QVBoxLayout();
     table2Layout->setContentsMargins(0, 0, 0, 0);
     table2Layout->setSpacing(2);
-    auto* table2Label = new QLabel("Gene Table: Dataset 1 All Cells");
+    auto* table2Label = new QLabel("Gene Table: Dataset 2 All Cells");
     table2Label->setAlignment(Qt::AlignCenter);
     table2Label->setStyleSheet("font-weight: bold; padding-bottom: 2px;");
     table2Layout->addWidget(table2Label);
-    table2Layout->addWidget(_settingsAction.getTableView0Action());
+    table2Layout->addWidget(_settingsAction.getTableView2Action());
     bottomLayout->addLayout(table2Layout, 1);
 
 

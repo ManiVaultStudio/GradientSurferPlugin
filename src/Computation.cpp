@@ -1375,6 +1375,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_correlationRangeDebounceTimer2, &QTimer::timeout, this, [this]() {
         setStatusMessage("R", "Updating correlation 2 table", "");
         resetupCorrelationTable(2);
+        resetupCorrelationTable(3);
         setStatusMessage("C", "Correlation table 2 updated", "");
         });
 
@@ -3004,8 +3005,10 @@ void Computation::populateGenesByCorrelationRange(const std::vector<float>& corr
         });
 
     // Select appropriate output containers
-    auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2 : _geneCorrValues1;
-    auto& geneOfInterestIndices = (datasetNumber == 2) ? _geneOfInterestIndices2 : _geneOfInterestIndices1;
+    auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2
+        : (datasetNumber == 1) ? _geneCorrValues1
+        : _geneCorrValues3;
+    auto& geneOfInterestIndices = (datasetNumber == 2) ? _geneOfInterestIndices2 : (datasetNumber == 1)?_geneOfInterestIndices1: _geneOfInterestIndices3;
 
     geneCorrValues.clear();
     geneCorrValues.reserve(count);
@@ -3116,91 +3119,109 @@ void Computation::correlationAfterPCA()
     setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
 
     Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
+    Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
     if (!fullDataset2.isValid()) {
         setStatusMessage("E", "Point dataset 2 is invalid", "");
         return;
     }
-   
+    if (!fullDataset1.isValid()) {
+        setStatusMessage("E", "Point dataset 1 is invalid", "");
+        return;
+    }
+  
 
-    int selectedPCDimension2 = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
-    if (selectedPCDimension2 < 0)
+    int selectedPCDimension = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
+
+
+    if (selectedPCDimension < 0)
     {
-                setStatusMessage("E", "No PCA dimension selected for dataset 2", "");
-                return;
+        setStatusMessage("E", "No PCA dimension selected for dataset 2", "");
+        return;
     }
     const int numAllCells2 = fullDataset2->getNumPoints();
     if (numAllCells2 <= 0) {
         setStatusMessage("E", "No cells in point dataset 2", "");
         return;
     }
+    const int numAllCells1 = fullDataset1->getNumPoints();
+    if (numAllCells1 <= 0) {
+        setStatusMessage("E", "No cells in point dataset 1", "");
+        return;
+    }
 
-    std::vector<float> selectedPC(numAllCells2);
-    _pcaCommonGenesDataset2->extractDataForDimension(selectedPC, selectedPCDimension2);
+    std::vector<float> selectedPC2(numAllCells2);
+    _pcaCommonGenesDataset2->extractDataForDimension(selectedPC2, selectedPCDimension);
 
-   
+    std::vector<float> selectedPC1(numAllCells1);
+    _pcaCommonGenesDataset1->extractDataForDimension(selectedPC1, selectedPCDimension);
+
     std::vector<float> correlationGenePC2;
+    std::vector<float> correlationGenePC1;
 
-    computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC2);
+
+    computeCorrelationGenePC(fullDataset2, selectedPC2, correlationGenePC2);
+    computeCorrelationGenePC(fullDataset1, selectedPC1, correlationGenePC1);
 
     const float minCorrelation2 = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
     const float maxCorrelation2 = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
     const auto dimensionNames2 = fullDataset2->getDimensionNames();
+    
+    const float minCorrelation1 = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum();
+    const float maxCorrelation1 = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum();
+    const auto dimensionNames1 = fullDataset1->getDimensionNames();
 
-    //add for debugging
-    if (true)
     {
-        Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
-        if (fullDataset1.isValid()) {
-            std::vector<float> correlationGenePC1;
-            computeCorrelationGenePCFast(fullDataset1, selectedPC, correlationGenePC1);
-            const auto dimensionNames1 = fullDataset1->getDimensionNames();
+        
+        
+        
+        /*
+        // Prepare sorted indices for D2 and D1
+        std::vector<int> sortedIndicesD2(correlationGenePC2.size());
+        std::iota(sortedIndicesD2.begin(), sortedIndicesD2.end(), 0);
+        std::sort(sortedIndicesD2.begin(), sortedIndicesD2.end(), [&](int a, int b) {
+            return correlationGenePC2[a] > correlationGenePC2[b];
+            });
 
-            // Prepare sorted indices for D2 and D1
-            std::vector<int> sortedIndicesD2(correlationGenePC2.size());
-            std::iota(sortedIndicesD2.begin(), sortedIndicesD2.end(), 0);
-            std::sort(sortedIndicesD2.begin(), sortedIndicesD2.end(), [&](int a, int b) {
-                return correlationGenePC2[a] > correlationGenePC2[b];
-                });
+        std::vector<int> sortedIndicesD1(correlationGenePC1.size());
+        std::iota(sortedIndicesD1.begin(), sortedIndicesD1.end(), 0);
+        std::sort(sortedIndicesD1.begin(), sortedIndicesD1.end(), [&](int a, int b) {
+            return correlationGenePC1[a] > correlationGenePC1[b];
+            });
+        
+        // Print table header
+        qDebug() << QString("%1 | %2 | %3 | %4 | %5")
+            .arg("Rank", 4)
+            .arg("Gene (D2)", 20)
+            .arg("Corr (D2)", 12)
+            .arg("Gene (D1)", 20)
+            .arg("Corr (D1)", 12);
 
-            std::vector<int> sortedIndicesD1(correlationGenePC1.size());
-            std::iota(sortedIndicesD1.begin(), sortedIndicesD1.end(), 0);
-            std::sort(sortedIndicesD1.begin(), sortedIndicesD1.end(), [&](int a, int b) {
-                return correlationGenePC1[a] > correlationGenePC1[b];
-                });
+        // Print a separator
+        qDebug() << QString("%1-+-%2-+-%3-+-%4-+-%5")
+            .arg(QString(4, '-'))
+            .arg(QString(20, '-'))
+            .arg(QString(12, '-'))
+            .arg(QString(20, '-'))
+            .arg(QString(12, '-'));
 
-            // Print table header
+        // Print each row
+        for (int i = 0; i < 10; i++) {
+            int idxD2 = sortedIndicesD2[i];
+            int idxD1 = sortedIndicesD1[i];
+
             qDebug() << QString("%1 | %2 | %3 | %4 | %5")
-                .arg("Rank", 4)
-                .arg("Gene (D2)", 20)
-                .arg("Corr (D2)", 12)
-                .arg("Gene (D1)", 20)
-                .arg("Corr (D1)", 12);
-
-            // Print a separator
-            qDebug() << QString("%1-+-%2-+-%3-+-%4-+-%5")
-                .arg(QString(4, '-'))
-                .arg(QString(20, '-'))
-                .arg(QString(12, '-'))
-                .arg(QString(20, '-'))
-                .arg(QString(12, '-'));
-
-            // Print each row
-            for (int i = 0; i < 10; i++) {
-                int idxD2 = sortedIndicesD2[i];
-                int idxD1 = sortedIndicesD1[i];
-
-                qDebug() << QString("%1 | %2 | %3 | %4 | %5")
-                    .arg(i + 1, 4)
-                    .arg(dimensionNames2[idxD2], 20)
-                    .arg(QString::number(correlationGenePC2[idxD2], 'f', 6), 12)
-                    .arg(dimensionNames1[idxD1], 20)
-                    .arg(QString::number(correlationGenePC1[idxD1], 'f', 6), 12);
-            }
-        }
+                .arg(i + 1, 4)
+                .arg(dimensionNames2[idxD2], 20)
+                .arg(QString::number(correlationGenePC2[idxD2], 'f', 6), 12)
+                .arg(dimensionNames1[idxD1], 20)
+                .arg(QString::number(correlationGenePC1[idxD1], 'f', 6), 12);
+        }*/
     }
+
 
     try {
         populateGenesByCorrelationRange(correlationGenePC2, minCorrelation2, maxCorrelation2, dimensionNames2, 2);
+        populateGenesByCorrelationRange(correlationGenePC1, minCorrelation1, maxCorrelation1, dimensionNames1, 3);
     }
     catch (const std::exception& ex) {
         qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -3209,6 +3230,7 @@ void Computation::correlationAfterPCA()
     }
 
     setupTableModelAndSelection(2);
+    setupTableModelAndSelection(3); 
 
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
 }
@@ -3516,8 +3538,8 @@ void Computation::resetupCorrelationTable(int datasetNumber)
     constexpr float epsilon = 1e-6f;
 
     // Use references to avoid code duplication
-    auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2 : _geneCorrValues1;
-    auto& geneOfInterestIndices = (datasetNumber == 2) ? _geneOfInterestIndices2 : _geneOfInterestIndices1;
+    auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2 : (datasetNumber == 1) ? _geneCorrValues1 : _geneCorrValues3;
+    auto& geneOfInterestIndices = (datasetNumber == 2) ? _geneOfInterestIndices2 : (datasetNumber == 1) ? _geneOfInterestIndices1: _geneOfInterestIndices3;
 
     geneOfInterestIndices.clear();
     geneOfInterestIndices.reserve(geneCorrValues.size());
@@ -3538,7 +3560,8 @@ void Computation::resetupCorrelationTable(int datasetNumber)
     // Select the first row of the table if available
     QTableView* tableView = (datasetNumber == 2)
         ? _settingsAction.getTableView2Action()
-        : _settingsAction.getTableView1Action();
+        : (datasetNumber == 1)
+        ? _settingsAction.getTableView1Action(): _settingsAction.getTableView3Action();
 
     if (tableView) {
         auto* model = tableView->model();
@@ -3754,10 +3777,10 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
 {
     FunctionTimer timer(Q_FUNC_INFO);
     // Select appropriate data and view pointers
-    const auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2 : _geneCorrValues1;
+    const auto& geneCorrValues = (datasetNumber == 2) ? _geneCorrValues2 : (datasetNumber == 1) ? _geneCorrValues1: _geneCorrValues3;
     QTableView* tableView = (datasetNumber == 2)
-        ? _settingsAction.getTableView2Action()
-        : _settingsAction.getTableView1Action();
+        ? _settingsAction.getTableView2Action(): (datasetNumber == 1)?
+         _settingsAction.getTableView1Action(): _settingsAction.getTableView3Action();
 
     // Create model
     auto rowCount = static_cast<int>(geneCorrValues.size());
@@ -3826,8 +3849,8 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
         this,
         [this, datasetNumber](const QItemSelection&, const QItemSelection&) {
             QTableView* tv = (datasetNumber == 2)
-                ? _settingsAction.getTableView2Action()
-                : _settingsAction.getTableView1Action();
+                ? _settingsAction.getTableView2Action() : (datasetNumber == 1) ? _settingsAction.getTableView1Action()
+                : _settingsAction.getTableView3Action();
             auto* mdl = tv->model();
             if (!mdl) return;
             QModelIndexList selectedIndexes = tv->selectionModel()->selectedIndexes();
@@ -3836,9 +3859,31 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             if (!index.isValid()) return;
             QString value = mdl->data(mdl->index(index.row(), 0), Qt::DisplayRole).toString();
             if (datasetNumber == 2)
+            {
                 _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
-            else
+            }
+            else if (datasetNumber == 1)
+            {
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+            }
+            else
+            {
+                //_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(value);
+                //select the gene in the first table in the first table find the row and select
+                QTableView* firstTableView = _settingsAction.getTableView1Action();
+                QStandardItemModel* firstModel = qobject_cast<QStandardItemModel*>(firstTableView->model());
+                if (firstModel) {
+                    QModelIndexList firstSelectedIndexes = firstTableView->selectionModel()->selectedIndexes();
+                    if (!firstSelectedIndexes.isEmpty()) {
+                        const QModelIndex& firstIndex = firstSelectedIndexes.first();
+                        if (firstIndex.isValid()) {
+                            QString firstValue = firstModel->data(firstModel->index(firstIndex.row(), 0), Qt::DisplayRole).toString();
+                            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName(firstValue);
+                        }
+                    }
+                }
+
+            }
         }
     );
 
