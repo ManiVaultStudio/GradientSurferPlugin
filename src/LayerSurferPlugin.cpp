@@ -6,6 +6,7 @@
 
 #include <QDebug>
 #include <QMimeData>
+#include <QLabel> 
 
 Q_PLUGIN_METADATA(IID "studio.manivault.LayerSurferPlugin")
 
@@ -37,17 +38,52 @@ void LayerSurferPlugin::init()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
     
+
     auto* topLayout = new QHBoxLayout();
     topLayout->setContentsMargins(0, 0, 0, 0);
     topLayout->setSpacing(0);
-    topLayout->addWidget(_settingsAction.getTableView1Action());
-    topLayout->addWidget(_settingsAction.getLineChart1Widget(),50);
+
+
+    auto* table1Layout = new QVBoxLayout();
+    table1Layout->setContentsMargins(0, 0, 0, 0);
+    table1Layout->setSpacing(2);
+    auto* table1Label = new QLabel("Gene Table: Dataset 1 Selected Cells");
+    table1Label->setAlignment(Qt::AlignCenter);
+    table1Label->setStyleSheet("font-weight: bold; padding-bottom: 2px;");
+    table1Layout->addWidget(table1Label);
+    table1Layout->addWidget(_settingsAction.getTableView1Action());
+    topLayout->addLayout(table1Layout, 4);
+    topLayout->addWidget(_settingsAction.getLineChart1Widget(), 6);
+
 
     auto* bottomLayout = new QHBoxLayout();
     bottomLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setSpacing(0);
-    bottomLayout->addWidget(_settingsAction.getTableView2Action());
-    //bottomLayout->addWidget(_settingsAction.getLineChart2Widget(), 50);
+
+
+    auto* table3Layout = new QVBoxLayout();
+    table3Layout->setContentsMargins(0, 0, 0, 0);
+    table3Layout->setSpacing(2);
+    auto* table3Label = new QLabel("Gene Table: Dataset 2 All Cells");
+    table3Label->setAlignment(Qt::AlignCenter);
+    table3Label->setStyleSheet("font-weight: bold; padding-bottom: 2px;");
+    table3Layout->addWidget(table3Label);
+    table3Layout->addWidget(_settingsAction.getTableView2Action());
+    bottomLayout->addLayout(table3Layout, 1);
+
+
+    auto* table2Layout = new QVBoxLayout();
+    table2Layout->setContentsMargins(0, 0, 0, 0);
+    table2Layout->setSpacing(2);
+    auto* table2Label = new QLabel("Gene Table: Dataset 1 All Cells");
+    table2Label->setAlignment(Qt::AlignCenter);
+    table2Label->setStyleSheet("font-weight: bold; padding-bottom: 2px;");
+    table2Layout->addWidget(table2Label);
+    table2Layout->addWidget(_settingsAction.getTableView0Action());
+    bottomLayout->addLayout(table2Layout, 1);
+
+
+
 
     auto* combinedLayout = new QVBoxLayout();
     
@@ -55,7 +91,7 @@ void LayerSurferPlugin::init()
     combinedLayout->addLayout(topLayout);
 
 
-    // Add a horizontal separator between topLayout and bottomLayout
+
     auto* separator = new QFrame();
     separator->setFrameShape(QFrame::HLine);
     separator->setFrameShadow(QFrame::Plain); // Use plain instead of sunken
