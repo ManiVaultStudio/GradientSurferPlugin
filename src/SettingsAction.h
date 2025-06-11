@@ -255,6 +255,9 @@ public:
         const TriggerAction& getComputePCAAction() const { return _computePCAAction; }
         TriggerAction& getComputePCAAction() { return _computePCAAction; }
 
+        const ToggleAction& getLinkDataset1And2GeneTableAction() const { return _linkdataset1And2GeneTableAction; }
+        ToggleAction& getLinkDataset1And2GeneTableAction() { return _linkdataset1And2GeneTableAction; }
+
 
 
 
@@ -274,6 +277,8 @@ public:
         OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
+
+        ToggleAction                 _linkdataset1And2GeneTableAction;
        
         
     };

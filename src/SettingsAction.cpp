@@ -94,12 +94,14 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
     _commonOptionsHolder.getAutoComputeAction().setToolTip("Auto Compute Action");
+    _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setToolTip("Link Dataset 1 and 2 Gene Table Action");
     _commonOptionsHolder.getPcaColoringAction().setToolTip("PCA Coloring Action");
     _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
     _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension Selection Action");
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
 
     _commonOptionsHolder.getAutoComputeAction().setChecked(true);
+    _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setChecked(true);
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
 
 
@@ -159,6 +161,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getComputePCAAction().setText("Compute PCA");
 
     _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
     _commonOptionsHolder.getDualPCAColoringAction().setOptions({ "Dataset1", "Dataset2" });
@@ -419,7 +422,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _pcaColoringAction(this, "PCA Coloring"),
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
-    _computePCAAction(this, "Compute PCA")
+    _computePCAAction(this, "Compute PCA"),
+    _linkdataset1And2GeneTableAction(this, "Link Dataset1 and Dataset2 Gene Table")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -431,6 +435,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_autoComputeAction);
+    addAction(&_linkdataset1And2GeneTableAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_computeAction);
 

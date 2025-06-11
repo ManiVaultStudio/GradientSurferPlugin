@@ -3886,6 +3886,28 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
                         }
                     }
                 }
+                if (_settingsAction.getCommonOptionsHolder().getLinkDataset1And2GeneTableAction().isChecked())
+                {
+                    QTableView* secondTableView = _settingsAction.getTableView2Action();
+                    QStandardItemModel* secondModel = qobject_cast<QStandardItemModel*>(secondTableView->model());
+                    if (secondModel) {
+                        for (int row = 0; row < secondModel->rowCount(); ++row) {
+                            QString geneName = secondModel->data(secondModel->index(row, 0), Qt::DisplayRole).toString();
+                            if (geneName == targetGeneName) {
+                                QModelIndex index = secondModel->index(row, 0);
+                                if (index.isValid()) {
+                                    secondTableView->setCurrentIndex(index);
+                                    secondTableView->selectionModel()->select(
+                                        index,
+                                        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                                    );
+                                    _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             else
             {
@@ -3911,7 +3933,28 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
                         }
                     }
                 }
-
+                if (_settingsAction.getCommonOptionsHolder().getLinkDataset1And2GeneTableAction().isChecked())
+                {
+                    QTableView* secondTableView = _settingsAction.getTableView2Action();
+                    QStandardItemModel* secondModel = qobject_cast<QStandardItemModel*>(secondTableView->model());
+                    if (secondModel) {
+                        for (int row = 0; row < secondModel->rowCount(); ++row) {
+                            QString geneName = secondModel->data(secondModel->index(row, 0), Qt::DisplayRole).toString();
+                            if (geneName == targetGeneName) {
+                                QModelIndex index = secondModel->index(row, 0);
+                                if (index.isValid()) {
+                                    secondTableView->setCurrentIndex(index);
+                                    secondTableView->selectionModel()->select(
+                                        index,
+                                        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                                    );
+                                    _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
     );
