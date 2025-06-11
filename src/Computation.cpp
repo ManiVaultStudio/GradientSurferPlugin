@@ -1717,7 +1717,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto embeddingDimensionYActionChanged2 = [this]() -> void {
 
         setStatusMessage("M", "Embedding 2 Y dimension changed", "");
-        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
         if (scatterplotName.isEmpty())
         {
             qDebug() << "No scatterplot view 2 selected";
