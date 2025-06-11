@@ -313,7 +313,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     setIcon(mv::util::StyledIcon("database"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
-    addAction(&_pointDatasetAction);
+    //addAction(&_pointDatasetAction);
     addAction(&_embeddingDatasetAction);
     addAction(&_clusterDatasetAction);
     addAction(&_scatterplotViewSelectionAction);
@@ -356,7 +356,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     setIcon(mv::util::StyledIcon("database"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
-    addAction(&_pointDataset2Action);
+    //addAction(&_pointDataset2Action);
     addAction(&_embeddingDataset2Action);
     addAction(&_clusterDataset2Action);
     addAction(&_scatterplotViewSelection2Action);

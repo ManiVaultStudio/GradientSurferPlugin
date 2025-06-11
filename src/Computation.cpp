@@ -471,23 +471,69 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, scatterplotSelectionOptions);
 
     _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-        return dataset->getDataType() == ClusterType;
+        bool validity = false;
+        Dataset<Points> sibling = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+        if (sibling.isValid())
+        {
+            if (sibling->getParent()== dataset->getParent() && dataset->getDataType() == ClusterType && (dataset->getGroupIndex()!=666 || dataset->getGroupIndex()!=667))
+            {
+                validity = true;
+            }
+        }
+        
+        
+        return validity;
         });
      _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         return dataset->getDataType() == PointType;
         });
      _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-        return dataset->getDataType() == PointType;
+         bool validity = false;
+         auto parent = dataset->getParent();
+         bool checkGroup = false;
+         if (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667)
+         {
+             checkGroup = true;
+         }
+         if (parent.isValid() && dataset->getDataType() == PointType && checkGroup)
+         {
+             validity = true;
+         }
+         
+        return validity;
         });
 
      _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-         return dataset->getDataType() == ClusterType;
+        bool validity = false;
+        Dataset<Points> sibling = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+        if (sibling.isValid())
+        {
+            if (sibling->getParent()== dataset->getParent() && dataset->getDataType() == ClusterType && (dataset->getGroupIndex()!=666 || dataset->getGroupIndex()!=667))
+            {
+                validity = true;
+            }
+        }
+
+
+        return validity;
          });
      _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
          return dataset->getDataType() == PointType;
          });
      _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-         return dataset->getDataType() == PointType;
+         bool validity = false;
+         auto parent = dataset->getParent();
+         bool checkGroup = false;
+         if (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667)
+         {
+             checkGroup = true;
+         }
+         if (parent.isValid() && dataset->getDataType() == PointType && checkGroup)
+         {
+             validity = true;
+         }
+
+         return validity;
          });
 
     const auto updateClusterDataset1 = [this]() -> void {
@@ -847,7 +893,28 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             if (_embeddingDataset.isValid())
             {
-                 _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
+                auto parent = _embeddingDataset->getParent();
+                if (parent.isValid())
+                {
+                    _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setCurrentDataset(parent);
+                    auto children = parent->getChildren();
+                    Datasets clusterDatasets;
+                    for (const Dataset<Clusters>& child : children) {
+                        if (child->getDataType() == ClusterType && (child->getGroupIndex() != 667 || child->getGroupIndex() != 666)) {
+                            clusterDatasets.append(child);
+
+                        }
+                    }
+                    _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setDatasets(clusterDatasets);
+                }
+                else
+                {
+                    _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setDatasets({});
+                }
+                
+                
+                
+                _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
                  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setPointsDataset(_embeddingDataset);
                 const auto mainSelectionChanged = [this]() -> void {
                     //qDebug() << "Main selection changed in fullEmbeddingDataset";
@@ -931,12 +998,32 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateEmbeddingDataset2 = [this]() -> void {
         if (_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().isValid())
         {
-
+            
 
             auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
 
             if (embeddingDataset2.isValid())
             {
+                
+                auto parent = embeddingDataset2->getParent();
+                if (parent.isValid())
+                {
+                    _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().setCurrentDataset(parent);
+                    auto children = parent->getChildren();
+                    Datasets clusterDatasets;
+                    for (const Dataset<Clusters>& child : children) {
+                        if (child->getDataType() == ClusterType && (child->getGroupIndex() != 667|| child->getGroupIndex() != 666)) {
+                            clusterDatasets.append(child);
+                            
+                        }
+                    }
+                    _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setDatasets(clusterDatasets);
+                }
+                else
+                {
+                    _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setDatasets({});
+                }
+                
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setPointsDataset(embeddingDataset2);
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setPointsDataset(embeddingDataset2);
             }
@@ -1630,7 +1717,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto embeddingDimensionYActionChanged2 = [this]() -> void {
 
         setStatusMessage("M", "Embedding 2 Y dimension changed", "");
-        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
         if (scatterplotName.isEmpty())
         {
             qDebug() << "No scatterplot view 2 selected";
@@ -2265,6 +2352,7 @@ void Computation::AutoCompute()
             if (rowCount > 0)
                 model->removeRows(0, rowCount);
         }
+
         _settingsAction.getLineChart1Widget()->clear();
         _numOfPointsInLine1 = 0;
         QApplication::processEvents();
@@ -2343,7 +2431,7 @@ void Computation::AutoCompute()
 
         // Correlation and gene filtering
         std::vector<float> corrGeneCoords;
-        computeCorrelationGeneCoordsFast(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
+        computeCorrelationGeneCoords(_filteredSelectionIndices, fullPointDataset, yCoordinates, corrGeneCoords);
 
         
         try {
@@ -3029,16 +3117,70 @@ void Computation::correlationAfterPCA()
     std::vector<float> selectedPC(numAllCells2);
     _pcaCommonGenesDataset2->extractDataForDimension(selectedPC, selectedPCDimension2);
 
-    std::vector<float> correlationGenePC;
+   
+    std::vector<float> correlationGenePC2;
 
-    computeCorrelationGenePCFast(fullDataset2, selectedPC, correlationGenePC);
+    computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC2);
 
-    const float minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
-    const float maxCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
-    const auto dimensionNames = fullDataset2->getDimensionNames();
+    const float minCorrelation2 = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
+    const float maxCorrelation2 = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
+    const auto dimensionNames2 = fullDataset2->getDimensionNames();
+
+    //add for debugging
+    if (true)
+    {
+        Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
+        if (fullDataset1.isValid()) {
+            std::vector<float> correlationGenePC1;
+            computeCorrelationGenePCFast(fullDataset1, selectedPC, correlationGenePC1);
+            const auto dimensionNames1 = fullDataset1->getDimensionNames();
+
+            // Prepare sorted indices for D2 and D1
+            std::vector<int> sortedIndicesD2(correlationGenePC2.size());
+            std::iota(sortedIndicesD2.begin(), sortedIndicesD2.end(), 0);
+            std::sort(sortedIndicesD2.begin(), sortedIndicesD2.end(), [&](int a, int b) {
+                return correlationGenePC2[a] > correlationGenePC2[b];
+                });
+
+            std::vector<int> sortedIndicesD1(correlationGenePC1.size());
+            std::iota(sortedIndicesD1.begin(), sortedIndicesD1.end(), 0);
+            std::sort(sortedIndicesD1.begin(), sortedIndicesD1.end(), [&](int a, int b) {
+                return correlationGenePC1[a] > correlationGenePC1[b];
+                });
+
+            // Print table header
+            qDebug() << QString("%1 | %2 | %3 | %4 | %5")
+                .arg("Rank", 4)
+                .arg("Gene (D2)", 20)
+                .arg("Corr (D2)", 12)
+                .arg("Gene (D1)", 20)
+                .arg("Corr (D1)", 12);
+
+            // Print a separator
+            qDebug() << QString("%1-+-%2-+-%3-+-%4-+-%5")
+                .arg(QString(4, '-'))
+                .arg(QString(20, '-'))
+                .arg(QString(12, '-'))
+                .arg(QString(20, '-'))
+                .arg(QString(12, '-'));
+
+            // Print each row
+            for (int i = 0; i < 10; i++) {
+                int idxD2 = sortedIndicesD2[i];
+                int idxD1 = sortedIndicesD1[i];
+
+                qDebug() << QString("%1 | %2 | %3 | %4 | %5")
+                    .arg(i + 1, 4)
+                    .arg(dimensionNames2[idxD2], 20)
+                    .arg(QString::number(correlationGenePC2[idxD2], 'f', 6), 12)
+                    .arg(dimensionNames1[idxD1], 20)
+                    .arg(QString::number(correlationGenePC1[idxD1], 'f', 6), 12);
+            }
+        }
+    }
 
     try {
-        populateGenesByCorrelationRange(correlationGenePC, minCorrelation, maxCorrelation, dimensionNames, 2);
+        populateGenesByCorrelationRange(correlationGenePC2, minCorrelation2, maxCorrelation2, dimensionNames2, 2);
     }
     catch (const std::exception& ex) {
         qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
