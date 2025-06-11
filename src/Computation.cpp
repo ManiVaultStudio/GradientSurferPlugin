@@ -3117,16 +3117,65 @@ void Computation::correlationAfterPCA()
     std::vector<float> selectedPC(numAllCells2);
     _pcaCommonGenesDataset2->extractDataForDimension(selectedPC, selectedPCDimension2);
 
-    std::vector<float> correlationGenePC;
+   
+    std::vector<float> correlationGenePC2;
 
-    computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC);
+    computeCorrelationGenePC(fullDataset2, selectedPC, correlationGenePC2);
 
-    const float minCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
-    const float maxCorrelation = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
-    const auto dimensionNames = fullDataset2->getDimensionNames();
+    const float minCorrelation2 = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
+    const float maxCorrelation2 = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
+    const auto dimensionNames2 = fullDataset2->getDimensionNames();
+
+    //add for debugging
+    if (false)
+    {
+        Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
+        if (fullDataset1.isValid()) {
+            std::vector<float> correlationGenePC1;
+            computeCorrelationGenePCFast(fullDataset1, selectedPC, correlationGenePC1);
+            //const float minCorrelation1 = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum();
+            //const float maxCorrelation1 = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum();
+            const auto dimensionNames1 = fullDataset1->getDimensionNames();
+
+            // Print table header
+            qDebug() << QString("%1 | %2 | %3 | %4 | %5")
+                .arg("Rank", 4)
+                .arg("Gene (D2)", 20)
+                .arg("Corr (D2)", 12)
+                .arg("Gene (D1)", 20)
+                .arg("Corr (D1)", 12);
+
+            // Print a separator
+            qDebug() << QString("%1-+-%2-+-%3-+-%4-+-%5")
+                .arg(QString(4, '-'))
+                .arg(QString(20, '-'))
+                .arg(QString(12, '-'))
+                .arg(QString(20, '-'))
+                .arg(QString(12, '-'));
+
+            // Print each row
+            for (int i = 0; i < 10; i++) {
+                int sortedIndexD2 = std::distance(correlationGenePC2.begin(), std::max_element(correlationGenePC2.begin(), correlationGenePC2.end()));
+                int sortedIndexD1 = std::distance(correlationGenePC1.begin(), std::max_element(correlationGenePC1.begin(), correlationGenePC1.end()));
+
+                qDebug() << QString("%1 | %2 | %3 | %4 | %5")
+                    .arg(i + 1, 4)
+                    .arg(dimensionNames2[sortedIndexD2], 20)
+                    .arg(QString::number(correlationGenePC2[sortedIndexD2], 'f', 6), 12)
+                    .arg(dimensionNames1[sortedIndexD1], 20)
+                    .arg(QString::number(correlationGenePC1[sortedIndexD1], 'f', 6), 12);
+
+                // Mark these as used so next iteration finds the next max
+                correlationGenePC2[sortedIndexD2] = std::numeric_limits<float>::lowest();
+                correlationGenePC1[sortedIndexD1] = std::numeric_limits<float>::lowest();
+            }
+
+        }
+
+    }
 
     try {
-        populateGenesByCorrelationRange(correlationGenePC, minCorrelation, maxCorrelation, dimensionNames, 2);
+        populateGenesByCorrelationRange(correlationGenePC2, minCorrelation2, maxCorrelation2, dimensionNames2, 2);
     }
     catch (const std::exception& ex) {
         qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
