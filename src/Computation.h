@@ -89,6 +89,7 @@ private:
     );
 
     bool createDatasetsIfNeeded();
+    void clearTable(int tableNumber);
     void updateClusterOptions();
     void processAfterPCAComplete();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);

@@ -703,6 +703,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     _numOfPointsInLine1 = lineData.first().points.size();
                     _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(_numOfPointsInLine1);
+                    _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setValue(_numOfPointsInLine1/5);
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
                     _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction().isChecked());
@@ -2408,19 +2409,9 @@ void Computation::AutoCompute()
     try
     {
         // Remove all rows in one call if model exists
-        QStandardItemModel* model1 = qobject_cast<QStandardItemModel*>(_settingsAction.getTableView1Action()->model());
-        if (model1) {
-            model1->clear();
-            // Optionally, reset headers if needed
-            //model1->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
-        }
-
-        QStandardItemModel* model2 = qobject_cast<QStandardItemModel*>(_settingsAction.getTableView2Action()->model());
-        if (model2) {
-            model2->clear();
-            //model2->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
-        }
-
+        clearTable(3);
+        clearTable(2);
+        clearTable(1);
         _settingsAction.getLineChart1Widget()->clear();
         _numOfPointsInLine1 = 0;
         QApplication::processEvents();
@@ -2548,8 +2539,13 @@ void Computation::ManualCompute()
     //mv::Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
 
     // Setup and trigger PCA
-    if (!setupAndTriggerPCA())
+    bool complete = setupAndTriggerPCA();
+    if (!complete)
+    {
+        clearTable(3);
+        clearTable(2);
         return;
+    }
 }
 
 
@@ -3154,11 +3150,46 @@ void Computation::processAfterPCAComplete()
     {
         qDebug() << "No PCA dimensions available for coloring";
         setStatusMessage("E", "No PCA dimensions available for coloring", "");
+        clearTable(3);
+        clearTable(2);
         return;
     }
 
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     
+}
+void Computation::clearTable(int tableNumber)
+{
+    if (tableNumber==1)
+    {
+        QStandardItemModel* model1 = qobject_cast<QStandardItemModel*>(_settingsAction.getTableView1Action()->model());
+        if (model1) {
+            model1->clear();
+
+            //model1->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
+        }
+    }
+    else if (tableNumber == 2)
+    {
+        QStandardItemModel* model2 = qobject_cast<QStandardItemModel*>(_settingsAction.getTableView2Action()->model());
+        if (model2) {
+            model2->clear();
+            //model2->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
+        }
+    }
+    else if (tableNumber == 3)
+    {
+        QStandardItemModel* model3 = qobject_cast<QStandardItemModel*>(_settingsAction.getTableView3Action()->model());
+        if (model3) {
+            model3->clear();
+            //model3->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
+        }
+    }
+    else
+    {
+        qDebug() << "Invalid table number for clearing";
+    }
+
 }
 void Computation::correlationAfterPCA()
 {
@@ -3795,6 +3826,7 @@ void Computation::drawCombinedLines()
 
     auto numOfPointsInLine1 = lineData.first().points.size();
     _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(numOfPointsInLine1);
+    _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setValue(numOfPointsInLine1/5);
     lineChartWidget->setConnectStatsLineN(numOfPointsInLine1 * _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
     lineChartWidget->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
     lineChartWidget->setConnectStatsLineEnabled(_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction().isChecked());
