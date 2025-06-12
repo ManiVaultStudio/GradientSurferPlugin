@@ -951,6 +951,21 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 
                 _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
                  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setPointsDataset(_embeddingDataset);
+                 if (_embeddingDataset->getNumDimensions() >= 2)
+                 {
+                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(0);
+                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(1);
+                    }
+                    else if (_embeddingDataset->getNumDimensions() == 1)
+                    {
+                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(0);
+                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(0);
+                    }
+                    else
+                 {
+                     _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(-1);
+                     _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(-1);
+                 }
                 const auto mainSelectionChanged = [this]() -> void {
                     //qDebug() << "Main selection changed in fullEmbeddingDataset";
                     setStatusMessage("M", "Selected indices changed", "");
@@ -1092,6 +1107,21 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setPointsDataset(embeddingDataset2);
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setPointsDataset(embeddingDataset2);
+                if (embeddingDataset2->getNumDimensions() >= 2)
+                {
+                    _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setCurrentDimensionIndex(0);
+                    _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setCurrentDimensionIndex(1);
+                }
+                else if (embeddingDataset2->getNumDimensions() == 1)
+                {
+                    _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setCurrentDimensionIndex(0);
+                    _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setCurrentDimensionIndex(0);
+                }
+                else
+                {
+                    _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setCurrentDimensionIndex(-1);
+                    _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setCurrentDimensionIndex(-1);
+                }
             }
 
 
@@ -2519,7 +2549,7 @@ void Computation::AutoCompute()
             QApplication::processEvents();
 
             ManualCompute();
-            correlationAfterPCA();
+            
 
             _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         }
@@ -2549,6 +2579,7 @@ void Computation::ManualCompute()
         clearTable(2);
         return;
     }
+    correlationAfterPCA();
 }
 
 
@@ -3968,6 +3999,25 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             QString value = mdl->data(mdl->index(index.row(), 0), Qt::DisplayRole).toString();
             if (datasetNumber == 2)
             {
+                QString targetGeneName = value;
+                QTableView* firstTableView = _settingsAction.getTableView1Action();
+                QStandardItemModel* firstModel = qobject_cast<QStandardItemModel*>(firstTableView->model());
+                if (firstModel) {
+                    for (int row = 0; row < firstModel->rowCount(); ++row) {
+                        QString geneName = firstModel->data(firstModel->index(row, 0), Qt::DisplayRole).toString();
+                        if (geneName == targetGeneName) {
+                            QModelIndex index = firstModel->index(row, 0);
+                            if (index.isValid()) {
+                                firstTableView->setCurrentIndex(index);
+                                firstTableView->selectionModel()->select(
+                                    index,
+                                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                                );
+                            }
+                            break;
+                        }
+                    }
+                }
                 _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName(value);
             }
             else if (datasetNumber == 1)
