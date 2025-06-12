@@ -893,6 +893,30 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             if (_embeddingDataset.isValid())
             {
+                auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+                if (scatterplotViewFactory)
+                {
+                    auto scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+                    if (!scatterplotName.isEmpty())
+                    {
+                        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+                        {
+                            if (plugin->getGuiName() == scatterplotName)
+                            {
+                                mv::gui::DatasetPickerAction* pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                                if (pointDatasetPickerAction)
+                                {
+
+
+                                    pointDatasetPickerAction->setCurrentDataset(_embeddingDataset);
+
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                
                 auto parent = _embeddingDataset->getParent();
                 if (parent.isValid())
                 {
@@ -1011,10 +1035,31 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             
 
             auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
-
+            
             if (embeddingDataset2.isValid())
             {
-                
+                auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+                if (scatterplotViewFactory)
+                {
+                    auto scatterplotName = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
+                    if (!scatterplotName.isEmpty())
+                    {
+                        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+                        {
+                            if (plugin->getGuiName() == scatterplotName)
+                            {
+                                mv::gui::DatasetPickerAction* pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                                if (pointDatasetPickerAction)
+                                {
+
+
+                                    pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
+
+                                }
+                            }
+                        }
+                    }
+                }
                 auto parent = embeddingDataset2->getParent();
                 if (parent.isValid())
                 {
