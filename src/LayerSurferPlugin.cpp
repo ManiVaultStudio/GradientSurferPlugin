@@ -141,8 +141,10 @@ void LayerSurferPlugin::init()
     auto* computeStatusLayout = new QHBoxLayout();
     computeStatusLayout->setContentsMargins(0, 0, 0, 0);
     computeStatusLayout->setSpacing(0);
-    computeStatusLayout->addWidget(_settingsAction.getStatusHolder().getStatusBarAction(),90);
-    computeStatusLayout->addWidget(_settingsAction.getStatusHolder().createWidget(&getWidget()));
+    _settingsAction.getStatusHolder().getStatusBarAction()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    computeStatusLayout->addWidget(_settingsAction.getStatusHolder().getStatusBarAction(),1);
+
+    //computeStatusLayout->addWidget(_settingsAction.getStatusHolder().createWidget(&getWidget()));
 
     mainLayout->addLayout(computeStatusLayout);
 
