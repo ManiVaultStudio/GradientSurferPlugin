@@ -145,6 +145,7 @@ protected:
     int             _numOfPointsInLine2 = 0;
     QString    _selectedGene1 = "";
     QString    _selectedGene2 = "";
+    bool _isComputing = false;
 
     friend class ChannelAction;
 };

@@ -2439,6 +2439,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 void Computation::AutoCompute()
 {
+    if (_isComputing) return;
+    _isComputing = true;
+    auto guard = qScopeGuard([&] { _isComputing = false; });
     try
     {
         // Remove all rows in one call if model exists
@@ -2565,6 +2568,7 @@ void Computation::AutoCompute()
         qDebug() << "Unknown exception in Computation";
         setStatusMessage("E", "Unknown error occurred during computation", "");
     }
+    _isComputing = false;
 }
 
 void Computation::ManualCompute()
