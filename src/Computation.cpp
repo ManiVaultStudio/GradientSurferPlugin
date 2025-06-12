@@ -28,10 +28,10 @@
 #include <QToolTip>
 #include <QElapsedTimer>
 #include <QDebug>
-#include <QtConcurrent>
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QVector>
+
 using namespace mv;
 using namespace mv::gui;
 
@@ -330,6 +330,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     _correlationRangeDebounceTimer2.setSingleShot(true);
      // _connectedStatsLineDebounceTimer.setSingleShot(true);
     // _lineSmoothingWindowDebounceTimer.setSingleShot(true);
+
+
 
     const auto updateStatus = [this]() -> void {
         auto stringFull = _settingsAction.getStatusHolder().getStatusMessageAction().getString();
@@ -2433,7 +2435,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged2);
-
+    _pca1.setCompletionCallback(nullptr);
+    _pca1.setCompletionCallback([this](bool success, const std::string& message) {
+        if (success) {
+            qDebug() << "PCA 1 finished successfully:" << message.c_str();
+            processAfterPCAComplete();
+        }
+        else {
+            setStatusMessage("E", "PCA Failed", message.c_str());
+        }
+        });
 }
 
 
@@ -2583,7 +2594,7 @@ void Computation::ManualCompute()
         clearTable(2);
         return;
     }
-    correlationAfterPCA();
+    
 }
 
 
@@ -3166,6 +3177,118 @@ void Computation::updateClusterOptions()
 void Computation::processAfterPCAComplete()
 {
     FunctionTimer timer(Q_FUNC_INFO);
+    setStatusMessage("C", "PCA analysis completed", "#28a745");
+    qDebug() << "PCA analysis completed successfully";
+    auto scores1 = _pca1.scores();
+    auto loadings1 = _pca1.loadings();
+    int numAllCells1 = _pca1.numRows();
+    int numOfDims1 = _pca1.numComponents();
+    if (!_pcaCommonGenesDataset1.isValid()) {
+        _pcaCommonGenesDataset1 = mv::data().createDataset("Points", "PCA Dataset 1", _selectedGenePointDataset1);
+        _pcaCommonGenesDataset1->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_pcaCommonGenesDataset1);
+    }
+    if (!_pcaCommonGenesDataset2.isValid()) {
+        _pcaCommonGenesDataset2 = mv::data().createDataset("Points", "PCA Dataset 2", _selectedGenePointDataset2);
+        _pcaCommonGenesDataset2->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
+    }
+
+
+
+
+    setStatusMessage("C", "PCA analysis completed", "#28a745");
+
+    if (!_selectedGenePointDataset2.isValid())
+    {
+        qDebug() << "Selected gene point dataset 2 is invalid";
+        setStatusMessage("E", "Selected gene point dataset 2 is invalid", "");
+        return;
+    }
+    if (_selectedGenePointDataset2->getNumDimensions()!= _pca1.numDims()) {
+        qDebug() << "Selected gene point dataset 2 dimensions do not match PCA dimensions";
+        setStatusMessage("E", "Selected gene point dataset 2 dimensions do not match PCA dimensions", "");
+        return;
+    }
+
+    std::vector<std::vector<float>> allLoadings(_pca1.numDims());
+    for (int feat = 0; feat < _pca1.numDims(); ++feat) {
+        allLoadings[feat].resize(_pca1.numComponents());
+        for (int comp = 0; comp < _pca1.numComponents(); ++comp) {
+            allLoadings[feat][comp] = _pca1.loadingAt(feat, comp).value_or(0.0f);
+        }
+    }
+
+    std::vector<float> selectedGenePC2(_selectedGenePointDataset2->getNumPoints() * _pca1.numComponents(), 0.0f);
+    int numPoints2 = _selectedGenePointDataset2->getNumPoints();
+    int numDims2 = _pca1.numDims();
+    int numComps2 = _pca1.numComponents();
+
+    for (int idx1 = 0; idx1 < numPoints2; ++idx1) {
+        std::vector<float> geneVec(numDims2, 0.0f);
+        for (int dim = 0; dim < numDims2; ++dim) {
+            geneVec[dim] = _selectedGenePointDataset2->getValueAt(idx1 * numDims2 + dim);
+        }
+        for (int comp = 0; comp < numComps2; ++comp) {
+            float pcValue = 0.0f;
+            for (int dim = 0; dim < numDims2; ++dim) {
+                pcValue += geneVec[dim] * allLoadings[dim][comp];
+            }
+            selectedGenePC2[idx1 * numComps2 + comp] = pcValue;
+        }
+    }
+    _pcaCommonGenesDataset2->setData(selectedGenePC2.data(), numPoints2, numComps2);
+    mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
+
+    std::vector<float> selectedGenePC1(_selectedGenePointDataset1->getNumPoints() * _pca1.numComponents(), 0.0f);
+    int numPoints1 = _selectedGenePointDataset1->getNumPoints();
+    int numDims1 = _pca1.numDims();
+    int numComps1 = _pca1.numComponents();
+    for (int idx1 = 0; idx1 < numPoints1; ++idx1) {
+        std::vector<float> geneVec(numDims1, 0.0f);
+        for (int dim = 0; dim < numDims1; ++dim) {
+            geneVec[dim] = _selectedGenePointDataset1->getValueAt(idx1 * numDims1 + dim);
+        }
+        for (int comp = 0; comp < numComps1; ++comp) {
+            float pcValue = 0.0f;
+            for (int dim = 0; dim < numDims1; ++dim) {
+                pcValue += geneVec[dim] * allLoadings[dim][comp];
+            }
+            selectedGenePC1[idx1 * numComps1 + comp] = pcValue;
+        }
+    }
+    _pcaCommonGenesDataset1->setData(selectedGenePC1.data(), numPoints1, numComps1);
+    mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
+
+
+    _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
+
+    if (_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions() > 0)
+    {
+        _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(0);
+
+    }
+
+
+
+    if (_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions() < 0)
+    {
+        qDebug() << "No PCA dimensions available for coloring";
+        setStatusMessage("E", "No PCA dimensions available for coloring", "");
+        clearTable(3);
+        clearTable(2);
+        return;
+    }
+    if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
+    {
+    correlationAfterPCA();
+    }
+
+}
+
+void Computation::processAfterPCACompleteOld()
+{
+    FunctionTimer timer(Q_FUNC_INFO);
     _pcaDataset1Complete = false;
     _pcaDataset2Complete = false;
     
@@ -3229,6 +3352,8 @@ void Computation::clearTable(int tableNumber)
     }
 
 }
+
+
 void Computation::correlationAfterPCA()
 {
     FunctionTimer timer(Q_FUNC_INFO);
@@ -3465,6 +3590,119 @@ bool Computation::setupAndTriggerPCA()
         return false;
     }
 
+    const int numCells1 = _filteredSelectionIndices.size();
+    const int numAllCells2 = fullPointDataset2->getNumPoints();
+
+
+    const int numOfIntGenes = static_cast<int>(_geneOfInterestIndices1.size());
+    const auto& dimensionNames1 = fullPointDataset1->getDimensionNames();
+    const auto& dimensionNames2 = fullPointDataset2->getDimensionNames();
+
+    if (numCells1 <= 0 || numAllCells2 <= 0 || numOfIntGenes <= 0) {
+        qDebug() << "Invalid dataset sizes: numAllCells1:" << numCells1
+            << "numAllCells2:" << numAllCells2
+            << "numOfIntGenes:" << numOfIntGenes;
+        setStatusMessage("E", "Invalid dataset sizes", "");
+        return false;
+    }
+    if (numOfIntGenes > static_cast<int>(dimensionNames1.size()) ||
+        numOfIntGenes > static_cast<int>(dimensionNames2.size())) {
+        qDebug() << "Number of genes of interest exceeds dataset dimensions";
+        setStatusMessage("E", "Number of genes of interest exceeds dataset dimensions", "");
+        return false;
+    }
+
+    // Build gene index mapping and names of interest in a single pass
+    std::vector<QString> dimensionNamesOfInterest;
+    std::vector<int> geneDataset1, geneDataset2;
+    dimensionNamesOfInterest.reserve(numOfIntGenes);
+    geneDataset1.reserve(numOfIntGenes);
+    geneDataset2.reserve(numOfIntGenes);
+
+    for (int idx : _geneOfInterestIndices1) {
+        if (idx < 0 || idx >= static_cast<int>(dimensionNames1.size()))
+            continue;
+        const QString& geneName = dimensionNames1[idx];
+        auto it2 = std::find(dimensionNames2.begin(), dimensionNames2.end(), geneName);
+        if (it2 != dimensionNames2.end()) {
+            int geneId2 = static_cast<int>(std::distance(dimensionNames2.begin(), it2));
+            dimensionNamesOfInterest.push_back(geneName);
+            geneDataset1.push_back(idx);
+            geneDataset2.push_back(geneId2);
+        }
+    }
+
+    const int numDimsOfInterest = static_cast<int>(dimensionNamesOfInterest.size());
+    qDebug() << "Number of all cells dataset 1:" << numCells1
+        << "Number of all cells dataset 2:" << numAllCells2
+        << "Number of dimensions of interest:" << numDimsOfInterest;
+
+    if (numDimsOfInterest <= 0) {
+        qDebug() << "No genes of interest selected for PCA";
+        setStatusMessage("E", "No genes of interest selected for PCA", "");
+        return false;
+    }
+
+    // Prepare cell indices
+    std::vector<int> cellIndices1, allCellIndices2;
+
+
+
+    for (const auto& vals : _filteredSelectionIndices)
+    {
+        cellIndices1.push_back(vals);
+    }
+    std::vector<float> cellByGeneMatrix1(numCells1 * numDimsOfInterest);
+    try {
+        fullPointDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, cellIndices1);
+    }
+    catch (const std::exception& ex) {
+        qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+        setStatusMessage("E", "Error occurred during populating filtered data", "");
+        return false;
+    }
+    _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numCells1, numDimsOfInterest);
+    _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
+    mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
+    
+
+
+    
+
+    std::iota(allCellIndices2.begin(), allCellIndices2.end(), 0);
+    std::vector<float> cellByGeneMatrix2(numAllCells2 * numDimsOfInterest);
+
+    try {
+        fullPointDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, allCellIndices2);
+    }
+    catch (const std::exception& ex) {
+        qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+        setStatusMessage("E", "Error occurred during populating filtered data", "");
+        return false;
+    }
+    _selectedGenePointDataset2->setData(cellByGeneMatrix2.data(), numAllCells2, numDimsOfInterest);
+    _selectedGenePointDataset2->setDimensionNames(dimensionNamesOfInterest);
+    mv::events().notifyDatasetDataChanged(_selectedGenePointDataset2);
+    setStatusMessage("R", "PCA Started", "");
+    _pca1.fit(cellByGeneMatrix1, numCells1, numDimsOfInterest, numOfIntGenes);
+    return true;
+}
+
+
+bool Computation::setupAndTriggerPCAOld()
+{
+    // Compute PCA on all cells with selected genes of interest
+    FunctionTimer timer(Q_FUNC_INFO);
+    auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+    auto fullPointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
+
+    if (!_selectedGenePointDataset1.isValid() || !fullPointDataset1.isValid() ||
+        !_selectedGenePointDataset2.isValid() || !fullPointDataset2.isValid()) {
+        qDebug() << "One or more datasets are invalid!";
+        setStatusMessage("E", "Internal error: invalid dataset pointer", "");
+        return false;
+    }
+
     const int numAllCells1 = fullPointDataset1->getNumPoints();
     const int numAllCells2 = fullPointDataset2->getNumPoints();
     const int numOfIntGenes = static_cast<int>(_geneOfInterestIndices1.size());
@@ -3582,7 +3820,7 @@ bool Computation::setupAndTriggerPCA()
         _pcaDataset1Complete = true;
         qDebug() << "PCA Dataset 1 data changed";
         if (_pcaDataset1Complete && _pcaDataset2Complete) {
-            processAfterPCAComplete();
+            //processAfterPCACompleteOld();
         }
         else {
             qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
@@ -3592,7 +3830,7 @@ bool Computation::setupAndTriggerPCA()
         _pcaDataset2Complete = true;
         qDebug() << "PCA Dataset 2 data changed";
         if (_pcaDataset1Complete && _pcaDataset2Complete) {
-            processAfterPCAComplete();
+            //processAfterPCACompleteOld();
         }
         else {
             qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";

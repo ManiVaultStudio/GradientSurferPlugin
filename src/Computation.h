@@ -34,6 +34,7 @@
 #include <actions/HorizontalToolbarAction.h>
 #include <actions/VerticalToolbarAction.h>
 #include "QStatusBar"
+#include "PcaFast.h"
 
 using namespace mv::gui;
 class QMenu;
@@ -92,6 +93,7 @@ private:
     void clearTable(int tableNumber);
     void updateClusterOptions();
     void processAfterPCAComplete();
+    void processAfterPCACompleteOld();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
     void drawCombinedLines();
     bool populateEmbeddingCoordinates(
@@ -107,6 +109,7 @@ private:
         const std::vector<QString>& dimensionNames);
 
     bool setupAndTriggerPCA();
+    bool setupAndTriggerPCAOld();
     void resetupCorrelationTable(int datasetNumber);
     void setSelectionAndAutoCompute();
     void correlationAfterPCA();
@@ -146,6 +149,7 @@ protected:
     QString    _selectedGene1 = "";
     QString    _selectedGene2 = "";
     bool _isComputing = false;
+    PcaFast _pca1;
 
     friend class ChannelAction;
 };
