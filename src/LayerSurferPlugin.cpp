@@ -51,13 +51,20 @@ void LayerSurferPlugin::init()
     table1Label->setAlignment(Qt::AlignCenter);
     table1Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
     table1Label->setWordWrap(true);
-    table1Label->setMaximumHeight(32); // ~2 lines for typical font size
+    table1Label->setMaximumHeight(32);
     table1Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     table1Layout->addWidget(table1Label);
     table1Layout->addWidget(_settingsAction.getTableView1Action());
     topLayout->addLayout(table1Layout, 1);
-    
-    
+
+
+    auto* separator1 = new QFrame();
+    separator1->setFrameShape(QFrame::VLine);
+    separator1->setFrameShadow(QFrame::Plain);
+    separator1->setLineWidth(1);
+    separator1->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
+    topLayout->addWidget(separator1);
+
     auto* table3Layout = new QVBoxLayout();
     table3Layout->setContentsMargins(0, 0, 0, 0);
     table3Layout->setSpacing(2);
@@ -65,14 +72,19 @@ void LayerSurferPlugin::init()
     table3Label->setAlignment(Qt::AlignCenter);
     table3Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
     table3Label->setWordWrap(true);
-    table3Label->setMaximumHeight(32); // ~2 lines for typical font size
+    table3Label->setMaximumHeight(32); 
     table3Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     table3Layout->addWidget(table3Label);
     table3Layout->addWidget(_settingsAction.getTableView3Action());
-
-
     topLayout->addLayout(table3Layout, 1);
 
+
+    auto* separator2 = new QFrame();
+    separator2->setFrameShape(QFrame::VLine);
+    separator2->setFrameShadow(QFrame::Plain);
+    separator2->setLineWidth(1);
+    separator2->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
+    topLayout->addWidget(separator2);
 
     auto* table2Layout = new QVBoxLayout();
     table2Layout->setContentsMargins(0, 0, 0, 0);
@@ -81,12 +93,10 @@ void LayerSurferPlugin::init()
     table2Label->setAlignment(Qt::AlignCenter);
     table2Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
     table2Label->setWordWrap(true);
-    table2Label->setMaximumHeight(32); // ~2 lines for typical font size
+    table2Label->setMaximumHeight(32); 
     table2Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     table2Layout->addWidget(table2Label);
     table2Layout->addWidget(_settingsAction.getTableView2Action());
-
-
     topLayout->addLayout(table2Layout, 1);
 
 
@@ -100,7 +110,7 @@ void LayerSurferPlugin::init()
     lineChart1Label->setAlignment(Qt::AlignCenter);
     lineChart1Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
     lineChart1Label->setWordWrap(true);
-    lineChart1Label->setMaximumHeight(32); // ~2 lines for typical font size
+    lineChart1Label->setMaximumHeight(32); 
     lineChart1Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     lineChart1Layout->addWidget(lineChart1Label);
     lineChart1Layout->addWidget(_settingsAction.getLineChart1Widget());
@@ -116,10 +126,10 @@ void LayerSurferPlugin::init()
 
     auto* separator = new QFrame();
     separator->setFrameShape(QFrame::HLine);
-    separator->setFrameShadow(QFrame::Plain); // Use plain instead of sunken
+    separator->setFrameShadow(QFrame::Plain); 
     separator->setLineWidth(1);
-    separator->setFixedHeight(1); // Make the line thinner
-    separator->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;"); // Light gray
+    separator->setFixedHeight(1);
+    separator->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
     combinedLayout->addWidget(separator);
 
     combinedLayout->addLayout(bottomLayout,1);
