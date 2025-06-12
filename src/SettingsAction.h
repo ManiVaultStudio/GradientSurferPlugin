@@ -255,6 +255,9 @@ public:
         const TriggerAction& getComputePCAAction() const { return _computePCAAction; }
         TriggerAction& getComputePCAAction() { return _computePCAAction; }
 
+        const ToggleAction& getLinkDataset1And2GeneTableAction() const { return _linkdataset1And2GeneTableAction; }
+        ToggleAction& getLinkDataset1And2GeneTableAction() { return _linkdataset1And2GeneTableAction; }
+
 
 
 
@@ -274,6 +277,8 @@ public:
         OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
+
+        ToggleAction                 _linkdataset1And2GeneTableAction;
        
         
     };
@@ -316,6 +321,7 @@ public: // Serialization
     QTableView* getTableView1Action() { return _tableView1Action; }
     HighPerfLineChart* getLineChart1Widget() { return _lineChart1Widget; }
     QTableView* getTableView2Action() { return _tableView2Action; }
+    QTableView* getTableView3Action() { return _tableView3Action; }
 
 protected:
     LayerSurferPlugin& _viewerPlugin;
@@ -327,5 +333,6 @@ protected:
     QTableView*                 _tableView1Action = nullptr;
     HighPerfLineChart*          _lineChart1Widget = nullptr;
     QTableView*                 _tableView2Action = nullptr;
+    QTableView*                 _tableView3Action = nullptr;
     friend class ChannelAction;
 };

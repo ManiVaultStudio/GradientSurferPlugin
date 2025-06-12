@@ -6,6 +6,7 @@
 
 #include <QDebug>
 #include <QMimeData>
+#include <QLabel> 
 
 Q_PLUGIN_METADATA(IID "studio.manivault.LayerSurferPlugin")
 
@@ -37,34 +38,101 @@ void LayerSurferPlugin::init()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
     
+
     auto* topLayout = new QHBoxLayout();
     topLayout->setContentsMargins(0, 0, 0, 0);
     topLayout->setSpacing(0);
-    topLayout->addWidget(_settingsAction.getTableView1Action());
-    topLayout->addWidget(_settingsAction.getLineChart1Widget(),50);
+
+
+    auto* table1Layout = new QVBoxLayout();
+    table1Layout->setContentsMargins(0, 0, 0, 0);
+    table1Layout->setSpacing(2);
+    auto* table1Label = new QLabel("Gene Table: Dataset 1 Selected Cells");
+    table1Label->setAlignment(Qt::AlignCenter);
+    table1Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
+    table1Label->setWordWrap(true);
+    table1Label->setMaximumHeight(32);
+    table1Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    table1Layout->addWidget(table1Label);
+    table1Layout->addWidget(_settingsAction.getTableView1Action());
+    topLayout->addLayout(table1Layout, 1);
+
+
+    auto* separator1 = new QFrame();
+    separator1->setFrameShape(QFrame::VLine);
+    separator1->setFrameShadow(QFrame::Plain);
+    separator1->setLineWidth(1);
+    separator1->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
+    topLayout->addWidget(separator1);
+
+    auto* table3Layout = new QVBoxLayout();
+    table3Layout->setContentsMargins(0, 0, 0, 0);
+    table3Layout->setSpacing(2);
+    auto* table3Label = new QLabel("Gene Table: Dataset 1 All Cells");
+    table3Label->setAlignment(Qt::AlignCenter);
+    table3Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
+    table3Label->setWordWrap(true);
+    table3Label->setMaximumHeight(32); 
+    table3Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    table3Layout->addWidget(table3Label);
+    table3Layout->addWidget(_settingsAction.getTableView3Action());
+    topLayout->addLayout(table3Layout, 1);
+
+
+    auto* separator2 = new QFrame();
+    separator2->setFrameShape(QFrame::VLine);
+    separator2->setFrameShadow(QFrame::Plain);
+    separator2->setLineWidth(1);
+    separator2->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
+    topLayout->addWidget(separator2);
+
+    auto* table2Layout = new QVBoxLayout();
+    table2Layout->setContentsMargins(0, 0, 0, 0);
+    table2Layout->setSpacing(2);
+    auto* table2Label = new QLabel("Gene Table: Dataset 2 All Cells");
+    table2Label->setAlignment(Qt::AlignCenter);
+    table2Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
+    table2Label->setWordWrap(true);
+    table2Label->setMaximumHeight(32); 
+    table2Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    table2Layout->addWidget(table2Label);
+    table2Layout->addWidget(_settingsAction.getTableView2Action());
+    topLayout->addLayout(table2Layout, 1);
+
 
     auto* bottomLayout = new QHBoxLayout();
     bottomLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setSpacing(0);
-    bottomLayout->addWidget(_settingsAction.getTableView2Action());
-    //bottomLayout->addWidget(_settingsAction.getLineChart2Widget(), 50);
+    auto* lineChart1Layout = new QVBoxLayout();
+    lineChart1Layout->setContentsMargins(0, 0, 0, 0);
+    lineChart1Layout->setSpacing(2);
+    auto* lineChart1Label = new QLabel("Y-axis: gene expression; X-axis: rotated y-coordinates of selected cells");
+    lineChart1Label->setAlignment(Qt::AlignCenter);
+    lineChart1Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
+    lineChart1Label->setWordWrap(true);
+    lineChart1Label->setMaximumHeight(32); 
+    lineChart1Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    lineChart1Layout->addWidget(lineChart1Label);
+    lineChart1Layout->addWidget(_settingsAction.getLineChart1Widget());
+    bottomLayout->addLayout(lineChart1Layout);
+
 
     auto* combinedLayout = new QVBoxLayout();
     
 
-    combinedLayout->addLayout(topLayout);
+    combinedLayout->addLayout(topLayout,1);
 
 
-    // Add a horizontal separator between topLayout and bottomLayout
+
     auto* separator = new QFrame();
     separator->setFrameShape(QFrame::HLine);
-    separator->setFrameShadow(QFrame::Plain); // Use plain instead of sunken
+    separator->setFrameShadow(QFrame::Plain); 
     separator->setLineWidth(1);
-    separator->setFixedHeight(1); // Make the line thinner
-    separator->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;"); // Light gray
+    separator->setFixedHeight(1);
+    separator->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
     combinedLayout->addWidget(separator);
 
-    combinedLayout->addLayout(bottomLayout);
+    combinedLayout->addLayout(bottomLayout,1);
 
     mainLayout->addLayout(combinedLayout,90);
 

@@ -94,12 +94,14 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
     _commonOptionsHolder.getAutoComputeAction().setToolTip("Auto Compute Action");
+    _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setToolTip("Link Dataset 1 and 2 Gene Table Action");
     _commonOptionsHolder.getPcaColoringAction().setToolTip("PCA Coloring Action");
     _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
     _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension Selection Action");
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
 
     _commonOptionsHolder.getAutoComputeAction().setChecked(true);
+    _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setChecked(true);
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
 
 
@@ -159,6 +161,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getComputePCAAction().setText("Compute PCA");
 
     _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
     _commonOptionsHolder.getDualPCAColoringAction().setOptions({ "Dataset1", "Dataset2" });
@@ -281,9 +284,48 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     //only highlight multiple rows if shiuft is pressed
     _tableView2Action->setSelectionBehavior(QAbstractItemView::SelectRows);
 
+
+    _tableView3Action = new QTableView();
+    _tableView3Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView3Action->setSelectionBehavior(QAbstractItemView::SelectRows);
+    _tableView3Action->setSelectionMode(QAbstractItemView::SingleSelection);
+    _tableView3Action->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    _tableView3Action->setAlternatingRowColors(false);
+    _tableView3Action->setSortingEnabled(true);
+    _tableView3Action->setShowGrid(true);
+    _tableView3Action->setGridStyle(Qt::SolidLine);
+    _tableView3Action->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView3Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView3Action->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView3Action->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView3Action->setCornerButtonEnabled(false);
+    _tableView3Action->setWordWrap(false);
+    _tableView3Action->setTabKeyNavigation(false);
+    _tableView3Action->setAcceptDrops(false);
+    _tableView3Action->setDropIndicatorShown(false);
+    _tableView3Action->setDragEnabled(false);
+    _tableView3Action->setDragDropMode(QAbstractItemView::NoDragDrop);
+    _tableView3Action->setDragDropOverwriteMode(false);
+    _tableView3Action->setAutoScroll(false);
+    _tableView3Action->setAutoScrollMargin(16);
+    _tableView3Action->setAutoFillBackground(true);
+    _tableView3Action->setFrameShape(QFrame::NoFrame);
+    _tableView3Action->setFrameShadow(QFrame::Plain);
+    _tableView3Action->setLineWidth(0);
+    _tableView3Action->setMidLineWidth(0);
+    _tableView3Action->setFocusPolicy(Qt::NoFocus);
+    _tableView3Action->setContextMenuPolicy(Qt::NoContextMenu);
+    _tableView3Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView3Action->setMinimumSize(QSize(0, 0));
+    _tableView3Action->setMaximumSize(QSize(16777215, 16777215));
+    _tableView3Action->setBaseSize(QSize(0, 0));
+    _tableView3Action->setFocusPolicy(Qt::StrongFocus);
+    _tableView3Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+    //only highlight multiple rows if shiuft is pressed
+    _tableView3Action->setSelectionBehavior(QAbstractItemView::SelectRows);
+
     _lineChart1Widget = new HighPerfLineChart();
-
-
 }
 
 inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsAction& settingsAction) :
@@ -380,7 +422,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _pcaColoringAction(this, "PCA Coloring"),
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
-    _computePCAAction(this, "Compute PCA")
+    _computePCAAction(this, "Compute PCA"),
+    _linkdataset1And2GeneTableAction(this, "Link Dataset1 and Dataset2 Gene Table")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -392,6 +435,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_autoComputeAction);
+    addAction(&_linkdataset1And2GeneTableAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_computeAction);
 
