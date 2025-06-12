@@ -2058,9 +2058,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         if (selectedIndex.isValid())
         {
             _settingsAction.getTableView1Action()->selectionModel()->clearSelection();
+            _settingsAction.getTableView2Action()->selectionModel()->clearSelection();
+            _settingsAction.getTableView3Action()->selectionModel()->clearSelection();
             _settingsAction.getTableView1Action()->setCurrentIndex(QModelIndex());
              _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionName("");
-            
+             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionName("");
         }
         else
         {
@@ -2068,8 +2070,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
          _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
          _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
-         
-
+         //TODO: Fix thisSS
+         /*
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         mv::gui::DatasetPickerAction* colorDatasetPickerAction;
         mv::gui::DatasetPickerAction* pointDatasetPickerAction;
@@ -2149,7 +2151,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
         }
-        _settingsAction.getLineChart1Widget()->clear();
+
+        */
         _numOfPointsInLine1 = 0;
         if (_settingsAction.getLineChart1Widget())
         {
@@ -3891,16 +3894,42 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             QFont fontG = geneItem->font();
             fontG.setBold(true);
             geneItem->setFont(fontG);
-            geneItem->setBackground(QColor("#FDCC0D"));
+            if (datasetNumber == 1)
+            {
+                geneItem->setBackground(QColor("#FDCC0D"));
+            }
+            else
+            {
+                geneItem->setBackground(QColor("#FFB6C1"));
+            }
+            
             geneItem->setForeground(QColor("#000000"));
             QFont fontR = rankItem->font();
             fontR.setBold(true);
             rankItem->setFont(fontR);
-            rankItem->setBackground(QColor("#FDCC0D"));
+            if (datasetNumber == 1)
+            {
+                rankItem->setBackground(QColor("#FDCC0D"));
+            }
+            else
+            {
+                rankItem->setBackground(QColor("#FFB6C1"));
+            }
+            
+            
             rankItem->setForeground(QColor("#000000"));
             _commonGeneNames.append(entry.geneName);
         }
         corrItem->setForeground(QColor("#000000"));
+        //TODO: Set background color based on datasetNumber if needed
+        /*if (datasetNumber == 1)
+        {
+            corrItem->setBackground(QColor("#FDCC0D"));
+        }
+        else
+        {
+            corrItem->setBackground(QColor("#FFB6C1"));
+        }*/
 
         rowItems[0] = geneItem;
         rowItems[1] = corrItem;
