@@ -2408,15 +2408,17 @@ void Computation::AutoCompute()
     try
     {
         // Remove all rows in one call if model exists
-        if (auto* model = _settingsAction.getTableView1Action()->model()) {
-            int rowCount = model->rowCount();
-            if (rowCount > 0)
-                model->removeRows(0, rowCount);
+        QStandardItemModel* model1 = qobject_cast<QStandardItemModel*>(_settingsAction.getTableView1Action()->model());
+        if (model1) {
+            model1->clear();
+            // Optionally, reset headers if needed
+            //model1->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
         }
-        if (auto* model = _settingsAction.getTableView2Action()->model()) {
-            int rowCount = model->rowCount();
-            if (rowCount > 0)
-                model->removeRows(0, rowCount);
+
+        QStandardItemModel* model2 = qobject_cast<QStandardItemModel*>(_settingsAction.getTableView2Action()->model());
+        if (model2) {
+            model2->clear();
+            //model2->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
         }
 
         _settingsAction.getLineChart1Widget()->clear();
