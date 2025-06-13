@@ -1029,7 +1029,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
                     QApplication::processEvents();
 
-                    AutoCompute();
+                    setSelectionAndAutoCompute();
                     
                     _settingsAction.getDataset1OptionsHolder().getFreezeSelectionAction().setChecked(false);
                     _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
@@ -1160,7 +1160,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
         QApplication::processEvents();
 
-        AutoCompute();
+        setSelectionAndAutoCompute();
 
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         };
@@ -3722,13 +3722,12 @@ bool Computation::setupAndTriggerPCA()
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
+    //normalizeVector(genePointVector1, NormalizationType::ZScore);
+    //normalizeVector(genePointVector2, NormalizationType::MinMax);
+    //normalizeVector(genePointVector1, NormalizationType::Log2);
     //qinfo min and max vals
-    auto minVal2 = *std::min_element(cellByGeneMatrix2.begin(), cellByGeneMatrix2.end());
-    auto maxVal2 = *std::max_element(cellByGeneMatrix2.begin(), cellByGeneMatrix2.end());
-    auto minVal1 = *std::min_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end());
-    auto maxVal1 = *std::max_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end());
-    qInfo() << "PCA cellByGeneMatrix2 min:" << minVal2 << "max:" << maxVal2;
-    qInfo() << "PCA cellByGeneMatrix1 min:" << minVal1 << "max:" << maxVal1;
+
+    qInfo() << "PCA cellByGeneMatrix2 min:" << *std::min_element(cellByGeneMatrix2.begin(), cellByGeneMatrix2.end()) << "max:" << *std::max_element(cellByGeneMatrix2.begin(), cellByGeneMatrix2.end()) << "PCA cellByGeneMatrix1 min:" << *std::min_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end()) << "max:" << *std::max_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end());
 
     _selectedGenePointDataset2->setData(cellByGeneMatrix2.data(), numAllCells2, numDimsOfInterest);
     _selectedGenePointDataset2->setDimensionNames(dimensionNamesOfInterest);
