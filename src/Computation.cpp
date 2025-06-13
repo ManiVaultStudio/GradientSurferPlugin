@@ -169,7 +169,52 @@ public:
 private:
     float minValue, maxValue;
 };
+enum class NormalizationType {
+    None,
+    ZScore,
+    MinMax,
+    Log2
+};
 
+void normalizeVector(std::vector<float>& vec, NormalizationType type) {
+    if (vec.empty() || type == NormalizationType::None)
+        return;
+
+    switch (type) {
+    case NormalizationType::ZScore: {
+        float sum = std::accumulate(vec.begin(), vec.end(), 0.0f);
+        float mean = sum / vec.size();
+        float sq_sum = std::inner_product(vec.begin(), vec.end(), vec.begin(), 0.0f);
+        float stdev = std::sqrt(sq_sum / vec.size() - mean * mean);
+        if (stdev < 1e-8f) stdev = 1.0f; // Avoid division by zero
+        for (auto& v : vec) {
+            v = (v - mean) / stdev;
+        }
+        break;
+    }
+    case NormalizationType::MinMax: {
+        float minVal = *std::min_element(vec.begin(), vec.end());
+        float maxVal = *std::max_element(vec.begin(), vec.end());
+        float range = maxVal - minVal;
+        if (range < 1e-8f) range = 1.0f; // Avoid division by zero
+        for (auto& v : vec) {
+            v = (v - minVal) / range;
+        }
+        break;
+    }
+    case NormalizationType::Log2: {
+        for (auto& v : vec) {
+            if (v > 0.0f)
+                v = std::log2(v + 1.0f);
+            else
+                v = 0.0f;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
 static QString getContrastingTextColor(const QString& bgColor) {
     QColor color(bgColor);
     if (!color.isValid()) return "white";
@@ -3253,80 +3298,8 @@ void Computation::processAfterPCAComplete()
         std::vector<float> genePointVector2(_selectedGenePointDataset2->getNumPoints(), 0.0f);
         _selectedGenePointDataset1->extractDataForDimension(genePointVector1, geneitr);
         _selectedGenePointDataset2->extractDataForDimension(genePointVector2, geneitr);
-        if(false){
-        ////normalize to log scale
-        for (int i = 0; i < _selectedGenePointDataset1->getNumPoints(); ++i) {
-            if (genePointVector1[i] > 0) {
-                genePointVector1[i] = std::log2(genePointVector1[i] + 1.0f);
-            } else {
-                genePointVector1[i] = 0.0f;
-            }
-        }
-        for (int i = 0; i < _selectedGenePointDataset2->getNumPoints(); ++i) {
-            if (genePointVector2[i] > 0) {
-                genePointVector2[i] = std::log2(genePointVector2[i] + 1.0f);
-            } else {
-                genePointVector2[i] = 0.0f;
-            }
-        }
-    }
-        if(false){
-        // Z-score normalization for genePointVector1
-        {
-            float sum = std::accumulate(genePointVector1.begin(), genePointVector1.end(), 0.0f);
-            float mean = sum / genePointVector1.size();
-            float sq_sum = std::inner_product(genePointVector1.begin(), genePointVector1.end(), genePointVector1.begin(), 0.0f);
-            float stdev = std::sqrt(sq_sum / genePointVector1.size() - mean * mean);
-            if (stdev < 1e-8f) stdev = 1.0f; // Avoid division by zero
-            for (auto& v : genePointVector1) {
-                v = (v - mean) / stdev;
-            }
-        }
 
-        // Z-score normalization for genePointVector2
-        {
-            float sum = std::accumulate(genePointVector2.begin(), genePointVector2.end(), 0.0f);
-            float mean = sum / genePointVector2.size();
-            float sq_sum = std::inner_product(genePointVector2.begin(), genePointVector2.end(), genePointVector2.begin(), 0.0f);
-            float stdev = std::sqrt(sq_sum / genePointVector2.size() - mean * mean);
-            if (stdev < 1e-8f) stdev = 1.0f; // Avoid division by zero
-            for (auto& v : genePointVector2) {
-                v = (v - mean) / stdev;
-            }
-        }
-    }
-        if (false)
-        {// Min-max normalization for genePointVector1
-            {
-                float minVal = *std::min_element(genePointVector1.begin(), genePointVector1.end());
-                float maxVal = *std::max_element(genePointVector1.begin(), genePointVector1.end());
-                float range = maxVal - minVal;
-                if (range < 1e-8f) range = 1.0f; // Avoid division by zero
-                for (auto& v : genePointVector1) {
-                    v = (v - minVal) / range;
-                }
-            }
-
-            // Min-max normalization for genePointVector2
-            {
-                float minVal = *std::min_element(genePointVector2.begin(), genePointVector2.end());
-                float maxVal = *std::max_element(genePointVector2.begin(), genePointVector2.end());
-                float range = maxVal - minVal;
-                if (range < 1e-8f) range = 1.0f; // Avoid division by zero
-                for (auto& v : genePointVector2) {
-                    v = (v - minVal) / range;
-                }
-            }
-        }
         //to get an idea about the values in genePointVector1 and genePointVector2 print stats
-        float minVal1 = *std::min_element(genePointVector1.begin(), genePointVector1.end());
-        float maxVal1 = *std::max_element(genePointVector1.begin(), genePointVector1.end());
-        float minVal2 = *std::min_element(genePointVector2.begin(), genePointVector2.end());
-        float maxVal2 = *std::max_element(genePointVector2.begin(), genePointVector2.end());
-        qDebug() << "Gene" << geneName << "ID1:" << geneId1 << "ID2:" << geneId2
-            << "Min1:" << minVal1 << "Max1:" << maxVal1
-            << "Min2:" << minVal2 << "Max2:" << maxVal2;
-
         for (int j = 0; j < nDims; ++j) {
             float loading = loadings[j];
             for (int i = 0; i < _selectedGenePointDataset1->getNumPoints(); ++i) {
@@ -3340,26 +3313,15 @@ void Computation::processAfterPCAComplete()
         }
         geneitr++;
     }
-    //similar stats after conversion 
-    float minVal1 = *std::min_element(pcBestDataRowMajor1.begin(), pcBestDataRowMajor1.end());
-    float maxVal1 = *std::max_element(pcBestDataRowMajor1.begin(), pcBestDataRowMajor1.end());
-    float minVal2 = *std::min_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end());
-    float maxVal2 = *std::max_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end());
-    qDebug() << "After conversion stats for dataset 1 - Min:" << minVal1 << "Max:" << maxVal1;
-    qDebug() << "After conversion stats for dataset 2 - Min:" << minVal2 << "Max:" << maxVal2;
 
-   
+    qInfo() << "After conversion stats - Dataset 1 Min:" << *std::min_element(pcBestDataRowMajor1.begin(), pcBestDataRowMajor1.end()) << "Max:" << *std::max_element(pcBestDataRowMajor1.begin(), pcBestDataRowMajor1.end())
+        << "| Dataset 2 Min:" << *std::min_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end()) << "Max:" << *std::max_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end());
 
 
-    qDebug() << "Selected gene point dataset 1 size:" << _selectedGenePointDataset1->getNumPoints() << "dims" << nDims<<"vector size"<<pcBestDataRowMajor1.size();
-    qDebug() << "Selected gene point dataset 2 size:" << _selectedGenePointDataset2->getNumPoints() << "dims" << nDims << "vector size" << pcBestDataRowMajor2.size();
     _pcaCommonGenesDataset1->setData(pcBestDataRowMajor1.data(), _selectedGenePointDataset1->getNumPoints(), nDims);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
     _pcaCommonGenesDataset2->setData(pcBestDataRowMajor2.data(), _selectedGenePointDataset2->getNumPoints(), nDims);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
-
-
-
 
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
 
