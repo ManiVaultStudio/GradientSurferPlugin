@@ -93,7 +93,6 @@ private:
     void clearTable(int tableNumber);
     void updateClusterOptions();
     void processAfterPCAComplete();
-    void processAfterPCACompleteOld();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
     void drawCombinedLines();
     bool populateEmbeddingCoordinates(
@@ -109,7 +108,6 @@ private:
         const std::vector<QString>& dimensionNames);
 
     bool setupAndTriggerPCA();
-    bool setupAndTriggerPCAOld();
     void resetupCorrelationTable(int datasetNumber);
     void setSelectionAndAutoCompute();
     void correlationAfterPCA();
@@ -138,8 +136,6 @@ protected:
 
     QTimer _correlationRangeDebounceTimer1;
     QTimer _clusterSelectionDebounceTimer;
-    //QTimer _connectedStatsLineDebounceTimer;
-    //QTimer _lineSmoothingWindowDebounceTimer;
     QTimer _correlationRangeDebounceTimer2;
 
     bool      _pcaDataset1Complete = false;
