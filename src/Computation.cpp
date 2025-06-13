@@ -187,10 +187,7 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
 {
     QVector<LineData> lines;
 
-    qDebug() << "Conversion started. Total elements:" << vecAll.size()
-        << "Points per line:" << pointsPerLine
-        << "Number of lines:" << numOfLines
-        << "coordIsX:" << coordIsX;
+    //qDebug() << "Conversion started. Total elements:" << vecAll.size()<< "Points per line:" << pointsPerLine<< "Number of lines:" << numOfLines<< "coordIsX:" << coordIsX;
 
     // Validate input
     if (pointsPerLine < 1 || numOfLines < 1) {
@@ -209,6 +206,7 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
     lines.reserve(numOfLines);
 
     // Debug print first few values to verify data organization
+    /*
     if (!coordIsX) {
         qDebug() << "First few x values (column order):";
         for (int i = 0; i < std::min(5, pointsPerLine); ++i) {
@@ -235,7 +233,7 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
             qDebug() << "x[" << i << "]:" << vecCoord[i];
         }
     }
-
+    */
     for (int lineIdx = 0; lineIdx < numOfLines; ++lineIdx) {
         LineData line;
 
@@ -307,7 +305,7 @@ QVector<LineData> convertToLineData(const std::vector<float>& vecAll, const std:
         }
     }
 
-    qDebug() << "Conversion complete. Generated" << lines.size() << "lines";
+    //qDebug() << "Conversion complete. Generated" << lines.size() << "lines";
     return lines;
 }
 
@@ -599,7 +597,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateGeneSelection1 = [this]() -> void {
         if ( _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
         {
-            qDebug() << "No gene selected";
+            qWarning() << "No gene selected";
              _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
@@ -607,7 +605,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         auto selectedGene =  _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
         if (selectedGene == "")
         {
-            qDebug() << "No gene selected";
+            qWarning() << "No gene selected";
              _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
@@ -624,7 +622,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 auto it = std::find(dimensionNames.begin(), dimensionNames.end(), selectedGene);
                 if (it == dimensionNames.end())
                 {
-                    qDebug() << "Selected gene not found in point dataset dimensions";
+                    qWarning() << "Selected gene not found in point dataset dimensions";
 
                 }
                 else
@@ -644,17 +642,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     pointDataset->populateDataForDimensions(expresionValues, geneIndicesExp, _filteredSelectionIndices);
                     _rotatedSelectedEmbeddingDataset->extractDataForDimension(coordValues, geneIndicesCoord);
 
-                    qDebug() << "Raw data size:" << expresionValues.size();
-                    if (!expresionValues.empty()) {
+                    //qDebug() << "Raw data size:" << expresionValues.size();
+                    /*if (!expresionValues.empty()) {
                         qDebug() << "First 10 elements:";
                         for (size_t i = 0; i < std::min(size_t(10), expresionValues.size()); ++i) {
                             qDebug() << i << ":" << expresionValues[i];
                         }
-                    }
+                    }*/
 
                     // 2. Verify your indices
-                    qDebug() << "Points per line:" << _filteredSelectionIndices.size();
-                    qDebug() << "Number of lines:" << geneIndicesExp.size();
+                    //qDebug() << "Points per line:" << _filteredSelectionIndices.size();
+                   // qDebug() << "Number of lines:" << geneIndicesExp.size();
 
                     //option to normalize expresionValues 
                     if (false) {
@@ -690,14 +688,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         true               // sortByX
                     );
                     // 4. Verify output
-                    qDebug() << "Converted line data size:" << lineData.size();
+                    /*qDebug() << "Converted line data size:" << lineData.size();
                     if (!lineData.empty()) {
                         qDebug() << "First line points:" << lineData.first().points.size();
                         if (!lineData.first().points.empty()) {
                             qDebug() << "Sample point:" << lineData.first().points.first();
                         }
                     }
-                    
+                    */
                     // 5. Send to chart
                     _settingsAction.getLineChart1Widget()->setLines(lineData);
                     _settingsAction.getLineChart1Widget()->setShowPoints(_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction().isChecked());
@@ -741,13 +739,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
             else
             {
-                qDebug() << "Point dataset is not valid";
+                qWarning() << "Point dataset is not valid";
             }
 
         }
         else
         {
-            qDebug() << "No point dataset selected";
+            qWarning() << "No point dataset selected";
         }
 
 
@@ -793,7 +791,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             }
                             else
                             {
-                                qDebug() << "Gene selection action not found";
+                                qWarning() << "Gene selection action not found";
                             }
                         }
 
@@ -815,7 +813,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         auto selectedGene2 = _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().getCurrentDimensionName();
         if (selectedGene2 == "")
         {
-            qDebug() << "No gene selected";
+            qWarning() << "No gene selected";
             _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().setEnabled(false);
             return;
         }
@@ -823,7 +821,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         auto selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
         if (selectedGene == "")
         {
-            qDebug() << "No gene selected";
+            qWarning() << "No gene selected";
             _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
@@ -870,7 +868,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             }
                             else
                             {
-                                qDebug() << "Gene selection action not found";
+                                qWarning() << "Gene selection action not found";
                             }
                         }
 
@@ -1007,7 +1005,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         }
                         else
                         {
-                            qDebug() << "No clusters selected, clearing selection indices";
+                            qWarning() << "No clusters selected, clearing selection indices";
                             _embeddingDataset->setSelectionIndices({});
                             mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
                         }
@@ -1015,7 +1013,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "No cluster dataset selected or invalid cluster dataset";
+                        qWarning() << "No cluster dataset selected or invalid cluster dataset";
                         _embeddingDataset->setSelectionIndices({});
                         mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
                     }
@@ -1034,7 +1032,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 bool ok = connect(&_embeddingDataset, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged);
                 if (!ok)
                 {
-                    qDebug() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
+                    qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
 
             }
@@ -1191,22 +1189,22 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         int selectedDimInd = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
         QString selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
         if (selectedDimInd < 0 || selectedDimName.isEmpty()) {
-            qDebug() << "No PCA dimension selected for coloring";
+            qWarning() << "No PCA dimension selected for coloring";
             return;
         }
         auto options = _settingsAction.getCommonOptionsHolder().getDualPCAColoringAction().getSelectedOptions();
         if (options.isEmpty()) {
-            qDebug() << "No PCA coloring options selected";
+            qWarning() << "No PCA coloring options selected";
             return;
         }
 
         auto setScatterplotColorAndGene = [&](const QString& scatterplotName, mv::Dataset<Points>& dataset) {
             if (!dataset.isValid()) {
-                qDebug() << "PCA common genes dataset is not valid";
+                qWarning() << "PCA common genes dataset is not valid";
                 return false;
             }
             if (scatterplotName.isEmpty()) {
-                qDebug() << "No scatterplot view selected";
+                qWarning() << "No scatterplot view selected";
                 return false;
             }
             auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -1225,7 +1223,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             geneSelectionAction->setCurrentDimensionName(selectedDimName);
                         }
                         else {
-                            qDebug() << "Gene selection action not found";
+                            qWarning() << "Gene selection action not found";
                         }
                     }
                     break;
@@ -1292,7 +1290,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateConnectStatsLine1 = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
-            qDebug() << "No line chart widget available";
+            qWarning() << "No line chart widget available";
             return;
         }
         _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
@@ -1322,7 +1320,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateLineSmoothingWindow = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
-            qDebug() << "No line chart widget available";
+            qWarning() << "No line chart widget available";
             return;
         }
         _settingsAction.getLineChart1Widget()->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
@@ -1336,7 +1334,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateShowMovingAverageLine = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
-            qDebug() << "No line chart widget available";
+            qWarning() << "No line chart widget available";
             return;
         }
         _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(_settingsAction.getDataset1OptionsHolder().getShowMovingAverageLineInChartAction().isChecked());
@@ -1349,7 +1347,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateShowConnectedStatsLine = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
-            qDebug() << "No line chart widget available";
+            qWarning() << "No line chart widget available";
             return;
         }
         _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction().isChecked());
@@ -1361,7 +1359,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateShowPointsinChart = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
-            qDebug() << "No line chart widget available";
+            qWarning() << "No line chart widget available";
             return;
         }
         _settingsAction.getLineChart1Widget()->setShowPoints(_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction().isChecked());
@@ -1373,7 +1371,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateShowLinesinChart = [this]() -> void {
         if (!_settingsAction.getLineChart1Widget())
         {
-            qDebug() << "No line chart widget available";
+            qWarning() << "No line chart widget available";
             return;
         }
         _settingsAction.getLineChart1Widget()->setShowLines(_settingsAction.getDataset1OptionsHolder().getShowDataLinesInChartAction().isChecked());
@@ -1464,7 +1462,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         if (scatterplotName1.isEmpty())
         {
-            qDebug() << "No scatterplot view 1 selected";
+            qWarning() << "No scatterplot view 1 selected";
 
         }
 
@@ -1491,7 +1489,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Point selection scale action not found";
+                        qWarning() << "Point selection scale action not found";
                     }
                     if (pointSelectionOpacityAction)
                     {
@@ -1507,7 +1505,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Point selection opacity action not found";
+                        qWarning() << "Point selection opacity action not found";
                     }
                 }
             }
@@ -1523,7 +1521,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
  
         if (scatterplotName1.isEmpty())
         {
-            qDebug() << "No scatterplot view 1 selected";
+            qWarning() << "No scatterplot view 1 selected";
 
         }
 
@@ -1541,7 +1539,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Freeze selection action not found";
+                        qWarning() << "Freeze selection action not found";
                     }
                 }
             }
@@ -1559,7 +1557,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         if (scatterplotName1.isEmpty())
         {
-            qDebug() << "No scatterplot view 1 selected";
+            qWarning() << "No scatterplot view 1 selected";
 
         }
 
@@ -1577,7 +1575,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Focus selection action not found";
+                        qWarning() << "Focus selection action not found";
                     }
                 }
             }
@@ -1596,7 +1594,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         if (scatterplotName2.isEmpty())
         {
-            qDebug() << "No scatterplot view 2 selected";
+            qWarning() << "No scatterplot view 2 selected";
 
         }
 
@@ -1623,7 +1621,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Point selection scale action not found";
+                        qWarning() << "Point selection scale action not found";
                     }
                     if (pointSelectionOpacityAction)
                     {
@@ -1639,7 +1637,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Point selection opacity action not found";
+                        qWarning() << "Point selection opacity action not found";
                     }
                 }
             }
@@ -1654,7 +1652,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         if (scatterplotName2.isEmpty())
         {
-            qDebug() << "No scatterplot view 2 selected";
+            qWarning() << "No scatterplot view 2 selected";
 
         }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -1671,7 +1669,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Freeze selection action not found";
+                        qWarning() << "Freeze selection action not found";
                     }
                 }
             }
@@ -1688,7 +1686,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         if (scatterplotName2.isEmpty())
         {
-            qDebug() << "No scatterplot view 2 selected";
+            qWarning() << "No scatterplot view 2 selected";
 
         }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -1705,7 +1703,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Focus selection action not found";
+                        qWarning() << "Focus selection action not found";
                     }
                 }
             }
@@ -1722,7 +1720,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotName.isEmpty())
         {
-            qDebug() << "No scatterplot view selected";
+            qWarning() << "No scatterplot view selected";
             setStatusMessage("E", "No scatterplot view selected", "");
             return;
         }
@@ -1768,7 +1766,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingXVal->setCurrentText(xPosition);
                                     }
                                     else {
-                                        qDebug() << "Embedding X value not found in options";
+                                        qWarning() << "Embedding X value not found in options";
                                     }
 
                                     auto yoptions = embeddingYVal->getOptions();
@@ -1776,11 +1774,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingYVal->setCurrentText(yPosition);
                                     }
                                     else {
-                                        qDebug() << "Embedding Y value not found in options";
+                                        qWarning() << "Embedding Y value not found in options";
                                     }
                                 }
                                 else {
-                                    qDebug() << "Embedding X or Y value is null";
+                                    qWarning() << "Embedding X or Y value is null";
                                 }
                             }
 
@@ -1819,7 +1817,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         QString scatterplotName = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
         if (scatterplotName.isEmpty())
         {
-            qDebug() << "No scatterplot view 2 selected";
+            qWarning() << "No scatterplot view 2 selected";
             setStatusMessage("E", "No scatterplot view 2 selected", "");
             return;
         }
@@ -1865,7 +1863,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingXVal2->setCurrentText(xPosition2);
                                     }
                                     else {
-                                        qDebug() << "Embedding 2 X value not found in options";
+                                        qWarning() << "Embedding 2 X value not found in options";
                                     }
 
                                     auto yoptions2 = embeddingYVal2->getOptions();
@@ -1873,11 +1871,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingYVal2->setCurrentText(yPosition2);
                                     }
                                     else {
-                                        qDebug() << "Embedding 2 Y value not found in options";
+                                        qWarning() << "Embedding 2 Y value not found in options";
                                     }
                                 }
                                 else {
-                                    qDebug() << "Embedding 2 X or Y value is null";
+                                    qWarning() << "Embedding 2 X or Y value is null";
                                 }
                             }
 
@@ -1955,7 +1953,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingXVal->setCurrentText(xPosition);
                                     }
                                     else {
-                                        qDebug() << "Embedding X value not found in options";
+                                        qWarning() << "Embedding X value not found in options";
                                     }
 
                                     auto yoptions = embeddingYVal->getOptions();
@@ -1963,11 +1961,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingYVal->setCurrentText(yPosition);
                                     }
                                     else {
-                                        qDebug() << "Embedding Y value not found in options";
+                                        qWarning() << "Embedding Y value not found in options";
                                     }
                                 }
                                 else {
-                                    qDebug() << "Embedding X or Y value is null";
+                                    qWarning() << "Embedding X or Y value is null";
                                 }
                             }
 
@@ -2043,7 +2041,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingXVal2->setCurrentText(xPosition2);
                                     }
                                     else {
-                                        qDebug() << "Embedding 2 X value not found in options";
+                                        qWarning() << "Embedding 2 X value not found in options";
                                     }
 
                                     auto yoptions2 = embeddingYVal2->getOptions();
@@ -2051,11 +2049,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingYVal2->setCurrentText(yPosition2);
                                     }
                                     else {
-                                        qDebug() << "Embedding 2 Y value not found in options";
+                                        qWarning() << "Embedding 2 Y value not found in options";
                                     }
                                 }
                                 else {
-                                    qDebug() << "Embedding 2 X or Y value is null";
+                                    qWarning() << "Embedding 2 X or Y value is null";
                                 }
                             }
 
@@ -2098,7 +2096,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         else
         {
-            qDebug() << "No row selected";
+            qWarning() << "No row selected";
         }
          _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
          _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
@@ -2208,7 +2206,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         else
         {
-            qDebug() << "No row selected";
+            qWarning() << "No row selected";
         }
         _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().setEnabled(false);
        
@@ -2257,7 +2255,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingXVal2->setCurrentText(xPosition2);
                                     }
                                     else {
-                                        qDebug() << "Embedding 2 X value not found in options";
+                                        qWarning() << "Embedding 2 X value not found in options";
                                     }
 
                                     auto yoptions2 = embeddingYVal2->getOptions();
@@ -2265,11 +2263,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                         embeddingYVal2->setCurrentText(yPosition2);
                                     }
                                     else {
-                                        qDebug() << "Embedding 2 Y value not found in options";
+                                        qWarning() << "Embedding 2 Y value not found in options";
                                     }
                                 }
                                 else {
-                                    qDebug() << "Embedding 2 X or Y value is null";
+                                    qWarning() << "Embedding 2 X or Y value is null";
                                 }
                             }
 
@@ -2280,7 +2278,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 if (dataset2.isValid())
                                 {
                                     colorDatasetPickerAction->setCurrentDataset(dataset2);
-                                    qDebug() << "Setting dataset to color dataset";
+                                    qWarning() << "Setting dataset to color dataset";
                                 }
 
                             }
@@ -2306,7 +2304,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         if (scatterplotName1.isEmpty())
         {
-            qDebug() << "No scatterplot view selected";
+            qWarning() << "No scatterplot view selected";
             return;
         }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -2324,14 +2322,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Notify during selection action not found.";
+                        qWarning() << "Notify during selection action not found.";
                     }
                     if (haloAction) {
                         haloAction->setChecked(true);
                     }
                     else
                     {
-                        qDebug() << "Halo action not found.";
+                        qWarning() << "Halo action not found.";
                     }
 
                     auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
@@ -2344,7 +2342,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Point selection scale action not found";
+                        qWarning() << "Point selection scale action not found";
                     }
                     if (pointSelectionOpacityAction)
                     {
@@ -2356,7 +2354,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Point selection opacity action not found";
+                        qWarning() << "Point selection opacity action not found";
                     }
 
                 }
@@ -2375,7 +2373,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
         if (scatterplotName2.isEmpty())
         {
-            qDebug() << "No scatterplot view 2 selected";
+            qWarning() << "No scatterplot view 2 selected";
             return;
         }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -2393,14 +2391,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Notify during selection action not found.";
+                        qWarning() << "Notify during selection action not found.";
                     }
                     if (haloAction) {
                         haloAction->setChecked(true);
                     }
                     else
                     {
-                        qDebug() << "Halo action not found.";
+                        qWarning() << "Halo action not found.";
                     }
 
                     auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
@@ -2413,7 +2411,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Point selection scale action not found";
+                        qWarning() << "Point selection scale action not found";
                     }
                     if (pointSelectionOpacityAction)
                     {
@@ -2425,7 +2423,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     else
                     {
-                        qDebug() << "Point selection opacity action not found";
+                        qWarning() << "Point selection opacity action not found";
                     }
 
                 }
@@ -2443,6 +2441,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         else {
             setStatusMessage("E", "PCA Failed", message.c_str());
+            qWarning() << "PCA 1 failed:" << message.c_str();
         }
         });
 }
@@ -2492,7 +2491,7 @@ void Computation::AutoCompute()
             rotatedXYCordinates = rotateAxis(XYCoordinates, rotationAngle);
         }
         catch (const std::exception& ex) {
-            qDebug() << "Exception in rotateAxis:" << ex.what();
+            qWarning() << "Exception in rotateAxis:" << ex.what();
             setStatusMessage("E", "Error occurred during point rotation", "");
             return;
         }
@@ -2502,7 +2501,7 @@ void Computation::AutoCompute()
             yCoordinates = getCoordinatesOfCells(rotatedXYCordinates, "Y");
         }
         catch (const std::exception& ex) {
-            qDebug() << "Exception in getCoordinatesOfCells:" << ex.what();
+            qWarning() << "Exception in getCoordinatesOfCells:" << ex.what();
             setStatusMessage("E", "Error occurred during fetching coordinates", "");
             return;
         }
@@ -2512,7 +2511,7 @@ void Computation::AutoCompute()
             sortedCellIndices = getSortedCellIndices(yCoordinates);
         }
         catch (const std::exception& ex) {
-            qDebug() << "Exception in getSortedCellIndices:" << ex.what();
+            qWarning() << "Exception in getSortedCellIndices:" << ex.what();
             setStatusMessage("E", "Error occurred during sorting indices", "");
             return;
         }
@@ -2532,8 +2531,8 @@ void Computation::AutoCompute()
         float maxX = *std::max_element(xCoordinates.begin(), xCoordinates.end());
         float minY = *std::min_element(yCoordinates.begin(), yCoordinates.end());
         float maxY = *std::max_element(yCoordinates.begin(), yCoordinates.end());
-        qDebug() << "Rotated XY Coordinates minX:" << minX << "maxX:" << maxX << "minY:" << minY << "maxY:" << maxY;
-        qDebug() << "Rotated XY Coordinates size:" << rotatedXYCordinates.size() << "filteredSelectionIndices size:" << _filteredSelectionIndices.size() << "yCoordinates size:" << yCoordinates.size();
+        //qDebug() << "Rotated XY Coordinates minX:" << minX << "maxX:" << maxX << "minY:" << minY << "maxY:" << maxY;
+        //qDebug() << "Rotated XY Coordinates size:" << rotatedXYCordinates.size() << "filteredSelectionIndices size:" << _filteredSelectionIndices.size() << "yCoordinates size:" << yCoordinates.size();
 
         // Correlation and gene filtering
         std::vector<float> corrGeneCoords;
@@ -2544,7 +2543,7 @@ void Computation::AutoCompute()
             populateGenesByCorrelationRange(corrGeneCoords, minCorrelation, maxCorrelation, dimensionNames,1);
         }
         catch (const std::exception& ex) {
-            qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
+            qWarning() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
             setStatusMessage("E", "Error occurred during filtering genes", "");
             return;
         }
@@ -2571,12 +2570,12 @@ void Computation::AutoCompute()
     }
     catch (const std::exception& ex)
     {
-        qDebug() << "Exception in Computation:" << ex.what();
+        qWarning() << "Exception in Computation:" << ex.what();
         setStatusMessage("E", "Error occurred during computation: " + QString::fromStdString(ex.what()), "");
     }
     catch (...)
     {
-        qDebug() << "Unknown exception in Computation";
+        qWarning() << "Unknown exception in Computation";
         setStatusMessage("E", "Unknown error occurred during computation", "");
     }
     _isComputing = false;
@@ -2676,9 +2675,7 @@ void Computation::computeCorrelationGeneCoordsFast(
 
     Q_ASSERT(numCells == numCoords);
 
-    qDebug() << "Number of genes:" << numGenes
-        << "Number of cells:" << numCells
-        << "Number of coordinates:" << numCoords;
+    //qDebug() << "Number of genes:" << numGenes<< "Number of cells:" << numCells<< "Number of coordinates:" << numCoords;
 
     // Sort (coord, cellIndex) pairs by coordinate value
     std::vector<std::pair<float, int>> coordIndexPairs(numCells);
@@ -2758,7 +2755,7 @@ void Computation::computeCorrelationGeneCoordsFast(
     QList<float> resultList = future.results();
     corrVector = std::vector<float>(resultList.begin(), resultList.end());
 
-    qDebug() << "Correlation computation completed";
+    //qDebug() << "Correlation computation completed";
 }
 
 void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector)
@@ -2767,7 +2764,7 @@ void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndic
     const int numGenes = dataset->getNumDimensions();
     const int numCells = cellIndices.size();
     const int numCoords = coords.size();
-    qDebug() << "Number of genes:" << numGenes << "Number of cells:" << numCells << "Number of coordinates:" << numCoords;
+    //qDebug() << "Number of genes:" << numGenes << "Number of cells:" << numCells << "Number of coordinates:" << numCoords;
     assert(numCells == numCoords);
 
 
@@ -2853,7 +2850,7 @@ void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndic
         
     }
 
-    qDebug() << "Correlation computation completed";
+    //qDebug() << "Correlation computation completed";
 }
 
 void Computation::computeCorrelationGenePCFast(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector)
@@ -2915,7 +2912,7 @@ void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDatase
     const int numGenes = fullDataset->getNumDimensions();
     const int numCells = fullDataset->getNumPoints();
     const int numCellsInPC = selectedPC.size();
-    qDebug() << "Number of genes:" << numGenes << "Number of cells:" << numCells << "Number of cells in PC:" << numCellsInPC;
+    //qDebug() << "Number of genes:" << numGenes << "Number of cells:" << numCells << "Number of cells in PC:" << numCellsInPC;
     assert(numCells == numCellsInPC);
 
     float meanCoord = 0.0f;
@@ -2988,7 +2985,7 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointData
     fullClusterDataset = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
 
     if (!_embeddingDataset.isValid() || !fullPointDataset.isValid() || !fullClusterDataset.isValid()) {
-        qDebug() << "Invalid datasets";
+        qWarning() << "Invalid datasets";
         setStatusMessage("E", "Error occured during dataset creation", "");
         return false;
     }
@@ -2996,7 +2993,7 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointData
     xEmbeddingIndex = _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionIndex();
     yEmbeddingIndex = _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionIndex();
     if (xEmbeddingIndex == -1 || yEmbeddingIndex == -1) {
-        qDebug() << "No embedding dimensions selected";
+        qWarning() << "No embedding dimensions selected";
         setStatusMessage("E", "No embedding dataset dimensions selected", "");
         return false;
     }
@@ -3007,21 +3004,21 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointData
         selectedIndices.assign(indices.begin(), indices.end());
     }
     if (selectedIndices.empty()) {
-        qDebug() << "No selected indices";
+        qWarning() << "No selected indices";
         setStatusMessage("E", "No indices selected", "");
         return false;
     }
 
     auto selectedClusterValues = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
     if (selectedClusterValues.isEmpty()) {
-        qDebug() << "No selected cluster values";
+        qWarning() << "No selected cluster values";
         setStatusMessage("E", "No clusters selected", "");
         return false;
     }
 
     scatterplotViewName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
     if (scatterplotViewName.isEmpty()) {
-        qDebug() << "No scatterplot view selected";
+        qWarning() << "No scatterplot view selected";
         setStatusMessage("E", "No scatterplot view selected", "");
         return false;
     }
@@ -3029,11 +3026,11 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointData
     minCorrelation = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum();
     maxCorrelation = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum();
     if (minCorrelation < -1.0f || maxCorrelation > 1.0f || minCorrelation >= maxCorrelation) {
-        qDebug() << "Invalid correlation range";
+        qWarning() << "Invalid correlation range";
         setStatusMessage("E", "Invalid correlation range", "");
         return false;
     }
-    qDebug() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex
+    qWarning() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex
         << "scatterplotViewName:" << scatterplotViewName << "minCorrelation:" << minCorrelation << "maxCorrelation:" << maxCorrelation;
 
 
@@ -3072,7 +3069,7 @@ bool Computation::createDatasetsIfNeeded()
     }
 
     if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid()) {
-        qDebug() << "Failed to create datasets";
+        qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
     }
@@ -3179,10 +3176,24 @@ void Computation::processAfterPCAComplete()
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     qDebug() << "PCA analysis completed successfully";
-    auto scores1 = _pca1.scores();
-    auto loadings1 = _pca1.loadings();
-    int numAllCells1 = _pca1.numRows();
-    int numOfDims1 = _pca1.numComponents();
+    auto& scores1 = _pca1.scores();
+    auto& loadings1 = _pca1.loadings();
+    int nRows = _pca1.numRows();
+    int nDims = _pca1.numDims();
+    int nComps = _pca1.numComponents();
+    if (!_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid()) {
+        qWarning() << "Selected gene point datasets are invalid";
+        setStatusMessage("E", "Selected gene point datasets are invalid", "");
+        return;
+    }
+    Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
+    Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
+    if (!fullDataset1.isValid() || !fullDataset2.isValid()) {
+        qWarning() << "Full datasets are invalid";
+        setStatusMessage("E", "Full datasets are invalid", "");
+        return;
+    }
+
     if (!_pcaCommonGenesDataset1.isValid()) {
         _pcaCommonGenesDataset1 = mv::data().createDataset("Points", "PCA Dataset 1", _selectedGenePointDataset1);
         _pcaCommonGenesDataset1->setGroupIndex(667);
@@ -3194,71 +3205,251 @@ void Computation::processAfterPCAComplete()
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
     }
 
+    setStatusMessage("R", "Computiation after PCA", "");
 
 
-
-    setStatusMessage("C", "PCA analysis completed", "#28a745");
 
     if (!_selectedGenePointDataset2.isValid())
     {
-        qDebug() << "Selected gene point dataset 2 is invalid";
+        qWarning() << "Selected gene point dataset 2 is invalid";
         setStatusMessage("E", "Selected gene point dataset 2 is invalid", "");
         return;
     }
     if (_selectedGenePointDataset2->getNumDimensions()!= _pca1.numDims()) {
-        qDebug() << "Selected gene point dataset 2 dimensions do not match PCA dimensions";
+        qWarning() << "Selected gene point dataset 2 dimensions do not match PCA dimensions";
         setStatusMessage("E", "Selected gene point dataset 2 dimensions do not match PCA dimensions", "");
         return;
     }
 
-    std::vector<std::vector<float>> allLoadings(_pca1.numDims());
-    for (int feat = 0; feat < _pca1.numDims(); ++feat) {
-        allLoadings[feat].resize(_pca1.numComponents());
-        for (int comp = 0; comp < _pca1.numComponents(); ++comp) {
-            allLoadings[feat][comp] = _pca1.loadingAt(feat, comp).value_or(0.0f);
-        }
+    bool isSquare = (nDims == nComps);
+    bool correctSize = (static_cast<int>(loadings1.size()) == nDims * nComps);
+
+    if (loadings1.empty()) {
+        qWarning() << "PCA loadings are empty";
+        setStatusMessage("E", "PCA loadings are empty", "");
+        return;
+    }
+    if (!isSquare) {
+        qWarning() << "Loadings matrix is not square: nDims =" << nDims << ", nComps =" << nComps;
+        setStatusMessage("E", "Loadings matrix is not square", "");
+        return;
+    }
+    if (!correctSize) {
+        qWarning() << "Loadings size mismatch: loadings1.size() =" << loadings1.size() << ", expected =" << nDims * nComps;
+        setStatusMessage("E", "Loadings size mismatch", "");
+        return;
     }
 
-    std::vector<float> selectedGenePC2(_selectedGenePointDataset2->getNumPoints() * _pca1.numComponents(), 0.0f);
-    int numPoints2 = _selectedGenePointDataset2->getNumPoints();
-    int numDims2 = _pca1.numDims();
-    int numComps2 = _pca1.numComponents();
-
-    for (int idx1 = 0; idx1 < numPoints2; ++idx1) {
-        std::vector<float> geneVec(numDims2, 0.0f);
-        for (int dim = 0; dim < numDims2; ++dim) {
-            geneVec[dim] = _selectedGenePointDataset2->getValueAt(idx1 * numDims2 + dim);
+    if (_geneOfInterestIndices1.empty()) {
+        qWarning() << "Gene of interest indices 1 are empty";
+        setStatusMessage("E", "Gene of interest indices 1 are empty", "");
+        return;
+    }
+    std::vector<int>  geneOfInterestIndices2;
+    QStringList commonGeneNames;
+    auto genedims1 = fullDataset1->getDimensionNames();
+    auto genedims2 = fullDataset2->getDimensionNames();
+    for (auto& inddx : _geneOfInterestIndices1)
+    {
+        //get name of gene from genedims1 by inddx
+        if (inddx < 0 || inddx >= genedims1.size()) {
+            qWarning() << "Invalid index in _geneOfInterestIndices1:" << inddx;
+            setStatusMessage("E", "Invalid index in gene of interest indices 1", "");
+            return;
         }
-        for (int comp = 0; comp < numComps2; ++comp) {
-            float pcValue = 0.0f;
-            for (int dim = 0; dim < numDims2; ++dim) {
-                pcValue += geneVec[dim] * allLoadings[dim][comp];
+        QString geneName = genedims1[inddx];
+        //get index of geneName in genedims2
+        auto it = std::find(genedims2.begin(), genedims2.end(), geneName);
+        if (it != genedims2.end()) {
+            int indexInDataset2 = std::distance(genedims2.begin(), it);
+            geneOfInterestIndices2.push_back(indexInDataset2);
+            commonGeneNames.push_back(geneName);
+        } else {
+            qWarning() << "Gene name not found in dataset 2:" << geneName;
+            setStatusMessage("E", "Gene name not found in dataset 2", "");
+            return;
+        }
+
+
+
+    }
+
+
+
+    if (geneOfInterestIndices2.empty()) {
+        qWarning() << "Gene of interest indices 2 are empty";
+        setStatusMessage("E", "Gene of interest indices 2 are empty", "");
+        return;
+    }
+    if (commonGeneNames.isEmpty()) {
+        qWarning() << "Common gene names are empty";
+        setStatusMessage("E", "Common gene names are empty", "");
+        return;
+    }
+    if (_geneOfInterestIndices1.size() != geneOfInterestIndices2.size()) {
+        qWarning() << "Gene indices size mismatch: indices1 =" << _geneOfInterestIndices1.size()
+            << ", indices2 =" << geneOfInterestIndices2.size();
+        setStatusMessage("E", "Gene indices size mismatch between datasets", "");
+        return;
+    }
+    if (_geneOfInterestIndices1.size() != commonGeneNames.size()) {
+        qWarning() << "Gene indices and common gene names size mismatch: indices1 =" << _geneOfInterestIndices1.size()
+            << ", commonGeneNames =" << commonGeneNames.size();
+        setStatusMessage("E", "Gene indices and common gene names size mismatch", "");
+        return;
+    }
+    if (_geneOfInterestIndices1.size() != nDims) {
+        qWarning() << "Gene indices size does not match nDims: indices1 =" << _geneOfInterestIndices1.size()
+            << ", nDims =" << nDims;
+        setStatusMessage("E", "Gene indices size does not match PCA dimensions", "");
+        return;
+    }
+    if (nDims != nComps) {
+        qWarning() << "Number of PCA dimensions does not match number of components: nDims =" << nDims
+            << ", nComps =" << nComps;
+        setStatusMessage("E", "PCA dimensions do not match number of components", "");
+        return;
+    }
+    struct LoadingContainer
+    {
+        int geneId1;
+        int geneId2;
+        QString geneName;
+        QVector<float> loadings;
+    };
+    QVector<LoadingContainer> loadingsMap;
+    for (int id = 0; id < nDims; id++)
+    {
+        QString geneName = commonGeneNames[id];
+        QVector<float> loadings_for_dim(
+            loadings1.begin() + id * nComps,
+            loadings1.begin() + (id + 1) * nComps
+        );
+        int geneId1 = _geneOfInterestIndices1[id];
+        int geneId2 = geneOfInterestIndices2[id];
+        loadingsMap.push_back({ geneId1, geneId2, geneName, loadings_for_dim });
+    }
+    std::vector<float> pcBestDataRowMajor1(_selectedGenePointDataset1->getNumPoints()* nDims, 0);
+    std::vector<float> pcBestDataRowMajor2(_selectedGenePointDataset2->getNumPoints()* nDims, 0);
+
+    int geneitr = 0;
+ 
+    for (const auto& loadingsVals : loadingsMap)
+    {
+        int geneId1 = loadingsVals.geneId1;
+        int geneId2 = loadingsVals.geneId2;
+        QString geneName = loadingsVals.geneName;
+        const QVector<float>& loadings = loadingsVals.loadings;
+        std::vector<float> genePointVector1(_selectedGenePointDataset1->getNumPoints(), 0.0f);
+        std::vector<float> genePointVector2(_selectedGenePointDataset2->getNumPoints(), 0.0f);
+        _selectedGenePointDataset1->extractDataForDimension(genePointVector1, geneitr);
+        _selectedGenePointDataset2->extractDataForDimension(genePointVector2, geneitr);
+        if(false){
+        ////normalize to log scale
+        for (int i = 0; i < _selectedGenePointDataset1->getNumPoints(); ++i) {
+            if (genePointVector1[i] > 0) {
+                genePointVector1[i] = std::log2(genePointVector1[i] + 1.0f);
+            } else {
+                genePointVector1[i] = 0.0f;
             }
-            selectedGenePC2[idx1 * numComps2 + comp] = pcValue;
+        }
+        for (int i = 0; i < _selectedGenePointDataset2->getNumPoints(); ++i) {
+            if (genePointVector2[i] > 0) {
+                genePointVector2[i] = std::log2(genePointVector2[i] + 1.0f);
+            } else {
+                genePointVector2[i] = 0.0f;
+            }
         }
     }
-    _pcaCommonGenesDataset2->setData(selectedGenePC2.data(), numPoints2, numComps2);
+        if(false){
+        // Z-score normalization for genePointVector1
+        {
+            float sum = std::accumulate(genePointVector1.begin(), genePointVector1.end(), 0.0f);
+            float mean = sum / genePointVector1.size();
+            float sq_sum = std::inner_product(genePointVector1.begin(), genePointVector1.end(), genePointVector1.begin(), 0.0f);
+            float stdev = std::sqrt(sq_sum / genePointVector1.size() - mean * mean);
+            if (stdev < 1e-8f) stdev = 1.0f; // Avoid division by zero
+            for (auto& v : genePointVector1) {
+                v = (v - mean) / stdev;
+            }
+        }
+
+        // Z-score normalization for genePointVector2
+        {
+            float sum = std::accumulate(genePointVector2.begin(), genePointVector2.end(), 0.0f);
+            float mean = sum / genePointVector2.size();
+            float sq_sum = std::inner_product(genePointVector2.begin(), genePointVector2.end(), genePointVector2.begin(), 0.0f);
+            float stdev = std::sqrt(sq_sum / genePointVector2.size() - mean * mean);
+            if (stdev < 1e-8f) stdev = 1.0f; // Avoid division by zero
+            for (auto& v : genePointVector2) {
+                v = (v - mean) / stdev;
+            }
+        }
+    }
+        if (false)
+        {// Min-max normalization for genePointVector1
+            {
+                float minVal = *std::min_element(genePointVector1.begin(), genePointVector1.end());
+                float maxVal = *std::max_element(genePointVector1.begin(), genePointVector1.end());
+                float range = maxVal - minVal;
+                if (range < 1e-8f) range = 1.0f; // Avoid division by zero
+                for (auto& v : genePointVector1) {
+                    v = (v - minVal) / range;
+                }
+            }
+
+            // Min-max normalization for genePointVector2
+            {
+                float minVal = *std::min_element(genePointVector2.begin(), genePointVector2.end());
+                float maxVal = *std::max_element(genePointVector2.begin(), genePointVector2.end());
+                float range = maxVal - minVal;
+                if (range < 1e-8f) range = 1.0f; // Avoid division by zero
+                for (auto& v : genePointVector2) {
+                    v = (v - minVal) / range;
+                }
+            }
+        }
+        //to get an idea about the values in genePointVector1 and genePointVector2 print stats
+        float minVal1 = *std::min_element(genePointVector1.begin(), genePointVector1.end());
+        float maxVal1 = *std::max_element(genePointVector1.begin(), genePointVector1.end());
+        float minVal2 = *std::min_element(genePointVector2.begin(), genePointVector2.end());
+        float maxVal2 = *std::max_element(genePointVector2.begin(), genePointVector2.end());
+        qDebug() << "Gene" << geneName << "ID1:" << geneId1 << "ID2:" << geneId2
+            << "Min1:" << minVal1 << "Max1:" << maxVal1
+            << "Min2:" << minVal2 << "Max2:" << maxVal2;
+
+        for (int j = 0; j < nDims; ++j) {
+            float loading = loadings[j];
+            for (int i = 0; i < _selectedGenePointDataset1->getNumPoints(); ++i) {
+                float dotProduct = genePointVector1[i] * loading;
+                pcBestDataRowMajor1[i * nDims + j] = dotProduct;
+            }
+            for (int i = 0; i < _selectedGenePointDataset2->getNumPoints(); ++i) {
+                float dotProduct = genePointVector2[i] * loading;
+                pcBestDataRowMajor2[i * nDims + j] = dotProduct;
+            }
+        }
+        geneitr++;
+    }
+    //similar stats after conversion 
+    float minVal1 = *std::min_element(pcBestDataRowMajor1.begin(), pcBestDataRowMajor1.end());
+    float maxVal1 = *std::max_element(pcBestDataRowMajor1.begin(), pcBestDataRowMajor1.end());
+    float minVal2 = *std::min_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end());
+    float maxVal2 = *std::max_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end());
+    qDebug() << "After conversion stats for dataset 1 - Min:" << minVal1 << "Max:" << maxVal1;
+    qDebug() << "After conversion stats for dataset 2 - Min:" << minVal2 << "Max:" << maxVal2;
+
+   
+
+
+    qDebug() << "Selected gene point dataset 1 size:" << _selectedGenePointDataset1->getNumPoints() << "dims" << nDims<<"vector size"<<pcBestDataRowMajor1.size();
+    qDebug() << "Selected gene point dataset 2 size:" << _selectedGenePointDataset2->getNumPoints() << "dims" << nDims << "vector size" << pcBestDataRowMajor2.size();
+    _pcaCommonGenesDataset1->setData(pcBestDataRowMajor1.data(), _selectedGenePointDataset1->getNumPoints(), nDims);
+    mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
+    _pcaCommonGenesDataset2->setData(pcBestDataRowMajor2.data(), _selectedGenePointDataset2->getNumPoints(), nDims);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
 
-    std::vector<float> selectedGenePC1(_selectedGenePointDataset1->getNumPoints() * _pca1.numComponents(), 0.0f);
-    int numPoints1 = _selectedGenePointDataset1->getNumPoints();
-    int numDims1 = _pca1.numDims();
-    int numComps1 = _pca1.numComponents();
-    for (int idx1 = 0; idx1 < numPoints1; ++idx1) {
-        std::vector<float> geneVec(numDims1, 0.0f);
-        for (int dim = 0; dim < numDims1; ++dim) {
-            geneVec[dim] = _selectedGenePointDataset1->getValueAt(idx1 * numDims1 + dim);
-        }
-        for (int comp = 0; comp < numComps1; ++comp) {
-            float pcValue = 0.0f;
-            for (int dim = 0; dim < numDims1; ++dim) {
-                pcValue += geneVec[dim] * allLoadings[dim][comp];
-            }
-            selectedGenePC1[idx1 * numComps1 + comp] = pcValue;
-        }
-    }
-    _pcaCommonGenesDataset1->setData(selectedGenePC1.data(), numPoints1, numComps1);
-    mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
+
 
 
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
@@ -3273,7 +3464,7 @@ void Computation::processAfterPCAComplete()
 
     if (_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions() < 0)
     {
-        qDebug() << "No PCA dimensions available for coloring";
+        qWarning() << "No PCA dimensions available for coloring";
         setStatusMessage("E", "No PCA dimensions available for coloring", "");
         clearTable(3);
         clearTable(2);
@@ -3292,7 +3483,7 @@ void Computation::processAfterPCACompleteOld()
     _pcaDataset1Complete = false;
     _pcaDataset2Complete = false;
     
-    qDebug() << "PCA analysis completed successfully";
+    //qDebug() << "PCA analysis completed successfully";
 
 
     {
@@ -3309,7 +3500,7 @@ void Computation::processAfterPCACompleteOld()
 
     if (_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions() < 0)
     {
-        qDebug() << "No PCA dimensions available for coloring";
+        qWarning() << "No PCA dimensions available for coloring";
         setStatusMessage("E", "No PCA dimensions available for coloring", "");
         clearTable(3);
         clearTable(2);
@@ -3348,7 +3539,7 @@ void Computation::clearTable(int tableNumber)
     }
     else
     {
-        qDebug() << "Invalid table number for clearing";
+        qWarning() << "Invalid table number for clearing";
     }
 
 }
@@ -3465,7 +3656,7 @@ void Computation::correlationAfterPCA()
         populateGenesByCorrelationRange(correlationGenePC1, minCorrelation1, maxCorrelation1, dimensionNames1, 3);
     }
     catch (const std::exception& ex) {
-        qDebug() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
+        qWarning() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
         setStatusMessage("E", "Error occurred during filtering genes", "");
         return;
     }
@@ -3479,7 +3670,7 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
     if (!scatterplotViewFactory) {
-        qDebug() << "Scatterplot view factory not found";
+        qWarning() << "Scatterplot view factory not found";
         setStatusMessage("E", "Scatterplot view factory not found", "");
         return false;
     }
@@ -3490,7 +3681,7 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
             auto* angleAction = dynamic_cast<DecimalAction*>(
                 plugin->findChildByPath("Settings/Selection/Point Selection/Line angle"));
             if (!angleAction) {
-                qDebug() << "Angle action not found";
+                qWarning() << "Angle action not found";
                 setStatusMessage("E", "Angle action not found", "");
                 return false;
             }
@@ -3499,7 +3690,7 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
         }
     }
 
-    qDebug() << "Scatterplot plugin not found";
+    qWarning() << "Scatterplot plugin not found";
     setStatusMessage("E", "Scatterplot plugin not found", "");
     return false;
 }
@@ -3507,7 +3698,7 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
 bool Computation::populateEmbeddingCoordinates(int xEmbeddingIndex, int yEmbeddingIndex, std::vector<float>& XYCoordinates)
 {
     if (_filteredSelectionIndices.empty()) {
-        qDebug() << "No filtered selection indices";
+        qWarning() << "No filtered selection indices";
         setStatusMessage("E", "No indices selected", "");
         return false;
     }
@@ -3541,7 +3732,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         columnIndices.empty() ||
         dimensionNames.size() != static_cast<size_t>(noOfDimensions))
     {
-        qDebug() << "Invalid dataset pointers or input sizes!";
+        qWarning() << "Invalid dataset pointers or input sizes!";
         setStatusMessage("E", "Internal error: invalid dataset pointer or input sizes", "");
         return false;
     }
@@ -3555,7 +3746,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, _filteredSelectionIndices);
     }
     catch (const std::exception& ex) {
-        qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
@@ -3585,38 +3776,37 @@ bool Computation::setupAndTriggerPCA()
 
     if (!_selectedGenePointDataset1.isValid() || !fullPointDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() || !fullPointDataset2.isValid()) {
-        qDebug() << "One or more datasets are invalid!";
+        qWarning() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return false;
     }
 
-    const int numCells1 = _filteredSelectionIndices.size();
+    const int numCells0 = _filteredSelectionIndices.size();
     const int numAllCells2 = fullPointDataset2->getNumPoints();
+    const int numAllCells1 = fullPointDataset1->getNumPoints();
 
 
     const int numOfIntGenes = static_cast<int>(_geneOfInterestIndices1.size());
     const auto& dimensionNames1 = fullPointDataset1->getDimensionNames();
     const auto& dimensionNames2 = fullPointDataset2->getDimensionNames();
 
-    if (numCells1 <= 0 || numAllCells2 <= 0 || numOfIntGenes <= 0) {
-        qDebug() << "Invalid dataset sizes: numAllCells1:" << numCells1
-            << "numAllCells2:" << numAllCells2
-            << "numOfIntGenes:" << numOfIntGenes;
+    if (numCells0 <= 0 || numAllCells2 <= 0 || numOfIntGenes <= 0) {
+        qWarning() << "Invalid dataset sizes: numAllCells1:" << numCells0 << "numAllCells2:" << numAllCells2 << "numOfIntGenes:" << numOfIntGenes;
         setStatusMessage("E", "Invalid dataset sizes", "");
         return false;
     }
     if (numOfIntGenes > static_cast<int>(dimensionNames1.size()) ||
         numOfIntGenes > static_cast<int>(dimensionNames2.size())) {
-        qDebug() << "Number of genes of interest exceeds dataset dimensions";
+        qWarning() << "Number of genes of interest exceeds dataset dimensions";
         setStatusMessage("E", "Number of genes of interest exceeds dataset dimensions", "");
         return false;
     }
 
     // Build gene index mapping and names of interest in a single pass
     std::vector<QString> dimensionNamesOfInterest;
-    std::vector<int> geneDataset1, geneDataset2;
+    std::vector<int> geneDataset0, geneDataset1, geneDataset2;
     dimensionNamesOfInterest.reserve(numOfIntGenes);
-    geneDataset1.reserve(numOfIntGenes);
+    geneDataset0.reserve(numOfIntGenes);
     geneDataset2.reserve(numOfIntGenes);
 
     for (int idx : _geneOfInterestIndices1) {
@@ -3627,64 +3817,81 @@ bool Computation::setupAndTriggerPCA()
         if (it2 != dimensionNames2.end()) {
             int geneId2 = static_cast<int>(std::distance(dimensionNames2.begin(), it2));
             dimensionNamesOfInterest.push_back(geneName);
+            geneDataset0.push_back(idx);
             geneDataset1.push_back(idx);
             geneDataset2.push_back(geneId2);
         }
     }
 
     const int numDimsOfInterest = static_cast<int>(dimensionNamesOfInterest.size());
-    qDebug() << "Number of all cells dataset 1:" << numCells1
-        << "Number of all cells dataset 2:" << numAllCells2
-        << "Number of dimensions of interest:" << numDimsOfInterest;
+    //qDebug() << "Number of all cells dataset 1:" << numCells0 << "Number of all cells dataset 2:" << numAllCells2 << "Number of dimensions of interest:" << numDimsOfInterest;
 
     if (numDimsOfInterest <= 0) {
-        qDebug() << "No genes of interest selected for PCA";
+        qWarning() << "No genes of interest selected for PCA";
         setStatusMessage("E", "No genes of interest selected for PCA", "");
         return false;
     }
 
     // Prepare cell indices
-    std::vector<int> cellIndices1, allCellIndices2;
+    std::vector<int> cellIndices0;
 
 
 
     for (const auto& vals : _filteredSelectionIndices)
     {
-        cellIndices1.push_back(vals);
+        cellIndices0.push_back(vals);
     }
-    std::vector<float> cellByGeneMatrix1(numCells1 * numDimsOfInterest);
+    std::vector<float> cellByGeneMatrix0(numCells0 * numDimsOfInterest);
     try {
-        fullPointDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, cellIndices1);
+        fullPointDataset1->populateDataForDimensions(cellByGeneMatrix0, geneDataset0, cellIndices0);
     }
     catch (const std::exception& ex) {
-        qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
-    _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numCells1, numDimsOfInterest);
-    _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
-    mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
+
+    //normalize std::vector<float>  cellByGeneMatrix1 from 0 to 1
+    float minVal = *std::min_element(cellByGeneMatrix0.begin(), cellByGeneMatrix0.end());
+    float maxVal = *std::max_element(cellByGeneMatrix0.begin(), cellByGeneMatrix0.end());
+    if (maxVal - minVal > 0.0f) { // Avoid division by zero
+        for (auto& val : cellByGeneMatrix0) {
+            val = (val - minVal) / (maxVal - minVal);
+        }
+    }
+
     
 
 
-    
+
+    std::vector<int> allCellIndices1, allCellIndices2;
 
     std::iota(allCellIndices2.begin(), allCellIndices2.end(), 0);
+    std::iota(allCellIndices1.begin(), allCellIndices1.end(), 0);
     std::vector<float> cellByGeneMatrix2(numAllCells2 * numDimsOfInterest);
+    std::vector<float> cellByGeneMatrix1(numAllCells1* numDimsOfInterest);
 
     try {
         fullPointDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, allCellIndices2);
+        fullPointDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, allCellIndices1);
     }
     catch (const std::exception& ex) {
-        qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
+
+
     _selectedGenePointDataset2->setData(cellByGeneMatrix2.data(), numAllCells2, numDimsOfInterest);
     _selectedGenePointDataset2->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset2);
+
+    _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numAllCells1, numDimsOfInterest);
+    _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
+    mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
+
     setStatusMessage("R", "PCA Started", "");
-    _pca1.fit(cellByGeneMatrix1, numCells1, numDimsOfInterest, numOfIntGenes);
+    _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
     return true;
 }
 
@@ -3698,7 +3905,7 @@ bool Computation::setupAndTriggerPCAOld()
 
     if (!_selectedGenePointDataset1.isValid() || !fullPointDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() || !fullPointDataset2.isValid()) {
-        qDebug() << "One or more datasets are invalid!";
+        qWarning() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return false;
     }
@@ -3710,7 +3917,7 @@ bool Computation::setupAndTriggerPCAOld()
     const auto& dimensionNames2 = fullPointDataset2->getDimensionNames();
 
     if (numAllCells1 <= 0 || numAllCells2 <= 0 || numOfIntGenes <= 0) {
-        qDebug() << "Invalid dataset sizes: numAllCells1:" << numAllCells1
+        qWarning() << "Invalid dataset sizes: numAllCells1:" << numAllCells1
             << "numAllCells2:" << numAllCells2
             << "numOfIntGenes:" << numOfIntGenes;
         setStatusMessage("E", "Invalid dataset sizes", "");
@@ -3718,7 +3925,7 @@ bool Computation::setupAndTriggerPCAOld()
     }
     if (numOfIntGenes > static_cast<int>(dimensionNames1.size()) ||
         numOfIntGenes > static_cast<int>(dimensionNames2.size())) {
-        qDebug() << "Number of genes of interest exceeds dataset dimensions";
+        qWarning() << "Number of genes of interest exceeds dataset dimensions";
         setStatusMessage("E", "Number of genes of interest exceeds dataset dimensions", "");
         return false;
     }
@@ -3744,12 +3951,10 @@ bool Computation::setupAndTriggerPCAOld()
     }
 
     const int numDimsOfInterest = static_cast<int>(dimensionNamesOfInterest.size());
-    qDebug() << "Number of all cells dataset 1:" << numAllCells1
-        << "Number of all cells dataset 2:" << numAllCells2
-        << "Number of dimensions of interest:" << numDimsOfInterest;
+    //qDebug() << "Number of all cells dataset 1:" << numAllCells1 << "Number of all cells dataset 2:" << numAllCells2 << "Number of dimensions of interest:" << numDimsOfInterest;
 
     if (numDimsOfInterest <= 0) {
-        qDebug() << "No genes of interest selected for PCA";
+        qWarning() << "No genes of interest selected for PCA";
         setStatusMessage("E", "No genes of interest selected for PCA", "");
         return false;
     }
@@ -3768,7 +3973,7 @@ bool Computation::setupAndTriggerPCAOld()
         fullPointDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, allCellIndices2);
     }
     catch (const std::exception& ex) {
-        qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
@@ -3798,7 +4003,7 @@ bool Computation::setupAndTriggerPCAOld()
     _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
 
     if (!_pcaAnalysisCommonGenesDataset1Plugin || !_pcaAnalysisCommonGenesDataset2Plugin) {
-        qDebug() << "PCA Analysis Plugin not found";
+        qWarning() << "PCA Analysis Plugin not found";
         setStatusMessage("E", "PCA plugin not found", "");
         return false;
     }
@@ -3818,22 +4023,22 @@ bool Computation::setupAndTriggerPCAOld()
 
     connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
         _pcaDataset1Complete = true;
-        qDebug() << "PCA Dataset 1 data changed";
+        //qDebug() << "PCA Dataset 1 data changed";
         if (_pcaDataset1Complete && _pcaDataset2Complete) {
             //processAfterPCACompleteOld();
         }
         else {
-            qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
+            //qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
         }
         });
     connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
         _pcaDataset2Complete = true;
-        qDebug() << "PCA Dataset 2 data changed";
+       // qDebug() << "PCA Dataset 2 data changed";
         if (_pcaDataset1Complete && _pcaDataset2Complete) {
             //processAfterPCACompleteOld();
         }
         else {
-            qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";
+            //qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";
         }
         });
 
@@ -3841,7 +4046,7 @@ bool Computation::setupAndTriggerPCAOld()
     auto componentsAction1 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Number of PCA components"));
     auto componentsAction2 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Number of PCA components"));
     if (!componentsAction1 || !componentsAction2) {
-        qDebug() << "Number of PCA components action not found";
+        qWarning() << "Number of PCA components action not found";
         setStatusMessage("E", "PCA components action not found", "");
         return false;
     }
@@ -3856,18 +4061,18 @@ bool Computation::setupAndTriggerPCAOld()
     auto startAction1 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Start analysis"));
     auto startAction2 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Start analysis"));
     if (!startAction1 || !startAction2) {
-        qDebug() << "Start analysis action not found in PCA dataset";
+        qWarning() << "Start analysis action not found in PCA dataset";
         setStatusMessage("E", "PCA start action not found", "");
         return false;
     }
     startAction1->trigger();
-    qDebug() << "PCA analysis 1 started";
+    //qDebug() << "PCA analysis 1 started";
     QEventLoop().processEvents();
     _pcaCommonGenesDataset1->setSelectionIndices({});
     mv::events().notifyDatasetDataSelectionChanged(_pcaCommonGenesDataset1);
 
     startAction2->trigger();
-    qDebug() << "PCA analysis 2 started";
+    //qDebug() << "PCA analysis 2 started";
     QEventLoop().processEvents();
     _pcaCommonGenesDataset2->setSelectionIndices({});
     mv::events().notifyDatasetDataSelectionChanged(_pcaCommonGenesDataset2);
@@ -3940,11 +4145,11 @@ void Computation::setSelectionAndAutoCompute()
 
 void Computation::drawCombinedLines()
 {
-    qDebug() << "Drawing combined lines for selected genes";
+    //qDebug() << "Drawing combined lines for selected genes";
     // Check if the line chart widget is available
     auto* lineChartWidget = _settingsAction.getLineChart1Widget();
     if (!lineChartWidget) {
-        qDebug() << "Line chart widget is not available";
+        qWarning() << "Line chart widget is not available";
         setStatusMessage("E", "Line chart widget is not available", "");
         return;
     }
@@ -3952,14 +4157,14 @@ void Computation::drawCombinedLines()
 
     // Validate rotated embedding dataset
     if (!_rotatedSelectedEmbeddingDataset.isValid()) {
-        qDebug() << "Rotated selected embedding dataset is invalid";
+        qWarning() << "Rotated selected embedding dataset is invalid";
         setStatusMessage("E", "Rotated selected embedding dataset is invalid", "");
         return;
     }
 
     // Validate selected cell point dataset
     if (!_selectedCellPointDataset.isValid()) {
-        qDebug() << "Selected cell point dataset is invalid";
+        qWarning() << "Selected cell point dataset is invalid";
         setStatusMessage("E", "Selected cell point dataset is invalid", "");
         return;
     }
@@ -3967,14 +4172,14 @@ void Computation::drawCombinedLines()
     // Validate point dataset 1
     mv::Dataset<Points> fullPointDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
     if (!fullPointDataset1.isValid()) {
-        qDebug() << "Point dataset 1 is invalid";
+        qWarning() << "Point dataset 1 is invalid";
         setStatusMessage("E", "Point dataset 1 is invalid", "");
         return;
     }
 
     // Check filtered selection indices
     if (_filteredSelectionIndices.empty()) {
-        qDebug() << "No filtered selection indices available";
+        qWarning() << "No filtered selection indices available";
         setStatusMessage("E", "No filtered selection indices available", "");
         return;
     }
@@ -3982,7 +4187,7 @@ void Computation::drawCombinedLines()
     // Get rotated Y coordinates
     auto numofPoints = _rotatedSelectedEmbeddingDataset->getNumPoints();
     if (numofPoints <= 0) {
-        qDebug() << "No points in rotated selected embedding dataset";
+        qWarning() << "No points in rotated selected embedding dataset";
         setStatusMessage("E", "No points in rotated selected embedding dataset", "");
         return;
     }
@@ -4017,7 +4222,7 @@ void Computation::drawCombinedLines()
     }
 
     if (geneIndicesExpVals.empty()) {
-        qDebug() << "No common gene indices found";
+        qWarning() << "No common gene indices found";
         setStatusMessage("E", "No common gene indices found", "");
         return;
     }
@@ -4028,7 +4233,7 @@ void Computation::drawCombinedLines()
 
 
     if (numPoints == 0 || numLines == 0) {
-        qDebug() << "No points or lines to plot";
+        qWarning() << "No points or lines to plot";
         setStatusMessage("E", "No points or lines to plot", "");
         return;
     }
@@ -4038,7 +4243,7 @@ void Computation::drawCombinedLines()
         fullPointDataset1->populateDataForDimensions(expresionValues, geneIndicesExpVals, _filteredSelectionIndices);
     }
     catch (const std::exception& ex) {
-        qDebug() << "Exception in populateDataForDimensions:" << ex.what();
+        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
         setStatusMessage("E", "Error occurred during populating expression values", "");
         return;
     }
@@ -4067,8 +4272,8 @@ void Computation::drawCombinedLines()
     
 
     // Debug output
-    qDebug() << "Points per line:" << numPoints;
-    qDebug() << "Number of lines:" << numLines;
+    //qDebug() << "Points per line:" << numPoints;
+    //qDebug() << "Number of lines:" << numLines;
 
     // Convert to line data
     auto lineData = convertToLineData(
@@ -4082,7 +4287,7 @@ void Computation::drawCombinedLines()
     );
 
     // Debug output
-    qDebug() << "Converted line data size:" << lineData.size();
+    //qDebug() << "Converted line data size:" << lineData.size();
     if (!lineData.empty()) {
         //qDebug() << "First line points:" << lineData.first().points.size();
         if (!lineData.first().points.empty()) {
@@ -4090,7 +4295,7 @@ void Computation::drawCombinedLines()
         }
     }
     else {
-        qDebug() << "No line data generated";
+        qWarning() << "No line data generated";
         setStatusMessage("E", "No line data generated", "");
         return;
     }
