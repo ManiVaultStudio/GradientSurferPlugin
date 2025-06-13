@@ -3670,7 +3670,9 @@ bool Computation::setupAndTriggerPCA()
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
-
+    //normalizeVector(genePointVector1, NormalizationType::ZScore);
+    //normalizeVector(genePointVector2, NormalizationType::MinMax);
+    //normalizeVector(genePointVector1, NormalizationType::Log2);
     auto [minVal2, maxVal2] = std::minmax_element(cellByGeneMatrix2.begin(), cellByGeneMatrix2.end());
     auto [minVal1, maxVal1] = std::minmax_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end());
     qInfo() << "PCA cellByGeneMatrix2 min:" << *minVal2 << "max:" << *maxVal2
