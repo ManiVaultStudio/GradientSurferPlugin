@@ -3180,7 +3180,6 @@ void Computation::clearTable(int tableNumber)
 
 void Computation::processAlternativeToPCA()
 {
-    // Compute PCA on all cells with selected genes of interest
     FunctionTimer timer(Q_FUNC_INFO);
 
     auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
@@ -3200,25 +3199,31 @@ void Computation::processAlternativeToPCA()
     const auto& dimensionNames1 = fullPointDataset1->getDimensionNames();
     const auto& dimensionNames2 = fullPointDataset2->getDimensionNames();
 
-    if ( numAllCells2 <= 0 || numOfIntGenes <= 0) {
+    if (numAllCells2 <= 0 || numOfIntGenes <= 0) {
         qWarning() << "Invalid dataset sizes: numAllCells1:" << numAllCells1 << "numAllCells2:" << numAllCells2 << "numOfIntGenes:" << numOfIntGenes;
         setStatusMessage("E", "Invalid dataset sizes", "");
-        return ;
+        return;
     }
     if (numOfIntGenes > static_cast<int>(dimensionNames1.size()) ||
         numOfIntGenes > static_cast<int>(dimensionNames2.size())) {
         qWarning() << "Number of genes of interest exceeds dataset dimensions";
         setStatusMessage("E", "Number of genes of interest exceeds dataset dimensions", "");
-        return ;
+        return;
     }
 
-    // Build gene index mapping and names of interest in a single pass
+    // Build a hash for fast correlation lookup
+    QHash<QString, float> corrLookup;
+    for (const auto& gene : _geneCorrValues1)
+        corrLookup.insert(gene.geneName, gene.correlationValue);
+
     std::vector<QString> dimensionNamesOfInterest;
     std::vector<int> geneDataset1, geneDataset2;
+    std::vector<float> corrValuesForGeneOfInterest;
     dimensionNamesOfInterest.reserve(numOfIntGenes);
     geneDataset1.reserve(numOfIntGenes);
     geneDataset2.reserve(numOfIntGenes);
-    std::vector<float> corrValuesForGeneOfInsterest;
+    corrValuesForGeneOfInterest.reserve(numOfIntGenes);
+
     for (int idx : _geneOfInterestIndices1) {
         if (idx < 0 || idx >= static_cast<int>(dimensionNames1.size()))
             continue;
@@ -3226,39 +3231,30 @@ void Computation::processAlternativeToPCA()
         auto it2 = std::find(dimensionNames2.begin(), dimensionNames2.end(), geneName);
         if (it2 != dimensionNames2.end()) {
             int geneId2 = static_cast<int>(std::distance(dimensionNames2.begin(), it2));
-            dimensionNamesOfInterest.push_back(geneName);
-            geneDataset1.push_back(idx);
-            geneDataset2.push_back(geneId2);
-        }
-        //find the corr value based on geneName from _geneCorrValues1
-        auto it = std::find_if(_geneCorrValues1.begin(), _geneCorrValues1.end(),
-            [&geneName](const CorrelationGeneCoords& gene) { return gene.geneName == geneName; });
-        if (it != _geneCorrValues1.end()) {
-            corrValuesForGeneOfInsterest.push_back(it->correlationValue);
-        }
-        else {
-            corrValuesForGeneOfInsterest.push_back(0.0f); // Default value if not found
+            dimensionNamesOfInterest.emplace_back(geneName);
+            geneDataset1.emplace_back(idx);
+            geneDataset2.emplace_back(geneId2);
+            corrValuesForGeneOfInterest.emplace_back(corrLookup.value(geneName, 0.0f));
         }
     }
-   
+
     const int numDimsOfInterest = static_cast<int>(dimensionNamesOfInterest.size());
     if (numDimsOfInterest <= 0) {
         qWarning() << "No genes of interest selected for PCA";
         setStatusMessage("E", "No genes of interest selected for PCA", "");
-        return ;
+        return;
     }
     if (numDimsOfInterest > numOfIntGenes) {
         qWarning() << "Number of dimensions of interest exceeds number of genes of interest";
         setStatusMessage("E", "Number of dimensions of interest exceeds number of genes of interest", "");
-        return ;
+        return;
     }
     if (dimensionNamesOfInterest.size() != geneDataset1.size() || dimensionNamesOfInterest.size() != geneDataset2.size()) {
         qWarning() << "Dimension names size mismatch with gene datasets";
         setStatusMessage("E", "Dimension names size mismatch with gene datasets", "");
-        return ;
+        return;
     }
 
-    // Prepare all cell indices for both datasets
     std::vector<int> allCellIndices1(numAllCells1), allCellIndices2(numAllCells2);
     std::iota(allCellIndices1.begin(), allCellIndices1.end(), 0);
     std::iota(allCellIndices2.begin(), allCellIndices2.end(), 0);
@@ -3266,10 +3262,9 @@ void Computation::processAlternativeToPCA()
     if (allCellIndices1.empty() || allCellIndices2.empty()) {
         qWarning() << "No valid cell indices found for datasets";
         setStatusMessage("E", "No valid cell indices found for datasets", "");
-        return ;
+        return;
     }
 
-    // Prepare cell-by-gene matrices for both datasets
     std::vector<float> cellByGeneMatrix2(numAllCells2 * numDimsOfInterest);
     std::vector<float> cellByGeneMatrix1(numAllCells1 * numDimsOfInterest);
 
@@ -3280,16 +3275,11 @@ void Computation::processAlternativeToPCA()
     catch (const std::exception& ex) {
         qWarning() << "Exception in populateDataForDimensions:" << ex.what();
         setStatusMessage("E", "Error occurred during populating filtered data", "");
-        return ;
+        return;
     }
-    //normalizeVector(genePointVector1, NormalizationType::ZScore);
-    //normalizeVector(genePointVector2, NormalizationType::MinMax);
-    //normalizeVector(genePointVector1, NormalizationType::Log2);
-    if (true)
-    {
-        normalizeVector(cellByGeneMatrix2, NormalizationType::ZScore);
-        normalizeVector(cellByGeneMatrix1, NormalizationType::ZScore);
-    }
+
+    normalizeVector(cellByGeneMatrix2, NormalizationType::ZScore);
+    normalizeVector(cellByGeneMatrix1, NormalizationType::ZScore);
 
     _selectedGenePointDataset2->setData(cellByGeneMatrix2.data(), numAllCells2, numDimsOfInterest);
     _selectedGenePointDataset2->setDimensionNames(dimensionNamesOfInterest);
@@ -3298,30 +3288,26 @@ void Computation::processAlternativeToPCA()
     _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numAllCells1, numDimsOfInterest);
     _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
-    std::vector<float> gradientScore1(numAllCells1,0.0f), gradientScore2(numAllCells2,0.0f);
-    for (int i = 0; i < numAllCells1; ++i)
-    {
 
-        std::vector<float> rowData1(cellByGeneMatrix1.begin() + i * numDimsOfInterest, cellByGeneMatrix1.begin() + (i + 1) * numDimsOfInterest);
+    std::vector<float> gradientScore1(numAllCells1, 0.0f), gradientScore2(numAllCells2, 0.0f);
 
-
-        if(rowData1.size() != numDimsOfInterest) {
+    // Compute gradient scores for dataset 1
+    for (int i = 0; i < numAllCells1; ++i) {
+        const float* rowPtr = cellByGeneMatrix1.data() + i * numDimsOfInterest;
+        std::vector<float> rowData1(rowPtr, rowPtr + numDimsOfInterest);
+        if (rowData1.size() != numDimsOfInterest) {
             qInfo() << "Row data size mismatch for PCA computation at index" << i << "Expected:" << numDimsOfInterest
                 << "Got rowData1:" << rowData1.size();
             qWarning() << "Row data size mismatch for PCA computation at index" << i;
             setStatusMessage("E", "Row data size mismatch for PCA computation", "");
             return;
         }
-        auto score1 = computeGradientScore(rowData1, corrValuesForGeneOfInsterest);
-
-        gradientScore1.at(i) = score1;
-
+        gradientScore1[i] = computeGradientScore(rowData1, corrValuesForGeneOfInterest);
     }
-    for (int i = 0; i < numAllCells2; ++i)
-    {
-
-        std::vector<float> rowData2(cellByGeneMatrix2.begin() + i * numDimsOfInterest, cellByGeneMatrix2.begin() + (i + 1) * numDimsOfInterest);
-        //compute gradient score as sum of squares of the row data
+    // Compute gradient scores for dataset 2
+    for (int i = 0; i < numAllCells2; ++i) {
+        const float* rowPtr = cellByGeneMatrix2.data() + i * numDimsOfInterest;
+        std::vector<float> rowData2(rowPtr, rowPtr + numDimsOfInterest);
         if (rowData2.size() != numDimsOfInterest) {
             qInfo() << "Row data size mismatch for PCA computation at index" << i << "Expected:" << numDimsOfInterest
                 << "rowData2:" << rowData2.size();
@@ -3329,12 +3315,9 @@ void Computation::processAlternativeToPCA()
             setStatusMessage("E", "Row data size mismatch for PCA computation", "");
             return;
         }
-
-        auto score2 = computeGradientScore(rowData2, corrValuesForGeneOfInsterest);
-
-        gradientScore2.at(i) = score2;
-
+        gradientScore2[i] = computeGradientScore(rowData2, corrValuesForGeneOfInterest);
     }
+
     // Ensure PCA common gene datasets exist
     if (!_pcaCommonGenesDataset1.isValid()) {
         _pcaCommonGenesDataset1 = mv::data().createDataset("Points", "PCA Dataset 1", _selectedGenePointDataset1);
@@ -3347,7 +3330,6 @@ void Computation::processAlternativeToPCA()
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
     }
 
-
     _pcaCommonGenesDataset1->setData(gradientScore1.data(), numAllCells1, 1);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
     _pcaCommonGenesDataset2->setData(gradientScore2.data(), numAllCells2, 1);
@@ -3355,31 +3337,21 @@ void Computation::processAlternativeToPCA()
 
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
 
-    {
-
-
-
-
-
-        int numDimsForColoring = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions();
-        if (numDimsForColoring > 0) {
-            _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(0);
-        }
-        else if (numDimsForColoring < 0) {
-            qWarning() << "No PCA dimensions available for coloring";
-            setStatusMessage("E", "No PCA dimensions available for coloring", "");
-            clearTable(3);
-            clearTable(2);
-            return;
-        }
-
-        if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
-            correlationAfterPCA();
-        }
+    int numDimsForColoring = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions();
+    if (numDimsForColoring > 0) {
+        _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(0);
+    }
+    else if (numDimsForColoring < 0) {
+        qWarning() << "No PCA dimensions available for coloring";
+        setStatusMessage("E", "No PCA dimensions available for coloring", "");
+        clearTable(3);
+        clearTable(2);
+        return;
     }
 
-
-
+    if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
+        correlationAfterPCA();
+    }
 }
 
 void Computation::processAfterPCAComplete()
