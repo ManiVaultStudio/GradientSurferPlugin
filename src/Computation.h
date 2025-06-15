@@ -95,6 +95,7 @@ private:
     void processAfterPCAComplete();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
     void drawCombinedLines();
+    void processAlternativeToPCA();
     bool populateEmbeddingCoordinates(
         int xEmbeddingIndex, int yEmbeddingIndex,
         std::vector<float>& XYCoordinates);
