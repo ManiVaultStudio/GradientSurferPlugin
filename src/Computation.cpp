@@ -825,7 +825,18 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(& _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection1);
 
 
+    const auto computationTypeChanged = [this]() {
+        
+        setStatusMessage("R", "Computation in progress", "");
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
+        QApplication::processEvents();
 
+        setSelectionAndAutoCompute();
+
+        _settingsAction.getDataset1OptionsHolder().getFreezeSelectionAction().setChecked(false);
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        };
+    connect(&_settingsAction.getCommonOptionsHolder().getComputationTypesAction(), &OptionAction::currentIndexChanged, this, computationTypeChanged);
     const auto updateGeneSelection2 = [this]() -> void {
 
         auto selectedGene2 = _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().getCurrentDimensionName();
@@ -2551,11 +2562,12 @@ void Computation::ManualCompute()
     //mv::Dataset<Points> fullPointDataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
 
     // Setup and trigger PCA
-    if (true)
+    
+    if (_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText()=="Correlation")
     {
         processAlternativeToPCA();
     }
-    else
+    else if(_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText()=="PCA Loadings")
     {
         bool complete = setupAndTriggerPCA();
         if (!complete)
@@ -2565,7 +2577,18 @@ void Computation::ManualCompute()
             return;
         }
     }
-
+    else if(_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText() == "PCA All")
+    {
+        qDebug() << "PCA All not found";
+        setStatusMessage("E", "PCA All not found", "");
+        return;
+    }
+    else
+    {
+        qDebug() << "Unknown computation type selected:" << _settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText();
+        setStatusMessage("E", "Unknown computation type selected", "");
+        return;
+    }
     
 }
 

@@ -100,6 +100,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension Selection Action");
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
 
+
     _commonOptionsHolder.getAutoComputeAction().setChecked(true);
     _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setChecked(true);
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
@@ -170,6 +171,9 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setOptions({ "Absolute","NonAbsolute","Positive","Negative"});
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setCurrentText("NonAbsolute");
+    _commonOptionsHolder.getComputationTypesAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getComputationTypesAction().setOptions({ "PCA All", "PCA Loadings", "Correlation" });
+    _commonOptionsHolder.getComputationTypesAction().setCurrentText("Correlation");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
     _dataset1OptionsHolder.getDeSelectRowAction().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
@@ -423,13 +427,15 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
     _computePCAAction(this, "Compute PCA"),
-    _linkdataset1And2GeneTableAction(this, "Link Dataset1 and Dataset2 Gene Table")
+    _linkdataset1And2GeneTableAction(this, "Link Dataset1 and Dataset2 Gene Table"),
+    _computationTypesAction(this, "Computation Types")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
+    addAction(&_computationTypesAction);
     addAction(&_computePCAAction);
     addAction(&_dualPCAColoringAction);
     addAction(&_pcaDimensionForColoringAction);
