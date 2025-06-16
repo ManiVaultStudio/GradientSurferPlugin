@@ -172,7 +172,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setOptions({ "Absolute","NonAbsolute","Positive","Negative"});
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setCurrentText("NonAbsolute");
     _commonOptionsHolder.getComputationTypesAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getComputationTypesAction().setOptions({ "PCA All", "PCA Loadings", "Correlation" });
+    _commonOptionsHolder.getComputationTypesAction().setOptions({ "PCA Loadings Total", "PCA Loadings Per Component", "Correlation" });
     _commonOptionsHolder.getComputationTypesAction().setCurrentText("Correlation");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 

@@ -93,6 +93,7 @@ private:
     void clearTable(int tableNumber);
     void updateClusterOptions();
     void processAfterPCAComplete();
+    void processAfterPCACompleteAlt();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
     void drawCombinedLines();
     void processAlternativeToPCA();
