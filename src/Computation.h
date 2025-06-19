@@ -95,7 +95,6 @@ private:
     void processAfterPCAComplete();
     void processAfterPCACompleteAlt();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
-    void drawCombinedLines();
     void processAlternativeToPCA();
     bool populateEmbeddingCoordinates(
         int xEmbeddingIndex, int yEmbeddingIndex,
@@ -133,6 +132,8 @@ protected:
     QStringList                 _commonGeneNames;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
+    mv::Dataset<Points>         _lineChartPointDataset1 = nullptr;
+    mv::Dataset<Clusters>       _lineChartClusterDataset1 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
 

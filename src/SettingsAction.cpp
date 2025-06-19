@@ -72,16 +72,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _dataset2OptionsHolder.getFocusSelection2Action().setToolTip("Focus Selection Action 2");
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
-    _dataset1OptionsHolder.getShowAllLineSelectionInTableAction().setToolTip("Show All Line Selections in Table Action");
-    _dataset1OptionsHolder.getShowDataLinesInChartAction().setToolTip("Show Data Lines in Chart Action");
-    _dataset1OptionsHolder.getShowDataPointsInChartAction().setToolTip("Show Data Points in Chart Action");
-    _dataset1OptionsHolder.getShowConnectedStatsLineInChartAction().setToolTip("Show Connected Stats Line in Chart Action");
-    _dataset1OptionsHolder.getShowMovingAverageLineInChartAction().setToolTip("Show Moving Average Line in Chart Action");
     _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setToolTip("Hide Point Selection Outline Action 2");
     _dataset1OptionsHolder.getFreezeSelectionAction().setToolTip("Freeze Selection Action");
     _dataset2OptionsHolder.getFreezeSelection2Action().setToolTip("Freeze Selection Action 2");
     _dataset1OptionsHolder.getCorrelationRangeAction().setToolTip("Correlation Range Action");
-    _dataset1OptionsHolder.getLineSmoothingWindowAction().setToolTip("Line Smoothing Window Action");
     _dataset2OptionsHolder.getCorrelationRange2Action().setToolTip("Correlation Range Action 2");
     _dataset2OptionsHolder.getClusterDataset2Action().setToolTip("Cluster Dataset 2");
     _dataset2OptionsHolder.getPointDataset2Action().setToolTip("Point Dataset 2");
@@ -89,8 +83,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset2OptionsHolder.getScatterplotViewSelection2Action().setToolTip("Scatterplot View Selection 2");
     _dataset2OptionsHolder.getEmbeddingDimension2XAction().setToolTip("Embedding Dimension 2 X");
     _dataset2OptionsHolder.getEmbeddingDimension2YAction().setToolTip("Embedding Dimension 2 Y");
-
-    _dataset1OptionsHolder.getConnectStatsLineAction().setToolTip("Connect Stats Line Action");
 
 
     _commonOptionsHolder.getAutoComputeAction().setToolTip("Auto Compute Action");
@@ -105,24 +97,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setChecked(true);
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
 
-
-
-
-    _dataset1OptionsHolder.getConnectStatsLineAction().setMaximum(1.0);
-    _dataset1OptionsHolder.getConnectStatsLineAction().setMinimum(0.1);
-    _dataset1OptionsHolder.getConnectStatsLineAction().setValue(0.5);
-    _dataset1OptionsHolder.getConnectStatsLineAction().setSingleStep(0.01);
-
     _dataset1OptionsHolder.getFocusSelectionAction().setChecked(false);
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
-    _dataset1OptionsHolder.getShowAllLineSelectionInTableAction().setChecked(false);
-
-
-    _dataset1OptionsHolder.getShowDataLinesInChartAction().setChecked(false);
-    _dataset1OptionsHolder.getShowDataPointsInChartAction().setChecked(false);
-    _dataset1OptionsHolder.getShowConnectedStatsLineInChartAction().setChecked(true);
-    _dataset1OptionsHolder.getShowMovingAverageLineInChartAction().setChecked(true);
-
 
     _dataset1OptionsHolder.getFreezeSelectionAction().setChecked(false);
 
@@ -135,10 +111,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getCorrelationRangeAction().setLimitsMinimum(-1.00);
     _dataset1OptionsHolder.getCorrelationRangeAction().setMaximum(0.50);
     _dataset1OptionsHolder.getCorrelationRangeAction().setMinimum(-1.00);
-
-    _dataset1OptionsHolder.getLineSmoothingWindowAction().setMaximum(20);
-    _dataset1OptionsHolder.getLineSmoothingWindowAction().setMinimum(2);
-    _dataset1OptionsHolder.getLineSmoothingWindowAction().setValue(20);
 
     _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMaximum(1.00);
     _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMinimum(-1.00);
@@ -176,6 +148,12 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getComputationTypesAction().setCurrentText("Correlation");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
+    _commonOptionsHolder.getNormalizationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getNormalizationTypeAction().initialize({ "None", "ZScore", "MinMax", "Log2"},"None");
+
+    _commonOptionsHolder.getNormalizeDataAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getNormalizeDataAction().setChecked(true);
+
     _dataset1OptionsHolder.getDeSelectRowAction().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
     _dataset2OptionsHolder.getDeSelectRow2Action().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
 
@@ -184,21 +162,12 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _dataset1OptionsHolder.getShowAllLineSelectionInTableAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-
-
-    _dataset1OptionsHolder.getShowDataLinesInChartAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _dataset1OptionsHolder.getShowDataPointsInChartAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _dataset1OptionsHolder.getShowConnectedStatsLineInChartAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _dataset1OptionsHolder.getShowMovingAverageLineInChartAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _dataset1OptionsHolder.getFreezeSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _dataset2OptionsHolder.getFreezeSelection2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _dataset1OptionsHolder.getCorrelationRangeAction().setDefaultWidgetFlags(IntegralRangeAction::Slider  | IntegralRangeAction::MaximumSpinBox | IntegralRangeAction::MinimumSpinBox);
     _dataset2OptionsHolder.getCorrelationRange2Action().setDefaultWidgetFlags(IntegralRangeAction::Slider | IntegralRangeAction::MaximumSpinBox | IntegralRangeAction::MinimumSpinBox );
-
-    _dataset1OptionsHolder.getLineSmoothingWindowAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox );
 
     _dataset2OptionsHolder.getClusterDataset2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset2OptionsHolder.getPointDataset2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -329,7 +298,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     //only highlight multiple rows if shiuft is pressed
     _tableView3Action->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-    _lineChart1Widget = new HighPerfLineChart();
+    //_lineChart1Widget = new HighPerfLineChart();
 }
 
 inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsAction& settingsAction) :
@@ -346,14 +315,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _deSelectRowAction(this, "DeSelect Row"),
     _focusSelectionAction(this, "Focus Selection"),
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
-    _freezeSelectionAction(this, "Freeze Selection"),
-    _connectStatsLineAction(this, "Stats Line Top Bottom N"),
-    _lineSmoothingWindowAction(this, "Line Smoothing Window"),
-    _showAllLineSelectionInTableAction(this, "Show All Lines in Table"),
-    _showDataLinesInChartAction(this, "Show Data Lines in Chart"),
-    _showDataPointsInChartAction(this, "Show Data Points in Chart"),
-    _showConnectedStatsLineInChartAction(this, "Show Connected Stats Line in Chart"),
-    _showMovingAverageLineInChartAction(this, "Show Moving Average Line in Chart")
+    _freezeSelectionAction(this, "Freeze Selection")
 {
     setText("Dataset1 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -370,13 +332,6 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
     addAction(&_freezeSelectionAction);
-    addAction(&_connectStatsLineAction);
-    addAction(&_lineSmoothingWindowAction);
-    addAction(&_showAllLineSelectionInTableAction);
-    addAction(&_showDataLinesInChartAction);
-    addAction(&_showDataPointsInChartAction);
-    addAction(&_showConnectedStatsLineInChartAction);
-    addAction(&_showMovingAverageLineInChartAction);
 
 
 }
@@ -428,7 +383,9 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
     _computePCAAction(this, "Compute PCA"),
     _linkdataset1And2GeneTableAction(this, "Link Dataset1 and Dataset2 Gene Table"),
-    _computationTypesAction(this, "Computation Types")
+    _computationTypesAction(this, "Computation Types"),
+    _normalizeDataAction(this, "Normalize Data"),
+    _normalizationTypeAction(this, "Normalization Type")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -443,6 +400,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_autoComputeAction);
     addAction(&_linkdataset1And2GeneTableAction);
     addAction(&_correlationCalculationTypeAction);
+    addAction(&_normalizeDataAction);
+    addAction(&_normalizationTypeAction);
     addAction(&_computeAction);
 
 }
@@ -493,12 +452,6 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset2OptionsHolder.getEmbeddingDimension2XAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimension2YAction().fromParentVariantMap(variantMap);
 
-    //_commonOptionsHolder.getAutoComputeAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getPcaColoringAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getDualPCAColoringAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getPcaDimensionForColoringAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getCorrelationCalculationTypeAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getDataset1PcSelectionForComputationAction().fromParentVariantMap(variantMap);
 }
 
 QVariantMap SettingsAction::toVariantMap() const
@@ -526,12 +479,7 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset2OptionsHolder.getEmbeddingDimension2XAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimension2YAction().insertIntoVariantMap(variantMap);
 
-    //_commonOptionsHolder.getAutoComputeAction().insertIntoVariantMap(variantMap);
-    //_commonOptionsHolder.getPcaColoringAction().insertIntoVariantMap(variantMap);
-    //_commonOptionsHolder.getDualPCAColoringAction().insertIntoVariantMap(variantMap);
-    //_commonOptionsHolder.getPcaDimensionForColoringAction().insertIntoVariantMap(variantMap);
-    //_commonOptionsHolder.getCorrelationCalculationTypeAction().insertIntoVariantMap(variantMap);
-    //_commonOptionsHolder.getDataset1PcSelectionForComputationAction().insertIntoVariantMap(variantMap);
+
 
     return variantMap;
 }

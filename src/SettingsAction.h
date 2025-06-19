@@ -105,28 +105,11 @@ public:
         const ToggleAction& getFreezeSelectionAction() const { return _freezeSelectionAction; }
         ToggleAction& getFreezeSelectionAction() { return _freezeSelectionAction; }
 
-        const DecimalAction& getConnectStatsLineAction() const { return _connectStatsLineAction; }
-        DecimalAction& getConnectStatsLineAction() { return _connectStatsLineAction; }
         const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
         TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
 
-        const IntegralAction& getLineSmoothingWindowAction() const { return _lineSmoothingWindowAction; }
-        IntegralAction& getLineSmoothingWindowAction() { return _lineSmoothingWindowAction; }
+ 
 
-        const ToggleAction& getShowAllLineSelectionInTableAction() const { return _showAllLineSelectionInTableAction; }
-        ToggleAction& getShowAllLineSelectionInTableAction() { return _showAllLineSelectionInTableAction; }
-
-        const ToggleAction& getShowDataLinesInChartAction() const { return _showDataLinesInChartAction; }
-        ToggleAction& getShowDataLinesInChartAction() { return _showDataLinesInChartAction; }
-
-        const ToggleAction& getShowDataPointsInChartAction() const { return _showDataPointsInChartAction; }
-        ToggleAction& getShowDataPointsInChartAction() { return _showDataPointsInChartAction; }
-
-        const ToggleAction& getShowConnectedStatsLineInChartAction() const { return _showConnectedStatsLineInChartAction; }
-        ToggleAction& getShowConnectedStatsLineInChartAction() { return _showConnectedStatsLineInChartAction; }
-
-        const ToggleAction& getShowMovingAverageLineInChartAction() const { return _showMovingAverageLineInChartAction; }
-        ToggleAction& getShowMovingAverageLineInChartAction() { return _showMovingAverageLineInChartAction; }
 
     protected:
         SettingsAction&                     _settingsOptions;
@@ -146,15 +129,8 @@ public:
         ToggleAction                        _focusSelectionAction;
         ToggleAction                        _hidePointSelectionAction;
         ToggleAction                        _freezeSelectionAction;
-        DecimalAction                       _connectStatsLineAction;
         TriggerAction                       _deSelectRowAction;
-        IntegralAction                  _lineSmoothingWindowAction;
-        ToggleAction                 _showAllLineSelectionInTableAction;
-
-        ToggleAction                _showDataLinesInChartAction;
-        ToggleAction                _showDataPointsInChartAction;
-        ToggleAction                _showConnectedStatsLineInChartAction;
-        ToggleAction                _showMovingAverageLineInChartAction;
+  
     };
 
     class Dataset2OptionsHolder : public VerticalGroupAction
@@ -261,6 +237,12 @@ public:
         const OptionAction& getComputationTypesAction() const { return _computationTypesAction; }
         OptionAction& getComputationTypesAction() { return _computationTypesAction; }
 
+        const ToggleAction& getNormalizeDataAction() const { return _normalizeDataAction; }
+        ToggleAction& getNormalizeDataAction() { return _normalizeDataAction; }
+
+        const OptionAction& getNormalizationTypeAction() const { return _normalizationTypeAction; }
+        OptionAction& getNormalizationTypeAction() { return _normalizationTypeAction; }
+
 
     protected:
         SettingsAction& _settingsOptions;
@@ -281,6 +263,8 @@ public:
         ToggleAction                 _linkdataset1And2GeneTableAction;
        
         OptionAction                 _computationTypesAction;
+        ToggleAction                 _normalizeDataAction;
+        OptionAction                _normalizationTypeAction;
     };
 
 
@@ -319,7 +303,7 @@ public: // Serialization
     QVariantMap toVariantMap() const override;
 
     QTableView* getTableView1Action() { return _tableView1Action; }
-    HighPerfLineChart* getLineChart1Widget() { return _lineChart1Widget; }
+    //HighPerfLineChart* getLineChart1Widget() { return _lineChart1Widget; }
     QTableView* getTableView2Action() { return _tableView2Action; }
     QTableView* getTableView3Action() { return _tableView3Action; }
 
@@ -331,7 +315,7 @@ protected:
     CommonOptionsHolder              _commonOptionsHolder;
     StatusHolder                   _statusHolder;
     QTableView*                 _tableView1Action = nullptr;
-    HighPerfLineChart*          _lineChart1Widget = nullptr;
+    //HighPerfLineChart*          _lineChart1Widget = nullptr;
     QTableView*                 _tableView2Action = nullptr;
     QTableView*                 _tableView3Action = nullptr;
     friend class ChannelAction;
