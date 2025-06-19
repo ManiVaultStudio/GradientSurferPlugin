@@ -164,6 +164,7 @@ void LayerSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 
 LayerSurferPluginFactory::LayerSurferPluginFactory()
 {
+    setIconByName("layer-group");
     getPluginMetadata().setDescription("Layer surfer plugin");
     getPluginMetadata().setSummary("This plugin shows layer surfer plugin in ManiVault Studio.");
     getPluginMetadata().setCopyrightHolder({ "BioVault (Biomedical Visual Analytics Unit LUMC - TU Delft)" });

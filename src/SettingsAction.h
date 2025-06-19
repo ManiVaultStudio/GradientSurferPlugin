@@ -258,8 +258,8 @@ public:
         const ToggleAction& getLinkDataset1And2GeneTableAction() const { return _linkdataset1And2GeneTableAction; }
         ToggleAction& getLinkDataset1And2GeneTableAction() { return _linkdataset1And2GeneTableAction; }
 
-
-
+        const OptionAction& getComputationTypesAction() const { return _computationTypesAction; }
+        OptionAction& getComputationTypesAction() { return _computationTypesAction; }
 
 
     protected:
@@ -280,7 +280,7 @@ public:
 
         ToggleAction                 _linkdataset1And2GeneTableAction;
        
-        
+        OptionAction                 _computationTypesAction;
     };
 
 
