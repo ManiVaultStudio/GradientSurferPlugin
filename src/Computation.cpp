@@ -652,11 +652,20 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             {
                                 clusterDatasetAction->setCurrentDataset(_lineChartClusterDataset1);
                             }
+                            mv::gui::StringAction* chartTitle = dynamic_cast<StringAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Chart Title"));
+                            if (chartTitle)
+                            {
+                                QString titleText = QString("%1 vs %2 expression of selected cells").arg("Rotated Y Coordinates", selectedGene);
+                                chartTitle->setString(titleText);
+
+                            }
+
+
                             mv::gui::OptionAction* dimensionX = dynamic_cast<OptionAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Data Dimension X Selection/Select dimension"));
                             mv::gui::OptionAction* dimensionY = dynamic_cast<OptionAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Data Dimension Y Selection/Select dimension"));
                             if (dimensionX)
                             {
-                                dimensionX->setCurrentText("YCoords");
+                                dimensionX->setCurrentText("Rotated Y Coordinates");
                             }
                             if (dimensionY)
                             {
@@ -3965,7 +3974,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     mv::events().notifyDatasetDataChanged(_selectedEmbeddingDataset);
 
 
-    std::vector<QString> dimensionNamesWithYCoords = { QStringLiteral("YCoords") };
+    std::vector<QString> dimensionNamesWithYCoords = { QStringLiteral("Rotated Y Coordinates") };
     dimensionNamesWithYCoords.insert(dimensionNamesWithYCoords.end(), dimensionNames.begin(), dimensionNames.end());
 
 
