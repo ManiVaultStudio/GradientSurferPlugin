@@ -191,38 +191,52 @@ void normalizeVector(std::vector<float>& vec, NormalizationType type) {
     if (vec.empty() || type == NormalizationType::None)
         return;
 
+    const float EPSILON = 1e-8f; // Document this threshold
+
     switch (type) {
     case NormalizationType::ZScore: {
         float sum = std::accumulate(vec.begin(), vec.end(), 0.0f);
         float mean = sum / vec.size();
-        float sq_sum = std::inner_product(vec.begin(), vec.end(), vec.begin(), 0.0f);
-        float stdev = std::sqrt(sq_sum / vec.size() - mean * mean);
-        if (stdev < 1e-8f) stdev = 1.0f; // Avoid division by zero
+
+        // More numerically stable variance calculation
+        float variance = 0.0f;
+        for (float v : vec) {
+            float diff = v - mean;
+            variance += diff * diff;
+        }
+        variance /= vec.size();
+
+        float stdev = std::sqrt(variance);
+        if (stdev < EPSILON) stdev = 1.0f;
+
         for (auto& v : vec) {
             v = (v - mean) / stdev;
         }
         break;
     }
     case NormalizationType::MinMax: {
-        float minVal = *std::min_element(vec.begin(), vec.end());
-        float maxVal = *std::max_element(vec.begin(), vec.end());
+        auto [minIt, maxIt] = std::minmax_element(vec.begin(), vec.end());
+        float minVal = *minIt;
+        float maxVal = *maxIt;
         float range = maxVal - minVal;
-        if (range < 1e-8f) range = 1.0f; // Avoid division by zero
+
+        if (range < EPSILON) range = 1.0f;
+
         for (auto& v : vec) {
             v = (v - minVal) / range;
         }
         break;
     }
     case NormalizationType::Log2: {
+        // Adding 1 before log2 to handle zeros - document this transformation
         for (auto& v : vec) {
-            if (v > 0.0f)
-                v = std::log2(v + 1.0f);
-            else
-                v = 0.0f;
+            v = (v > 0.0f) ? std::log2(v + 1.0f) : 0.0f;
         }
         break;
     }
     default:
+        // Should never reach here if all enum values are handled
+        assert(false && "Unknown normalization type");
         break;
     }
 }
@@ -2822,7 +2836,24 @@ void Computation::computeCorrelationGenePCFast(const mv::Dataset<Points>& fullDa
         fullDataset->extractDataForDimension(geneVals, geneIdx);
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
         {
-            normalizeVector(geneVals, NormalizationType::ZScore);
+            NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+
+            // Normalize gene values if normalization is enabled
+
+            normalizeVector(geneVals, normType);
         }
         float sumGene = std::accumulate(geneVals.begin(), geneVals.end(), 0.0f);
         float meanGene = sumGene / numCells;
@@ -2883,7 +2914,22 @@ void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDatase
         fullDataset->extractDataForDimension(geneVals, geneIdx);
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
         {
-            normalizeVector(geneVals, NormalizationType::ZScore);
+            NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            
+            normalizeVector(geneVals, normType);
         }
         float sumGene = 0.0f;
         for (float v : geneVals) sumGene += v;
@@ -3267,12 +3313,24 @@ void Computation::processAlternativeToPCA()
 
     if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
     {
-        normalizeVector(cellByGeneMatrix2, NormalizationType::ZScore);
+        NormalizationType normType;
+        QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+        if (normTypeStr == "ZScore") {
+            normType = NormalizationType::ZScore;
+        }
+        else if (normTypeStr == "MinMax") {
+            normType = NormalizationType::MinMax;
+        }
+        else if (normTypeStr == "Log2") {
+            normType = NormalizationType::Log2;
+        }
+        else {
+            normType = NormalizationType::None; // Default case
+        }
+        normalizeVector(cellByGeneMatrix2, normType);
+        normalizeVector(cellByGeneMatrix1, normType);
     }
-    if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
-    {
-        normalizeVector(cellByGeneMatrix1, NormalizationType::ZScore);
-    }
+
 
     _selectedGenePointDataset2->setData(cellByGeneMatrix2.data(), numAllCells2, numDimsOfInterest);
     _selectedGenePointDataset2->setDimensionNames(dimensionNamesOfInterest);
@@ -3492,14 +3550,27 @@ void Computation::processAfterPCACompleteAlt()
         std::vector<float> genePointVector2(numPoints2, 0.0f);
         _selectedGenePointDataset1->extractDataForDimension(genePointVector1, geneitr);
         _selectedGenePointDataset2->extractDataForDimension(genePointVector2, geneitr);
+        NormalizationType normType;
+        QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
         {
-            normalizeVector(genePointVector1, NormalizationType::ZScore);
+            /*if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            normalizeVector(genePointVector1, normType);
+            normalizeVector(genePointVector2, normType);*/
         }
-        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
-        {
-            normalizeVector(genePointVector2, NormalizationType::ZScore);
-        }
+
         const QVector<float>& loadings = loadingsVals.loadings;
         for (int i = 0; i < numPoints1; ++i) {
             float sum = 0.0f;
@@ -3691,14 +3762,28 @@ void Computation::processAfterPCAComplete()
         std::vector<float> genePointVector2(numPoints2, 0.0f);
         _selectedGenePointDataset1->extractDataForDimension(genePointVector1, geneitr);
         _selectedGenePointDataset2->extractDataForDimension(genePointVector2, geneitr);
+        
+       
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
         { 
-            normalizeVector(genePointVector1, NormalizationType::ZScore); 
+            /*NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            normalizeVector(genePointVector1, normType); 
+            normalizeVector(genePointVector2, normType);*/
         }
-        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
-        { 
-            normalizeVector(genePointVector2, NormalizationType::ZScore); 
-        }
+
         const QVector<float>& loadings = loadingsVals.loadings;
         for (int j = 0; j < nDims; ++j) {
             float loading = loadings[j];
@@ -3778,15 +3863,27 @@ void Computation::correlationAfterPCA()
 
     std::vector<float> selectedPC2(numAllCells2);
     _pcaCommonGenesDataset2->extractDataForDimension(selectedPC2, selectedPCDimension);
-    if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
-    { 
-        normalizeVector(selectedPC2, NormalizationType::ZScore); 
-    }
+
     std::vector<float> selectedPC1(numAllCells1);
     _pcaCommonGenesDataset1->extractDataForDimension(selectedPC1, selectedPCDimension);
     if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
     { 
-        normalizeVector(selectedPC2, NormalizationType::ZScore); 
+        /*NormalizationType normType;
+        QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+        if (normTypeStr == "ZScore") {
+            normType = NormalizationType::ZScore;
+        }
+        else if (normTypeStr == "MinMax") {
+            normType = NormalizationType::MinMax;
+        }
+        else if (normTypeStr == "Log2") {
+            normType = NormalizationType::Log2;
+        }
+        else {
+            normType = NormalizationType::None; // Default case
+        }
+        normalizeVector(selectedPC2, normType);
+        normalizeVector(selectedPC2, normType); */
     }
 
     std::vector<float> correlationGenePC2;
@@ -3945,7 +4042,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     const size_t numCells = _filteredSelectionIndices.size();
     const size_t numGenes = columnIndices.size();
     std::vector<float> cellbygenematrix(numCells * numGenes);
-    std::vector<float> linechartdata(numCells * noOfDimensions + 1);
+
 
     try {
         fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, _filteredSelectionIndices);
@@ -3957,7 +4054,21 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     }
     if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
     { 
-        normalizeVector(cellbygenematrix, NormalizationType::ZScore);
+        NormalizationType normType;
+        QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+        if (normTypeStr == "ZScore") {
+            normType = NormalizationType::ZScore;
+        }
+        else if (normTypeStr == "MinMax") {
+            normType = NormalizationType::MinMax;
+        }
+        else if (normTypeStr == "Log2") {
+            normType = NormalizationType::Log2;
+        }
+        else {
+            normType = NormalizationType::None; // Default case
+        }
+        normalizeVector(cellbygenematrix, normType);
     }
     // Update datasets in a cache-friendly order
     _selectedCellPointDataset->setData(cellbygenematrix.data(), static_cast<int>(numCells), noOfDimensions);
@@ -3978,13 +4089,19 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     dimensionNamesWithYCoords.insert(dimensionNamesWithYCoords.end(), dimensionNames.begin(), dimensionNames.end());
 
 
-    linechartdata.reserve(numCells * (numGenes + 1));
+    std::vector<float> rotatedYCoord(numCells * 1);
+    _rotatedSelectedEmbeddingDataset->extractDataForDimension(rotatedYCoord, 1);
+
+    std::vector<float> linechartdata(numCells * (1 + numGenes));
+
+    // Fill the linechartdata vector
     for (size_t i = 0; i < numCells; ++i) {
-        // Add Y coordinate (second column)
-        linechartdata.push_back(rotatedXYCordinates[i * 2 + 1]);
-        // Add gene expression values for this cell
-        for (size_t g = 0; g < numGenes; ++g) {
-            linechartdata.push_back(cellbygenematrix[i * numGenes + g]);
+        // Set the first column with rotatedYCoord
+        linechartdata[i * (1 + numGenes)] = rotatedYCoord[i];
+
+        // Copy the rest of the row from cellbygenematrix
+        for (size_t j = 0; j < numGenes; ++j) {
+            linechartdata[i * (1 + numGenes) + 1 + j] = cellbygenematrix[i * numGenes + j];
         }
     }
 
@@ -4104,7 +4221,21 @@ bool Computation::setupAndTriggerPCA()
         fullPointDataset1->populateDataForDimensions(cellByGeneMatrix0, geneDataset0, cellIndices0);
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
         {
-            normalizeVector(cellByGeneMatrix0, NormalizationType::ZScore);
+            NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            normalizeVector(cellByGeneMatrix0, normType);
         }
     }
     catch (const std::exception& ex) {
@@ -4133,14 +4264,27 @@ bool Computation::setupAndTriggerPCA()
     try {
         fullPointDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, allCellIndices2);
         fullPointDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, allCellIndices1);
+
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
         {
-            normalizeVector(cellByGeneMatrix2, NormalizationType::ZScore);
+            NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            normalizeVector(cellByGeneMatrix2, normType);
+            normalizeVector(cellByGeneMatrix1, normType);
         }
-        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
-        {
-            normalizeVector(cellByGeneMatrix1, NormalizationType::ZScore); 
-        }
+
     }
     catch (const std::exception& ex) {
         qWarning() << "Exception in populateDataForDimensions:" << ex.what();
