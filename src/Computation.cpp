@@ -669,7 +669,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             mv::gui::StringAction* chartTitle = dynamic_cast<StringAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Chart Title"));
                             if (chartTitle)
                             {
-                                QString titleText = QString("%1 vs %2 expression of selected cells").arg("Rotated Y Coordinates", selectedGene);
+                                QString titleText = QString("%1 vs %2 expression of selected cells (%3)")
+                                    .arg(QStringLiteral("Rotated Y Coordinates"))
+                                    .arg(selectedGene)
+                                    .arg(static_cast<int>(_filteredSelectionIndices.size()));
                                 chartTitle->setString(titleText);
 
                             }
