@@ -80,6 +80,9 @@ public:
 
         const OptionAction& getScatterplotViewSelectionAction() const { return _scatterplotViewSelectionAction; }
         OptionAction& getScatterplotViewSelectionAction() { return _scatterplotViewSelectionAction; }
+        const OptionAction& getLineplotViewSelectionAction() const { return _lineplotViewSelectionAction; }
+        OptionAction& getLineplotViewSelectionAction() { return _lineplotViewSelectionAction; }
+
 
 
 
@@ -120,6 +123,7 @@ public:
         DatasetPickerAction                 _pointDatasetAction;
         DatasetPickerAction                 _embeddingDatasetAction;
         OptionAction                        _scatterplotViewSelectionAction;
+        OptionAction                        _lineplotViewSelectionAction;
         DimensionPickerAction               _embeddingDimensionXAction;
         DimensionPickerAction               _embeddingDimensionYAction;
         DimensionPickerAction               _geneSelectionAction;

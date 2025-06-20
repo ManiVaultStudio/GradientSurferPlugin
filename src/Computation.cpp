@@ -457,9 +457,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
     connect(&_settingsAction.getStatusHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
-    const auto scatterplotSelectionOptions = [this]() -> void
+    const auto plotSelectionOptions = [this]() -> void
         {
             QStringList scatterplotNames = {};
+            QStringList lineplotNames = {};
             QString selectedCurrentText1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
             QString selectedCurrentText2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
             auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -469,6 +470,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
                 {
                     scatterplotNames.append(plugin->getGuiName());
+                }
+            }
+
+            QString lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+            if (lineplotViewFactory)
+            {
+                for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+                {
+                    lineplotNames.append(plugin->getGuiName());
                 }
             }
 
@@ -493,14 +504,28 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
 
+            if (!lineplotNames.contains(lineplotView))
+            {
+                lineplotView = "";
+                if (lineplotNames.size() > 0)
+                {
+                    lineplotView = lineplotNames[0];
+                }
+            }
+
+
             _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
             _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText1);
             _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().setOptions(scatterplotNames);
             _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().setCurrentText(selectedCurrentText2);
 
+
+            _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().setOptions(lineplotNames);
+            _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().setCurrentText(lineplotView);
+
         };
 
-    connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, scatterplotSelectionOptions);
+    connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, plotSelectionOptions);
 
     _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         bool validity = false;
@@ -647,11 +672,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
             if (lineplotViewFactory)
             {
+                auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+                if (lineplotView.isEmpty())
+                {
+                    qWarning() << "No scatterplot view 2 selected";
+                }
+                
                 // qDebug() << "LinePlot View Factory found, populating lineplot view...";
                 for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
                 {
 
-                    if (plugin->getGuiName() == "LinePlot View 1")
+                    if (plugin->getGuiName() == lineplotView)
                     {
                         //qDebug() << "Processing plugin:" << plugin->getGuiName();
                         //plugin->printChildren();
@@ -2032,11 +2063,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
         if (lineplotViewFactory)
         {
+            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            if (lineplotView.isEmpty())
+            {
+                qWarning() << "No scatterplot view 2 selected";
+            }
+            
             // qDebug() << "LinePlot View Factory found, populating lineplot view...";
             for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
             {
 
-                if (plugin->getGuiName() == "LinePlot View 1")
+                if (plugin->getGuiName() == lineplotView)
                 {
                     //qDebug() << "Processing plugin:" << plugin->getGuiName();
                     //plugin->printChildren();
@@ -2232,6 +2269,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged1);
+    
+    const auto lineplotviewSelectionChanged1 = [this]() -> void {
+
+        setStatusMessage("M", "Lineplotview selection 1 updated", "");
+        //TODO
+        };
+    
+    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, lineplotviewSelectionChanged1);
+
+
+
 
 
     const auto scatterplotviewSelectionChanged2 = [this]() -> void {
@@ -2338,11 +2386,16 @@ void Computation::AutoCompute()
         auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
         if (lineplotViewFactory)
         {
+            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            if (lineplotView.isEmpty())
+            {
+                qWarning() << "No scatterplot view 2 selected";
+            }
             // qDebug() << "LinePlot View Factory found, populating lineplot view...";
             for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
             {
 
-                if (plugin->getGuiName() == "LinePlot View 1")
+                if (plugin->getGuiName() == lineplotView)
                 {
                     //qDebug() << "Processing plugin:" << plugin->getGuiName();
                     //plugin->printChildren();
@@ -2462,11 +2515,16 @@ void Computation::AutoCompute()
 
         if (lineplotViewFactory)
         {
-           // qDebug() << "LinePlot View Factory found, populating lineplot view...";
+            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            if (lineplotView.isEmpty())
+            {
+                qWarning() << "No scatterplot view 2 selected";
+            }
+            // qDebug() << "LinePlot View Factory found, populating lineplot view...";
             for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
             {
-                
-                if (plugin->getGuiName() == "LinePlot View 1")
+
+                if (plugin->getGuiName() == lineplotView)
                 {
                     //qDebug() << "Processing plugin:" << plugin->getGuiName();
                     //plugin->printChildren();
