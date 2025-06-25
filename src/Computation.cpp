@@ -191,38 +191,52 @@ void normalizeVector(std::vector<float>& vec, NormalizationType type) {
     if (vec.empty() || type == NormalizationType::None)
         return;
 
+    const float EPSILON = 1e-8f; // Document this threshold
+
     switch (type) {
     case NormalizationType::ZScore: {
         float sum = std::accumulate(vec.begin(), vec.end(), 0.0f);
         float mean = sum / vec.size();
-        float sq_sum = std::inner_product(vec.begin(), vec.end(), vec.begin(), 0.0f);
-        float stdev = std::sqrt(sq_sum / vec.size() - mean * mean);
-        if (stdev < 1e-8f) stdev = 1.0f; // Avoid division by zero
+
+        // More numerically stable variance calculation
+        float variance = 0.0f;
+        for (float v : vec) {
+            float diff = v - mean;
+            variance += diff * diff;
+        }
+        variance /= vec.size();
+
+        float stdev = std::sqrt(variance);
+        if (stdev < EPSILON) stdev = 1.0f;
+
         for (auto& v : vec) {
             v = (v - mean) / stdev;
         }
         break;
     }
     case NormalizationType::MinMax: {
-        float minVal = *std::min_element(vec.begin(), vec.end());
-        float maxVal = *std::max_element(vec.begin(), vec.end());
+        auto [minIt, maxIt] = std::minmax_element(vec.begin(), vec.end());
+        float minVal = *minIt;
+        float maxVal = *maxIt;
         float range = maxVal - minVal;
-        if (range < 1e-8f) range = 1.0f; // Avoid division by zero
+
+        if (range < EPSILON) range = 1.0f;
+
         for (auto& v : vec) {
             v = (v - minVal) / range;
         }
         break;
     }
     case NormalizationType::Log2: {
+        // Adding 1 before log2 to handle zeros - document this transformation
         for (auto& v : vec) {
-            if (v > 0.0f)
-                v = std::log2(v + 1.0f);
-            else
-                v = 0.0f;
+            v = (v > 0.0f) ? std::log2(v + 1.0f) : 0.0f;
         }
         break;
     }
     default:
+        // Should never reach here if all enum values are handled
+        assert(false && "Unknown normalization type");
         break;
     }
 }
@@ -443,9 +457,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
     connect(&_settingsAction.getStatusHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
-    const auto scatterplotSelectionOptions = [this]() -> void
+    const auto plotSelectionOptions = [this]() -> void
         {
             QStringList scatterplotNames = {};
+            QStringList lineplotNames = {};
             QString selectedCurrentText1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
             QString selectedCurrentText2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
             auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
@@ -455,6 +470,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
                 {
                     scatterplotNames.append(plugin->getGuiName());
+                }
+            }
+
+            QString lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+            if (lineplotViewFactory)
+            {
+                for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+                {
+                    lineplotNames.append(plugin->getGuiName());
                 }
             }
 
@@ -479,14 +504,28 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
 
+            if (!lineplotNames.contains(lineplotView))
+            {
+                lineplotView = "";
+                if (lineplotNames.size() > 0)
+                {
+                    lineplotView = lineplotNames[0];
+                }
+            }
+
+
             _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
             _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText1);
             _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().setOptions(scatterplotNames);
             _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().setCurrentText(selectedCurrentText2);
 
+
+            _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().setOptions(lineplotNames);
+            _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().setCurrentText(lineplotView);
+
         };
 
-    connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, scatterplotSelectionOptions);
+    connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, plotSelectionOptions);
 
     _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
         bool validity = false;
@@ -627,137 +666,66 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
              _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
             return;
         }
-        if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _settingsAction.getLineChart1Widget() && _filteredSelectionIndices.size() > 0)
+        if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() &&  _filteredSelectionIndices.size() > 0)
         {
 
-
-            auto pointDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
-            if (pointDataset.isValid() && _rotatedSelectedEmbeddingDataset.isValid())
+            auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+            if (lineplotViewFactory)
             {
-
-                auto dimensionNames = pointDataset->getDimensionNames();
-                //get the index of the selected gene QString in the dimension names std::vector<QString>
-                auto it = std::find(dimensionNames.begin(), dimensionNames.end(), selectedGene);
-                if (it == dimensionNames.end())
+                auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+                if (lineplotView.isEmpty())
                 {
-                    qWarning() << "Selected gene not found in point dataset dimensions";
-
+                    qWarning() << "No scatterplot view 2 selected";
                 }
-                else
+                
+                // qDebug() << "LinePlot View Factory found, populating lineplot view...";
+                for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
                 {
 
-                    int geneIndex = std::distance(dimensionNames.begin(), it);
-                    LineData selectedGeneLineData;
-                    QVector<QColor> colorsExpVals = { QColor("#FDCC0D") };
-                    std::vector<int> geneIndicesExp = { geneIndex };
-                    std::vector<float> expresionValues(_filteredSelectionIndices.size() * geneIndicesExp.size());
-                    QVector<QPointF> points;
-                    
-                    int geneIndicesCoord =  1 ;
-                    std::vector<float> coordValues(_filteredSelectionIndices.size()* geneIndicesCoord);
+                    if (plugin->getGuiName() == lineplotView)
+                    {
+                        //qDebug() << "Processing plugin:" << plugin->getGuiName();
+                        //plugin->printChildren();
 
+                        mv::gui::DatasetPickerAction* pointDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Point dataset"));
+                        mv::gui::DatasetPickerAction* clusterDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Cluster dataset"));
+                        if (pointDatasetAction && _lineChartPointDataset1.isValid())
+                        {
+                            pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
 
-                    pointDataset->populateDataForDimensions(expresionValues, geneIndicesExp, _filteredSelectionIndices);
-                    _rotatedSelectedEmbeddingDataset->extractDataForDimension(coordValues, geneIndicesCoord);
-
-                    //qDebug() << "Raw data size:" << expresionValues.size();
-                    /*if (!expresionValues.empty()) {
-                        qDebug() << "First 10 elements:";
-                        for (size_t i = 0; i < std::min(size_t(10), expresionValues.size()); ++i) {
-                            qDebug() << i << ":" << expresionValues[i];
-                        }
-                    }*/
-
-                    // 2. Verify your indices
-                    //qDebug() << "Points per line:" << _filteredSelectionIndices.size();
-                   // qDebug() << "Number of lines:" << geneIndicesExp.size();
-
-                    //option to normalize expresionValues 
-                    if (false) {
-                        // Normalize expression values to [0, 1] range
-                        float minVal = *std::min_element(expresionValues.begin(), expresionValues.end());
-                        float maxVal = *std::max_element(expresionValues.begin(), expresionValues.end());
-                        if (maxVal - minVal > 0) {
-                            for (auto& val : expresionValues) {
-                                val = (val - minVal) / (maxVal - minVal);
+                            if (clusterDatasetAction && _lineChartClusterDataset1.isValid())
+                            {
+                                clusterDatasetAction->setCurrentDataset(_lineChartClusterDataset1);
                             }
-                        }
-                    }
-                    //option to normalize rotatedYCordinates
-                    if (false) {
-                        // Normalize rotated Y coordinates to [0, 1] range
-                        float minY = *std::min_element(coordValues.begin(), coordValues.end());
-                        float maxY = *std::max_element(coordValues.begin(), coordValues.end());
-                        if (maxY - minY > 0) {
-                            for (auto& val : coordValues) {
-                                val = (val - minY) / (maxY - minY);
+                            mv::gui::StringAction* chartTitle = dynamic_cast<StringAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Chart Title"));
+                            if (chartTitle)
+                            {
+                                QString titleText = QString("%1 vs %2 expression of selected cells (%3)")
+                                    .arg(QStringLiteral("Rotated Y Coordinates"))
+                                    .arg(selectedGene)
+                                    .arg(static_cast<int>(_filteredSelectionIndices.size()));
+                                chartTitle->setString(titleText);
+
                             }
+
+
+                            mv::gui::OptionAction* dimensionX = dynamic_cast<OptionAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Data Dimension X Selection/Select dimension"));
+                            mv::gui::OptionAction* dimensionY = dynamic_cast<OptionAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Data Dimension Y Selection/Select dimension"));
+                            if (dimensionX)
+                            {
+                                dimensionX->setCurrentText("Rotated Y Coordinates");
+                            }
+                            if (dimensionY)
+                            {
+                                dimensionY->setCurrentText(selectedGene);
+                            }
+                            events().notifyDatasetDataChanged(_lineChartPointDataset1);
+
                         }
+
+
                     }
-
-                    // 3. Convert with debugging
-                    auto lineData = convertToLineData(
-                        expresionValues,
-                        coordValues,
-                        static_cast<int>(_filteredSelectionIndices.size()),
-                        static_cast<int>(geneIndicesExp.size()),
-                        colorsExpVals, // colors
-                        true,              // coordIsX
-                        true               // sortByX
-                    );
-                    // 4. Verify output
-                    /*qDebug() << "Converted line data size:" << lineData.size();
-                    if (!lineData.empty()) {
-                        qDebug() << "First line points:" << lineData.first().points.size();
-                        if (!lineData.first().points.empty()) {
-                            qDebug() << "Sample point:" << lineData.first().points.first();
-                        }
-                    }
-                    */
-                    // 5. Send to chart
-                    _settingsAction.getLineChart1Widget()->setLines(lineData);
-                    _settingsAction.getLineChart1Widget()->setShowPoints(_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction().isChecked());
-                    _settingsAction.getLineChart1Widget()->setShowLines(_settingsAction.getDataset1OptionsHolder().getShowDataLinesInChartAction().isChecked());
-
-                    _numOfPointsInLine1 = lineData.first().points.size();
-                    _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(_numOfPointsInLine1);
-                    _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setValue(_numOfPointsInLine1/5);
-                    _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
-                    _settingsAction.getLineChart1Widget()->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
-                    _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction().isChecked());
-                    
-                    _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
-   
-   
-
-                    //_settingsAction.getLineChart1Widget()->setMovingAverageWindow(std::max(1, int(_numOfPointsInLine1 * _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue())));
-                    _settingsAction.getLineChart1Widget()->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
-                    _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(_settingsAction.getDataset1OptionsHolder().getShowMovingAverageLineInChartAction().isChecked());
-                    mv::theme().isSystemDarkColorSchemeActive() ?
-                        _settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::black) :
-                        _settingsAction.getLineChart1Widget()->setBackgroundColor(Qt::white);
-                    _settingsAction.getLineChart1Widget()->setAxisFont(QFont("Arial", 12));
-                    _settingsAction.getLineChart1Widget()->setTickLabelFont(QFont("Arial", 10));
-                    mv::theme().isSystemDarkColorSchemeActive() ?
-                        _settingsAction.getLineChart1Widget()->setAxisColor(Qt::white) :
-                        _settingsAction.getLineChart1Widget()->setAxisColor(Qt::black);
-                    // Fix tick label color for correct contrast
-                    mv::theme().isSystemDarkColorSchemeActive() ?
-                        _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::white) :
-                        _settingsAction.getLineChart1Widget()->setTickLabelColor(Qt::black);
-                    _settingsAction.getLineChart1Widget()->setXAxisName("Rotated Y coordinates");
-                    _settingsAction.getLineChart1Widget()->setYAxisName("Gene expression " + _selectedGene1);
-                    _settingsAction.getLineChart1Widget()->setShowLegend(false);
-                    _settingsAction.getLineChart1Widget()->setShowAvgNumPointsLabel(true);
                 }
-
-
-
-
-            }
-            else
-            {
-                qWarning() << "Point dataset is not valid";
             }
 
         }
@@ -1306,74 +1274,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToScatterplot);
 
-    const auto updateConnectStatsLine1 = [this]() -> void {
-        if (!_settingsAction.getLineChart1Widget())
-        {
-            qWarning() << "No line chart widget available";
-            return;
-        }
-        _settingsAction.getLineChart1Widget()->setConnectStatsLineN(_numOfPointsInLine1* _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
-        };
-
-    connect(&_settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction(), &DecimalAction::valueChanged, this, updateConnectStatsLine1);
-
-    const auto updateLineSmoothingWindow = [this]() -> void {
-        if (!_settingsAction.getLineChart1Widget())
-        {
-            qWarning() << "No line chart widget available";
-            return;
-        }
-        _settingsAction.getLineChart1Widget()->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
-        };
-
-    connect(&_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction(), &IntegralAction::valueChanged, this, updateLineSmoothingWindow);
-
-    const auto updateShowMovingAverageLine = [this]() -> void {
-        if (!_settingsAction.getLineChart1Widget())
-        {
-            qWarning() << "No line chart widget available";
-            return;
-        }
-        _settingsAction.getLineChart1Widget()->setShowMovingAverageLine(_settingsAction.getDataset1OptionsHolder().getShowMovingAverageLineInChartAction().isChecked());
-        };
-
-    connect(&_settingsAction.getDataset1OptionsHolder().getShowMovingAverageLineInChartAction(), &ToggleAction::toggled, this, updateShowMovingAverageLine);
-
-    const auto updateShowConnectedStatsLine = [this]() -> void {
-        if (!_settingsAction.getLineChart1Widget())
-        {
-            qWarning() << "No line chart widget available";
-            return;
-        }
-        _settingsAction.getLineChart1Widget()->setConnectStatsLineEnabled(_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction().isChecked());
-        };
-
-    connect(&_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction(), &ToggleAction::toggled, this, updateShowConnectedStatsLine);
-
-
-    const auto updateShowPointsinChart = [this]() -> void {
-        if (!_settingsAction.getLineChart1Widget())
-        {
-            qWarning() << "No line chart widget available";
-            return;
-        }
-        _settingsAction.getLineChart1Widget()->setShowPoints(_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction().isChecked());
-        };
-
-    connect(&_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction(), &ToggleAction::toggled, this, updateShowPointsinChart);
-
-
-    const auto updateShowLinesinChart = [this]() -> void {
-        if (!_settingsAction.getLineChart1Widget())
-        {
-            qWarning() << "No line chart widget available";
-            return;
-        }
-        _settingsAction.getLineChart1Widget()->setShowLines(_settingsAction.getDataset1OptionsHolder().getShowDataLinesInChartAction().isChecked());
-        };
-
-    connect(&_settingsAction.getDataset1OptionsHolder().getShowDataLinesInChartAction(), &ToggleAction::toggled, this, updateShowLinesinChart);
-
     connect(& _settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
         &OptionsAction::selectedOptionsChanged,
         this,
@@ -1403,7 +1303,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_correlationRangeDebounceTimer1, &QTimer::timeout, this, [this]() {
         setStatusMessage("R", "Updating correlation 1 table", "");
         resetupCorrelationTable(1);
-        drawCombinedLines();
+        //drawCombinedLines();
         setStatusMessage("C", "Correlation table 1 updated", "");
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
@@ -2160,12 +2060,41 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         */
         _numOfPointsInLine1 = 0;
-        if (_settingsAction.getLineChart1Widget())
+        auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+        if (lineplotViewFactory)
         {
-            _settingsAction.getLineChart1Widget()->clear();
-            drawCombinedLines();
+            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            if (lineplotView.isEmpty())
+            {
+                qWarning() << "No scatterplot view 2 selected";
+            }
             
+            // qDebug() << "LinePlot View Factory found, populating lineplot view...";
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            {
 
+                if (plugin->getGuiName() == lineplotView)
+                {
+                    //qDebug() << "Processing plugin:" << plugin->getGuiName();
+                    //plugin->printChildren();
+
+                    mv::gui::DatasetPickerAction* pointDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Point dataset"));
+                    mv::gui::DatasetPickerAction* clusterDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Cluster dataset"));
+                    if (clusterDatasetAction)
+                    {
+                        clusterDatasetAction->setCurrentIndex(-1);
+                    }
+                    if (pointDatasetAction)
+                    {
+                        pointDatasetAction->setCurrentIndex(-1);
+                    }
+                    if (_lineChartPointDataset1.isValid())
+                    {
+                        events().notifyDatasetDataChanged(_lineChartPointDataset1);
+                    }
+
+                }
+            }
         }
         };
 
@@ -2340,6 +2269,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged1);
+    
+    const auto lineplotviewSelectionChanged1 = [this]() -> void {
+
+        setStatusMessage("M", "Lineplotview selection 1 updated", "");
+        //TODO
+        };
+    
+    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, lineplotviewSelectionChanged1);
+
+
+
 
 
     const auto scatterplotviewSelectionChanged2 = [this]() -> void {
@@ -2442,7 +2382,44 @@ void Computation::AutoCompute()
         clearTable(3);
         clearTable(2);
         clearTable(1);
-        _settingsAction.getLineChart1Widget()->clear();
+
+        auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+        if (lineplotViewFactory)
+        {
+            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            if (lineplotView.isEmpty())
+            {
+                qWarning() << "No scatterplot view 2 selected";
+            }
+            // qDebug() << "LinePlot View Factory found, populating lineplot view...";
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            {
+
+                if (plugin->getGuiName() == lineplotView)
+                {
+                    //qDebug() << "Processing plugin:" << plugin->getGuiName();
+                    //plugin->printChildren();
+
+                    mv::gui::DatasetPickerAction* pointDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Point dataset"));
+                    mv::gui::DatasetPickerAction* clusterDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Cluster dataset"));
+                    if (clusterDatasetAction)
+                    {
+                        clusterDatasetAction->setCurrentIndex(-1);
+                    }
+                    if (pointDatasetAction)
+                    {
+                        pointDatasetAction->setCurrentIndex(-1);
+                    }
+                    if (_lineChartPointDataset1.isValid())
+                    {
+                        events().notifyDatasetDataChanged(_lineChartPointDataset1);
+                    }
+
+                }
+            }
+        }
+
+
         _numOfPointsInLine1 = 0;
         QApplication::processEvents();
 
@@ -2536,6 +2513,41 @@ void Computation::AutoCompute()
         setupTableModelAndSelection(1);
         //select the first row of the table
 
+        if (lineplotViewFactory)
+        {
+            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            if (lineplotView.isEmpty())
+            {
+                qWarning() << "No scatterplot view 2 selected";
+            }
+            // qDebug() << "LinePlot View Factory found, populating lineplot view...";
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            {
+
+                if (plugin->getGuiName() == lineplotView)
+                {
+                    //qDebug() << "Processing plugin:" << plugin->getGuiName();
+                    //plugin->printChildren();
+                    
+                   mv::gui::DatasetPickerAction* pointDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Point dataset"));
+                   mv::gui::DatasetPickerAction* clusterDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Cluster dataset"));
+                   if (pointDatasetAction && _lineChartPointDataset1.isValid())
+                   {
+                       pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
+                       if (clusterDatasetAction && _lineChartClusterDataset1.isValid())
+                       {
+                           clusterDatasetAction->setCurrentDataset(_lineChartClusterDataset1);
+                       }
+                       events().notifyDatasetDataChanged(_lineChartPointDataset1);
+                   }
+
+                }
+            }
+        }
+
+        //populate _lineChartPointDataset1 and _lineChartClusterDataset1 here TODO
+
+
 
         setStatusMessage("C", "Computation completed", "#28a745");
 
@@ -2603,8 +2615,6 @@ void Computation::ManualCompute()
     }
     
 }
-
-
 
 std::vector<float> Computation::rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue) {
     std::vector<float> rotated(xyCoordinates.size());
@@ -2885,7 +2895,27 @@ void Computation::computeCorrelationGenePCFast(const mv::Dataset<Points>& fullDa
     auto computeCorrelation = [&](int geneIdx) -> float {
         std::vector<float> geneVals(numCells);
         fullDataset->extractDataForDimension(geneVals, geneIdx);
+        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
+        {
+            NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
 
+            // Normalize gene values if normalization is enabled
+
+            normalizeVector(geneVals, normType);
+        }
         float sumGene = std::accumulate(geneVals.begin(), geneVals.end(), 0.0f);
         float meanGene = sumGene / numCells;
 
@@ -2943,7 +2973,25 @@ void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDatase
         std::vector<float> geneVals(numCells);
 
         fullDataset->extractDataForDimension(geneVals, geneIdx);
-        
+        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
+        {
+            NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            
+            normalizeVector(geneVals, normType);
+        }
         float sumGene = 0.0f;
         for (float v : geneVals) sumGene += v;
         float meanGene = sumGene / numCells;
@@ -3070,13 +3118,24 @@ bool Computation::createDatasetsIfNeeded()
         _rotatedSelectedEmbeddingDataset->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_rotatedSelectedEmbeddingDataset);
     }
+    if (!_lineChartPointDataset1.isValid()) {
+        _lineChartPointDataset1 = mv::data().createDataset("Points", "Line Chart Point Data 1");
+        _lineChartPointDataset1->setGroupIndex(670);
+        mv::events().notifyDatasetAdded(_lineChartPointDataset1);
+    }
+    if(!_lineChartClusterDataset1.isValid()) {
+        _lineChartClusterDataset1 = mv::data().createDataset("Cluster", "Line Chart Cluster Data 1", _lineChartPointDataset1);
+        _lineChartClusterDataset1->setGroupIndex(670);
+        mv::events().notifyDatasetAdded(_lineChartClusterDataset1);
+    }
+
     if (!_selectedEmbeddingDataset.isValid()) {
         _selectedEmbeddingDataset = mv::data().createDataset("Points", "Selected Embedding Data", _selectedCellPointDataset);
         _selectedEmbeddingDataset->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_selectedEmbeddingDataset);
     }
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartClusterDataset1.isValid() ||!_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid()) {
         qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -3313,8 +3372,26 @@ void Computation::processAlternativeToPCA()
         return;
     }
 
-    normalizeVector(cellByGeneMatrix2, NormalizationType::ZScore);
-    normalizeVector(cellByGeneMatrix1, NormalizationType::ZScore);
+    if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
+    {
+        NormalizationType normType;
+        QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+        if (normTypeStr == "ZScore") {
+            normType = NormalizationType::ZScore;
+        }
+        else if (normTypeStr == "MinMax") {
+            normType = NormalizationType::MinMax;
+        }
+        else if (normTypeStr == "Log2") {
+            normType = NormalizationType::Log2;
+        }
+        else {
+            normType = NormalizationType::None; // Default case
+        }
+        normalizeVector(cellByGeneMatrix2, normType);
+        normalizeVector(cellByGeneMatrix1, normType);
+    }
+
 
     _selectedGenePointDataset2->setData(cellByGeneMatrix2.data(), numAllCells2, numDimsOfInterest);
     _selectedGenePointDataset2->setDimensionNames(dimensionNamesOfInterest);
@@ -3534,6 +3611,26 @@ void Computation::processAfterPCACompleteAlt()
         std::vector<float> genePointVector2(numPoints2, 0.0f);
         _selectedGenePointDataset1->extractDataForDimension(genePointVector1, geneitr);
         _selectedGenePointDataset2->extractDataForDimension(genePointVector2, geneitr);
+        NormalizationType normType;
+        QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+
+        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
+        {
+            /*if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            normalizeVector(genePointVector1, normType);
+            normalizeVector(genePointVector2, normType);*/
+        }
 
         const QVector<float>& loadings = loadingsVals.loadings;
         for (int i = 0; i < numPoints1; ++i) {
@@ -3726,6 +3823,27 @@ void Computation::processAfterPCAComplete()
         std::vector<float> genePointVector2(numPoints2, 0.0f);
         _selectedGenePointDataset1->extractDataForDimension(genePointVector1, geneitr);
         _selectedGenePointDataset2->extractDataForDimension(genePointVector2, geneitr);
+        
+       
+        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
+        { 
+            /*NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            normalizeVector(genePointVector1, normType); 
+            normalizeVector(genePointVector2, normType);*/
+        }
 
         const QVector<float>& loadings = loadingsVals.loadings;
         for (int j = 0; j < nDims; ++j) {
@@ -3809,6 +3927,25 @@ void Computation::correlationAfterPCA()
 
     std::vector<float> selectedPC1(numAllCells1);
     _pcaCommonGenesDataset1->extractDataForDimension(selectedPC1, selectedPCDimension);
+    if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
+    { 
+        /*NormalizationType normType;
+        QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+        if (normTypeStr == "ZScore") {
+            normType = NormalizationType::ZScore;
+        }
+        else if (normTypeStr == "MinMax") {
+            normType = NormalizationType::MinMax;
+        }
+        else if (normTypeStr == "Log2") {
+            normType = NormalizationType::Log2;
+        }
+        else {
+            normType = NormalizationType::None; // Default case
+        }
+        normalizeVector(selectedPC2, normType);
+        normalizeVector(selectedPC2, normType); */
+    }
 
     std::vector<float> correlationGenePC2;
     std::vector<float> correlationGenePC1;
@@ -3948,6 +4085,8 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     // Validate datasets and input sizes
     if (!_selectedCellPointDataset.isValid() ||
         !_rotatedSelectedEmbeddingDataset.isValid() ||
+        !_lineChartPointDataset1.isValid() ||
+        !_lineChartClusterDataset1.isValid() ||
         !_selectedGenePointDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() ||
         !_selectedEmbeddingDataset.isValid() ||
@@ -3965,6 +4104,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     const size_t numGenes = columnIndices.size();
     std::vector<float> cellbygenematrix(numCells * numGenes);
 
+
     try {
         fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, _filteredSelectionIndices);
     }
@@ -3973,7 +4113,24 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
-
+    if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
+    { 
+        NormalizationType normType;
+        QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+        if (normTypeStr == "ZScore") {
+            normType = NormalizationType::ZScore;
+        }
+        else if (normTypeStr == "MinMax") {
+            normType = NormalizationType::MinMax;
+        }
+        else if (normTypeStr == "Log2") {
+            normType = NormalizationType::Log2;
+        }
+        else {
+            normType = NormalizationType::None; // Default case
+        }
+        normalizeVector(cellbygenematrix, normType);
+    }
     // Update datasets in a cache-friendly order
     _selectedCellPointDataset->setData(cellbygenematrix.data(), static_cast<int>(numCells), noOfDimensions);
     _selectedCellPointDataset->setDimensionNames(dimensionNames);
@@ -3982,10 +4139,73 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     _rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), static_cast<int>(numCells), 2);
     _rotatedSelectedEmbeddingDataset->setDimensionNames({ QStringLiteral("X"), QStringLiteral("Y") });
     mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
-
+    
+    
     _selectedEmbeddingDataset->setData(XYCordinates.data(), static_cast<int>(numCells), 2);
     _selectedEmbeddingDataset->setDimensionNames({ QStringLiteral("X"), QStringLiteral("Y") });
     mv::events().notifyDatasetDataChanged(_selectedEmbeddingDataset);
+
+
+    std::vector<QString> dimensionNamesWithYCoords = { QStringLiteral("Rotated Y Coordinates") };
+    dimensionNamesWithYCoords.insert(dimensionNamesWithYCoords.end(), dimensionNames.begin(), dimensionNames.end());
+
+
+    std::vector<float> rotatedYCoord(numCells * 1);
+    _rotatedSelectedEmbeddingDataset->extractDataForDimension(rotatedYCoord, 1);
+
+    std::vector<float> linechartdata(numCells * (1 + numGenes));
+
+    // Fill the linechartdata vector
+    for (size_t i = 0; i < numCells; ++i) {
+        // Set the first column with rotatedYCoord
+        linechartdata[i * (1 + numGenes)] = rotatedYCoord[i];
+
+        // Copy the rest of the row from cellbygenematrix
+        for (size_t j = 0; j < numGenes; ++j) {
+            linechartdata[i * (1 + numGenes) + 1 + j] = cellbygenematrix[i * numGenes + j];
+        }
+    }
+
+    // Set data for line chart datasets
+    _lineChartPointDataset1->setData(linechartdata.data(), static_cast<int>(numCells), noOfDimensions + 1);
+    _lineChartPointDataset1->setDimensionNames(dimensionNamesWithYCoords);
+    mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
+
+    //populate the clusterDataset using _filteredSelectionIndices indices positions
+    Dataset<Clusters> clusterDataset =_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset();
+    if (clusterDataset.isValid() && _lineChartClusterDataset1.isValid())
+    {
+        _lineChartClusterDataset1->getClusters() = QVector<Cluster>();
+        events().notifyDatasetDataChanged(_lineChartClusterDataset1);
+        auto clusters = clusterDataset->getClusters();
+        for (const auto& cluster : clusters)
+        {
+            std::vector<std::seed_seq::result_type> newClusterIndices;
+            auto clusterIndices = cluster.getIndices();
+            //check which indices from clusterIndices are in _filteredSelectionIndices and get their positions in  newClusterIndices
+            for (int index : clusterIndices) {
+                auto it = std::find(_filteredSelectionIndices.begin(), _filteredSelectionIndices.end(), index);
+                if (it != _filteredSelectionIndices.end()) {
+                    // Push the position (offset) instead of the value
+                    newClusterIndices.push_back(static_cast<int>(std::distance(_filteredSelectionIndices.begin(), it)));
+                }
+            }
+
+            if (newClusterIndices.size()>0)
+            {
+                Cluster remappedCluster;
+                remappedCluster.setName(cluster.getName());
+                remappedCluster.setColor(cluster.getColor());
+                remappedCluster.setIndices(newClusterIndices);
+                _lineChartClusterDataset1->addCluster(remappedCluster);
+            }
+           
+
+        }
+        events().notifyDatasetDataChanged(_lineChartClusterDataset1);
+    }
+
+
 
     return true;
 }
@@ -4060,6 +4280,24 @@ bool Computation::setupAndTriggerPCA()
     std::vector<float> cellByGeneMatrix0(numCells0 * numDimsOfInterest);
     try {
         fullPointDataset1->populateDataForDimensions(cellByGeneMatrix0, geneDataset0, cellIndices0);
+        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
+        {
+            NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            normalizeVector(cellByGeneMatrix0, normType);
+        }
     }
     catch (const std::exception& ex) {
         qWarning() << "Exception in populateDataForDimensions:" << ex.what();
@@ -4087,15 +4325,33 @@ bool Computation::setupAndTriggerPCA()
     try {
         fullPointDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, allCellIndices2);
         fullPointDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, allCellIndices1);
+
+        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
+        {
+            NormalizationType normType;
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            if (normTypeStr == "ZScore") {
+                normType = NormalizationType::ZScore;
+            }
+            else if (normTypeStr == "MinMax") {
+                normType = NormalizationType::MinMax;
+            }
+            else if (normTypeStr == "Log2") {
+                normType = NormalizationType::Log2;
+            }
+            else {
+                normType = NormalizationType::None; // Default case
+            }
+            normalizeVector(cellByGeneMatrix2, normType);
+            normalizeVector(cellByGeneMatrix1, normType);
+        }
+
     }
     catch (const std::exception& ex) {
         qWarning() << "Exception in populateDataForDimensions:" << ex.what();
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
-    //normalizeVector(genePointVector1, NormalizationType::ZScore);
-    //normalizeVector(genePointVector2, NormalizationType::MinMax);
-    //normalizeVector(genePointVector1, NormalizationType::Log2);
     auto [minVal2, maxVal2] = std::minmax_element(cellByGeneMatrix2.begin(), cellByGeneMatrix2.end());
     auto [minVal1, maxVal1] = std::minmax_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end());
     qInfo() << "PCA cellByGeneMatrix2 min:" << *minVal2 << "max:" << *maxVal2
@@ -4175,197 +4431,6 @@ void Computation::setSelectionAndAutoCompute()
 
     AutoCompute();
 }
-
-void Computation::drawCombinedLines()
-{
-    //qDebug() << "Drawing combined lines for selected genes";
-    // Check if the line chart widget is available
-    auto* lineChartWidget = _settingsAction.getLineChart1Widget();
-    if (!lineChartWidget) {
-        qWarning() << "Line chart widget is not available";
-        setStatusMessage("E", "Line chart widget is not available", "");
-        return;
-    }
-    lineChartWidget->clear();
-
-    // Validate rotated embedding dataset
-    if (!_rotatedSelectedEmbeddingDataset.isValid()) {
-        qWarning() << "Rotated selected embedding dataset is invalid";
-        setStatusMessage("E", "Rotated selected embedding dataset is invalid", "");
-        return;
-    }
-
-    // Validate selected cell point dataset
-    if (!_selectedCellPointDataset.isValid()) {
-        qWarning() << "Selected cell point dataset is invalid";
-        setStatusMessage("E", "Selected cell point dataset is invalid", "");
-        return;
-    }
-
-    // Validate point dataset 1
-    mv::Dataset<Points> fullPointDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
-    if (!fullPointDataset1.isValid()) {
-        qWarning() << "Point dataset 1 is invalid";
-        setStatusMessage("E", "Point dataset 1 is invalid", "");
-        return;
-    }
-
-    // Check filtered selection indices
-    if (_filteredSelectionIndices.empty()) {
-        qWarning() << "No filtered selection indices available";
-        setStatusMessage("E", "No filtered selection indices available", "");
-        return;
-    }
-
-    // Get rotated Y coordinates
-    auto numofPoints = _rotatedSelectedEmbeddingDataset->getNumPoints();
-    if (numofPoints <= 0) {
-        qWarning() << "No points in rotated selected embedding dataset";
-        setStatusMessage("E", "No points in rotated selected embedding dataset", "");
-        return;
-    }
-    std::vector<float> rotatedYCordinates(numofPoints);
-    _rotatedSelectedEmbeddingDataset->extractDataForDimension(rotatedYCordinates, 1);
-
-    // Get gene indices for common genes
-    std::vector<int> geneIndicesExpVals;
-    QVector<QColor> colorsExpVals;
-    auto dimNamesFull = fullPointDataset1->getDimensionNames();
-    for (int i = 0; i < dimNamesFull.size(); i++) {
-        const QString& geneName = dimNamesFull[i];
-        if (_settingsAction.getDataset1OptionsHolder().getShowAllLineSelectionInTableAction().isChecked())
-        {
-            if (_commonGeneNames.contains(geneName)) {
-                geneIndicesExpVals.push_back(i);
-                colorsExpVals.append(QColor("#FDCC0D"));
-            }
-            else
-            {
-                geneIndicesExpVals.push_back(i);
-                colorsExpVals.append(QColor(Qt::black));
-            }
-        }
-        else
-        {
-            if (_commonGeneNames.contains(geneName)) {
-                geneIndicesExpVals.push_back(i);
-                colorsExpVals.append(QColor("#FDCC0D"));
-            }
-        }
-    }
-
-    if (geneIndicesExpVals.empty()) {
-        qWarning() << "No common gene indices found";
-        setStatusMessage("E", "No common gene indices found", "");
-        return;
-    }
-
-    // Prepare expression values
-    size_t numPoints = _filteredSelectionIndices.size();
-    size_t numLines = geneIndicesExpVals.size();
-
-
-    if (numPoints == 0 || numLines == 0) {
-        qWarning() << "No points or lines to plot";
-        setStatusMessage("E", "No points or lines to plot", "");
-        return;
-    }
-    std::vector<float> expresionValues(numPoints * numLines);
-
-    try {
-        fullPointDataset1->populateDataForDimensions(expresionValues, geneIndicesExpVals, _filteredSelectionIndices);
-    }
-    catch (const std::exception& ex) {
-        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
-        setStatusMessage("E", "Error occurred during populating expression values", "");
-        return;
-    }
-    //option to normalize expresionValues 
-    if (false) {
-        // Normalize expression values to [0, 1] range
-        float minVal = *std::min_element(expresionValues.begin(), expresionValues.end());
-        float maxVal = *std::max_element(expresionValues.begin(), expresionValues.end());
-        if (maxVal - minVal > 0) {
-            for (auto& val : expresionValues) {
-                val = (val - minVal) / (maxVal - minVal);
-            }
-        }
-    }
-    //option to normalize rotatedYCordinates
-    if (false) {
-        // Normalize rotated Y coordinates to [0, 1] range
-        float minY = *std::min_element(rotatedYCordinates.begin(), rotatedYCordinates.end());
-        float maxY = *std::max_element(rotatedYCordinates.begin(), rotatedYCordinates.end());
-        if (maxY - minY > 0) {
-            for (auto& val : rotatedYCordinates) {
-                val = (val - minY) / (maxY - minY);
-            }
-        }
-    }
-    
-
-    // Debug output
-    //qDebug() << "Points per line:" << numPoints;
-    //qDebug() << "Number of lines:" << numLines;
-
-    // Convert to line data
-    auto lineData = convertToLineData(
-        expresionValues,
-        rotatedYCordinates,
-        static_cast<int>(numPoints),
-        static_cast<int>(numLines),
-        colorsExpVals, // colors
-        true,              // coordIsX
-        true               // sortByX
-    );
-
-    // Debug output
-    //qDebug() << "Converted line data size:" << lineData.size();
-    if (!lineData.empty()) {
-        //qDebug() << "First line points:" << lineData.first().points.size();
-        if (!lineData.first().points.empty()) {
-            //qDebug() << "Sample point:" << lineData.first().points.first();
-        }
-    }
-    else {
-        qWarning() << "No line data generated";
-        setStatusMessage("E", "No line data generated", "");
-        return;
-    }
-
-    // Send to chart
-    lineChartWidget->setLines(lineData);
-    lineChartWidget->setShowPoints(_settingsAction.getDataset1OptionsHolder().getShowDataPointsInChartAction().isChecked());
-    lineChartWidget->setShowLines(_settingsAction.getDataset1OptionsHolder().getShowDataLinesInChartAction().isChecked());
-
-    auto numOfPointsInLine1 = lineData.first().points.size();
-    _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setMaximum(numOfPointsInLine1);
-    _settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().setValue(numOfPointsInLine1/5);
-    lineChartWidget->setConnectStatsLineN(numOfPointsInLine1 * _settingsAction.getDataset1OptionsHolder().getConnectStatsLineAction().getValue());
-    lineChartWidget->setConnectStatsLineType(HighPerfLineChart::ConnectStatsType::Mean);
-    lineChartWidget->setConnectStatsLineEnabled(_settingsAction.getDataset1OptionsHolder().getShowConnectedStatsLineInChartAction().isChecked());
-
-    lineChartWidget->setShowAvgNumPointsLabel(true);
-
-    lineChartWidget->setMovingAverageWindow(_settingsAction.getDataset1OptionsHolder().getLineSmoothingWindowAction().getValue());
-    lineChartWidget->setShowMovingAverageLine(_settingsAction.getDataset1OptionsHolder().getShowMovingAverageLineInChartAction().isChecked());
-    mv::theme().isSystemDarkColorSchemeActive() ?
-        lineChartWidget->setBackgroundColor(Qt::black) :
-        lineChartWidget->setBackgroundColor(Qt::white);
-    lineChartWidget->setAxisFont(QFont("Arial", 12));
-    lineChartWidget->setTickLabelFont(QFont("Arial", 10));
-    mv::theme().isSystemDarkColorSchemeActive() ?
-        lineChartWidget->setAxisColor(Qt::white) :
-        lineChartWidget->setAxisColor(Qt::black);
-    mv::theme().isSystemDarkColorSchemeActive() ?
-        lineChartWidget->setTickLabelColor(Qt::white) :
-        lineChartWidget->setTickLabelColor(Qt::black);
-    lineChartWidget->setXAxisName("Rotated Y coordinates");
-    lineChartWidget->setYAxisName("Gene expression");
-    lineChartWidget->setShowLegend(false);
-    lineChartWidget->setShowAvgNumPointsLabel(false);
-}
-
 void Computation::setupTableModelAndSelection(int datasetNumber)
 {
     FunctionTimer timer(Q_FUNC_INFO);
@@ -4608,7 +4673,6 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             );
         }
     }
-    //drawCombinedLines();
 }
 
 
