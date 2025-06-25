@@ -1940,10 +1940,7 @@ void Computation::computeCorrelationGeneCoords(const std::vector<int>& cellIndic
 
 
 
-    float meanCoord = 0.0f;
-    for (float val : sortedCoords)
-        meanCoord += val;
-    meanCoord /= numCells;
+    float meanCoord = computeMean(sortedCoords);
 
     std::vector<float> centeredCoords(numCells);
     float normCoord = 0.0f;
@@ -2014,10 +2011,7 @@ void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDatase
 
     assert(numCells == numCellsInPC);
 
-    float meanCoord = 0.0f;
-    for (float val : selectedPC)
-        meanCoord += val;
-    meanCoord /= numCells;
+    float meanCoord = computeMean(selectedPC);
 
     std::vector<float> centeredCoords(numCells);
     float normCoord = 0.0f;

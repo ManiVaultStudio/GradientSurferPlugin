@@ -60,6 +60,11 @@ std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText) {
     int iconSize = std::max(12, textHeight - 2);
     return { font, iconSize };
 }
+float computeMean(const std::vector<float>& values) {
+    if (values.empty()) return 0.0f;
+    float sum = std::accumulate(values.begin(), values.end(), 0.0f);
+    return sum / static_cast<float>(values.size());
+}
 
 void setScatterplotDimensions(mv::plugin::Plugin* plugin, const QString& xName, const QString& yName) {
     auto embeddingXVal = findActionByPath<OptionAction>(plugin, "Settings/Position/X/Select dimension");

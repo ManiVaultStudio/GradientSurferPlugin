@@ -64,7 +64,7 @@ bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float ep
 std::pair<float, float> minMax(const std::vector<float>& vec);
 QStringList getCommonSortedNames(const QSet<QString>& names1, const QSet<QString>& names2);
 QLabel* createStatusLabel(const QString& labelText, const QString& backgroundColor, const QString& textColor, const QPixmap& iconPixmap, const QFont& font);
-
+float computeMean(const std::vector<float>& values);
 class FunctionTimer {
 public:
     FunctionTimer(const QString& functionName);
