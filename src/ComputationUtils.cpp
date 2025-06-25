@@ -10,23 +10,18 @@
 #include <numeric>
 #include <cmath>
 #include <cassert>
+#include <stdexcept>
 
-class FunctionTimer {
-public:
-    FunctionTimer(const QString& functionName)
-        : _functionName(functionName)
-    {
-        _timer.start();
-    }
-    ~FunctionTimer()
-    {
-        qDebug() << _functionName << "took"
-            << _timer.elapsed() / 1000.0 << "seconds";
-    }
-private:
-    QString _functionName;
-    QElapsedTimer _timer;
-};
+FunctionTimer::FunctionTimer(const QString& functionName)
+    : _functionName(functionName)
+{
+    _timer.start();
+}
+FunctionTimer::~FunctionTimer()
+{
+    qDebug() << _functionName << "took"
+        << _timer.elapsed() / 1000.0 << "seconds";
+}
 
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray) {
     if (corrArray.size() != expArray.size()) {
@@ -103,4 +98,60 @@ QString statusToIconName(const QString& status) {
     if (status == "E") return "circle-xmark";      
     if (status == "R") return "spinner";          
     return "circle-question";                      
+}
+
+std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue) {
+    std::vector<float> rotated(xyCoordinates.size());
+    const double angle = degreeValue * M_PI / 180.0;
+    const double cosAngle = std::cos(angle);
+    const double sinAngle = std::sin(angle);
+
+    if (xyCoordinates.size() % 2 != 0) {
+        throw std::invalid_argument("xyCoordinates vector must have an even number of elements (x, y pairs).");
+    }
+
+    float minX = xyCoordinates[0], maxX = xyCoordinates[0];
+    float minY = xyCoordinates[1], maxY = xyCoordinates[1];
+    for (std::size_t i = 0; i < xyCoordinates.size(); i += 2) {
+        minX = std::min(minX, xyCoordinates[i]);
+        maxX = std::max(maxX, xyCoordinates[i]);
+        minY = std::min(minY, xyCoordinates[i + 1]);
+        maxY = std::max(maxY, xyCoordinates[i + 1]);
+    }
+
+    const double centerX = (minX + maxX) / 2.0;
+    const double centerY = (minY + maxY) / 2.0;
+
+    for (std::size_t i = 0; i < xyCoordinates.size(); i += 2) {
+        const double originalX = xyCoordinates[i];
+        const double originalY = xyCoordinates[i + 1];
+
+        const double x = originalX - centerX;
+        const double y = originalY - centerY;
+        const double rotatedX = x * cosAngle - y * sinAngle;
+        const double rotatedY = x * sinAngle + y * cosAngle;
+
+        rotated[i] = static_cast<float>(rotatedX + centerX);
+        rotated[i + 1] = static_cast<float>(rotatedY + centerY);
+    }
+
+    return rotated;
+}
+
+std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis) {
+    std::vector<float> coords;
+    int offset = (axis == "Y") ? 1 : 0;
+    for (size_t i = offset; i < rotatedXYCoordinates.size(); i += 2) {
+        coords.push_back(rotatedXYCoordinates[i]);
+    }
+    return coords;
+}
+
+std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates) {
+    std::vector<int> indices(yCoordinates.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [&](int a, int b) {
+        return yCoordinates[a] < yCoordinates[b];
+    });
+    return indices;
 }
