@@ -68,9 +68,9 @@ private:
     std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
     void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
-    void computeCorrelationGeneCoordsFast(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
+
     void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector);
-    void computeCorrelationGenePCFast(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector);
+
     void setupTableModelAndSelection(int datasetNumber);
 
     void populateGenesByCorrelationRange(const std::vector<float>& correlationVector,float min,float max,const std::vector<QString>& geneNameOrdered, int datasetNumber);

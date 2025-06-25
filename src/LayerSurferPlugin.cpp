@@ -100,23 +100,6 @@ void LayerSurferPlugin::init()
     topLayout->addLayout(table2Layout, 1);
 
 
-    //auto* bottomLayout = new QHBoxLayout();
-    //bottomLayout->setContentsMargins(0, 0, 0, 0);
-    //bottomLayout->setSpacing(0);
-    //auto* lineChart1Layout = new QVBoxLayout();
-    //lineChart1Layout->setContentsMargins(0, 0, 0, 0);
-    //lineChart1Layout->setSpacing(2);
-   // auto* lineChart1Label = new QLabel("Y-axis: gene expression; X-axis: rotated y-coordinates of selected cells");
-    //lineChart1Label->setAlignment(Qt::AlignCenter);
-    //lineChart1Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
-    //lineChart1Label->setWordWrap(true);
-    //lineChart1Label->setMaximumHeight(32); 
-    //lineChart1Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    //lineChart1Layout->addWidget(lineChart1Label);
-    //lineChart1Layout->addWidget(_settingsAction.getLineChart1Widget());
-    //bottomLayout->addLayout(lineChart1Layout);
-
-
     auto* combinedLayout = new QVBoxLayout();
     
 
@@ -132,8 +115,6 @@ void LayerSurferPlugin::init()
     separator->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
     combinedLayout->addWidget(separator);
 
-    //combinedLayout->addLayout(bottomLayout,1);
-
     mainLayout->addLayout(combinedLayout,90);
 
     
@@ -143,8 +124,6 @@ void LayerSurferPlugin::init()
     computeStatusLayout->setSpacing(0);
     _settingsAction.getStatusHolder().getStatusBarAction()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     computeStatusLayout->addWidget(_settingsAction.getStatusHolder().getStatusBarAction(),1);
-
-    //computeStatusLayout->addWidget(_settingsAction.getStatusHolder().createWidget(&getWidget()));
 
     mainLayout->addLayout(computeStatusLayout);
 
@@ -195,22 +174,7 @@ mv::DataTypes LayerSurferPluginFactory::supportedDataTypes() const
 mv::gui::PluginTriggerActions LayerSurferPluginFactory::getPluginTriggerActions(const mv::Datasets& datasets) const
 {
     PluginTriggerActions pluginTriggerActions;
-/*
-    const auto getPluginInstance = [this]() -> LayerSurferPlugin* {
-        return dynamic_cast<LayerSurferPlugin*>(plugins().requestViewPlugin(getKind()));
-    };
 
-    const auto numberOfDatasets = datasets.count();
-
-    if (numberOfDatasets >= 1 && PluginFactory::areAllDatasetsOfTheSameType(datasets, PointType)) {
-        auto pluginTriggerAction = new PluginTriggerAction(const_cast<LayerSurferPluginFactory*>(this), this, "Layer", "Surfer", icon(), [this, getPluginInstance, datasets](PluginTriggerAction& pluginTriggerAction) -> void {
-            for (auto dataset : datasets)
-                getPluginInstance();
-        });
-
-        pluginTriggerActions << pluginTriggerAction;
-    }
-    */
     return pluginTriggerActions;
 }
 void LayerSurferPlugin::fromVariantMap(const QVariantMap& variantMap)
