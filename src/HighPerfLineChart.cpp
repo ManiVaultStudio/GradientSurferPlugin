@@ -178,7 +178,7 @@ int HighPerfLineChart::movingAverageWindow() const
 void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
     m_lines = lines;
 
-    qDebug() << "[HighPerfLineChart] setLines called. Number of lines:" << m_lines.size();
+   // qDebug() << "[HighPerfLineChart] setLines called. Number of lines:" << m_lines.size();
 
     int totalPoints = 0;
     double xMin = std::numeric_limits<double>::max();
@@ -208,7 +208,7 @@ void HighPerfLineChart::setLines(const QVector<LineData>& lines) {
             m_xMax = xMax;
             m_yMin = yMin;
             m_yMax = yMax;
-            qDebug() << "[HighPerfLineChart] Auto-ranged x:" << m_xMin << m_xMax << "y:" << m_yMin << m_yMax;
+            //qDebug() << "[HighPerfLineChart] Auto-ranged x:" << m_xMin << m_xMax << "y:" << m_yMin << m_yMax;
         }
         else {
             m_xMin = 0; m_xMax = 1;
@@ -231,7 +231,7 @@ void HighPerfLineChart::setXRange(double min, double max) {
         return;
     }
     m_xMin = min; m_xMax = max; 
-    qDebug() << "[HighPerfLineChart] setXRange:" << m_xMin << m_xMax;
+    //qDebug() << "[HighPerfLineChart] setXRange:" << m_xMin << m_xMax;
     updateAxisRange();
     update(); 
 }
@@ -241,7 +241,7 @@ void HighPerfLineChart::setYRange(double min, double max) {
         return;
     }
     m_yMin = min; m_yMax = max; 
-    qDebug() << "[HighPerfLineChart] setYRange:" << m_yMin << m_yMax;
+    //qDebug() << "[HighPerfLineChart] setYRange:" << m_yMin << m_yMax;
     updateAxisRange();
     update(); 
 }
@@ -274,7 +274,7 @@ void HighPerfLineChart::paintGL() {
         painter.setPen(Qt::red);
         painter.setFont(QFont("Arial", 16, QFont::Bold));
         painter.drawText(rect(), Qt::AlignCenter, "Invalid axis range");
-        qDebug() << "[HighPerfLineChart] Invalid axis range or widget size!";
+        qWarning() << "[HighPerfLineChart] Invalid axis range or widget size!";
         return;
     }
 
@@ -304,7 +304,7 @@ void HighPerfLineChart::paintGL() {
         painter.setPen(Qt::darkGray);
         painter.setFont(QFont("Arial", 16, QFont::Bold));
         painter.drawText(rect(), Qt::AlignCenter, m_emptyMessage.isEmpty() ? "No points in line data" : m_emptyMessage);
-        qDebug() << "[HighPerfLineChart] No points in line data!";
+        qWarning() << "[HighPerfLineChart] No points in line data!";
         return;
     }
 
@@ -315,13 +315,13 @@ void HighPerfLineChart::paintGL() {
     painter.setRenderHint(QPainter::TextAntialiasing, true);
 
     // --- Debug: confirm text drawing functions are called ---
-    qDebug() << "[HighPerfLineChart] Calling drawAxesAndLabels";
+    //qDebug() << "[HighPerfLineChart] Calling drawAxesAndLabels";
     drawAxesAndLabels(painter);
 
-    qDebug() << "[HighPerfLineChart] Calling drawLegend";
+    //qDebug() << "[HighPerfLineChart] Calling drawLegend";
     drawLegend(painter);
 
-    qDebug() << "[HighPerfLineChart] Calling drawAverageLabel";
+    //qDebug() << "[HighPerfLineChart] Calling drawAverageLabel";
     drawAverageLabel(painter);
 }
 
@@ -432,7 +432,7 @@ void HighPerfLineChart::drawChartWithOpenGL()
 
     // Ensure chartRect is valid
     if (chartRect.width() <= 0 || chartRect.height() <= 0) {
-        qDebug() << "[HighPerfLineChart] drawChartWithOpenGL: chartRect is zero-sized!";
+        qWarning() << "[HighPerfLineChart] drawChartWithOpenGL: chartRect is zero-sized!";
         return;
     }
 
@@ -795,7 +795,7 @@ void HighPerfLineChart::drawChartWithOpenGL()
         glVertex2f(-0.8f, -0.8f);
         glVertex2f(0.8f, 0.8f);
         glEnd();
-        qDebug() << "[HighPerfLineChart] Fallback: drew test line (no data present)";
+        //qDebug() << "[HighPerfLineChart] Fallback: drew test line (no data present)";
     }*/
 }
 

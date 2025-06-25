@@ -27,6 +27,10 @@ endif()
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets Concurrent OpenGLWidgets REQUIRED)
 find_package(ManiVault COMPONENTS Core PointData ClusterData CONFIG QUIET)
 find_package(OpenGL REQUIRED)
+
+# Add Spectra include directory (assuming Spectra is downloaded to external/Spectra)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/Spectra/include)
+
 # -----------------------------------------------------------------------------
 # Source files
 # -----------------------------------------------------------------------------
@@ -39,6 +43,8 @@ set(PLUGIN_SOURCES
     src/Computation.cpp
     src/HighPerfLineChart.cpp
     src/HighPerfLineChart.h
+	src/PcaFast.h
+	src/PcaFastOp.h
     PluginInfo.json
 )
 
@@ -64,6 +70,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 # -----------------------------------------------------------------------------
 # Target properties
 # -----------------------------------------------------------------------------
+target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 if(MV_UNITY_BUILD)
