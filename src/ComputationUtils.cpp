@@ -13,7 +13,9 @@
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
-
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 
 FunctionTimer::FunctionTimer(const QString& functionName)
@@ -27,6 +29,48 @@ FunctionTimer::~FunctionTimer()
         << _timer.elapsed() / 1000.0 << "seconds";
 }
 
+std::vector<int> filterSelectionIndicesByClusters(
+    const std::vector<std::seed_seq::result_type>& selectionIndices,
+    const QVector<Cluster>& clusters,
+    const QStringList& selectedClusters)
+{
+
+    std::vector<int> filtered;
+    filtered.reserve(selectionIndices.size());
+    for (const auto& index : selectionIndices) {
+        filtered.push_back(static_cast<int>(index));
+    }
+    for (const auto& cluster : clusters) {
+        if (!selectedClusters.contains(cluster.getName())) {
+            auto clusterindices = cluster.getIndices();
+            filtered.erase(std::remove_if(filtered.begin(), filtered.end(),
+                [&clusterindices](int index) {
+                    return std::find(clusterindices.begin(), clusterindices.end(), index) != clusterindices.end();
+                }), filtered.end());
+        }
+    }
+    return filtered;
+}
+std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText) {
+    QLabel tempLabel;
+    tempLabel.setText(labelText);
+    QFont font = tempLabel.font();
+    QFontMetrics fm(font);
+    int textHeight = fm.height();
+    int iconSize = std::max(12, textHeight - 2);
+    return { font, iconSize };
+}
+
+void setScatterplotDimensions(mv::plugin::Plugin* plugin, const QString& xName, const QString& yName) {
+    auto embeddingXVal = findActionByPath<OptionAction>(plugin, "Settings/Position/X/Select dimension");
+    auto embeddingYVal = findActionByPath<OptionAction>(plugin, "Settings/Position/Y/Select dimension");
+    if (embeddingXVal && embeddingYVal) {
+        if (embeddingXVal->getCurrentIndex() != -1) embeddingXVal->setCurrentText("");
+        if (embeddingYVal->getCurrentIndex() != -1) embeddingYVal->setCurrentText("");
+        if (embeddingXVal->getOptions().contains(xName)) embeddingXVal->setCurrentText(xName);
+        if (embeddingYVal->getOptions().contains(yName)) embeddingYVal->setCurrentText(yName);
+    }
+}
 bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float epsilon)
 {
     return (corr <= minCorr - epsilon) || (corr >= maxCorr + epsilon);
@@ -179,7 +223,72 @@ std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float deg
 
     return rotated;
 }
+QString selectValidOption(const QStringList& options, const QString& current, int fallbackIndex) {
+    if (options.contains(current)) return current;
+    if (options.size() > fallbackIndex) return options[fallbackIndex];
+    return options.isEmpty() ? "" : options[0];
+}
+StatusInfo parseStatusMessage(const QString& statusString) {
+    StatusInfo info;
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(statusString.toUtf8(), &parseError);
 
+    if (!doc.isNull() && doc.isObject()) {
+        QJsonObject obj = doc.object();
+        info.status = obj.value("status").toString();
+        info.message = obj.value("message").toString();
+        info.color = obj.value("color").toString();
+    }
+    else {
+        auto parts = statusString.split(",");
+        info.status = parts.value(0).trimmed();
+        info.message = parts.value(1).trimmed();
+        info.color = "#6c757d";
+    }
+
+    // Set background color based on status
+    if (info.status == "C") {
+        info.backgroundColor = "#28a745";
+        if (info.message.isEmpty()) info.message = "Updated";
+    }
+    else if (info.status == "M") {
+        info.backgroundColor = "#ffc107";
+        if (info.message.isEmpty()) info.message = "Outdated";
+    }
+    else if (info.status == "E") {
+        info.backgroundColor = "#dc3545";
+        if (info.message.isEmpty()) info.message = "Error";
+    }
+    else if (info.status == "R") {
+        info.backgroundColor = "#007bff";
+        if (info.message.isEmpty()) info.message = "Processing";
+    }
+    else {
+        info.backgroundColor = "#6c757d";
+        if (info.message.isEmpty()) info.message = "Unknown";
+    }
+
+    info.textColor = getContrastingTextColor(info.backgroundColor);
+    info.iconName = statusToIconName(info.status);
+
+    return info;
+}
+bool isValidClusterDataset(const mv::Dataset<DatasetImpl>& dataset, const mv::Dataset<Points>& sibling) {
+    if (!sibling.isValid()) return false;
+    return (sibling->getParent() == dataset->getParent()) &&
+        (dataset->getDataType() == ClusterType) &&
+        (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667);
+}
+
+bool isValidPointDataset(const mv::Dataset<DatasetImpl>& dataset) {
+    return dataset->getDataType() == PointType;
+}
+
+bool isValidEmbeddingDataset(const mv::Dataset<DatasetImpl>& dataset) {
+    auto parent = dataset->getParent();
+    bool checkGroup = (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667);
+    return parent.isValid() && dataset->getDataType() == PointType && checkGroup;
+}
 std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis) {
     std::vector<float> coords;
     int offset = (axis == "Y") ? 1 : 0;

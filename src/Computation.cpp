@@ -50,66 +50,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto updateStatus = [this]() -> void {
         auto stringFull = _settingsAction.getStatusHolder().getStatusMessageAction().getString();
+        StatusInfo info = parseStatusMessage(stringFull);
 
-        QJsonParseError parseError;
-        QJsonDocument doc = QJsonDocument::fromJson(stringFull.toUtf8(), &parseError);
-        QString status, message; QColor color = "#6c757d";
-        if (!doc.isNull() && doc.isObject()) {
-            QJsonObject obj = doc.object();
-            status = obj.value("status").toString();
-            message = obj.value("message").toString();
-            color = obj.value("color").toString();
-        }
-        else {
-            status = stringFull.split(",").first().trimmed();
-            message = stringFull.split(",").last().trimmed();
-        }
+        auto [font,iconSize]=getStatusLabelFontAndIconSize(info.message);
 
-        QString labelText = message.isEmpty() ? "" : message;
-        QString backgroundColor = "none";
-
-        if (status == "C") {
-            if (labelText.isEmpty()) labelText = "Updated";
-            backgroundColor = "#28a745";
-        }
-        else if (status == "M") {
-            if (labelText.isEmpty()) labelText = "Outdated";
-            backgroundColor = "#ffc107";
-        }
-        else if (status == "E") {
-            if (labelText.isEmpty()) labelText = "Error";
-            backgroundColor = "#dc3545"; 
-        }
-        else if (status == "R") {
-            if (labelText.isEmpty()) labelText = "Processing";
-            backgroundColor = "#007bff";
-        }
-        else {
-            if (labelText.isEmpty()) labelText = "Unknown";
-            backgroundColor = "#6c757d"; 
-        }
-
-        QString textColor = getContrastingTextColor(backgroundColor);
-
-        QString iconName = statusToIconName(status);
-
- 
-        QLabel tempLabel;
-        tempLabel.setText(labelText);
-        QFont font = tempLabel.font();
-        QFontMetrics fm(font);
-        int textHeight = fm.height();
-        int iconSize = std::max(12, textHeight - 2); 
-
-
-        QColor iconColor(textColor);
-        mv::util::StyledIcon icon(iconName);
+        QColor iconColor(info.textColor);
+        mv::util::StyledIcon icon(info.iconName);
         icon.withColor(iconColor);
 
         QPixmap iconPixmap = QIcon(icon).pixmap(iconSize, iconSize);
 
-  
-        QLabel* statusLabel = createStatusLabel(labelText, backgroundColor, textColor, iconPixmap, font);
+        QLabel* statusLabel = createStatusLabel(info.message, info.backgroundColor, info.textColor, iconPixmap, font);
         QStatusBar* statusBar = _settingsAction.getStatusHolder().getStatusBarAction();
         if (statusBar) {
             QList<QWidget*> children = statusBar->findChildren<QWidget*>();
@@ -119,7 +70,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
             statusBar->addWidget(statusLabel, 1);
         }
-
         };
     connect(&_settingsAction.getStatusHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
     const auto plotSelectionOptions = [this]() -> void
@@ -149,49 +99,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 }
             }
 
-            if (!scatterplotNames.contains(selectedCurrentText1))
-            {
-                selectedCurrentText1 = "";
-                if (scatterplotNames.size() > 0)
-                {
-                    selectedCurrentText1 = scatterplotNames[0];
-                }
-            }
-            if (!scatterplotNames.contains(selectedCurrentText2))
-            {
-                selectedCurrentText2 = "";
-                if (scatterplotNames.size() > 1)
-                {
-                    selectedCurrentText2 = scatterplotNames[1];
-                }
-                else if (scatterplotNames.size() > 0)
-                {
-                    selectedCurrentText2 = scatterplotNames[0];
-                }
-            }
-            if (!scatterplotNames.contains(selectedCurrentText0))
-            {
-                selectedCurrentText0 = "";
+            selectedCurrentText1 = selectValidOption(scatterplotNames, selectedCurrentText1, 0);
+            selectedCurrentText2 = selectValidOption(scatterplotNames, selectedCurrentText2, 1);
+            selectedCurrentText0 = selectValidOption(scatterplotNames, selectedCurrentText0, 2);
 
-                if (scatterplotNames.size() > 2)
-                {
-                    selectedCurrentText0 = scatterplotNames[2];
-                }
-                else if (scatterplotNames.size() > 0)
-                {
-                    selectedCurrentText0 = scatterplotNames[0];
-                }
-            }
 
-            if (!lineplotNames.contains(lineplotView))
-            {
-                lineplotView = "";
-                if (lineplotNames.size() > 0)
-                {
-                    lineplotView = lineplotNames[0];
-                }
-            }
-
+            lineplotView = selectValidOption(lineplotNames, lineplotView, 0);
 
             _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
             _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText1);
@@ -208,71 +121,42 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, plotSelectionOptions);
 
-    _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-        bool validity = false;
-        Dataset<Points> sibling = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
-        if (sibling.isValid())
-        {
-            if (sibling->getParent()== dataset->getParent() && dataset->getDataType() == ClusterType && (dataset->getGroupIndex()!=666 || dataset->getGroupIndex()!=667))
-            {
-                validity = true;
-            }
+
+    _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction(
+        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+            return isValidClusterDataset(dataset, _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset());
         }
-        
-        
-        return validity;
-        });
-     _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-        return dataset->getDataType() == PointType;
-        });
-     _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-         bool validity = false;
-         auto parent = dataset->getParent();
-         bool checkGroup = false;
-         if (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667)
-         {
-             checkGroup = true;
-         }
-         if (parent.isValid() && dataset->getDataType() == PointType && checkGroup)
-         {
-             validity = true;
-         }
-         
-        return validity;
-        });
+    );
 
-     _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-        bool validity = false;
-        Dataset<Points> sibling = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
-        if (sibling.isValid())
-        {
-            if (sibling->getParent()== dataset->getParent() && dataset->getDataType() == ClusterType && (dataset->getGroupIndex()!=666 || dataset->getGroupIndex()!=667))
-            {
-                validity = true;
-            }
+    _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setFilterFunction(
+        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+            return isValidPointDataset(dataset);
         }
+    );
 
+    _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().setFilterFunction(
+        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+            return isValidClusterDataset(dataset, _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset());
+        }
+    );
 
-        return validity;
-         });
-     _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-         return dataset->getDataType() == PointType;
-         });
-     _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().setFilterFunction([this](mv::Dataset<DatasetImpl> dataset) -> bool {
-         bool validity = false;
-         auto parent = dataset->getParent();
-         bool checkGroup = false;
-         if (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667)
-         {
-             checkGroup = true;
-         }
-         if (parent.isValid() && dataset->getDataType() == PointType && checkGroup)
-         {
-             validity = true;
-         }
+    _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().setFilterFunction(
+        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+            return isValidPointDataset(dataset);
+        }
+    );
 
-         return validity;
-         });
+    _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().setFilterFunction(
+        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+            return isValidPointDataset(dataset);
+        }
+    );
+
+    _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setFilterFunction(
+        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+            return isValidPointDataset(dataset);
+        }
+    );
 
     const auto updateClusterDataset1 = [this]() -> void {
         updateClusterOptions();
@@ -367,8 +251,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     {
 
 
-                        mv::gui::DatasetPickerAction* pointDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Point dataset"));
-                        mv::gui::DatasetPickerAction* clusterDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Cluster dataset"));
+                        mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
+                        mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Cluster dataset");
                         if (pointDatasetAction && _lineChartPointDataset1.isValid())
                         {
                             pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
@@ -377,7 +261,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             {
                                 clusterDatasetAction->setCurrentDataset(_lineChartClusterDataset1);
                             }
-                            mv::gui::StringAction* chartTitle = dynamic_cast<StringAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Chart Title"));
+                            mv::gui::StringAction* chartTitle = findActionByPath<StringAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Chart Title");
                             if (chartTitle)
                             {
                                 QString titleText = QString("%1 vs %2 expression of selected cells (%3)")
@@ -389,8 +273,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             }
 
 
-                            mv::gui::OptionAction* dimensionX = dynamic_cast<OptionAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Data Dimension X Selection/Select dimension"));
-                            mv::gui::OptionAction* dimensionY = dynamic_cast<OptionAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Data Dimension Y Selection/Select dimension"));
+                            mv::gui::OptionAction* dimensionX = findActionByPath<OptionAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Data Dimension X Selection/Select dimension");
+                            mv::gui::OptionAction* dimensionY = findActionByPath<OptionAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Data Dimension Y Selection/Select dimension");
                             if (dimensionX)
                             {
                                 dimensionX->setCurrentText("Rotated Y Coordinates");
@@ -427,7 +311,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText())
                 {
-                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                     if (pointDatasetPickerAction)
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
@@ -440,7 +324,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         }
                         if (pointDatasetPickerAction->getCurrentDataset().isValid())
                         {
-                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
                             if (colorDatasetPickerAction)
                             {
                                 auto dataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
@@ -450,7 +334,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 }
 
                             }
-                            geneSelectionAction = dynamic_cast<DimensionPickerAction*>(plugin->findChildByPath("Settings/Coloring/Dimension"));
+                            geneSelectionAction = findActionByPath<DimensionPickerAction>(plugin,"Settings/Coloring/Dimension");
                             if (geneSelectionAction)
                             {
                                 geneSelectionAction->setCurrentDimensionName(selectedGene);
@@ -515,7 +399,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
                 {
-                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                     if (pointDatasetPickerAction)
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
@@ -528,7 +412,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         }
                         if (pointDatasetPickerAction->getCurrentDataset().isValid())
                         {
-                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
                             if (colorDatasetPickerAction)
                             {
                                 auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
@@ -538,7 +422,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                 }
 
                             }
-                            geneSelectionAction = dynamic_cast<DimensionPickerAction*>(plugin->findChildByPath("Settings/Coloring/Dimension"));
+                            geneSelectionAction = findActionByPath<DimensionPickerAction>(plugin,"Settings/Coloring/Dimension");
                             if (geneSelectionAction)
                             {
                                 geneSelectionAction->setCurrentDimensionName(selectedGene2);
@@ -581,7 +465,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         {
                             if (plugin->getGuiName() == scatterplotName)
                             {
-                                mv::gui::DatasetPickerAction* pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                                mv::gui::DatasetPickerAction* pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                                 if (pointDatasetPickerAction)
                                 {
 
@@ -656,22 +540,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         _settingsAction.getDataset1OptionsHolder().getFreezeSelectionAction().setChecked(true);
                         if (!selectedClusters.isEmpty())
                         {
+                            filterSelectionIndicesByClusters(selectedIndices, clusters, selectedClusters);
 
-                            for (const auto& cluster : clusters)
-                            {
-                                if (!selectedClusters.contains(cluster.getName()))
-                                {
-
-                                    auto clusterindices = cluster.getIndices();
-
-                                    selectedIndices.erase(std::remove_if(selectedIndices.begin(), selectedIndices.end(),
-                                        [&clusterindices](int index) {
-                                            return std::find(clusterindices.begin(), clusterindices.end(), index) != clusterindices.end();
-                                        }), selectedIndices.end());
-
-
-                                }
-                            }
                             _filteredSelectionIndices.clear();
                             _filteredSelectionIndices.reserve(selectedIndices.size());
                             for (const auto& index : selectedIndices)
@@ -743,7 +613,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         {
                             if (plugin->getGuiName() == scatterplotName)
                             {
-                                mv::gui::DatasetPickerAction* pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                                mv::gui::DatasetPickerAction* pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                                 if (pointDatasetPickerAction)
                                 {
 
@@ -879,13 +749,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 return false;
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
                 if (plugin->getGuiName() == scatterplotName) {
-                    auto pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    auto pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                     if (pointDatasetPickerAction && pointDatasetPickerAction->getCurrentDataset().isValid()) {
-                        auto colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                        auto colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
                         if (colorDatasetPickerAction) {
                             colorDatasetPickerAction->setCurrentDataset(dataset);
                         }
-                        auto geneSelectionAction = dynamic_cast<DimensionPickerAction*>(plugin->findChildByPath("Settings/Coloring/Dimension"));
+                        auto geneSelectionAction = findActionByPath<DimensionPickerAction>(plugin,"Settings/Coloring/Dimension");
                         if (geneSelectionAction) {
                             geneSelectionAction->setCurrentDimensionName(selectedDimName);
                         }
@@ -1011,8 +881,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == scatterplotName1)
                 {
-                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
-                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Scale");
+                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Opacity");
                     if (pointSelectionScaleAction)
                     {
                         if ( _settingsAction.getDataset1OptionsHolder().getHidePointSelectionOutlineAction().isChecked())
@@ -1070,7 +940,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == scatterplotName1 )
                 {
-                    auto freezeAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Freeze selection"));
+                    auto freezeAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Freeze selection");
                     if (freezeAction)
                     {
                         freezeAction->setChecked( _settingsAction.getDataset1OptionsHolder().getFreezeSelectionAction().isChecked());
@@ -1106,7 +976,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == scatterplotName1 )
                 {
-                    auto focusAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Plot/Point/Focus selection"));
+                    auto focusAction = findActionByPath<ToggleAction>(plugin,"Settings/Plot/Point/Focus selection");
                     if (focusAction)
                     {
                         focusAction->setChecked(_settingsAction.getDataset1OptionsHolder().getFocusSelectionAction().isChecked());
@@ -1143,8 +1013,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == scatterplotName2 )
                 {
-                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
-                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Scale");
+                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Opacity");
                     if (pointSelectionScaleAction)
                     {
                         if (_settingsAction.getDataset2OptionsHolder().getHidePointSelectionOutline2Action().isChecked())
@@ -1200,7 +1070,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == scatterplotName2)
                 {
-                    auto freezeAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Freeze selection"));
+                    auto freezeAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Freeze selection");
                     if (freezeAction)
                     {
                         freezeAction->setChecked(_settingsAction.getDataset2OptionsHolder().getFreezeSelection2Action().isChecked());
@@ -1234,7 +1104,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == scatterplotName2)
                 {
-                    auto focusAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Plot/Point/Focus selection"));
+                    auto focusAction = findActionByPath<ToggleAction>(plugin,"Settings/Plot/Point/Focus selection");
                     if (focusAction)
                     {
                         focusAction->setChecked(_settingsAction.getDataset2OptionsHolder().getFocusSelection2Action().isChecked());
@@ -1273,7 +1143,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 if (plugin->getGuiName() == scatterplotName)
                 {
 
-                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                     if (pointDatasetPickerAction)
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
@@ -1289,38 +1159,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             auto xPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
                             auto yPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
                             if (xPosition != "" && yPosition != "") {
-                                auto embeddingXVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
-                                auto embeddingYVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
-                                if (embeddingXVal && embeddingYVal) {
-                                    if (embeddingXVal->getCurrentIndex() != -1) {
-                                        embeddingXVal->setCurrentText("");
-                                    }
-                                    if (embeddingYVal->getCurrentIndex() != -1) {
-                                        embeddingYVal->setCurrentText("");
-                                    }
+             
 
-                                    auto xoptions = embeddingXVal->getOptions();
-                                    if (xoptions.contains(xPosition)) {
-                                        embeddingXVal->setCurrentText(xPosition);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding X value not found in options";
-                                    }
-
-                                    auto yoptions = embeddingYVal->getOptions();
-                                    if (yoptions.contains(yPosition)) {
-                                        embeddingYVal->setCurrentText(yPosition);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding Y value not found in options";
-                                    }
-                                }
-                                else {
-                                    qWarning() << "Embedding X or Y value is null";
-                                }
+                                setScatterplotDimensions(plugin, xPosition, yPosition);
                             }
 
-                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
                             if (colorDatasetPickerAction)
                             {
                                 auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
@@ -1370,7 +1214,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 if (plugin->getGuiName() == scatterplotName)
                 {
 
-                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                     if (pointDatasetPickerAction)
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
@@ -1386,38 +1230,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
                             auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
                             if (xPosition2 != "" && yPosition2 != "") {
-                                auto embeddingXVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
-                                auto embeddingYVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
-                                if (embeddingXVal2 && embeddingYVal2) {
-                                    if (embeddingXVal2->getCurrentIndex() != -1) {
-                                        embeddingXVal2->setCurrentText("");
-                                    }
-                                    if (embeddingYVal2->getCurrentIndex() != -1) {
-                                        embeddingYVal2->setCurrentText("");
-                                    }
-
-                                    auto xoptions2 = embeddingXVal2->getOptions();
-                                    if (xoptions2.contains(xPosition2)) {
-                                        embeddingXVal2->setCurrentText(xPosition2);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding 2 X value not found in options";
-                                    }
-
-                                    auto yoptions2 = embeddingYVal2->getOptions();
-                                    if (yoptions2.contains(yPosition2)) {
-                                        embeddingYVal2->setCurrentText(yPosition2);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding 2 Y value not found in options";
-                                    }
-                                }
-                                else {
-                                    qWarning() << "Embedding 2 X or Y value is null";
-                                }
+                                setScatterplotDimensions(plugin, xPosition2, yPosition2);
                             }
 
-                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
                             if (colorDatasetPickerAction)
                             {
                                 auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
@@ -1460,7 +1276,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 if (plugin->getGuiName() == _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText())
                 {
 
-                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                     if (pointDatasetPickerAction)
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
@@ -1476,38 +1292,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             auto xPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
                             auto yPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
                             if (xPosition != "" && yPosition != "") {
-                                auto embeddingXVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
-                                auto embeddingYVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
-                                if (embeddingXVal && embeddingYVal) {
-                                    if (embeddingXVal->getCurrentIndex() != -1) {
-                                        embeddingXVal->setCurrentText("");
-                                    }
-                                    if (embeddingYVal->getCurrentIndex() != -1) {
-                                        embeddingYVal->setCurrentText("");
-                                    }
-
-                                    auto xoptions = embeddingXVal->getOptions();
-                                    if (xoptions.contains(xPosition)) {
-                                        embeddingXVal->setCurrentText(xPosition);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding X value not found in options";
-                                    }
-
-                                    auto yoptions = embeddingYVal->getOptions();
-                                    if (yoptions.contains(yPosition)) {
-                                        embeddingYVal->setCurrentText(yPosition);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding Y value not found in options";
-                                    }
-                                }
-                                else {
-                                    qWarning() << "Embedding X or Y value is null";
-                                }
+                                setScatterplotDimensions(plugin, xPosition, yPosition);
                             }
 
-                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
                             if (colorDatasetPickerAction)
                             {
                                 auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
@@ -1548,7 +1336,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
                 {
 
-                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                     if (pointDatasetPickerAction)
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
@@ -1564,38 +1352,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
                             auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
                             if (xPosition2 != "" && yPosition2 != "") {
-                                auto embeddingXVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
-                                auto embeddingYVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
-                                if (embeddingXVal2 && embeddingYVal2) {
-                                    if (embeddingXVal2->getCurrentIndex() != -1) {
-                                        embeddingXVal2->setCurrentText("");
-                                    }
-                                    if (embeddingYVal2->getCurrentIndex() != -1) {
-                                        embeddingYVal2->setCurrentText("");
-                                    }
-
-                                    auto xoptions2 = embeddingXVal2->getOptions();
-                                    if (xoptions2.contains(xPosition2)) {
-                                        embeddingXVal2->setCurrentText(xPosition2);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding 2 X value not found in options";
-                                    }
-
-                                    auto yoptions2 = embeddingYVal2->getOptions();
-                                    if (yoptions2.contains(yPosition2)) {
-                                        embeddingYVal2->setCurrentText(yPosition2);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding 2 Y value not found in options";
-                                    }
-                                }
-                                else {
-                                    qWarning() << "Embedding 2 X or Y value is null";
-                                }
+                                setScatterplotDimensions(plugin, xPosition2, yPosition2);
                             }
 
-                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
                             if (colorDatasetPickerAction)
                             {
                                 auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
@@ -1638,89 +1398,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
          _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().setEnabled(false);
          _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
-         //TODO: Fix thisSS
-         /*
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
-        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
-
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText())
-                {
-
-                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
-                    if (pointDatasetPickerAction)
-                    {
-                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-                            if (embeddingDataset.isValid())
-                            {
-                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
-                            }
-                        }
-                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto xPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
-                            auto yPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
-                            if (xPosition != "" && yPosition != "") {
-                                auto embeddingXVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
-                                auto embeddingYVal = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
-                                if (embeddingXVal && embeddingYVal) {
-                                    if (embeddingXVal->getCurrentIndex() != -1) {
-                                        embeddingXVal->setCurrentText("");
-                                    }
-                                    if (embeddingYVal->getCurrentIndex() != -1) {
-                                        embeddingYVal->setCurrentText("");
-                                    }
-
-                                    auto xoptions = embeddingXVal->getOptions();
-                                    if (xoptions.contains(xPosition)) {
-                                        embeddingXVal->setCurrentText(xPosition);
-                                    }
-                                    else {
-                                        qDebug() << "Embedding X value not found in options";
-                                    }
-
-                                    auto yoptions = embeddingYVal->getOptions();
-                                    if (yoptions.contains(yPosition)) {
-                                        embeddingYVal->setCurrentText(yPosition);
-                                    }
-                                    else {
-                                        qDebug() << "Embedding Y value not found in options";
-                                    }
-                                }
-                                else {
-                                    qDebug() << "Embedding X or Y value is null";
-                                }
-                            }
-
-                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
-                            if (colorDatasetPickerAction)
-                            {
-                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
-                                if (dataset.isValid())
-                                {
-                                    //colorDatasetPickerAction->setCurrentDataset(dataset);
-                                    //qDebug() << "Setting dataset to color dataset";
-                                }
-
-                            }
-
-                        }
-
-
-
-                    }
-
-                }
-            }
-        }
-
-        */
         _numOfPointsInLine1 = 0;
         auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
         if (lineplotViewFactory)
@@ -1737,8 +1414,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 if (plugin->getGuiName() == lineplotView)
                 {
 
-                    mv::gui::DatasetPickerAction* pointDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Point dataset"));
-                    mv::gui::DatasetPickerAction* clusterDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Cluster dataset"));
+                    mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
+                    mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Cluster dataset");
                     if (clusterDatasetAction)
                     {
                         clusterDatasetAction->setCurrentIndex(-1);
@@ -1788,7 +1465,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                  if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
                 {
 
-                    pointDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Position"));
+                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
                     if (pointDatasetPickerAction)
                     {
                         if (!pointDatasetPickerAction->getCurrentDataset().isValid())
@@ -1804,38 +1481,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
                             auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
                             if (xPosition2 != "" && yPosition2 != "") {
-                                auto embeddingXVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/X/Select dimension"));
-                                auto embeddingYVal2 = dynamic_cast<OptionAction*>(plugin->findChildByPath("Settings/Position/Y/Select dimension"));
-                                if (embeddingXVal2 && embeddingYVal2) {
-                                    if (embeddingXVal2->getCurrentIndex() != -1) {
-                                        embeddingXVal2->setCurrentText("");
-                                    }
-                                    if (embeddingYVal2->getCurrentIndex() != -1) {
-                                        embeddingYVal2->setCurrentText("");
-                                    }
-
-                                    auto xoptions2 = embeddingXVal2->getOptions();
-                                    if (xoptions2.contains(xPosition2)) {
-                                        embeddingXVal2->setCurrentText(xPosition2);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding 2 X value not found in options";
-                                    }
-
-                                    auto yoptions2 = embeddingYVal2->getOptions();
-                                    if (yoptions2.contains(yPosition2)) {
-                                        embeddingYVal2->setCurrentText(yPosition2);
-                                    }
-                                    else {
-                                        qWarning() << "Embedding 2 Y value not found in options";
-                                    }
-                                }
-                                else {
-                                    qWarning() << "Embedding 2 X or Y value is null";
-                                }
+                                setScatterplotDimensions(plugin, xPosition2, yPosition2);
                             }
 
-                            colorDatasetPickerAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("Settings/Datasets/Color"));
+                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
                             if (colorDatasetPickerAction)
                             {
                                 auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
@@ -1878,8 +1527,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == scatterplotName1)
                 {
-                    mv::gui::ToggleAction* notifyDuringSelectionAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Notify during selection"));
-                    mv::gui::ToggleAction* haloAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Halo"));
+                    mv::gui::ToggleAction* notifyDuringSelectionAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Point Selection/Notify during selection");
+                    mv::gui::ToggleAction* haloAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Halo");
 
                     if (notifyDuringSelectionAction) {
                         notifyDuringSelectionAction->setChecked(false);
@@ -1896,8 +1545,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         qWarning() << "Halo action not found.";
                     }
 
-                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
-                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Scale");
+                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Opacity");
                     if (pointSelectionScaleAction)
                     {
 
@@ -1958,8 +1607,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 if (plugin->getGuiName() == scatterplotName2)
                 {
-                    mv::gui::ToggleAction* notifyDuringSelectionAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Point Selection/Notify during selection"));
-                    mv::gui::ToggleAction* haloAction = dynamic_cast<ToggleAction*>(plugin->findChildByPath("Settings/Selection/Halo"));
+                    mv::gui::ToggleAction* notifyDuringSelectionAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Point Selection/Notify during selection");
+                    mv::gui::ToggleAction* haloAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Halo");
 
                     if (notifyDuringSelectionAction) {
                         notifyDuringSelectionAction->setChecked(false);
@@ -1976,8 +1625,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         qWarning() << "Halo action not found.";
                     }
 
-                    auto pointSelectionScaleAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Scale"));
-                    auto pointSelectionOpacityAction = dynamic_cast<DecimalAction*>(plugin->findChildByPath("Settings/Selection/Opacity"));
+                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Scale");
+                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Opacity");
                     if (pointSelectionScaleAction)
                     {
 
@@ -2055,8 +1704,8 @@ void Computation::AutoCompute()
                 if (plugin->getGuiName() == lineplotView)
                 {
 
-                    mv::gui::DatasetPickerAction* pointDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Point dataset"));
-                    mv::gui::DatasetPickerAction* clusterDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Cluster dataset"));
+                    mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
+                    mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Cluster dataset");
                     if (clusterDatasetAction)
                     {
                         clusterDatasetAction->setCurrentIndex(-1);
@@ -2178,8 +1827,8 @@ void Computation::AutoCompute()
                 if (plugin->getGuiName() == lineplotView)
                 {
                     
-                   mv::gui::DatasetPickerAction* pointDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Point dataset"));
-                   mv::gui::DatasetPickerAction* clusterDatasetAction = dynamic_cast<DatasetPickerAction*>(plugin->findChildByPath("LinePlotViewPlugin/Dataset1 Options/Cluster dataset"));
+                   mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
+                   mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Cluster dataset");
                    if (pointDatasetAction && _lineChartPointDataset1.isValid())
                    {
                        pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
@@ -3316,8 +2965,8 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
 
     for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
         if (plugin->getGuiName() == scatterplotViewName) {
-            auto* angleAction = dynamic_cast<DecimalAction*>(
-                plugin->findChildByPath("Settings/Selection/Point Selection/Line angle"));
+            auto* angleAction = findActionByPath<DecimalAction>(
+                plugin,"Settings/Selection/Point Selection/Line angle");
             if (!angleAction) {
                 qWarning() << "Angle action not found";
                 setStatusMessage("E", "Angle action not found", "");
