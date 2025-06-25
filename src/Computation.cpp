@@ -109,24 +109,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         QPixmap iconPixmap = QIcon(icon).pixmap(iconSize, iconSize);
 
   
-        QLabel* statusLabel = new QLabel;
-        statusLabel->setTextFormat(Qt::RichText);
-
-
-        QByteArray ba;
-        QBuffer buffer(&ba);
-        buffer.open(QIODevice::WriteOnly);
-        iconPixmap.save(&buffer, "PNG");
-        QString imgTag = QString("<img style='vertical-align:middle;' width='%1' height='%2' src='data:image/png;base64,%3'/>")
-            .arg(iconSize)
-            .arg(iconSize)
-            .arg(QString::fromLatin1(ba.toBase64()));
-        statusLabel->setText(imgTag + "&nbsp;" + labelText);
-        statusLabel->setStyleSheet(
-            "QLabel{padding-left:8px;background:" + backgroundColor + ";color:" + textColor + ";}"
-        );
-        statusLabel->setFont(font);
-
+        QLabel* statusLabel = createStatusLabel(labelText, backgroundColor, textColor, iconPixmap, font);
         QStatusBar* statusBar = _settingsAction.getStatusHolder().getStatusBarAction();
         if (statusBar) {
             QList<QWidget*> children = statusBar->findChildren<QWidget*>();
@@ -935,21 +918,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().trigger();
             _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().trigger();
 
-            auto selectFirstRow = [](QTableView* tableView) {
-                if (tableView) {
-                    auto* model = tableView->model();
-                    if (model && model->rowCount() > 0) {
-                        QModelIndex firstIndex = model->index(0, 0);
-                        if (firstIndex.isValid()) {
-                            tableView->setCurrentIndex(firstIndex);
-                            tableView->selectionModel()->select(
-                                firstIndex,
-                                QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
-                            );
-                        }
-                    }
-                }
-                };
 
             bool hasDataset1 = options.contains("Dataset1");
             bool hasDataset2 = options.contains("Dataset2");
@@ -2419,20 +2387,9 @@ void Computation::computeCorrelationGenePC(const mv::Dataset<Points>& fullDatase
         fullDataset->extractDataForDimension(geneVals, geneIdx);
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
         {
-            NormalizationType normType;
+
             QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-            if (normTypeStr == "ZScore") {
-                normType = NormalizationType::ZScore;
-            }
-            else if (normTypeStr == "MinMax") {
-                normType = NormalizationType::MinMax;
-            }
-            else if (normTypeStr == "Log2") {
-                normType = NormalizationType::Log2;
-            }
-            else {
-                normType = NormalizationType::None; 
-            }
+            NormalizationType normType = normalizationTypeFromString(normTypeStr);
             
             normalizeVector(geneVals, normType);
         }
@@ -2622,8 +2579,7 @@ void Computation::populateGenesByCorrelationRange(const std::vector<float>& corr
         int idx = indices[i];
         float corr = correlationVector[idx];
 
-        bool isWithinRange = (corr <= minCorr - epsilon) || (corr >= maxCorr + epsilon);
-
+        bool isWithinRange = isCorrelationWithinRange(corr, minCorr, maxCorr);
  
         if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
             rank = i + 1;
@@ -2669,13 +2625,8 @@ void Computation::updateClusterOptions()
     }
 
 
-    QStringList clusterNamesCommon = (clusterNames1 & clusterNames2).values();
 
-    std::sort(clusterNamesCommon.begin(), clusterNamesCommon.end(),
-        [](const QString& a, const QString& b) {
-            return a.compare(b, Qt::CaseInsensitive) < 0;
-        });
-
+    QStringList clusterNamesCommon = getCommonSortedNames(clusterNames1, clusterNames2);
 
     auto& clusterSelectionAction = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction();
     clusterSelectionAction.setOptions(clusterNamesCommon);
@@ -2816,20 +2767,9 @@ void Computation::processAlternativeToPCA()
 
     if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
     {
-        NormalizationType normType;
+        
         QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-        if (normTypeStr == "ZScore") {
-            normType = NormalizationType::ZScore;
-        }
-        else if (normTypeStr == "MinMax") {
-            normType = NormalizationType::MinMax;
-        }
-        else if (normTypeStr == "Log2") {
-            normType = NormalizationType::Log2;
-        }
-        else {
-            normType = NormalizationType::None; 
-        }
+        NormalizationType normType = normalizationTypeFromString(normTypeStr);
         normalizeVector(cellByGeneMatrix2, normType);
         normalizeVector(cellByGeneMatrix1, normType);
     }
@@ -3050,7 +2990,7 @@ void Computation::processAfterPCACompleteAlt()
         std::vector<float> genePointVector2(numPoints2, 0.0f);
         _selectedGenePointDataset1->extractDataForDimension(genePointVector1, geneitr);
         _selectedGenePointDataset2->extractDataForDimension(genePointVector2, geneitr);
-        NormalizationType normType;
+        
         QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
 
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
@@ -3452,20 +3392,8 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     }
     if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
     { 
-        NormalizationType normType;
         QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-        if (normTypeStr == "ZScore") {
-            normType = NormalizationType::ZScore;
-        }
-        else if (normTypeStr == "MinMax") {
-            normType = NormalizationType::MinMax;
-        }
-        else if (normTypeStr == "Log2") {
-            normType = NormalizationType::Log2;
-        }
-        else {
-            normType = NormalizationType::None;
-        }
+        NormalizationType normType = normalizationTypeFromString(normTypeStr);
         normalizeVector(cellbygenematrix, normType);
     }
 
@@ -3614,20 +3542,8 @@ bool Computation::setupAndTriggerPCA()
         fullPointDataset1->populateDataForDimensions(cellByGeneMatrix0, geneDataset0, cellIndices0);
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
         {
-            NormalizationType normType;
             QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-            if (normTypeStr == "ZScore") {
-                normType = NormalizationType::ZScore;
-            }
-            else if (normTypeStr == "MinMax") {
-                normType = NormalizationType::MinMax;
-            }
-            else if (normTypeStr == "Log2") {
-                normType = NormalizationType::Log2;
-            }
-            else {
-                normType = NormalizationType::None; 
-            }
+            NormalizationType normType = normalizationTypeFromString(normTypeStr);
             normalizeVector(cellByGeneMatrix0, normType);
         }
     }
@@ -3636,8 +3552,8 @@ bool Computation::setupAndTriggerPCA()
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
-    auto [minVal, maxVal] = std::minmax_element(cellByGeneMatrix0.begin(), cellByGeneMatrix0.end());
-    qInfo() << "PCA cellByGeneMatrix0 min:" << *minVal << "max:" << *maxVal;
+    auto [minVal, maxVal] = minMax(cellByGeneMatrix0);
+    qInfo() << "PCA cellByGeneMatrix0 min:" << minVal << "max:" << maxVal;
 
     std::vector<int> allCellIndices1(numAllCells1), allCellIndices2(numAllCells2);
     std::iota(allCellIndices1.begin(), allCellIndices1.end(), 0);
@@ -3658,20 +3574,8 @@ bool Computation::setupAndTriggerPCA()
 
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
         {
-            NormalizationType normType;
             QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-            if (normTypeStr == "ZScore") {
-                normType = NormalizationType::ZScore;
-            }
-            else if (normTypeStr == "MinMax") {
-                normType = NormalizationType::MinMax;
-            }
-            else if (normTypeStr == "Log2") {
-                normType = NormalizationType::Log2;
-            }
-            else {
-                normType = NormalizationType::None; 
-            }
+            NormalizationType normType = normalizationTypeFromString(normTypeStr);
             normalizeVector(cellByGeneMatrix2, normType);
             normalizeVector(cellByGeneMatrix1, normType);
         }
@@ -3725,7 +3629,8 @@ void Computation::resetupCorrelationTable(int datasetNumber)
 
     for (auto& gene : geneCorrValues) {
 
-        bool isWithinRange = (gene.correlationValue <= (minRange - epsilon) || gene.correlationValue >= (maxRange + epsilon));
+
+        bool isWithinRange = isCorrelationWithinRange(gene.correlationValue, minRange, maxRange);
         gene.isWithinRange = isWithinRange;
         if (isWithinRange) {
             geneOfInterestIndices.push_back(gene.geneIndex);
@@ -3742,17 +3647,7 @@ void Computation::resetupCorrelationTable(int datasetNumber)
         ? _settingsAction.getTableView1Action(): _settingsAction.getTableView3Action();
 
     if (tableView) {
-        auto* model = tableView->model();
-        if (model && model->rowCount() > 0) {
-            QModelIndex firstIndex = model->index(0, 0);
-            if (firstIndex.isValid()) {
-                tableView->setCurrentIndex(firstIndex);
-                tableView->selectionModel()->select(
-                    firstIndex,
-                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
-                );
-            }
-        }
+        selectFirstRow(tableView);
     }
 }
 
@@ -3974,17 +3869,7 @@ void Computation::setupTableModelAndSelection(int datasetNumber)
             }
         }
     );
-
-    if (model->rowCount() > 0) {
-        QModelIndex firstIndex = model->index(0, 0);
-        if (firstIndex.isValid()) {
-            tableView->setCurrentIndex(firstIndex);
-            tableView->selectionModel()->select(
-                firstIndex,
-                QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
-            );
-        }
-    }
+    selectFirstRow(tableView);
 }
 
 

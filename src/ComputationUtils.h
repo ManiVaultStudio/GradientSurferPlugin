@@ -3,7 +3,9 @@
 #include <QString>
 #include <string>
 #include <QElapsedTimer>
-
+#include<QTableView>
+#include<QLabel>
+#include<QBuffer>
 enum class NormalizationType {
     None,
     ZScore,
@@ -12,10 +14,16 @@ enum class NormalizationType {
 };
 
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray);
-void normalizeVector(std::vector<float>& vec, NormalizationType type);
+void normalizeVector(std::vector<float>& data, NormalizationType type);
+NormalizationType normalizationTypeFromString(const QString& str);
 QString getContrastingTextColor(const QString& bgColor);
 QString statusToIconName(const QString& status);
-
+void selectFirstRow(QTableView* tableView);
+NormalizationType normalizationTypeFromString(const QString& normTypeStr);
+bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float epsilon = 1e-6f);
+std::pair<float, float> minMax(const std::vector<float>& vec);
+QStringList getCommonSortedNames(const QSet<QString>& names1, const QSet<QString>& names2);
+QLabel* createStatusLabel(const QString& labelText, const QString& backgroundColor, const QString& textColor, const QPixmap& iconPixmap, const QFont& font);
 class FunctionTimer {
 public:
     FunctionTimer(const QString& functionName);

@@ -11,6 +11,10 @@
 #include <cmath>
 #include <cassert>
 #include <stdexcept>
+#include <algorithm>
+#include <cmath>
+
+
 
 FunctionTimer::FunctionTimer(const QString& functionName)
     : _functionName(functionName)
@@ -21,6 +25,93 @@ FunctionTimer::~FunctionTimer()
 {
     qDebug() << _functionName << "took"
         << _timer.elapsed() / 1000.0 << "seconds";
+}
+
+bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float epsilon)
+{
+    return (corr <= minCorr - epsilon) || (corr >= maxCorr + epsilon);
+}
+std::pair<float, float> minMax(const std::vector<float>& vec)
+{
+    auto [minVal, maxVal] = std::minmax_element(vec.begin(), vec.end());
+    if (minVal == vec.end() || maxVal == vec.end()) {
+        throw std::invalid_argument("Input vector is empty.");
+    }
+    return { *minVal, *maxVal };
+}
+QLabel* createStatusLabel(const QString& labelText, const QString& backgroundColor, const QString& textColor, const QPixmap& iconPixmap, const QFont& font) {
+    QLabel* statusLabel = new QLabel;
+    statusLabel->setTextFormat(Qt::RichText);
+
+    QByteArray ba;
+    QBuffer buffer(&ba);
+    buffer.open(QIODevice::WriteOnly);
+    iconPixmap.save(&buffer, "PNG");
+    QString imgTag = QString("<img style='vertical-align:middle;' width='%1' height='%2' src='data:image/png;base64,%3'/>")
+        .arg(iconPixmap.width())
+        .arg(iconPixmap.height())
+        .arg(QString::fromLatin1(ba.toBase64()));
+    statusLabel->setText(imgTag + "&nbsp;" + labelText);
+    statusLabel->setStyleSheet(
+        "QLabel{padding-left:8px;background:" + backgroundColor + ";color:" + textColor + ";}"
+    );
+    statusLabel->setFont(font);
+    return statusLabel;
+}
+QStringList getCommonSortedNames(const QSet<QString>& names1, const QSet<QString>& names2)
+{
+    QStringList clusterNamesCommon = (names1 & names2).values();
+    std::sort(clusterNamesCommon.begin(), clusterNamesCommon.end(),
+        [](const QString& a, const QString& b) {
+            return a.compare(b, Qt::CaseInsensitive) < 0;
+        });
+    return clusterNamesCommon;
+}
+void normalizeVector(std::vector<float>& data, NormalizationType type) {
+    if (type == NormalizationType::None) return;
+    if (data.empty()) return;
+    if (type == NormalizationType::ZScore) {
+        float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
+        float sq_sum = std::inner_product(data.begin(), data.end(), data.begin(), 0.0f);
+        float stdev = std::sqrt(sq_sum / data.size() - mean * mean);
+        if (stdev > 0.0f) {
+            for (auto& v : data) v = (v - mean) / stdev;
+        }
+    }
+    else if (type == NormalizationType::MinMax) {
+        auto [minIt, maxIt] = std::minmax_element(data.begin(), data.end());
+        float minV = *minIt, maxV = *maxIt;
+        float range = maxV - minV;
+        if (range > 0.0f) {
+            for (auto& v : data) v = (v - minV) / range;
+        }
+    }
+    else if (type == NormalizationType::Log2) {
+        for (auto& v : data) v = std::log2(v + 1.0f);
+    }
+}
+
+NormalizationType normalizationTypeFromString(const QString& str) {
+    if (str == "ZScore") return NormalizationType::ZScore;
+    if (str == "MinMax") return NormalizationType::MinMax;
+    if (str == "Log2") return NormalizationType::Log2;
+    return NormalizationType::None;
+}
+void selectFirstRow(QTableView* tableView)
+{
+    if (tableView) {
+        auto* model = tableView->model();
+        if (model && model->rowCount() > 0) {
+            QModelIndex firstIndex = model->index(0, 0);
+            if (firstIndex.isValid()) {
+                tableView->setCurrentIndex(firstIndex);
+                tableView->selectionModel()->select(
+                    firstIndex,
+                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+                );
+            }
+        }
+    }
 }
 
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray) {
@@ -35,56 +126,7 @@ float computeGradientScore(const std::vector<float>& corrArray, const std::vecto
     }
     return score;
 }
-void normalizeVector(std::vector<float>& vec, NormalizationType type) {
-    if (vec.empty() || type == NormalizationType::None)
-        return;
 
-    const float EPSILON = 1e-8f; 
-
-    switch (type) {
-    case NormalizationType::ZScore: {
-        float sum = std::accumulate(vec.begin(), vec.end(), 0.0f);
-        float mean = sum / vec.size();
-
-        float variance = 0.0f;
-        for (float v : vec) {
-            float diff = v - mean;
-            variance += diff * diff;
-        }
-        variance /= vec.size();
-
-        float stdev = std::sqrt(variance);
-        if (stdev < EPSILON) stdev = 1.0f;
-
-        for (auto& v : vec) {
-            v = (v - mean) / stdev;
-        }
-        break;
-    }
-    case NormalizationType::MinMax: {
-        auto [minIt, maxIt] = std::minmax_element(vec.begin(), vec.end());
-        float minVal = *minIt;
-        float maxVal = *maxIt;
-        float range = maxVal - minVal;
-
-        if (range < EPSILON) range = 1.0f;
-
-        for (auto& v : vec) {
-            v = (v - minVal) / range;
-        }
-        break;
-    }
-    case NormalizationType::Log2: {
-        for (auto& v : vec) {
-            v = (v > 0.0f) ? std::log2(v + 1.0f) : 0.0f;
-        }
-        break;
-    }
-    default:
-        assert(false && "Unknown normalization type");
-        break;
-    }
-}
 QString getContrastingTextColor(const QString& bgColor) {
     QColor color(bgColor);
     if (!color.isValid()) return "white";
