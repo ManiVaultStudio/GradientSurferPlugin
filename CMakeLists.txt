@@ -43,6 +43,10 @@ set(PLUGIN_SOURCES
     src/Computation.cpp
     src/HighPerfLineChart.cpp
     src/HighPerfLineChart.h
+    src/CorrelationBarDelegate.h
+    src/CorrelationBarDelegate.cpp
+    src/ComputationUtils.h
+    src/ComputationUtils.cpp
 	src/PcaFast.h
 	src/PcaFastOp.h
     PluginInfo.json
@@ -70,7 +74,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 # -----------------------------------------------------------------------------
 # Target properties
 # -----------------------------------------------------------------------------
-target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+#target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 if(MV_UNITY_BUILD)
@@ -103,6 +107,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         --config $<CONFIGURATION>
         --prefix ${ManiVault_INSTALL_DIR}/$<CONFIGURATION>
 )
+
 
 mv_handle_plugin_config(${PROJECT_NAME}) 
 
