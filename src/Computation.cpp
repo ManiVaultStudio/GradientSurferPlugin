@@ -249,17 +249,18 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     if (plugin->getGuiName() == lineplotView)
                     {
-
+                        _pacColoringPaused = true;
+                        _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
 
                         mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                        mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Cluster dataset");
+                        mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Color dataset");
                         if (pointDatasetAction && _lineChartPointDataset1.isValid())
                         {
                             pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
 
-                            if (clusterDatasetAction && _lineChartClusterDataset1.isValid())
+                            if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
                             {
-                                clusterDatasetAction->setCurrentDataset(_lineChartClusterDataset1);
+                                clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
                             }
                             mv::gui::StringAction* chartTitle = findActionByPath<StringAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Chart Title");
                             if (chartTitle)
@@ -286,7 +287,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             events().notifyDatasetDataChanged(_lineChartPointDataset1);
 
                         }
-
+                        _pacColoringPaused = false;
 
                     }
                 }
@@ -691,6 +692,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto pcaColorsToScatterplot = [this]() -> void {
+       if (_pacColoringPaused) {
+            qDebug() << "PCA coloring paused, returning early";
+            return;
+       }
+        
+        
         int selectedDimInd = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
         QString selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
         if (selectedDimInd < 0 || selectedDimName.isEmpty()) {
@@ -1383,7 +1390,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 {
 
                     mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                    mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Cluster dataset");
+                    mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Color dataset");
                     if (clusterDatasetAction)
                     {
                         clusterDatasetAction->setCurrentIndex(-1);
@@ -1673,7 +1680,7 @@ void Computation::AutoCompute()
                 {
 
                     mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                    mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Cluster dataset");
+                    mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Color dataset");
                     if (clusterDatasetAction)
                     {
                         clusterDatasetAction->setCurrentIndex(-1);
@@ -1854,13 +1861,13 @@ void Computation::AutoCompute()
                 {
                     
                    mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                   mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Cluster dataset");
+                   mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Color dataset");
                    if (pointDatasetAction && _lineChartPointDataset1.isValid())
                    {
                        pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
-                       if (clusterDatasetAction && _lineChartClusterDataset1.isValid())
+                       if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
                        {
-                           clusterDatasetAction->setCurrentDataset(_lineChartClusterDataset1);
+                           clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
                        }
                        events().notifyDatasetDataChanged(_lineChartPointDataset1);
                    }
@@ -2138,10 +2145,15 @@ bool Computation::createDatasetsIfNeeded()
         _lineChartPointDataset1->setGroupIndex(670);
         mv::events().notifyDatasetAdded(_lineChartPointDataset1);
     }
-    if(!_lineChartClusterDataset1.isValid()) {
-        _lineChartClusterDataset1 = mv::data().createDataset("Cluster", "Line Chart Cluster Data 1", _lineChartPointDataset1);
-        _lineChartClusterDataset1->setGroupIndex(670);
-        mv::events().notifyDatasetAdded(_lineChartClusterDataset1);
+    if(!_lineChartColorClusterDataset1.isValid()) {
+        _lineChartColorClusterDataset1 = mv::data().createDataset("Cluster", "Line Chart Color Cluster Data 1", _lineChartPointDataset1);
+        _lineChartColorClusterDataset1->setGroupIndex(670);
+        mv::events().notifyDatasetAdded(_lineChartColorClusterDataset1);
+    }
+    if (!_lineChartColorPointDataset1.isValid()) {
+        _lineChartColorPointDataset1 = mv::data().createDataset("Cluster", "Line Chart Color Point Data 1", _lineChartPointDataset1);
+        _lineChartColorPointDataset1->setGroupIndex(670);
+        mv::events().notifyDatasetAdded(_lineChartColorPointDataset1);
     }
 
     if (!_selectedEmbeddingDataset.isValid()) {
@@ -2150,7 +2162,7 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_selectedEmbeddingDataset);
     }
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartClusterDataset1.isValid() ||!_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColorClusterDataset1.isValid() || !_lineChartColorPointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid()) {
         qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -2991,7 +3003,8 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     if (!_selectedCellPointDataset.isValid() ||
         !_rotatedSelectedEmbeddingDataset.isValid() ||
         !_lineChartPointDataset1.isValid() ||
-        !_lineChartClusterDataset1.isValid() ||
+        !_lineChartColorClusterDataset1.isValid() ||
+        !_lineChartColorPointDataset1.isValid() ||
         !_selectedGenePointDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() ||
         !_selectedEmbeddingDataset.isValid() ||
@@ -3064,12 +3077,13 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     _lineChartPointDataset1->setDimensionNames(dimensionNamesWithYCoords);
     mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
 
+    //here TODO Update the _lineChartColorPointDataset1
 
     Dataset<Clusters> clusterDataset =_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset();
-    if (clusterDataset.isValid() && _lineChartClusterDataset1.isValid())
+    if (clusterDataset.isValid() && _lineChartColorClusterDataset1.isValid())
     {
-        _lineChartClusterDataset1->getClusters() = QVector<Cluster>();
-        events().notifyDatasetDataChanged(_lineChartClusterDataset1);
+        _lineChartColorClusterDataset1->getClusters() = QVector<Cluster>();
+        events().notifyDatasetDataChanged(_lineChartColorClusterDataset1);
         auto clusters = clusterDataset->getClusters();
         for (const auto& cluster : clusters)
         {
@@ -3088,13 +3102,14 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
                 remappedCluster.setName(cluster.getName());
                 remappedCluster.setColor(cluster.getColor());
                 remappedCluster.setIndices(newClusterIndices);
-                _lineChartClusterDataset1->addCluster(remappedCluster);
+                _lineChartColorClusterDataset1->addCluster(remappedCluster);
             }
            
 
         }
-        events().notifyDatasetDataChanged(_lineChartClusterDataset1);
+        events().notifyDatasetDataChanged(_lineChartColorClusterDataset1);
     }
+
 
 
 
