@@ -51,6 +51,86 @@ std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(
     }
     return filtered;
 }
+
+std::vector<int> getIndicesBySelectedClusters(
+    const QVector<Cluster>& clusters,
+    const QStringList& selectedClusters)
+{
+    std::vector<int> filtered;
+
+    for (const auto& cluster : clusters) {
+        if (selectedClusters.contains(cluster.getName())) {
+            const auto& clusterIndices = cluster.getIndices();
+            filtered.insert(filtered.end(),
+                clusterIndices.begin(),
+                clusterIndices.end());
+        }
+    }
+
+    return filtered;
+}
+
+void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices, QString normTypeStr, bool normalizeData)
+{
+    FunctionTimer timer(Q_FUNC_INFO);
+
+    const int numGenes = fullDataset->getNumDimensions();
+    const int numAllCells = fullDataset->getNumPoints();
+    const int numCellsFilt = allClusterFilteredIndices.size();
+
+    const int numCellsInPC = selectedPC.size();
+
+    assert(numCells == numCellsInPC);
+
+    float meanCoord = computeMean(selectedPC);
+
+    std::vector<float> centeredCoords(numCellsFilt);
+    float normCoord = 0.0f;
+    for (int i = 0; i < numCellsFilt; ++i) {
+        float c = selectedPC[i] - meanCoord;
+        centeredCoords[i] = c;
+        normCoord += c * c;
+    }
+
+    corrVector.clear();
+    corrVector.resize(numGenes);
+
+    for (int geneIdx = 0; geneIdx < numGenes; ++geneIdx) {
+        std::vector<float> geneVals(numCellsFilt);
+
+        //fullDataset->extractDataForDimension(geneVals, geneIdx);
+        std::vector<int> geneIndex = { geneIdx };
+        fullDataset->populateDataForDimensions(geneVals,geneIndex, allClusterFilteredIndices);
+        if (normalizeData)
+        {
+            NormalizationType normType = normalizationTypeFromString(normTypeStr);
+
+            normalizeVector(geneVals, normType);
+        }
+        float sumGene = 0.0f;
+        for (float v : geneVals) sumGene += v;
+        float meanGene = sumGene / numCellsFilt;
+
+        float normGene = 0.0f;
+        float dotProd = 0.0f;
+        for (int i = 0; i < numCellsFilt; ++i) {
+            float centered = geneVals[i] - meanGene;
+            normGene += centered * centered;
+            dotProd += centered * centeredCoords[i];
+        }
+
+        float corr = (normGene > 0.0f && normCoord > 0.0f)
+            ? (dotProd / std::sqrt(normGene * normCoord))
+            : 0.0f;
+
+        if (std::isnan(corr)) corr = 0.0f;
+
+        corrVector[geneIdx] = corr;
+    }
+
+
+}
+
 std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText) {
     QLabel tempLabel;
     tempLabel.setText(labelText);

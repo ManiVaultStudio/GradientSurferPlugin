@@ -50,8 +50,13 @@ std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(
     const std::vector<std::seed_seq::result_type>& selectionIndices,
     const QVector<Cluster>& clusters,
     const QStringList& selectedClusters);
+std::vector<int> getIndicesBySelectedClusters(
+    const QVector<Cluster>& clusters,
+    const QStringList& selectedClusters);
 StatusInfo parseStatusMessage(const QString& statusString);
 std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText);
+
+void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices, QString normTypeStr, bool normalizeData);
 
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray);
 void normalizeVector(std::vector<float>& data, NormalizationType type);

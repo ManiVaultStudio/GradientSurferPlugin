@@ -47,7 +47,12 @@ namespace mv
 {
     class CoreInterface;
 }
-
+struct SelectedPCData
+{
+    std::vector<float> coordinates;
+    int numberOfDimensions;
+    int numberOfPoints;
+};
 struct CorrelationGeneCoords
 {
     int geneIndex;
@@ -67,8 +72,6 @@ private:
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
     void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
 
-    void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector);
-
     void setupTableModelAndSelection(int datasetNumber);
 
     void populateGenesByCorrelationRange(const std::vector<float>& correlationVector,float min,float max,const std::vector<QString>& geneNameOrdered, int datasetNumber);
@@ -77,8 +80,9 @@ private:
 
     // Helper functions for AutoCompute refactor
     bool validateAndRetrieveDatasets(
-        mv::Dataset<Points>& fullPointDataset,
-        mv::Dataset<Clusters>& fullClusterDataset,
+        mv::Dataset<Points>& fullPointDataset1,
+        mv::Dataset<Clusters>& fullClusterDataset1,
+        mv::Dataset<Clusters>& fullClusterDataset2,
         int& xEmbeddingIndex,
         int& yEmbeddingIndex,
         std::vector<int>& selectedIndices,
@@ -131,10 +135,11 @@ protected:
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
     mv::Dataset<Points>         _lineChartPointDataset1 = nullptr;
-    mv::Dataset<Clusters>       _lineChartClusterDataset1 = nullptr;
+    mv::Dataset<Clusters>       _lineChartColorClusterDataset1 = nullptr;
+    mv::Dataset<Points>       _lineChartColorPointDataset1 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
-
+    SelectedPCData              _selectedPCData1;
     QTimer _correlationRangeDebounceTimer1;
     QTimer _clusterSelectionDebounceTimer;
     QTimer _correlationRangeDebounceTimer2;
@@ -148,5 +153,9 @@ protected:
     bool _isComputing = false;
     PcaFast _pca1;
     bool _blockSelectionTrigger=false;
+    std::vector<int>   _selectedClusterIndices1;
+    std::vector<int>   _selectedClusterIndices2;
+    bool    _pacColoringPaused = false;
+
     friend class ChannelAction;
 };
