@@ -529,52 +529,20 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                  }
                 const auto mainSelectionChanged = [this]() -> void {
 
+                    if (_blockSelectionTrigger)
+                    {
+                        qDebug() << "Selection change blocked, returning early";
+                        //_blockSelectionTrigger = false;
+                        return;
+                    }
+                    _settingsAction.getDataset1OptionsHolder().getFreezeSelectionAction().setChecked(true);
                     setStatusMessage("M", "Selected indices changed", "");
-
-                    auto fullclusterDataset = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
-                    if (fullclusterDataset.isValid() && _embeddingDataset.isValid())
-                    {
-                        auto clusters = fullclusterDataset->getClusters();
-                        auto selectedClusters =  _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
-                        auto selectedIndices = _embeddingDataset->getSelectionIndices();
-                        _settingsAction.getDataset1OptionsHolder().getFreezeSelectionAction().setChecked(true);
-                        if (!selectedClusters.isEmpty())
-                        {
-                            filterSelectionIndicesByClusters(selectedIndices, clusters, selectedClusters);
-
-                            _filteredSelectionIndices.clear();
-                            _filteredSelectionIndices.reserve(selectedIndices.size());
-                            for (const auto& index : selectedIndices)
-                            {
-                                _filteredSelectionIndices.push_back(index);
-                            }
-                            _embeddingDataset->setSelectionIndices(selectedIndices);
-                            mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
-                        }
-                        else
-                        {
-                            qWarning() << "No clusters selected, clearing selection indices";
-                            _embeddingDataset->setSelectionIndices({});
-                            mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
-                        }
-
-                    }
-                    else
-                    {
-                        qWarning() << "No cluster dataset selected or invalid cluster dataset";
-                        _embeddingDataset->setSelectionIndices({});
-                        mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
-                    }
                     setStatusMessage("R", "Computation in progress", "");
                     _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
                     QApplication::processEvents();
-
                     setSelectionAndAutoCompute();
-                    
                     _settingsAction.getDataset1OptionsHolder().getFreezeSelectionAction().setChecked(false);
                     _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
-
-
                     };
 
 
@@ -1740,6 +1708,42 @@ void Computation::AutoCompute()
             return;
 
 
+        auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
+        auto selectIndices = _embeddingDataset->getSelectionIndices();
+        auto clusters = fullClusterDataset->getClusters();
+        if (selectedClusters.isEmpty() || clusters.isEmpty())
+        {
+            setStatusMessage("E", "No clusters selected for correlation computation", "");
+            return;
+        }
+
+
+        if (selectedIndices.empty())
+        {
+            return setStatusMessage("E", "No points selected for correlation computation", "");
+        }
+        auto filtIndxs = filterSelectionIndicesByClusters(selectIndices, clusters, selectedClusters);
+        _filteredSelectionIndices.clear();
+        _filteredSelectionIndices.reserve(filtIndxs.size());
+        for (auto idx : filtIndxs)
+        {
+            _filteredSelectionIndices.push_back(idx);
+        }
+        _embeddingDataset->setSelectionIndices(filtIndxs);
+        _blockSelectionTrigger = true;
+        mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
+
+        if (_filteredSelectionIndices.empty())
+        {
+            setStatusMessage("E", "No points selected for correlation computation after filtering by clusters", "");
+            return;
+        }
+        if (_filteredSelectionIndices.size() < 2)
+        {
+            setStatusMessage("E", "Not enough points selected for correlation computation", "");
+            return;
+        }
+
         float rotationAngle = 0.0f;
         if (!getRotationAngle(scatterplotViewName, rotationAngle))
             return;
@@ -1747,7 +1751,11 @@ void Computation::AutoCompute()
 
         std::vector<float> XYCoordinates;
         if (!populateEmbeddingCoordinates(xEmbeddingIndex, yEmbeddingIndex, XYCoordinates))
+        {
+            setStatusMessage("E", "Error occurred during embedding coordinates population", "");
             return;
+         
+        }
 
 
         std::vector<float> rotatedXYCordinates;
@@ -1786,8 +1794,10 @@ void Computation::AutoCompute()
         std::iota(columnIndices.begin(), columnIndices.end(), 0);
 
 
-        if (!populateAndUpdateDatasets(fullPointDataset, rotatedXYCordinates, XYCoordinates,noOfDimensions, columnIndices, dimensionNames))
-            return;
+        if (!populateAndUpdateDatasets(fullPointDataset, rotatedXYCordinates, XYCoordinates, noOfDimensions, columnIndices, dimensionNames))
+        {
+            return setStatusMessage("E", "Error occurred during dataset population", "");
+        }
 
 
         const auto xCoordinates = getCoordinatesOfCells(rotatedXYCordinates, "X");
@@ -2113,6 +2123,9 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointData
     if (selectedClusterValues.isEmpty()) {
         qWarning() << "No selected cluster values";
         setStatusMessage("E", "No clusters selected", "");
+        _blockSelectionTrigger = true;
+        _embeddingDataset->setSelectionIndices({});
+        mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
         return false;
     }
 
@@ -3296,8 +3309,8 @@ void Computation::resetupCorrelationTable(int datasetNumber)
 
 void Computation::setSelectionAndAutoCompute()
 {
-
     AutoCompute();
+    _blockSelectionTrigger = false;
 }
 void Computation::setupTableModelAndSelection(int datasetNumber)
 {
