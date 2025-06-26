@@ -2151,7 +2151,7 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_lineChartColorClusterDataset1);
     }
     if (!_lineChartColorPointDataset1.isValid()) {
-        _lineChartColorPointDataset1 = mv::data().createDataset("Cluster", "Line Chart Color Point Data 1", _lineChartPointDataset1);
+        _lineChartColorPointDataset1 = mv::data().createDataset("Points", "Line Chart Color Point Data 1", _lineChartPointDataset1);
         _lineChartColorPointDataset1->setGroupIndex(670);
         mv::events().notifyDatasetAdded(_lineChartColorPointDataset1);
     }
@@ -2297,6 +2297,9 @@ void Computation::processAlternativeToPCA()
 
     auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
     auto fullPointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
+    _selectedPCData1.coordinates.clear();
+    _selectedPCData1.numberOfPoints = 0;
+    _selectedPCData1.numberOfDimensions = 0;
 
 
     if (!_selectedGenePointDataset1.isValid() || !fullPointDataset1.isValid() ||
@@ -2493,11 +2496,13 @@ void Computation::processAfterPCACompleteAlt()
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     qDebug() << "PCA analysis completed successfully";
-
-    auto& scores1 = _pca1.scores();
+    _selectedPCData1.coordinates.clear();
+    _selectedPCData1.numberOfPoints = 0;
+    _selectedPCData1.numberOfDimensions = 0;
+    _selectedPCData1.coordinates = _pca1.scores();
     auto& loadings1 = _pca1.loadings();
-    const int nRows = _pca1.numRows();
-    const int nDims = _pca1.numDims();
+    _selectedPCData1.numberOfPoints = _pca1.numRows();
+    _selectedPCData1.numberOfDimensions = _pca1.numDims();
     const int nComps = _pca1.numComponents();
 
     if (!_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid()) {
@@ -2533,7 +2538,7 @@ void Computation::processAfterPCACompleteAlt()
         setStatusMessage("E", "Selected gene point dataset 2 is invalid", "");
         return;
     }
-    if (_selectedGenePointDataset2->getNumDimensions() != nDims) {
+    if (_selectedGenePointDataset2->getNumDimensions() != _selectedPCData1.numberOfDimensions) {
         qWarning() << "Selected gene point dataset 2 dimensions do not match PCA dimensions";
         setStatusMessage("E", "Selected gene point dataset 2 dimensions do not match PCA dimensions", "");
         return;
@@ -2544,13 +2549,13 @@ void Computation::processAfterPCACompleteAlt()
         setStatusMessage("E", "PCA loadings are empty", "");
         return;
     }
-    if (nDims != nComps) {
-        qWarning() << "Loadings matrix is not square: nDims =" << nDims << ", nComps =" << nComps;
+    if (_selectedPCData1.numberOfDimensions != nComps) {
+        qWarning() << "Loadings matrix is not square: nDims =" << _selectedPCData1.numberOfDimensions << ", nComps =" << nComps;
         setStatusMessage("E", "Loadings matrix is not square", "");
         return;
     }
-    if (static_cast<int>(loadings1.size()) != nDims * nComps) {
-        qWarning() << "Loadings size mismatch: loadings1.size() =" << loadings1.size() << ", expected =" << nDims * nComps;
+    if (static_cast<int>(loadings1.size()) != _selectedPCData1.numberOfDimensions * nComps) {
+        qWarning() << "Loadings size mismatch: loadings1.size() =" << loadings1.size() << ", expected =" << _selectedPCData1.numberOfDimensions * nComps;
         setStatusMessage("E", "Loadings size mismatch", "");
         return;
     }
@@ -2595,8 +2600,8 @@ void Computation::processAfterPCACompleteAlt()
         setStatusMessage("E", "Gene indices or common gene names size mismatch", "");
         return;
     }
-    if (nCommon != nDims) {
-        qWarning() << "Gene indices size does not match nDims: indices1 =" << nCommon << ", nDims =" << nDims;
+    if (nCommon != _selectedPCData1.numberOfDimensions) {
+        qWarning() << "Gene indices size does not match nDims: indices1 =" << nCommon << ", nDims =" << _selectedPCData1.numberOfDimensions;
         setStatusMessage("E", "Gene indices size does not match PCA dimensions", "");
         return;
     }
@@ -2609,8 +2614,8 @@ void Computation::processAfterPCACompleteAlt()
         QVector<float> loadings;
     };
     QVector<LoadingContainer> loadingsMap;
-    loadingsMap.reserve(nDims);
-    for (int id = 0; id < nDims; ++id) {
+    loadingsMap.reserve(_selectedPCData1.numberOfDimensions);
+    for (int id = 0; id < _selectedPCData1.numberOfDimensions; ++id) {
         loadingsMap.push_back({
             _geneOfInterestIndices1[id],
             geneOfInterestIndices2[id],
@@ -2620,10 +2625,10 @@ void Computation::processAfterPCACompleteAlt()
     }
     const int numPoints1 = _selectedGenePointDataset1->getNumPoints();
     const int numPoints2 = _selectedGenePointDataset2->getNumPoints();
-    std::vector<float> totalContribution1(numPoints1* nDims, 0.0f);
-    std::vector<float> totalContribution2(numPoints2* nDims, 0.0f);
+    std::vector<float> totalContribution1(numPoints1* _selectedPCData1.numberOfDimensions, 0.0f);
+    std::vector<float> totalContribution2(numPoints2* _selectedPCData1.numberOfDimensions, 0.0f);
 
-    for (int geneitr = 0; geneitr < nDims; ++geneitr) {
+    for (int geneitr = 0; geneitr < _selectedPCData1.numberOfDimensions; ++geneitr) {
         const auto& loadingsVals = loadingsMap[geneitr];
         std::vector<float> genePointVector1(numPoints1, 0.0f);
         std::vector<float> genePointVector2(numPoints2, 0.0f);
@@ -2640,17 +2645,17 @@ void Computation::processAfterPCACompleteAlt()
         const QVector<float>& loadings = loadingsVals.loadings;
         for (int i = 0; i < numPoints1; ++i) {
             float sum = 0.0f;
-            for (int j = 0; j < nDims; ++j) {
+            for (int j = 0; j < _selectedPCData1.numberOfDimensions; ++j) {
                 sum += genePointVector1[i] * loadings[j];
             }
-            totalContribution1[i * nDims + geneitr] = sum;
+            totalContribution1[i * _selectedPCData1.numberOfDimensions + geneitr] = sum;
         }
         for (int i = 0; i < numPoints2; ++i) {
             float sum = 0.0f;
-            for (int j = 0; j < nDims; ++j) {
+            for (int j = 0; j < _selectedPCData1.numberOfDimensions; ++j) {
                 sum += genePointVector2[i] * loadings[j];
             }
-            totalContribution2[i * nDims + geneitr] = sum;
+            totalContribution2[i * _selectedPCData1.numberOfDimensions + geneitr] = sum;
         }
     }
 
@@ -2659,9 +2664,9 @@ void Computation::processAfterPCACompleteAlt()
         << "| Dataset 2 Min:" << *std::min_element(totalContribution2.begin(), totalContribution2.end())
         << "Max:" << *std::max_element(totalContribution2.begin(), totalContribution2.end());
 
-    _pcaCommonGenesDataset1->setData(totalContribution1.data(), numPoints1, nDims);
+    _pcaCommonGenesDataset1->setData(totalContribution1.data(), numPoints1, _selectedPCData1.numberOfDimensions);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
-    _pcaCommonGenesDataset2->setData(totalContribution2.data(), numPoints2, nDims);
+    _pcaCommonGenesDataset2->setData(totalContribution2.data(), numPoints2, _selectedPCData1.numberOfDimensions);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
 
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
@@ -2689,11 +2694,14 @@ void Computation::processAfterPCAComplete()
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     qDebug() << "PCA analysis completed successfully";
-
-    auto& scores1 = _pca1.scores();
+    
+    _selectedPCData1.coordinates.clear();
+    _selectedPCData1.numberOfPoints = 0;
+    _selectedPCData1.numberOfDimensions = 0;
+    _selectedPCData1.coordinates = _pca1.scores();
     auto& loadings1 = _pca1.loadings();
-    const int nRows = _pca1.numRows();
-    const int nDims = _pca1.numDims();
+    _selectedPCData1.numberOfPoints = _pca1.numRows();
+    _selectedPCData1.numberOfDimensions = _pca1.numDims();
     const int nComps = _pca1.numComponents();
 
     if (!_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid()) {
@@ -2729,7 +2737,7 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "Selected gene point dataset 2 is invalid", "");
         return;
     }
-    if (_selectedGenePointDataset2->getNumDimensions() != nDims) {
+    if (_selectedGenePointDataset2->getNumDimensions() != _selectedPCData1.numberOfDimensions) {
         qWarning() << "Selected gene point dataset 2 dimensions do not match PCA dimensions";
         setStatusMessage("E", "Selected gene point dataset 2 dimensions do not match PCA dimensions", "");
         return;
@@ -2740,13 +2748,13 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "PCA loadings are empty", "");
         return;
     }
-    if (nDims != nComps) {
-        qWarning() << "Loadings matrix is not square: nDims =" << nDims << ", nComps =" << nComps;
+    if (_selectedPCData1.numberOfDimensions != nComps) {
+        qWarning() << "Loadings matrix is not square: nDims =" << _selectedPCData1.numberOfDimensions << ", nComps =" << nComps;
         setStatusMessage("E", "Loadings matrix is not square", "");
         return;
     }
-    if (static_cast<int>(loadings1.size()) != nDims * nComps) {
-        qWarning() << "Loadings size mismatch: loadings1.size() =" << loadings1.size() << ", expected =" << nDims * nComps;
+    if (static_cast<int>(loadings1.size()) != _selectedPCData1.numberOfDimensions * nComps) {
+        qWarning() << "Loadings size mismatch: loadings1.size() =" << loadings1.size() << ", expected =" << _selectedPCData1.numberOfDimensions * nComps;
         setStatusMessage("E", "Loadings size mismatch", "");
         return;
     }
@@ -2791,8 +2799,8 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "Gene indices or common gene names size mismatch", "");
         return;
     }
-    if (nCommon != nDims) {
-        qWarning() << "Gene indices size does not match nDims: indices1 =" << nCommon << ", nDims =" << nDims;
+    if (nCommon != _selectedPCData1.numberOfDimensions) {
+        qWarning() << "Gene indices size does not match nDims: indices1 =" << nCommon << ", nDims =" << _selectedPCData1.numberOfDimensions;
         setStatusMessage("E", "Gene indices size does not match PCA dimensions", "");
         return;
     }
@@ -2805,8 +2813,8 @@ void Computation::processAfterPCAComplete()
         QVector<float> loadings;
     };
     QVector<LoadingContainer> loadingsMap;
-    loadingsMap.reserve(nDims);
-    for (int id = 0; id < nDims; ++id) {
+    loadingsMap.reserve(_selectedPCData1.numberOfDimensions);
+    for (int id = 0; id < _selectedPCData1.numberOfDimensions; ++id) {
         loadingsMap.push_back({
             _geneOfInterestIndices1[id],
             geneOfInterestIndices2[id],
@@ -2818,11 +2826,11 @@ void Computation::processAfterPCAComplete()
 
     const int numPoints1 = _selectedGenePointDataset1->getNumPoints();
     const int numPoints2 = _selectedGenePointDataset2->getNumPoints();
-    std::vector<float> pcBestDataRowMajor1(numPoints1 * nDims, 0.0f);
-    std::vector<float> pcBestDataRowMajor2(numPoints2 * nDims, 0.0f);
+    std::vector<float> pcBestDataRowMajor1(numPoints1 * _selectedPCData1.numberOfDimensions, 0.0f);
+    std::vector<float> pcBestDataRowMajor2(numPoints2 * _selectedPCData1.numberOfDimensions, 0.0f);
 
 
-    for (int geneitr = 0; geneitr < nDims; ++geneitr) {
+    for (int geneitr = 0; geneitr < _selectedPCData1.numberOfDimensions; ++geneitr) {
         const auto& loadingsVals = loadingsMap[geneitr];
         std::vector<float> genePointVector1(numPoints1, 0.0f);
         std::vector<float> genePointVector2(numPoints2, 0.0f);
@@ -2831,13 +2839,13 @@ void Computation::processAfterPCAComplete()
         
        
         const QVector<float>& loadings = loadingsVals.loadings;
-        for (int j = 0; j < nDims; ++j) {
+        for (int j = 0; j < _selectedPCData1.numberOfDimensions; ++j) {
             float loading = loadings[j];
             for (int i = 0; i < numPoints1; ++i) {
-                pcBestDataRowMajor1[i * nDims + j] = genePointVector1[i] * loading;
+                pcBestDataRowMajor1[i * _selectedPCData1.numberOfDimensions + j] = genePointVector1[i] * loading;
             }
             for (int i = 0; i < numPoints2; ++i) {
-                pcBestDataRowMajor2[i * nDims + j] = genePointVector2[i] * loading;
+                pcBestDataRowMajor2[i * _selectedPCData1.numberOfDimensions + j] = genePointVector2[i] * loading;
             }
         }
     }
@@ -2847,9 +2855,9 @@ void Computation::processAfterPCAComplete()
         << "| Dataset 2 Min:" << *std::min_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end())
         << "Max:" << *std::max_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end());
 
-    _pcaCommonGenesDataset1->setData(pcBestDataRowMajor1.data(), numPoints1, nDims);
+    _pcaCommonGenesDataset1->setData(pcBestDataRowMajor1.data(), numPoints1, _selectedPCData1.numberOfDimensions);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
-    _pcaCommonGenesDataset2->setData(pcBestDataRowMajor2.data(), numPoints2, nDims);
+    _pcaCommonGenesDataset2->setData(pcBestDataRowMajor2.data(), numPoints2, _selectedPCData1.numberOfDimensions);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
 
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
@@ -3077,9 +3085,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     _lineChartPointDataset1->setDimensionNames(dimensionNamesWithYCoords);
     mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
 
-    //here TODO Update the _lineChartColorPointDataset1
-
-    Dataset<Clusters> clusterDataset =_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset();
+    Dataset<Clusters> clusterDataset = _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset();
     if (clusterDataset.isValid() && _lineChartColorClusterDataset1.isValid())
     {
         _lineChartColorClusterDataset1->getClusters() = QVector<Cluster>();
@@ -3096,7 +3102,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
                 }
             }
 
-            if (newClusterIndices.size()>0)
+            if (newClusterIndices.size() > 0)
             {
                 Cluster remappedCluster;
                 remappedCluster.setName(cluster.getName());
@@ -3104,14 +3110,27 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
                 remappedCluster.setIndices(newClusterIndices);
                 _lineChartColorClusterDataset1->addCluster(remappedCluster);
             }
-           
+
 
         }
         events().notifyDatasetDataChanged(_lineChartColorClusterDataset1);
     }
 
+    if (!_selectedPCData1.coordinates.empty() && _selectedPCData1.numberOfPoints > 0 && _selectedPCData1.numberOfDimensions > 0 && _lineChartColorPointDataset1.isValid())
+    {
+        std::vector<QString> dimensionNamesPC;
+        for (int i = 0; i < _selectedPCData1.numberOfDimensions; ++i) {
+            dimensionNamesPC.push_back(QString("PC%1").arg(i + 1));
+        }
+        _lineChartColorPointDataset1->setData(_selectedPCData1.coordinates.data(), _selectedPCData1.numberOfPoints, _selectedPCData1.numberOfDimensions);
 
-
+        _lineChartColorPointDataset1->setDimensionNames(dimensionNamesPC);
+        mv::events().notifyDatasetDataChanged(_lineChartColorPointDataset1);
+    }
+    else if (_lineChartColorPointDataset1.isValid())
+    {
+        _lineChartColorPointDataset1->setData(nullptr, 0, 0);
+    }
 
     return true;
 }

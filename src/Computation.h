@@ -47,7 +47,12 @@ namespace mv
 {
     class CoreInterface;
 }
-
+struct SelectedPCData
+{
+    std::vector<float> coordinates;
+    int numberOfDimensions;
+    int numberOfPoints;
+};
 struct CorrelationGeneCoords
 {
     int geneIndex;
@@ -131,10 +136,10 @@ protected:
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
     mv::Dataset<Points>         _lineChartPointDataset1 = nullptr;
     mv::Dataset<Clusters>       _lineChartColorClusterDataset1 = nullptr;
-    mv::Dataset<Clusters>       _lineChartColorPointDataset1 = nullptr;
+    mv::Dataset<Points>       _lineChartColorPointDataset1 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
-
+    SelectedPCData              _selectedPCData1;
     QTimer _correlationRangeDebounceTimer1;
     QTimer _clusterSelectionDebounceTimer;
     QTimer _correlationRangeDebounceTimer2;
@@ -151,5 +156,6 @@ protected:
     std::vector<int>   _selectedClusterIndices1;
     std::vector<int>   _selectedClusterIndices2;
     bool    _pacColoringPaused = false;
+
     friend class ChannelAction;
 };
