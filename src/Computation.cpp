@@ -687,7 +687,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getCommonOptionsHolder().getComputePCAAction(), &TriggerAction::triggered, this, computePCATrigger);
 
 
-    const auto pcaColorsToScatterplot = [this]() -> void {
+    const auto pcaColorsToPlots = [this]() -> void {
        if (_pacColoringPaused) {
             qDebug() << "PCA coloring paused, returning early";
             return;
@@ -772,12 +772,83 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
 
 
+        auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+        if (lineplotViewFactory)
+        {
+            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            if (!lineplotView.isEmpty())
+            {
+                for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+                {
+
+                    if (plugin->getGuiName() == lineplotView)
+                    {
+
+                        mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
+                        mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
+                        if (pointDatasetAction && _lineChartPointDataset1.isValid())
+                        {
+                            pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
+                            if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
+                            {
+                                if (clusterDatasetAction && _lineChartColorPointDataset1.isValid())
+                                {
+                                    clusterDatasetAction->setCurrentDataset(_lineChartColorPointDataset1);
+                                    DimensionPickerAction* colorDim = findActionByPath<DimensionPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color Point Dataset Dimension");
+                                    if (colorDim)
+                                    {
+                                        colorDim->setCurrentDimensionIndex(selectedDimInd);
+                                    }
+                                    else
+                                    {
+                                        qWarning() << "LinePlot color dimension action not found";
+                                    }
+                                }
+                                else
+                                {
+                                    qWarning() << "LinePlot color dataset action not found";
+                                }
+                            }
+                            else
+                            {
+                                if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
+                                {
+                                    clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
+                                }
+                                else
+                                {
+                                    qWarning() << "LinePlot color dataset action not found";
+                                }
+                            }
+                            events().notifyDatasetDataChanged(_lineChartPointDataset1);
+                        }
+                        else
+                        {
+                            qWarning() << "LinePlot point dataset action not found";
+                        }
+
+                    }
+                }
+                
+            }
+            else
+            {
+                qWarning() << "No lineplot view selected";
+            }
+
+
+        }
+        else
+        {
+            qWarning() << "LinePlot View plugin not found";
+        }
+
         };
 
-    connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToScatterplot);
-    connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToScatterplot);
+    connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToPlots);
+    connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToPlots);
 
-    connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToScatterplot);
+    connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToPlots);
 
     connect(& _settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
         &OptionsAction::selectedOptionsChanged,
