@@ -114,7 +114,7 @@ private:
     void resetupCorrelationTable(int datasetNumber);
     void setSelectionAndAutoCompute();
     void correlationAfterPCA();
-
+    void populateLineChartColorPointData();
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;

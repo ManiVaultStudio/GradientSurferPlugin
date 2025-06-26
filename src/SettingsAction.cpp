@@ -34,7 +34,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
     _dataset2OptionsHolder.getGeneSelection2Action().setSerializationName("LayerSurfer:GeneSelection2");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("LayerSurfer:ScatterplotViewSelection");
-    _dataset1OptionsHolder.getSelectedScatterplotViewAction().setSerializationName("LayerSurfer:SelectedScatterplotView");
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setSerializationName("LayerSurfer:LineplotViewSelection");
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("LayerSurfer:EmbeddingDimensionX");
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("LayerSurfer:EmbeddingDimensionY");
@@ -60,7 +59,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getComputePCAAction().setToolTip("Compute PCA Action");
     _statusHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
-    _dataset1OptionsHolder.getSelectedScatterplotViewAction().setToolTip("Selected Scatterplot View");
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
     _dataset1OptionsHolder.getDeSelectRowAction().setToolTip("DeSelect Row Action");
     _dataset2OptionsHolder.getDeSelectRow2Action().setToolTip("DeSelect Row Action 2");
@@ -139,7 +137,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getComputationTypesAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getComputationTypesAction().initialize({ "PCA Loadings Total", "PCA Loadings Per Component", "Correlation" },"PCA Loadings Per Component");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _dataset1OptionsHolder.getSelectedScatterplotViewAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
     _commonOptionsHolder.getNormalizationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -298,7 +295,6 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _pointDatasetAction(this, "Point dataset"),
     _embeddingDatasetAction(this, "Embedding dataset"),
     _scatterplotViewSelectionAction(this, "Scatterplot view selection"),
-    _seletedScatterplotViewAction(this, "Selected scatterplot view"),
     _embeddingDimensionXAction(this, "Embedding Dimension X"),
     _embeddingDimensionYAction(this, "Embedding Dimension Y"),
     _geneSelectionAction(this, "Gene Selection"),
@@ -316,7 +312,6 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_embeddingDatasetAction);
     addAction(&_clusterDatasetAction);
     addAction(&_scatterplotViewSelectionAction);
-    addAction(&_seletedScatterplotViewAction);
     addAction(&_lineplotViewSelectionAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
@@ -428,7 +423,6 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset1OptionsHolder.getPointDatasetAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDatasetAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().fromParentVariantMap(variantMap);
-    _dataset1OptionsHolder.getSelectedScatterplotViewAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getLineplotViewSelectionAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
@@ -457,7 +451,6 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset1OptionsHolder.getEmbeddingDatasetAction().insertIntoVariantMap(variantMap);
 
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().insertIntoVariantMap(variantMap);
-    _dataset1OptionsHolder.getSelectedScatterplotViewAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getLineplotViewSelectionAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);

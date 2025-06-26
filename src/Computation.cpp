@@ -77,7 +77,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             QStringList scatterplotNames = {};
             QStringList lineplotNames = {};
             QString selectedCurrentText1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-            QString selectedCurrentText0 = _settingsAction.getDataset1OptionsHolder().getSelectedScatterplotViewAction().getCurrentText();
             QString selectedCurrentText2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
             auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
             if (scatterplotViewFactory)
@@ -101,15 +100,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             selectedCurrentText1 = selectValidOption(scatterplotNames, selectedCurrentText1, 0);
             selectedCurrentText2 = selectValidOption(scatterplotNames, selectedCurrentText2, 1);
-            selectedCurrentText0 = selectValidOption(scatterplotNames, selectedCurrentText0, 2);
 
 
             lineplotView = selectValidOption(lineplotNames, lineplotView, 0);
 
             _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
             _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText1);
-            _settingsAction.getDataset1OptionsHolder().getSelectedScatterplotViewAction().setOptions(scatterplotNames);
-            _settingsAction.getDataset1OptionsHolder().getSelectedScatterplotViewAction().setCurrentText(selectedCurrentText0);
             _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().setOptions(scatterplotNames);
             _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().setCurrentText(selectedCurrentText2);
 
@@ -2488,6 +2484,7 @@ void Computation::processAlternativeToPCA()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
+    populateLineChartColorPointData();
 }
 
 void Computation::processAfterPCACompleteAlt()
@@ -2686,6 +2683,7 @@ void Computation::processAfterPCACompleteAlt()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
+    populateLineChartColorPointData();
 }
 
 
@@ -2877,6 +2875,7 @@ void Computation::processAfterPCAComplete()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
+    populateLineChartColorPointData();
 }
 
 void Computation::correlationAfterPCA()
@@ -3116,6 +3115,11 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         events().notifyDatasetDataChanged(_lineChartColorClusterDataset1);
     }
 
+    return true;
+}
+
+void Computation::populateLineChartColorPointData()
+{
     if (!_selectedPCData1.coordinates.empty() && _selectedPCData1.numberOfPoints > 0 && _selectedPCData1.numberOfDimensions > 0 && _lineChartColorPointDataset1.isValid())
     {
         std::vector<QString> dimensionNamesPC;
@@ -3131,8 +3135,6 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     {
         _lineChartColorPointDataset1->setData(nullptr, 0, 0);
     }
-
-    return true;
 }
 
 bool Computation::setupAndTriggerPCA()
