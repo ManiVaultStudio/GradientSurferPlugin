@@ -3122,13 +3122,13 @@ void Computation::populateLineChartColorPointData()
 {
     if (!_selectedPCData1.coordinates.empty() && _selectedPCData1.numberOfPoints > 0 && _selectedPCData1.numberOfDimensions > 0 && _lineChartColorPointDataset1.isValid())
     {
-        std::vector<QString> dimensionNamesPC;
-        for (int i = 0; i < _selectedPCData1.numberOfDimensions; ++i) {
-            dimensionNamesPC.push_back(QString("PC%1").arg(i + 1));
-        }
+        //std::vector<QString> dimensionNamesPC;
+        //for (int i = 0; i < _selectedPCData1.numberOfDimensions; ++i) {
+            //dimensionNamesPC.push_back(QString("PC%1").arg(i + 1));
+        //}
         _lineChartColorPointDataset1->setData(_selectedPCData1.coordinates.data(), _selectedPCData1.numberOfPoints, _selectedPCData1.numberOfDimensions);
 
-        _lineChartColorPointDataset1->setDimensionNames(dimensionNamesPC);
+        //_lineChartColorPointDataset1->setDimensionNames(dimensionNamesPC);
         mv::events().notifyDatasetDataChanged(_lineChartColorPointDataset1);
     }
     else if (_lineChartColorPointDataset1.isValid())
