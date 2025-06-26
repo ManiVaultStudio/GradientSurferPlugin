@@ -366,14 +366,14 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
 inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& settingsAction) :
     VerticalGroupAction(&settingsAction, "Shared Options"),
     _settingsOptions(settingsAction),
-    _computeAction(this, "Compute"),
+    _computeAction(this, "Compute: Expand PC's across datasets"),
     _clusterSelectionAction(this, "Cluster selection"),
     _pcaDimensionForColoringAction(this, "PC Selection"),
     _dualPCAColoringAction(this, "PCA Coloring"),
     _pcaColoringAction(this, "PCA Coloring"),
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
-    _computePCAAction(this, "Compute PCA"),
+    _computePCAAction(this, "Compute: Selection PCs"),
     _linkdataset1And2GeneTableAction(this, "Link Dataset1 and Dataset2 Gene Table"),
     _computationTypesAction(this, "Computation Types"),
     _normalizeDataAction(this, "Normalize Data"),
@@ -385,7 +385,6 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
     addAction(&_computationTypesAction);
-    addAction(&_computePCAAction);
     addAction(&_dualPCAColoringAction);
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
@@ -394,6 +393,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizeDataAction);
     addAction(&_normalizationTypeAction);
+    addAction(&_computePCAAction);
     addAction(&_computeAction);
 
 }

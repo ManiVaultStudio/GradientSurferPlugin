@@ -29,13 +29,13 @@ FunctionTimer::~FunctionTimer()
         << _timer.elapsed() / 1000.0 << "seconds";
 }
 
-std::vector<int> filterSelectionIndicesByClusters(
+std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(
     const std::vector<std::seed_seq::result_type>& selectionIndices,
     const QVector<Cluster>& clusters,
     const QStringList& selectedClusters)
 {
 
-    std::vector<int> filtered;
+    std::vector<std::seed_seq::result_type> filtered;
     filtered.reserve(selectionIndices.size());
     for (const auto& index : selectionIndices) {
         filtered.push_back(static_cast<int>(index));

@@ -46,7 +46,7 @@ ActionType* findActionByPath(mv::plugin::Plugin* plugin, const QString& path) {
     return dynamic_cast<ActionType*>(plugin->findChildByPath(path));
 }
 void setScatterplotDimensions(mv::plugin::Plugin* plugin, const QString& xName, const QString& yName);
-std::vector<int> filterSelectionIndicesByClusters(
+std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(
     const std::vector<std::seed_seq::result_type>& selectionIndices,
     const QVector<Cluster>& clusters,
     const QStringList& selectedClusters);

@@ -147,6 +147,6 @@ protected:
     QString    _selectedGene2 = "";
     bool _isComputing = false;
     PcaFast _pca1;
-
+    bool _blockSelectionTrigger=false;
     friend class ChannelAction;
 };
