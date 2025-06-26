@@ -1708,7 +1708,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 processAfterPCAComplete();
             }
-            else if (_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText() == "PCA Loadings Total") 
+            else if (_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText() == "Loadings Total") 
             {
                 processAfterPCACompleteAlt();
             }
@@ -1989,7 +1989,7 @@ void Computation::ManualCompute()
             return;
         }
     }
-    else if(_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText() == "PCA Loadings Total")
+    else if(_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText() == "Loadings Total")
     {
         bool complete = setupAndTriggerPCA();
         if (!complete)
