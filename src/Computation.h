@@ -67,8 +67,6 @@ private:
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
     void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
 
-    void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector);
-
     void setupTableModelAndSelection(int datasetNumber);
 
     void populateGenesByCorrelationRange(const std::vector<float>& correlationVector,float min,float max,const std::vector<QString>& geneNameOrdered, int datasetNumber);
@@ -77,8 +75,9 @@ private:
 
     // Helper functions for AutoCompute refactor
     bool validateAndRetrieveDatasets(
-        mv::Dataset<Points>& fullPointDataset,
-        mv::Dataset<Clusters>& fullClusterDataset,
+        mv::Dataset<Points>& fullPointDataset1,
+        mv::Dataset<Clusters>& fullClusterDataset1,
+        mv::Dataset<Clusters>& fullClusterDataset2,
         int& xEmbeddingIndex,
         int& yEmbeddingIndex,
         std::vector<int>& selectedIndices,
@@ -148,5 +147,7 @@ protected:
     bool _isComputing = false;
     PcaFast _pca1;
     bool _blockSelectionTrigger=false;
+    std::vector<int>   _selectedClusterIndices1;
+    std::vector<int>   _selectedClusterIndices2;
     friend class ChannelAction;
 };
