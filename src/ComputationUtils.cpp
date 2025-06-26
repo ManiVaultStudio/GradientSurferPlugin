@@ -242,7 +242,17 @@ void selectFirstRow(QTableView* tableView)
         }
     }
 }
-
+void deselectAllRows(QTableView* tableView)
+{
+    if (tableView) {
+        auto* selectionModel = tableView->selectionModel();
+        if (selectionModel) {
+            selectionModel->clearSelection();
+            tableView->clearSelection();
+            tableView->setCurrentIndex(QModelIndex());
+        }
+    }
+}
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray) {
     if (corrArray.size() != expArray.size()) {
         qWarning() << "Correlation and expression arrays must have the same size for gradient score calculation.";

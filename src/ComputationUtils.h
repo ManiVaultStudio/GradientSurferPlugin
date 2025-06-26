@@ -64,6 +64,7 @@ NormalizationType normalizationTypeFromString(const QString& str);
 QString getContrastingTextColor(const QString& bgColor);
 QString statusToIconName(const QString& status);
 void selectFirstRow(QTableView* tableView);
+void deselectAllRows(QTableView* tableView);
 NormalizationType normalizationTypeFromString(const QString& normTypeStr);
 bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float epsilon = 1e-6f);
 std::pair<float, float> minMax(const std::vector<float>& vec);

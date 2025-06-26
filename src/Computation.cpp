@@ -687,7 +687,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getCommonOptionsHolder().getComputePCAAction(), &TriggerAction::triggered, this, computePCATrigger);
 
 
-    const auto pcaColorsToScatterplot = [this]() -> void {
+    const auto pcaColorsToPlots = [this]() -> void {
        if (_pacColoringPaused) {
             qDebug() << "PCA coloring paused, returning early";
             return;
@@ -772,12 +772,83 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
 
 
+        auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+        if (lineplotViewFactory)
+        {
+            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            if (!lineplotView.isEmpty())
+            {
+                for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+                {
+
+                    if (plugin->getGuiName() == lineplotView)
+                    {
+
+                        mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
+                        mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
+                        if (pointDatasetAction && _lineChartPointDataset1.isValid())
+                        {
+                            pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
+                            if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
+                            {
+                                if (clusterDatasetAction && _lineChartColorPointDataset1.isValid())
+                                {
+                                    clusterDatasetAction->setCurrentDataset(_lineChartColorPointDataset1);
+                                    DimensionPickerAction* colorDim = findActionByPath<DimensionPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color Point Dataset Dimension");
+                                    if (colorDim)
+                                    {
+                                        colorDim->setCurrentDimensionIndex(selectedDimInd);
+                                    }
+                                    else
+                                    {
+                                        qWarning() << "LinePlot color dimension action not found";
+                                    }
+                                }
+                                else
+                                {
+                                    qWarning() << "LinePlot color dataset action not found";
+                                }
+                            }
+                            else
+                            {
+                                if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
+                                {
+                                    clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
+                                }
+                                else
+                                {
+                                    qWarning() << "LinePlot color dataset action not found";
+                                }
+                            }
+                            events().notifyDatasetDataChanged(_lineChartPointDataset1);
+                        }
+                        else
+                        {
+                            qWarning() << "LinePlot point dataset action not found";
+                        }
+
+                    }
+                }
+                
+            }
+            else
+            {
+                qWarning() << "No lineplot view selected";
+            }
+
+
+        }
+        else
+        {
+            qWarning() << "LinePlot View plugin not found";
+        }
+
         };
 
-    connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToScatterplot);
-    connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToScatterplot);
+    connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToPlots);
+    connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToPlots);
 
-    connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToScatterplot);
+    connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToPlots);
 
     connect(& _settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
         &OptionsAction::selectedOptionsChanged,
@@ -1637,7 +1708,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 processAfterPCAComplete();
             }
-            else if (_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText() == "PCA Loadings Total") 
+            else if (_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText() == "Loadings Total") 
             {
                 processAfterPCACompleteAlt();
             }
@@ -1918,7 +1989,7 @@ void Computation::ManualCompute()
             return;
         }
     }
-    else if(_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText() == "PCA Loadings Total")
+    else if(_settingsAction.getCommonOptionsHolder().getComputationTypesAction().getCurrentText() == "Loadings Total")
     {
         bool complete = setupAndTriggerPCA();
         if (!complete)
@@ -3122,13 +3193,13 @@ void Computation::populateLineChartColorPointData()
 {
     if (!_selectedPCData1.coordinates.empty() && _selectedPCData1.numberOfPoints > 0 && _selectedPCData1.numberOfDimensions > 0 && _lineChartColorPointDataset1.isValid())
     {
-        std::vector<QString> dimensionNamesPC;
-        for (int i = 0; i < _selectedPCData1.numberOfDimensions; ++i) {
-            dimensionNamesPC.push_back(QString("PC%1").arg(i + 1));
-        }
+        //std::vector<QString> dimensionNamesPC;
+        //for (int i = 0; i < _selectedPCData1.numberOfDimensions; ++i) {
+            //dimensionNamesPC.push_back(QString("PC%1").arg(i + 1));
+        //}
         _lineChartColorPointDataset1->setData(_selectedPCData1.coordinates.data(), _selectedPCData1.numberOfPoints, _selectedPCData1.numberOfDimensions);
 
-        _lineChartColorPointDataset1->setDimensionNames(dimensionNamesPC);
+        //_lineChartColorPointDataset1->setDimensionNames(dimensionNamesPC);
         mv::events().notifyDatasetDataChanged(_lineChartColorPointDataset1);
     }
     else if (_lineChartColorPointDataset1.isValid())
