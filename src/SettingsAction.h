@@ -248,6 +248,11 @@ public:
         OptionAction& getNormalizationTypeAction() { return _normalizationTypeAction; }
 
 
+        const ToggleAction& getSelectionModeAction() const { return _selectionModeAction; }
+        ToggleAction& getSelectionModeAction() { return _selectionModeAction; }
+
+
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -267,6 +272,7 @@ public:
         OptionAction                 _computationTypesAction;
         ToggleAction                 _normalizeDataAction;
         OptionAction                _normalizationTypeAction;
+        ToggleAction                _selectionModeAction;
     };
 
 

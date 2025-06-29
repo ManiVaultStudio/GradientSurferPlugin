@@ -702,7 +702,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto pcaColorsToPlots = [this]() -> void {
-       if (_pacColoringPaused) {
+       
+        if (_pacColoringPaused) {
             qDebug() << "PCA coloring paused, returning early";
             return;
        }
@@ -873,6 +874,26 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToPlots);
+
+    const auto selectionModeToggled = [this]()
+        {
+            if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
+            {
+                deselectAllRows(_settingsAction.getTableView1Action());
+                deselectAllRows(_settingsAction.getTableView2Action());
+                deselectAllRows(_settingsAction.getTableView3Action());
+            }
+            else
+            {
+                selectFirstRow(_settingsAction.getTableView1Action());
+            }
+
+
+        };
+
+    connect(&_settingsAction.getCommonOptionsHolder().getSelectionModeAction(), &ToggleAction::toggled, this, selectionModeToggled);
+
+
     connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToPlots);
 
     connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToPlots);
@@ -905,6 +926,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_correlationRangeDebounceTimer1, &QTimer::timeout, this, [this]() {
         setStatusMessage("R", "Updating correlation 1 table", "");
         resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1,_settingsAction.getTableView1Action(), _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum(), _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum(),_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _commonGeneNames, _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
+        selectFirstRow(_settingsAction.getTableView1Action());
         setStatusMessage("C", "Correlation table 1 updated", "");
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
@@ -929,6 +951,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         setStatusMessage("R", "Updating correlation 2 table", "");
         resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2,_settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum(), _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum(),_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(),_commonGeneNames, _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(),_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction());
         resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3,_settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum(), _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum(),_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _commonGeneNames, _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
+        selectFirstRow(_settingsAction.getTableView3Action());
         setStatusMessage("C", "Correlation table 2 updated", "");
         });
 
@@ -1936,7 +1959,7 @@ void Computation::AutoCompute()
 
         setupTableModelAndSelection(_settingsAction.getTableView1Action(), _geneCorrValues1, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _commonGeneNames, _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
 
-
+        selectFirstRow(_settingsAction.getTableView1Action());
         if (lineplotViewFactory)
         {
             auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
@@ -2726,9 +2749,10 @@ void Computation::correlationAfterPCA()
         setStatusMessage("E", "Error occurred during filtering genes", "");
         return;
     }
+
     setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), _commonGeneNames, _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction());
     setupTableModelAndSelection(_settingsAction.getTableView3Action(), _geneCorrValues3, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _commonGeneNames, _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
-
+    selectFirstRow(_settingsAction.getTableView3Action());
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
 }
 bool Computation::getRotationAngle(const QString& scatterplotViewName, float& rotationAngle)

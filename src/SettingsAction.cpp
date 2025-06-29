@@ -81,14 +81,15 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setToolTip("Auto Compute Action");
 
     _commonOptionsHolder.getPcaColoringAction().setToolTip("PCA Coloring Action");
+    _commonOptionsHolder.getSelectionModeAction().setToolTip("Selection Mode Action");
     _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
     _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension Selection Action");
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
 
-
     _commonOptionsHolder.getAutoComputeAction().setChecked(true);
 
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
+    _commonOptionsHolder.getSelectionModeAction().setChecked(true);
 
     _dataset1OptionsHolder.getFocusSelectionAction().setChecked(false);
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
@@ -129,6 +130,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getSelectionModeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
     _commonOptionsHolder.getDualPCAColoringAction().initialize({ "Dataset1", "Dataset2" }, { "Dataset1", "Dataset2" });
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -371,7 +373,9 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _computePCAAction(this, "Compute: Selection PCs"),
     _computationTypesAction(this, "Computation Types"),
     _normalizeDataAction(this, "Normalize Data"),
-    _normalizationTypeAction(this, "Normalization Type")
+    _normalizationTypeAction(this, "Normalization Type"),
+    _selectionModeAction(this, "Selection Mode")
+
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -386,7 +390,9 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizeDataAction);
     addAction(&_normalizationTypeAction);
+    addAction(&_selectionModeAction);
     addAction(&_computePCAAction);
+
     addAction(&_computeAction);
 
 }

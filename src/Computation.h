@@ -130,6 +130,5 @@ protected:
     std::vector<int>   _selectedClusterIndices1;
     std::vector<int>   _selectedClusterIndices2;
     bool    _pacColoringPaused = false;
-
     friend class ChannelAction;
 };

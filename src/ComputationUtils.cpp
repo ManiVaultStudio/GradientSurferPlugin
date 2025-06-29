@@ -152,7 +152,6 @@ void setupTableModelAndSelection(
 )
 {
     FunctionTimer timer(Q_FUNC_INFO);
-
     auto rowCount = static_cast<int>(geneCorrValues.size());
     QStandardItemModel* model = new QStandardItemModel(rowCount, 3, tableViewMain);
     model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
@@ -239,7 +238,6 @@ void setupTableModelAndSelection(
         );
     }
 
-    selectFirstRow(tableViewMain);
 }
 
 void makeSelection(QString value, QTableView* tableView)
@@ -316,6 +314,7 @@ void deselectAllRows(QTableView* tableView)
     tableView->selectionModel()->clearSelection();
     tableView->clearFocus();
     tableView->setCurrentIndex(QModelIndex());
+
 }
 
 void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices)
@@ -387,9 +386,6 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
     }
     setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, commonGeneNames, tableViewOther1, tableViewOther2, geneSelectionAction2);
 
-    if (tableViewMain) {
-        selectFirstRow(tableViewMain);
-    }
 }
 
 void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector, QString corrType)
