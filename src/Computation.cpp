@@ -243,6 +243,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     if (plugin->getGuiName() == lineplotView)
                     {
+                        
                         _pacColoringPaused = true;
                         _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
 
@@ -251,7 +252,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         if (pointDatasetAction && _lineChartPointDataset1.isValid())
                         {
                             pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
-
+                            int maxVal = _lineChartPointDataset1->getNumPoints();
                             if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
                             {
                                 clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
@@ -278,6 +279,20 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             {
                                 dimensionY->setCurrentText(selectedGene);
                             }
+
+                            mv::gui::OptionAction* smoothingType = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Type");
+                            mv::gui::IntegralAction* smoothingWindow = findActionByPath<IntegralAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Window");
+                            if (smoothingType && smoothingWindow)
+                            {
+                                smoothingType->setCurrentText("Moving Average");
+                                int currentVal = maxVal*0.2;
+                                smoothingWindow->setMaximum(maxVal);
+                                smoothingWindow->setMinimum(2);
+                                smoothingWindow->setValue(1);
+                            }
+
+
+
                             events().notifyDatasetDataChanged(_lineChartPointDataset1);
 
                         }
@@ -781,7 +796,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     if (plugin->getGuiName() == lineplotView)
                     {
-
                         mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
                         mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
                         if (pointDatasetAction && _lineChartPointDataset1.isValid())
@@ -818,6 +832,19 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                     qWarning() << "LinePlot color dataset action not found";
                                 }
                             }
+
+                            int maxVal = _lineChartPointDataset1->getNumPoints();
+                            mv::gui::OptionAction* smoothingType = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Type");
+                            mv::gui::IntegralAction* smoothingWindow = findActionByPath<IntegralAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Window");
+                            if (smoothingType && smoothingWindow)
+                            {
+                                smoothingType->setCurrentText("Moving Average");
+                                int currentVal = maxVal * 0.2;
+                                smoothingWindow->setMaximum(maxVal);
+                                smoothingWindow->setMinimum(2);
+                                smoothingWindow->setValue(1);
+                            }
+
                             events().notifyDatasetDataChanged(_lineChartPointDataset1);
                         }
                         else
