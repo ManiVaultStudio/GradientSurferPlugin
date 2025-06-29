@@ -252,7 +252,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                         if (pointDatasetAction && _lineChartPointDataset1.isValid())
                         {
                             pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
-                            int maxVal = _lineChartPointDataset1->getNumPoints();
+                            
                             if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
                             {
                                 clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
@@ -285,10 +285,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             if (smoothingType && smoothingWindow)
                             {
                                 smoothingType->setCurrentText("Moving Average");
-                                int currentVal = maxVal*0.2;
+                                int maxVal = _lineChartPointDataset1->getNumPoints()-1;
+                                int currentVal = static_cast<int>(std::round(maxVal * 0.2));
                                 smoothingWindow->setMaximum(maxVal);
                                 smoothingWindow->setMinimum(2);
-                                smoothingWindow->setValue(1);
+                                smoothingWindow->setValue(currentVal);
                             }
 
 
@@ -839,10 +840,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             if (smoothingType && smoothingWindow)
                             {
                                 smoothingType->setCurrentText("Moving Average");
-                                int currentVal = maxVal * 0.2;
+                                int maxVal = _lineChartPointDataset1->getNumPoints()-1;
+                                int currentVal = static_cast<int>(std::round(maxVal * 0.2));
                                 smoothingWindow->setMaximum(maxVal);
                                 smoothingWindow->setMinimum(2);
-                                smoothingWindow->setValue(1);
+                                smoothingWindow->setValue(currentVal);
                             }
 
                             events().notifyDatasetDataChanged(_lineChartPointDataset1);
