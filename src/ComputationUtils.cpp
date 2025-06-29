@@ -17,6 +17,13 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
+std::vector<CorrelationGeneCoords> _geneCorrValues1;
+std::vector<CorrelationGeneCoords> _geneCorrValues2;
+std::vector<CorrelationGeneCoords> _geneCorrValues3;
+std::vector<int> _geneOfInterestIndices1;
+std::vector<int> _geneOfInterestIndices2;
+std::vector<int> _geneOfInterestIndices3;
+QList<QString> _commonGeneNames;
 
 FunctionTimer::FunctionTimer(const QString& functionName)
     : _functionName(functionName)
@@ -70,6 +77,410 @@ std::vector<int> getIndicesBySelectedClusters(
     return filtered;
 }
 
+void clearTable(QTableView* tableView)
+{
+    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(tableView->model());
+    if (model) {
+        model->clear();
+    }
+}
+
+void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allTables, const QList<DimensionPickerAction*>& allActions)
+{
+    static bool isSyncing = false;
+    if (isSyncing) return;
+    isSyncing = true;
+
+    // Block signals for all tables during sync
+    std::vector<std::unique_ptr<QSignalBlocker>> blockers;
+    for (QTableView* table : allTables) {
+        if (table && table->selectionModel())
+            blockers.emplace_back(std::make_unique<QSignalBlocker>(table->selectionModel()));
+    }
+
+    auto* mdl = sourceTable->model();
+    if (!mdl) {
+        isSyncing = false;
+        return;
+    }
+
+    QModelIndexList selectedIndexes = sourceTable->selectionModel()->selectedRows();
+    if (selectedIndexes.isEmpty()) {
+        // If selection is cleared in source, clear in all others
+        for (QTableView* table : allTables) {
+            if (table != sourceTable) {
+                deselectAllRows(table);
+            }
+        }
+        isSyncing = false;
+        return;
+    }
+
+    const QModelIndex& index = selectedIndexes.first();
+    if (!index.isValid()) {
+        isSyncing = false;
+        return;
+    }
+
+    QString value = mdl->data(mdl->index(index.row(), 0), Qt::DisplayRole).toString();
+
+    // Explicitly set selection in the sourceTable as well
+    makeSelection(value, sourceTable);
+
+    // Sync selection in all other tables
+    for (QTableView* table : allTables) {
+        if (table != sourceTable) {
+            makeSelection(value, table);
+        }
+    }
+    // Sync all actions
+    for (DimensionPickerAction* action : allActions) {
+        if (action) action->setCurrentDimensionName(value);
+    }
+
+    isSyncing = false;
+}
+
+void setupTableModelAndSelection(
+    QTableView* tableViewMain,
+    std::vector<CorrelationGeneCoords>& geneCorrValues,
+    DimensionPickerAction& geneSelectionAction,
+    QStringList& commonGeneNames,
+    QTableView* tableViewOther1,
+    QTableView* tableViewOther2,
+    DimensionPickerAction& geneSelectionAction2
+)
+{
+    FunctionTimer timer(Q_FUNC_INFO);
+
+    auto rowCount = static_cast<int>(geneCorrValues.size());
+    QStandardItemModel* model = new QStandardItemModel(rowCount, 3, tableViewMain);
+    model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
+
+    float minCorr = std::numeric_limits<float>::max();
+    float maxCorr = std::numeric_limits<float>::lowest();
+    for (const auto& entry : geneCorrValues) {
+        minCorr = std::min(minCorr, entry.correlationValue);
+        maxCorr = std::max(maxCorr, entry.correlationValue);
+    }
+    commonGeneNames.clear();
+
+    QVector<QStandardItem*> rowItems(3);
+    for (int i = 0; i < rowCount; ++i) {
+        const auto& entry = geneCorrValues[i];
+
+        QStandardItem* geneItem = new QStandardItem(entry.geneName);
+        QStandardItem* corrItem = new QStandardItem;
+        QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
+
+        corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::UserRole + 1);
+        corrItem->setData(QVariant::fromValue(entry.correlationValue), Qt::DisplayRole);
+
+        if (entry.isWithinRange) {
+            QFont fontG = geneItem->font();
+            fontG.setBold(true);
+            geneItem->setFont(fontG);
+            geneItem->setBackground(QColor("#FFB6C1"));
+            geneItem->setForeground(QColor("#000000"));
+
+            QFont fontR = rankItem->font();
+            fontR.setBold(true);
+            rankItem->setFont(fontR);
+            rankItem->setBackground(QColor("#FFB6C1"));
+            rankItem->setForeground(QColor("#000000"));
+
+            commonGeneNames.append(entry.geneName);
+        }
+
+        corrItem->setForeground(QColor("#000000"));
+
+        rowItems[0] = geneItem;
+        rowItems[1] = corrItem;
+        rowItems[2] = rankItem;
+        for (int col = 0; col < 3; ++col)
+            model->setItem(i, col, rowItems[col]);
+    }
+
+    tableViewMain->setModel(model);
+    deselectAllRows(tableViewMain);
+    // Ensure only one row can be selected at a time and the full row gets selected
+    tableViewMain->setSelectionMode(QAbstractItemView::SingleSelection);
+    tableViewMain->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    tableViewMain->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
+    tableViewMain->resizeColumnsToContents();
+    tableViewMain->resizeRowsToContents();
+    tableViewMain->setSortingEnabled(true);
+    tableViewMain->sortByColumn(1, Qt::DescendingOrder);
+
+    // Disconnect previous connections for all tables
+    auto disconnectSelection = [](QTableView* table) {
+        if (table && table->selectionModel())
+            QObject::disconnect(table->selectionModel(), nullptr, nullptr, nullptr);
+    };
+    disconnectSelection(tableViewMain);
+    disconnectSelection(tableViewOther1);
+    disconnectSelection(tableViewOther2);
+
+    // Prepare lists for sync helper
+    QList<QTableView*> allTables = { tableViewMain, tableViewOther1, tableViewOther2 };
+    QList<DimensionPickerAction*> allActions = { &geneSelectionAction, &geneSelectionAction2 };
+
+    // Connect selectionChanged for all tables
+    for (QTableView* table : allTables) {
+        if (!table) continue;
+        QObject::connect(
+            table->selectionModel(),
+            &QItemSelectionModel::selectionChanged,
+            table,
+            [table, allTables, allActions](const QItemSelection&, const QItemSelection&) {
+                syncTableSelections(table, allTables, allActions);
+            }
+        );
+    }
+
+    selectFirstRow(tableViewMain);
+}
+
+void makeSelection(QString value, QTableView* tableView)
+{
+    if (!tableView || !tableView->selectionModel()) return;
+
+    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(tableView->model());
+    if (!model) return;
+
+    // Ensure single selection mode and row selection behavior
+    tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    QSignalBlocker blocker(tableView->selectionModel());
+
+    // Only clear selection once
+    tableView->selectionModel()->clearSelection();
+
+    for (int row = 0; row < model->rowCount(); ++row) {
+        QString geneName = model->data(model->index(row, 0), Qt::DisplayRole).toString();
+        if (geneName == value) {
+            QModelIndex startIndex = model->index(row, 0);
+
+            // Set current index and select the row
+            tableView->selectionModel()->setCurrentIndex(
+                startIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+            );
+
+            // Scroll to the selected row and force repaint
+            tableView->scrollTo(startIndex, QAbstractItemView::EnsureVisible);
+            tableView->viewport()->update();
+            tableView->repaint();
+
+            break;
+        }
+    }
+}
+
+void selectFirstRow(QTableView* tableView)
+{
+    if (!tableView || !tableView->selectionModel()) return;
+
+    // Ensure single selection mode and row selection behavior
+    tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    QSignalBlocker blocker(tableView->selectionModel());
+
+    auto* model = tableView->model();
+    if (!model || model->rowCount() <= 0) return;
+
+    QModelIndex firstIndex = model->index(0, 0);
+    if (!firstIndex.isValid()) return;
+
+    // Only clear selection once
+    tableView->selectionModel()->clearSelection();
+
+    // Set current index and select the row
+    tableView->selectionModel()->setCurrentIndex(
+        firstIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
+    );
+
+    // Scroll to the selected row and force repaint
+    tableView->scrollTo(firstIndex, QAbstractItemView::EnsureVisible);
+    tableView->viewport()->update();
+    tableView->repaint();
+}
+
+void deselectAllRows(QTableView* tableView)
+{
+    if (!tableView || !tableView->selectionModel()) return;
+
+    QSignalBlocker blocker(tableView->selectionModel());
+    tableView->selectionModel()->clearSelection();
+    tableView->clearFocus();
+    tableView->setCurrentIndex(QModelIndex());
+}
+
+void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices)
+{
+    constexpr float epsilon = 1e-6f;
+    const int count = std::min(static_cast<int>(correlationVector.size()), static_cast<int>(geneNameOrdered.size()));
+    if (count == 0) return;
+
+
+    std::vector<int> indices(count);
+    std::iota(indices.begin(), indices.end(), 0);
+
+
+    std::sort(indices.begin(), indices.end(),
+        [&correlationVector](int a, int b) {
+            return correlationVector[a] > correlationVector[b];
+        });
+
+
+    geneCorrValues.clear();
+    geneCorrValues.reserve(count);
+    geneOfInterestIndices.clear();
+    geneOfInterestIndices.reserve(count);
+
+
+    int rank = 1;
+    float prevCorr = std::numeric_limits<float>::quiet_NaN();
+    for (int i = 0; i < count; ++i) {
+        int idx = indices[i];
+        float corr = correlationVector[idx];
+
+        bool isWithinRange = isCorrelationWithinRange(corr, minCorr, maxCorr);
+
+        if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
+            rank = i + 1;
+            prevCorr = corr;
+        }
+
+        geneCorrValues.emplace_back(CorrelationGeneCoords{
+            idx,
+            geneNameOrdered[idx],
+            corr,
+            rank,
+            isWithinRange
+            });
+        if (isWithinRange) {
+            geneOfInterestIndices.push_back(idx);
+        }
+    }
+}
+
+void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, QTableView* tableViewMain, float minRange, float maxRange, DimensionPickerAction& geneSelectionAction, QStringList& commonGeneNames, QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2)
+{
+
+    constexpr float epsilon = 1e-6f;
+    geneOfInterestIndices.clear();
+    geneOfInterestIndices.reserve(geneCorrValues.size());
+
+
+    for (auto& gene : geneCorrValues) {
+
+
+        bool isWithinRange = isCorrelationWithinRange(gene.correlationValue, minRange, maxRange);
+        gene.isWithinRange = isWithinRange;
+        if (isWithinRange) {
+            geneOfInterestIndices.push_back(gene.geneIndex);
+
+        }
+    }
+    setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, commonGeneNames, tableViewOther1, tableViewOther2, geneSelectionAction2);
+
+    if (tableViewMain) {
+        selectFirstRow(tableViewMain);
+    }
+}
+
+void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector, QString corrType)
+{
+    FunctionTimer timer(Q_FUNC_INFO);
+    const int numGenes = dataset->getNumDimensions();
+    const int numCells = cellIndices.size();
+    const int numCoords = coords.size();
+
+    assert(numCells == numCoords);
+
+
+
+    std::vector<std::pair<float, int>> coordIndexPairs;
+    for (size_t i = 0; i < cellIndices.size(); ++i) {
+        coordIndexPairs.emplace_back(coords[i], cellIndices[i]);
+    }
+
+
+    std::sort(coordIndexPairs.begin(), coordIndexPairs.end());
+
+
+    std::vector<int> sortedCellIndices;
+    std::vector<float> sortedCoords;
+    sortedCellIndices.reserve(cellIndices.size());
+    sortedCoords.reserve(coords.size());
+
+    for (const auto& pair : coordIndexPairs) {
+        sortedCoords.push_back(pair.first);
+        sortedCellIndices.push_back(pair.second);
+    }
+
+
+
+    float meanCoord = computeMean(sortedCoords);
+
+    std::vector<float> centeredCoords(numCells);
+    float normCoord = 0.0f;
+    for (int i = 0; i < numCells; ++i) {
+        float c = sortedCoords[i] - meanCoord;
+        centeredCoords[i] = c;
+        normCoord += c * c;
+    }
+
+    corrVector.clear();
+    corrVector.resize(numGenes);
+
+#pragma omp parallel for
+    for (int geneIdx = 0; geneIdx < numGenes; ++geneIdx) {
+        std::vector<float> geneVals(numCells);
+        float meanGene = 0.0f;
+
+        for (int i = 0; i < numCells; ++i) {
+            int rowIdx = sortedCellIndices[i];
+            float val = dataset->getValueAt(rowIdx * numGenes + geneIdx);
+            geneVals[i] = val;
+            meanGene += val;
+        }
+        meanGene /= numCells;
+
+        float normGene = 0.0f;
+        float dotProd = 0.0f;
+        for (int i = 0; i < numCells; ++i) {
+            float centered = geneVals[i] - meanGene;
+            normGene += centered * centered;
+            dotProd += centered * centeredCoords[i];
+        }
+
+        float corr = (normGene > 0.0f && normCoord > 0.0f)
+            ? (dotProd / std::sqrt(normGene * normCoord))
+            : 0.0f;
+
+        if (std::isnan(corr)) corr = 0.0f;
+
+        if (corrType == "Absolute") {
+            corrVector[geneIdx] = std::abs(corr);
+        }
+        else if (corrType == "Positive") {
+            corrVector[geneIdx] = (corr > 0.0f) ? corr : 0.0f;
+        }
+        else if (corrType == "Negative") {
+            corrVector[geneIdx] = (corr < 0.0f) ? corr : 0.0f;
+        }
+        else {
+            corrVector[geneIdx] = corr;
+        }
+
+    }
+
+
+}
 void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices, QString normTypeStr, bool normalizeData)
 {
     FunctionTimer timer(Q_FUNC_INFO);
@@ -80,7 +491,7 @@ void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std:
 
     const int numCellsInPC = selectedPC.size();
 
-    assert(numCells == numCellsInPC);
+    assert(numCellsFilt == numCellsInPC);
 
     float meanCoord = computeMean(selectedPC);
 
@@ -226,33 +637,8 @@ NormalizationType normalizationTypeFromString(const QString& str) {
     if (str == "Log2") return NormalizationType::Log2;
     return NormalizationType::None;
 }
-void selectFirstRow(QTableView* tableView)
-{
-    if (tableView) {
-        auto* model = tableView->model();
-        if (model && model->rowCount() > 0) {
-            QModelIndex firstIndex = model->index(0, 0);
-            if (firstIndex.isValid()) {
-                tableView->setCurrentIndex(firstIndex);
-                tableView->selectionModel()->select(
-                    firstIndex,
-                    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
-                );
-            }
-        }
-    }
-}
-void deselectAllRows(QTableView* tableView)
-{
-    if (tableView) {
-        auto* selectionModel = tableView->selectionModel();
-        if (selectionModel) {
-            selectionModel->clearSelection();
-            tableView->clearSelection();
-            tableView->setCurrentIndex(QModelIndex());
-        }
-    }
-}
+
+
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray) {
     if (corrArray.size() != expArray.size()) {
         qWarning() << "Correlation and expression arrays must have the same size for gradient score calculation.";

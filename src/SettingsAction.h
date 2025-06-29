@@ -238,9 +238,6 @@ public:
         const TriggerAction& getComputePCAAction() const { return _computePCAAction; }
         TriggerAction& getComputePCAAction() { return _computePCAAction; }
 
-        const ToggleAction& getLinkDataset1And2GeneTableAction() const { return _linkdataset1And2GeneTableAction; }
-        ToggleAction& getLinkDataset1And2GeneTableAction() { return _linkdataset1And2GeneTableAction; }
-
         const OptionAction& getComputationTypesAction() const { return _computationTypesAction; }
         OptionAction& getComputationTypesAction() { return _computationTypesAction; }
 
@@ -266,8 +263,6 @@ public:
         OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
-
-        ToggleAction                 _linkdataset1And2GeneTableAction;
        
         OptionAction                 _computationTypesAction;
         ToggleAction                 _normalizeDataAction;

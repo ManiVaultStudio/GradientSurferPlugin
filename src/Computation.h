@@ -47,20 +47,7 @@ namespace mv
 {
     class CoreInterface;
 }
-struct SelectedPCData
-{
-    std::vector<float> coordinates;
-    int numberOfDimensions;
-    int numberOfPoints;
-};
-struct CorrelationGeneCoords
-{
-    int geneIndex;
-    QString geneName;
-    float correlationValue;
-    int   rank;
-    bool  isWithinRange;
-};
+
 
 class Computation : public WidgetAction
 {
@@ -70,11 +57,6 @@ public:
 
 private:
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
-    void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points>, const std::vector<float>& coords, std::vector<float>& corrVector);
-
-    void setupTableModelAndSelection(int datasetNumber);
-
-    void populateGenesByCorrelationRange(const std::vector<float>& correlationVector,float min,float max,const std::vector<QString>& geneNameOrdered, int datasetNumber);
     void ManualCompute();
     void AutoCompute();
 
@@ -92,10 +74,8 @@ private:
     );
 
     bool createDatasetsIfNeeded();
-    void clearTable(int tableNumber);
     void updateClusterOptions();
     void processAfterPCAComplete();
-    void processAfterPCACompleteAlt();
     bool getRotationAngle(const QString& scatterplotViewName, float& rotationAngle);
     void processAlternativeToPCA();
     bool populateEmbeddingCoordinates(
@@ -111,7 +91,6 @@ private:
         const std::vector<QString>& dimensionNames);
 
     bool setupAndTriggerPCA();
-    void resetupCorrelationTable(int datasetNumber);
     void setSelectionAndAutoCompute();
     void correlationAfterPCA();
     void populateLineChartColorPointData();
@@ -125,13 +104,6 @@ protected:
     mv::Dataset<Points>         _selectedGenePointDataset1 = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset2 = nullptr;
     std::vector<int>            _filteredSelectionIndices;
-    std::vector<CorrelationGeneCoords> _geneCorrValues1;
-    std::vector<CorrelationGeneCoords> _geneCorrValues2;
-    std::vector<CorrelationGeneCoords> _geneCorrValues3;
-    std::vector<int>            _geneOfInterestIndices1;
-    std::vector<int>            _geneOfInterestIndices2;
-    std::vector<int>            _geneOfInterestIndices3;
-    QStringList                 _commonGeneNames;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
     mv::Dataset<Points>         _lineChartPointDataset1 = nullptr;
