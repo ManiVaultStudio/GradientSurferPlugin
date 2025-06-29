@@ -103,6 +103,8 @@ protected:
     mv::Dataset<Points>         _selectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset1 = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset2 = nullptr;
+    mv::Dataset<Points>         _selectedEmbeddingPointDataset1 = nullptr;
+    mv::Dataset<Points>         _selectedEmbeddingPointDataset2 = nullptr;
     std::vector<int>            _filteredSelectionIndices;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;

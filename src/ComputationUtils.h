@@ -46,12 +46,19 @@ struct CorrelationGeneCoords
     int   rank;
     bool  isWithinRange;
 };
-struct LoadingContainer {
+struct LoadingValues {
     int geneId1;
     int geneId2;
-    QString geneName;
     QVector<float> loadings;
 };
+struct LoadingValuesContainer
+{
+    std::map<QString,LoadingValues> loadingValuesMap;
+    int numberOfDimensions;
+    int numberOfComponents;
+
+};
+
 using namespace mv::gui;
 struct StatusInfo {
     QString status;

@@ -2126,6 +2126,18 @@ bool Computation::createDatasetsIfNeeded()
         _selectedGenePointDataset2->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_selectedGenePointDataset2);
     }
+
+    if (!_selectedEmbeddingPointDataset1.isValid()) {
+        _selectedEmbeddingPointDataset1 = mv::data().createDataset("Points", "Selected Embedding Point Data 1", _selectedGenePointDataset1);
+        _selectedEmbeddingPointDataset1->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_selectedEmbeddingPointDataset1);
+    }
+
+    if (!_selectedEmbeddingPointDataset2.isValid()) {
+        _selectedEmbeddingPointDataset2 = mv::data().createDataset("Points", "Selected Embedding Point Data 2", _selectedGenePointDataset2);
+        _selectedEmbeddingPointDataset2->setGroupIndex(667);
+        mv::events().notifyDatasetAdded(_selectedEmbeddingPointDataset2);
+    }
     
     if (!_selectedCellPointDataset.isValid()) {
         _selectedCellPointDataset = mv::data().createDataset("Points", "Selected Cell Point Data");
@@ -2159,7 +2171,7 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_selectedEmbeddingDataset);
     }
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColorClusterDataset1.isValid() || !_lineChartColorPointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColorClusterDataset1.isValid() || !_lineChartColorPointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid() ||!_selectedEmbeddingPointDataset1.isValid() ||!_selectedEmbeddingPointDataset2.isValid()) {
         qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -2209,13 +2221,15 @@ void Computation::processAlternativeToPCA()
 
     auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
     auto fullPointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
+    auto fullEmbeddingDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+    auto fullEmbeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
     _selectedPCData1.coordinates.clear();
     _selectedPCData1.numberOfPoints = 0;
     _selectedPCData1.numberOfDimensions = 0;
 
 
     if (!_selectedGenePointDataset1.isValid() || !fullPointDataset1.isValid() ||
-        !_selectedGenePointDataset2.isValid() || !fullPointDataset2.isValid()) {
+        !_selectedGenePointDataset2.isValid() || !fullPointDataset2.isValid() ||!_selectedEmbeddingPointDataset1.isValid() ||!_selectedEmbeddingPointDataset2.isValid()|| !fullEmbeddingDataset1.isValid() || !fullEmbeddingDataset2.isValid()) {
         qWarning() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return;
@@ -2305,13 +2319,28 @@ void Computation::processAlternativeToPCA()
         setStatusMessage("E", "Dimension names size mismatch with gene datasets", "");
         return;
     }
-
+    
     std::vector<float> cellByGeneMatrix2(numAllFilteredCells2 * numDimsOfInterest);
     std::vector<float> cellByGeneMatrix1(numAllFilteredCells1 * numDimsOfInterest);
+    std::vector<float> embeddingMatrix1(numAllFilteredCells1 *fullEmbeddingDataset1->getNumDimensions());
+    std::vector<float> embeddingMatrix2(numAllFilteredCells2 * fullEmbeddingDataset2->getNumDimensions());
+
+    std::vector<int> embeddingGeneIndices1(fullEmbeddingDataset1->getNumDimensions());
+    for (int i = 0; i < fullEmbeddingDataset1->getNumDimensions(); ++i) {
+        embeddingGeneIndices1[i] = i;
+    }
+    std::vector<int> embeddingGeneIndices2(fullEmbeddingDataset2->getNumDimensions());
+    for (int i = 0; i < fullEmbeddingDataset2->getNumDimensions(); ++i) {
+        embeddingGeneIndices2[i] = i;
+    }
+
+
 
     try {
         fullPointDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, _selectedClusterIndices2);
         fullPointDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, _selectedClusterIndices1);
+        fullEmbeddingDataset1->populateDataForDimensions(embeddingMatrix1, embeddingGeneIndices1,_selectedClusterIndices1);
+        fullEmbeddingDataset2->populateDataForDimensions(embeddingMatrix2, embeddingGeneIndices2, _selectedClusterIndices2);
     }
     catch (const std::exception& ex) {
         qWarning() << "Exception in populateDataForDimensions:" << ex.what();
@@ -2336,6 +2365,14 @@ void Computation::processAlternativeToPCA()
     _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numAllFilteredCells1, numDimsOfInterest);
     _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
+
+    _selectedEmbeddingPointDataset1->setData(embeddingMatrix1.data(), numAllFilteredCells1, fullEmbeddingDataset1->getNumDimensions());
+    _selectedEmbeddingPointDataset1->setDimensionNames(fullEmbeddingDataset1->getDimensionNames());
+    mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset1);
+
+    _selectedEmbeddingPointDataset2->setData(embeddingMatrix2.data(), numAllFilteredCells2, fullEmbeddingDataset2->getNumDimensions());
+    _selectedEmbeddingPointDataset2->setDimensionNames(fullEmbeddingDataset2->getDimensionNames());
+    mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset2);
 
     std::vector<float> gradientScore1(numAllFilteredCells1, 0.0f), gradientScore2(numAllFilteredCells2, 0.0f);
 
@@ -2521,52 +2558,85 @@ void Computation::processAfterPCAComplete()
 
  
 
-    QVector<LoadingContainer> loadingsMap;
-    loadingsMap.reserve(_selectedPCData1.numberOfDimensions);
+    LoadingValuesContainer loadingValues;
+    loadingValues.numberOfComponents = nComps;
+    loadingValues.numberOfDimensions = _selectedPCData1.numberOfDimensions;
+
     for (int id = 0; id < _selectedPCData1.numberOfDimensions; ++id) {
-        loadingsMap.push_back({
-            _geneOfInterestIndices1[id],
-            geneOfInterestIndices2[id],
-            commonGeneNames[id],
-            QVector<float>(loadings1.begin() + id * nComps, loadings1.begin() + (id + 1) * nComps)
-            });
-    }
-
-
-    const int numPoints1 = _selectedGenePointDataset1->getNumPoints();
-    const int numPoints2 = _selectedGenePointDataset2->getNumPoints();
-    std::vector<float> pcBestDataRowMajor1(numPoints1 * _selectedPCData1.numberOfDimensions, 0.0f);
-    std::vector<float> pcBestDataRowMajor2(numPoints2 * _selectedPCData1.numberOfDimensions, 0.0f);
-
-
-    for (int geneitr = 0; geneitr < _selectedPCData1.numberOfDimensions; ++geneitr) {
-        const auto& loadingsVals = loadingsMap[geneitr];
-        std::vector<float> genePointVector1(numPoints1, 0.0f);
-        std::vector<float> genePointVector2(numPoints2, 0.0f);
-        _selectedGenePointDataset1->extractDataForDimension(genePointVector1, geneitr);
-        _selectedGenePointDataset2->extractDataForDimension(genePointVector2, geneitr);
-        
-       
-        const QVector<float>& loadings = loadingsVals.loadings;
-        for (int j = 0; j < _selectedPCData1.numberOfDimensions; ++j) {
-            float loading = loadings[j];
-            for (int i = 0; i < numPoints1; ++i) {
-                pcBestDataRowMajor1[i * _selectedPCData1.numberOfDimensions + j] = genePointVector1[i] * loading;
-            }
-            for (int i = 0; i < numPoints2; ++i) {
-                pcBestDataRowMajor2[i * _selectedPCData1.numberOfDimensions + j] = genePointVector2[i] * loading;
-            }
+        LoadingValues tempValus;
+        tempValus.geneId1 = _geneOfInterestIndices1[id];
+        tempValus.geneId2 = geneOfInterestIndices2[id];
+        tempValus.loadings.resize(nComps);
+        for (int j = 0; j < nComps; ++j) {
+            tempValus.loadings[j] = loadings1[id * nComps + j];
         }
+        loadingValues.loadingValuesMap[commonGeneNames[id]]=tempValus;
     }
 
-    qInfo() << "After conversion stats - Dataset 1 Min:" << *std::min_element(pcBestDataRowMajor1.begin(), pcBestDataRowMajor1.end())
-        << "Max:" << *std::max_element(pcBestDataRowMajor1.begin(), pcBestDataRowMajor1.end())
-        << "| Dataset 2 Min:" << *std::min_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end())
-        << "Max:" << *std::max_element(pcBestDataRowMajor2.begin(), pcBestDataRowMajor2.end());
 
-    _pcaCommonGenesDataset1->setData(pcBestDataRowMajor1.data(), numPoints1, _selectedPCData1.numberOfDimensions);
+    const int numPointsReduced1 = _selectedClusterIndices1.size();
+    const int numPointsReduced2 = _selectedClusterIndices2.size();
+    if (numPointsReduced1 <= 0 || numPointsReduced2 <= 0) {
+        qWarning() << "No points selected for PCA computation";
+        setStatusMessage("E", "No points selected for PCA computation", "");
+        return;
+    }
+
+
+
+    //loadingValues qdebug
+   // qDebug() << "\n\n""**********************************""\n\n";
+    //qDebug() << "Loading values for PCA:";
+    std::vector<float> finalGenePCSimVector1(numPointsReduced1 * loadingValues.numberOfComponents, 0.0f);
+    std::vector<float> finalGenePCSimVector2(numPointsReduced2 * loadingValues.numberOfComponents, 0.0f);
+    int i = 0;
+    for (const auto& [key, value] : loadingValues.loadingValuesMap) {
+        //get the key and values from loadingValues.loadingValuesMap
+        const QString& geneName = key;
+        const int& geneId1 = value.geneId1;
+        const int& geneId2 = value.geneId2;
+        const QVector<float>& loadings = value.loadings;
+
+        //qDebug() << i<<")"<< "Gene Index:" << geneId1<< "Gene Index:" << geneId2<< "Gene Name:" << geneName<< "Number of Components:" << loadings.size();
+        std::vector<float> genePointVector1(numPointsReduced1, 0.0f);
+        std::vector<float> genePointVector2(numPointsReduced2, 0.0f);
+        std::vector<int> geneIDVector1(1, geneId1);
+        std::vector<int> geneIDVector2(1, geneId2);
+        if (geneId1 < 0 || geneId1 >= fullDataset1->getNumDimensions() || geneId2 < 0 || geneId2 >= fullDataset2->getNumDimensions()) {
+            qWarning() << "Invalid gene indices for PCA computation: geneId1 =" << geneId1 << ", geneId2 =" << geneId2;
+            setStatusMessage("E", "Invalid gene indices for PCA computation", "");
+            return;
+        }
+        //qDebug() << "Gene ID Vector 1:" << geneIDVector1 << "Gene ID Vector 2:" << geneIDVector2;
+
+        fullDataset1->populateDataForDimensions(genePointVector1, geneIDVector1,_selectedClusterIndices1);
+        fullDataset2->populateDataForDimensions(genePointVector2, geneIDVector2,_selectedClusterIndices2);
+        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
+        {
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            NormalizationType normType = normalizationTypeFromString(normTypeStr);
+            normalizeVector(genePointVector1, normType);
+            normalizeVector(genePointVector2, normType);
+        }
+        for (int j = 0; j < loadings.size(); j++)
+        {
+            float loadingVal = loadings[j];
+            for (int k = 0; k < numPointsReduced1; ++k) {
+                finalGenePCSimVector1[k * loadingValues.numberOfComponents + j] += genePointVector1[k] * loadingVal;
+            }
+            for (int k = 0; k < numPointsReduced2; ++k) {
+                finalGenePCSimVector2[k * loadingValues.numberOfComponents + j] += genePointVector2[k] * loadingVal;
+            }
+
+        }
+        i++;
+    }
+    //qDebug() << "\n\n""**********************************""\n\n";
+
+
+    _pcaCommonGenesDataset1->setData(finalGenePCSimVector1.data(), numPointsReduced1, _selectedPCData1.numberOfDimensions);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
-    _pcaCommonGenesDataset2->setData(pcBestDataRowMajor2.data(), numPoints2, _selectedPCData1.numberOfDimensions);
+    _pcaCommonGenesDataset2->setData(finalGenePCSimVector2.data(), numPointsReduced2, _selectedPCData1.numberOfDimensions);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
 
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
@@ -2854,8 +2924,11 @@ bool Computation::setupAndTriggerPCA()
     auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
     auto fullPointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
 
+    auto fullEmbeddingDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+    auto fullEmbeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
+
     if (!_selectedGenePointDataset1.isValid() || !fullPointDataset1.isValid() ||
-        !_selectedGenePointDataset2.isValid() || !fullPointDataset2.isValid()) {
+        !_selectedGenePointDataset2.isValid() || !fullPointDataset2.isValid() ||!fullEmbeddingDataset1.isValid() || !fullEmbeddingDataset2.isValid()) {
         qWarning() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return false;
@@ -2934,6 +3007,19 @@ bool Computation::setupAndTriggerPCA()
     std::vector<float> cellByGeneMatrix2(numAllFilteredCells2 * numDimsOfInterest);
     std::vector<float> cellByGeneMatrix1(numAllFilteredCells1 * numDimsOfInterest);
 
+    std::vector<float> embeddingMatrix1(numAllFilteredCells1 * fullEmbeddingDataset1->getNumDimensions());
+    std::vector<float> embeddingMatrix2(numAllFilteredCells2 * fullEmbeddingDataset2->getNumDimensions());
+
+    std::vector<int> embeddingGeneIndices1(fullEmbeddingDataset1->getNumDimensions());
+    for (int i = 0; i < fullEmbeddingDataset1->getNumDimensions(); ++i) {
+        embeddingGeneIndices1[i] = i;
+    }
+    std::vector<int> embeddingGeneIndices2(fullEmbeddingDataset2->getNumDimensions());
+    for (int i = 0; i < fullEmbeddingDataset2->getNumDimensions(); ++i) {
+        embeddingGeneIndices2[i] = i;
+    }
+
+
     if(_selectedClusterIndices1 .empty() || _selectedClusterIndices2.empty())
     {
         qWarning() << "No selected cluster indices for dataset 1 or 2";
@@ -2950,6 +3036,9 @@ bool Computation::setupAndTriggerPCA()
     try {
         fullPointDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, _selectedClusterIndices2);
         fullPointDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, _selectedClusterIndices1);
+        fullEmbeddingDataset1->populateDataForDimensions(embeddingMatrix1, embeddingGeneIndices1, _selectedClusterIndices1);
+        fullEmbeddingDataset2->populateDataForDimensions(embeddingMatrix2, embeddingGeneIndices2, _selectedClusterIndices2);
+
 
         if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
         {
@@ -2977,6 +3066,14 @@ bool Computation::setupAndTriggerPCA()
     _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numAllFilteredCells1, numDimsOfInterest);
     _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
+
+    _selectedEmbeddingPointDataset1->setData(embeddingMatrix1.data(), numAllFilteredCells1, fullEmbeddingDataset1->getNumDimensions());
+    _selectedEmbeddingPointDataset1->setDimensionNames(fullEmbeddingDataset1->getDimensionNames());
+    mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset1);
+
+    _selectedEmbeddingPointDataset2->setData(embeddingMatrix2.data(), numAllFilteredCells2, fullEmbeddingDataset2->getNumDimensions());
+    _selectedEmbeddingPointDataset2->setDimensionNames(fullEmbeddingDataset2->getDimensionNames());
+    mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset2);
 
     setStatusMessage("R", "PCA Started", "");
     _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
