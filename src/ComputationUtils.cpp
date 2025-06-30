@@ -352,8 +352,11 @@ void makeSelection(QString value, QTableView* tableView)
 
             // Scroll to the selected row and force repaint
             tableView->scrollTo(startIndex, QAbstractItemView::EnsureVisible);
-            //tableView->viewport()->update();
-            //tableView->repaint();
+            /*if (tableView && tableView->viewport() && tableView->model())
+            {
+                tableView->viewport()->update();
+                tableView->repaint();
+            }*/
 
             break;
         }
@@ -380,8 +383,11 @@ void selectFirstRow(QTableView* tableView)
     );
 
     tableView->scrollTo(firstIndex, QAbstractItemView::EnsureVisible);
-    tableView->viewport()->update();
-    tableView->repaint();
+    if (tableView && tableView->viewport() && tableView->model())
+    {
+        tableView->viewport()->update();
+        tableView->repaint();
+    }
 }
 
 void deselectAllRows(QTableView* tableView)
@@ -394,8 +400,11 @@ void deselectAllRows(QTableView* tableView)
     tableView->selectionModel()->clearSelection();
     tableView->clearFocus();
     tableView->setCurrentIndex(QModelIndex());
-    //tableView->viewport()->update();
-    //tableView->repaint();
+    /*if (tableView && tableView->viewport() && tableView->model())
+    {
+        tableView->viewport()->update();
+        tableView->repaint();
+    }*/
 }
 
 void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices)
