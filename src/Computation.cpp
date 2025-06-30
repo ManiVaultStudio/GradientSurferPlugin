@@ -707,86 +707,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             qDebug() << "PCA coloring paused, returning early";
             return;
        }
+        _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         
-        
-        int selectedDimInd = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
-        QString selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
-        if (selectedDimInd < 0 || selectedDimName.isEmpty()) {
-            qWarning() << "No PCA dimension selected for coloring";
-            return;
-        }
-        auto options = _settingsAction.getCommonOptionsHolder().getDualPCAColoringAction().getSelectedOptions();
-        if (options.isEmpty()) {
-            qWarning() << "No PCA coloring options selected";
-            return;
-        }
-
-        auto setScatterplotColorAndGene = [&](const QString& scatterplotName, mv::Dataset<Points>& dataset) {
-            if (!dataset.isValid()) {
-                qWarning() << "PCA common genes dataset is not valid";
-                return false;
-            }
-            if (scatterplotName.isEmpty()) {
-                qWarning() << "No scatterplot view selected";
-                return false;
-            }
-            auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-            if (!scatterplotViewFactory)
-                return false;
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
-                if (plugin->getGuiName() == scatterplotName) {
-                    auto pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
-                    if (pointDatasetPickerAction && pointDatasetPickerAction->getCurrentDataset().isValid()) {
-                        auto colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
-                        if (colorDatasetPickerAction) {
-                            colorDatasetPickerAction->setCurrentDataset(dataset);
-                        }
-                        auto geneSelectionAction = findActionByPath<DimensionPickerAction>(plugin,"Settings/Coloring/Dimension");
-                        if (geneSelectionAction) {
-                            geneSelectionAction->setCurrentDimensionName(selectedDimName);
-                        }
-                        else {
-                            qWarning() << "Gene selection action not found";
-                        }
-                    }
-                    break;
-                }
-            }
-            return true;
-            };
-        if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()) {
-            bool doDataset1 = options.contains("Dataset1");
-            bool doDataset2 = options.contains("Dataset2");
-            if (doDataset1) {
-                setScatterplotColorAndGene(
-                    _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(),
-                    _pcaCommonGenesDataset1
-                );
-            }
-            if (doDataset2) {
-                setScatterplotColorAndGene(
-                    _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(),
-                    _pcaCommonGenesDataset2
-                );
-            }
-        }
-        else {
-            _settingsAction.getDataset1OptionsHolder().getDeSelectRowAction().trigger();
-            _settingsAction.getDataset2OptionsHolder().getDeSelectRow2Action().trigger();
-
-
-            bool hasDataset1 = options.contains("Dataset1");
-            bool hasDataset2 = options.contains("Dataset2");
-
-            if (hasDataset1) {
-                selectFirstRow(_settingsAction.getTableView1Action());
-            }
-            if (hasDataset2) {
-                selectFirstRow(_settingsAction.getTableView2Action());
-            }
-        }
-
-
         auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
         if (lineplotViewFactory)
         {
@@ -811,6 +733,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                     DimensionPickerAction* colorDim = findActionByPath<DimensionPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color Point Dataset Dimension");
                                     if (colorDim)
                                     {
+                                        int selectedDimInd = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
+                                        QString selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
                                         colorDim->setCurrentDimensionIndex(selectedDimInd);
                                     }
                                     else
@@ -879,13 +803,45 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
             {
+                _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+                _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
                 deselectAllRows(_settingsAction.getTableView1Action());
                 deselectAllRows(_settingsAction.getTableView2Action());
                 deselectAllRows(_settingsAction.getTableView3Action());
+
+                modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(),_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
+
+                modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false,"");
             }
             else
             {
-                selectFirstRow(_settingsAction.getTableView1Action());
+                QString colorDatasetID1 = "";
+                QString colorDatasetID2 = "";
+                QString selectedDimName = "";
+                if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
+                {
+                    colorDatasetID1 = _pcaCommonGenesDataset1.getDatasetId();
+                    colorDatasetID2 = _pcaCommonGenesDataset2.getDatasetId();
+                    selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
+                }
+                else
+                {
+                    
+                    colorDatasetID1 = _selectedGenePointDataset1.getDatasetId();
+                    colorDatasetID2 = _selectedGenePointDataset2.getDatasetId();
+                }
+
+
+                
+                modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _selectedEmbeddingPointDataset1.getDatasetId(), colorDatasetID1, _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedDimName);
+
+                modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _selectedEmbeddingPointDataset2.getDatasetId(), colorDatasetID2, _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), true, selectedDimName);
+
+
+                if (!_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
+                {
+                    selectFirstRow(_settingsAction.getTableView1Action());
+                }
             }
 
 
@@ -1774,6 +1730,7 @@ void Computation::AutoCompute()
     auto guard = qScopeGuard([&] { _isComputing = false; });
     try
     {
+        
         clearTable(_settingsAction.getTableView3Action());
         clearTable(_settingsAction.getTableView2Action());
         clearTable(_settingsAction.getTableView1Action());
@@ -1866,6 +1823,7 @@ void Computation::AutoCompute()
             _filteredSelectionIndices.push_back(idx);
         }
         _embeddingDataset->setSelectionIndices(filtIndxs);
+        _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         _blockSelectionTrigger = true;
         mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
 
@@ -1879,7 +1837,7 @@ void Computation::AutoCompute()
             setStatusMessage("E", "Not enough points selected for correlation computation", "");
             return;
         }
-
+        
         float rotationAngle = 0.0f;
         if (!getRotationAngle(scatterplotViewName, rotationAngle))
             return;

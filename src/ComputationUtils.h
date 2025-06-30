@@ -126,7 +126,7 @@ std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float deg
 std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
 std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
 
-// Add extern declarations for global variables (do NOT define them here)
+
 extern std::vector<CorrelationGeneCoords> _geneCorrValues1;
 extern std::vector<CorrelationGeneCoords> _geneCorrValues2;
 extern std::vector<CorrelationGeneCoords> _geneCorrValues3;
@@ -135,9 +135,11 @@ extern std::vector<int> _geneOfInterestIndices2;
 extern std::vector<int> _geneOfInterestIndices3;
 extern QStringList _commonGeneNames;
 
-// Add forward declarations if not present
+
 class QTableView;
 class DimensionPickerAction;
 
-// Add this function declaration:
+
 void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allTables, const QList<DimensionPickerAction*>& allActions);
+
+void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection,QString dimensionForColoring);

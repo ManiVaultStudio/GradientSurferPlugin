@@ -141,6 +141,90 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
     isSyncing = false;
 }
 
+void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring)
+{
+    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+    mv::gui::DatasetPickerAction* colorDatasetPickerAction;
+    mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+    mv::gui::ToggleAction* freezeSelectionAction;
+    if (xPositionString == "" || yPositionString == "" || positionDatasetID == "" || colorDatasetID == "" || scatterplotName =="") {
+        qWarning() << "Invalid parameters for scatterplot mode change. xPositionString:" << xPositionString
+                   << ", yPositionString:" << yPositionString
+                   << ", positionDatasetID:" << positionDatasetID
+                   << ", colorDatasetID:" << colorDatasetID;
+        return;
+    }
+
+    if (scatterplotViewFactory)
+    {
+        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+        {
+
+            if (plugin->getGuiName() == scatterplotName)
+            {
+                
+                pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
+                if (pointDatasetPickerAction)
+                {
+                    if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                    {
+                        auto embeddingDataset = mv::data().getDataset(positionDatasetID);
+                        if (embeddingDataset.isValid())
+                        {
+                            pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
+                        }
+                    }
+                    if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                    {
+                        if (xPositionString != "" && yPositionString != "") {
+                            setScatterplotDimensions(plugin, xPositionString, yPositionString);
+                        }
+
+                        colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
+                        if (colorDatasetPickerAction)
+                        {
+                            auto clusterDataset = mv::data().getDataset(colorDatasetID);
+                            if (clusterDataset.isValid())
+                            {
+                                colorDatasetPickerAction->setCurrentDataset(clusterDataset);
+                                //qWarning() << "Setting dataset to color dataset";
+                            }
+
+                        }
+
+                    }
+
+
+
+                }
+
+                freezeSelectionAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
+                if (freezeSelectionAction)
+                {
+                    freezeSelectionAction->setChecked(disableSelection);
+                    if (disableSelection) {
+                        freezeSelectionAction->setText("Enable Selection");
+                    }
+                    else {
+                        freezeSelectionAction->setText("Disable Selection");
+                    }
+                }
+                if (dimensionForColoring != "")
+                {
+                    auto geneSelectionAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
+                    if (geneSelectionAction) {
+                        geneSelectionAction->setCurrentDimensionName(dimensionForColoring);
+                    }
+                }
+
+                break;
+            }
+
+        }
+    }
+
+}
+
 void setupTableModelAndSelection(
     QTableView* tableViewMain,
     std::vector<CorrelationGeneCoords>& geneCorrValues,
@@ -201,7 +285,7 @@ void setupTableModelAndSelection(
     }
 
     tableViewMain->setModel(model);
-    deselectAllRows(tableViewMain);
+    //deselectAllRows(tableViewMain);
     // Ensure only one row can be selected at a time and the full row gets selected
     tableViewMain->setSelectionMode(QAbstractItemView::SingleSelection);
     tableViewMain->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -268,8 +352,8 @@ void makeSelection(QString value, QTableView* tableView)
 
             // Scroll to the selected row and force repaint
             tableView->scrollTo(startIndex, QAbstractItemView::EnsureVisible);
-            tableView->viewport()->update();
-            tableView->repaint();
+            //tableView->viewport()->update();
+            //tableView->repaint();
 
             break;
         }
@@ -280,11 +364,8 @@ void selectFirstRow(QTableView* tableView)
 {
     if (!tableView || !tableView->selectionModel()) return;
 
-    // Ensure single selection mode and row selection behavior
     tableView->setSelectionMode(QAbstractItemView::SingleSelection);
     tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-
-    QSignalBlocker blocker(tableView->selectionModel());
 
     auto* model = tableView->model();
     if (!model || model->rowCount() <= 0) return;
@@ -292,15 +373,12 @@ void selectFirstRow(QTableView* tableView)
     QModelIndex firstIndex = model->index(0, 0);
     if (!firstIndex.isValid()) return;
 
-    // Only clear selection once
     tableView->selectionModel()->clearSelection();
 
-    // Set current index and select the row
     tableView->selectionModel()->setCurrentIndex(
         firstIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
     );
 
-    // Scroll to the selected row and force repaint
     tableView->scrollTo(firstIndex, QAbstractItemView::EnsureVisible);
     tableView->viewport()->update();
     tableView->repaint();
@@ -309,12 +387,15 @@ void selectFirstRow(QTableView* tableView)
 void deselectAllRows(QTableView* tableView)
 {
     if (!tableView || !tableView->selectionModel()) return;
+    if (!tableView->viewport()) return;
+    if (!tableView->model()) return;
 
     QSignalBlocker blocker(tableView->selectionModel());
     tableView->selectionModel()->clearSelection();
     tableView->clearFocus();
     tableView->setCurrentIndex(QModelIndex());
-
+    //tableView->viewport()->update();
+    //tableView->repaint();
 }
 
 void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices)

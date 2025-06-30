@@ -318,7 +318,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
     addAction(&_correlationRangeAction);
-    addAction(&_deSelectRowAction);
+    //addAction(&_deSelectRowAction);
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
     addAction(&_freezeSelectionAction);
@@ -353,7 +353,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     addAction(&_embeddingDimension2XAction);
     addAction(&_embeddingDimension2YAction);
     addAction(&_correlationRange2Action);
-    addAction(&_deSelectRow2Action);
+    //addAction(&_deSelectRow2Action);
     addAction(&_focusSelection2Action);
     addAction(&_hidePointSelection2Action);
     addAction(&_freezeSelection2Action);
