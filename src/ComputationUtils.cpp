@@ -334,13 +334,10 @@ void makeSelection(QString value, QTableView* tableView)
     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(tableView->model());
     if (!model) return;
 
-    // Ensure single selection mode and row selection behavior
     tableView->setSelectionMode(QAbstractItemView::SingleSelection);
     tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     QSignalBlocker blocker(tableView->selectionModel());
-
-    // Only clear selection once
     tableView->selectionModel()->clearSelection();
 
     for (int row = 0; row < model->rowCount(); ++row) {
@@ -348,18 +345,19 @@ void makeSelection(QString value, QTableView* tableView)
         if (geneName == value) {
             QModelIndex startIndex = model->index(row, 0);
 
-            // Set current index and select the row
             tableView->selectionModel()->setCurrentIndex(
                 startIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
             );
 
-            // Scroll to the selected row and force repaint
+            if (!startIndex.isValid()) {
+                qWarning() << "Invalid index for selection, skipping scroll.";
+                return;
+            }
+
             tableView->scrollTo(startIndex, QAbstractItemView::EnsureVisible);
-            /*if (tableView && tableView->viewport() && tableView->model())
-            {
-                tableView->viewport()->update();
-                tableView->repaint();
-            }*/
+
+            // Defer the update to avoid crash
+            QTimer::singleShot(0, tableView, [tableView]() { tableView->viewport()->update(); tableView->repaint(); });
 
             break;
         }
@@ -385,12 +383,14 @@ void selectFirstRow(QTableView* tableView)
         firstIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows
     );
 
-    tableView->scrollTo(firstIndex, QAbstractItemView::EnsureVisible);
-    if (tableView && tableView->viewport() && tableView->model())
-    {
-        tableView->viewport()->update();
-        tableView->repaint();
+    if (!firstIndex.isValid()) {
+        qWarning() << "Invalid index for selection, skipping scroll.";
+        return;
     }
+
+    tableView->scrollTo(firstIndex, QAbstractItemView::EnsureVisible);
+    QTimer::singleShot(0, tableView, [tableView]() { tableView->viewport()->update(); tableView->repaint(); });
+
 }
 
 void deselectAllRows(QTableView* tableView)
@@ -403,11 +403,7 @@ void deselectAllRows(QTableView* tableView)
     tableView->selectionModel()->clearSelection();
     tableView->clearFocus();
     tableView->setCurrentIndex(QModelIndex());
-    /*if (tableView && tableView->viewport() && tableView->model())
-    {
-        tableView->viewport()->update();
-        tableView->repaint();
-    }*/
+    QTimer::singleShot(0, tableView, [tableView]() { tableView->viewport()->update(); tableView->repaint(); });
 }
 
 void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices)

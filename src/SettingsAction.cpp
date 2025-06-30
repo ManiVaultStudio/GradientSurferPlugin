@@ -60,14 +60,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _statusHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
-    _dataset1OptionsHolder.getDeSelectRowAction().setToolTip("DeSelect Row Action");
-    _dataset2OptionsHolder.getDeSelectRow2Action().setToolTip("DeSelect Row Action 2");
     _dataset1OptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _dataset2OptionsHolder.getFocusSelection2Action().setToolTip("Focus Selection Action 2");
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
     _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setToolTip("Hide Point Selection Outline Action 2");
-    _dataset1OptionsHolder.getFreezeSelectionAction().setToolTip("Freeze Selection Action");
-    _dataset2OptionsHolder.getFreezeSelection2Action().setToolTip("Freeze Selection Action 2");
     _dataset1OptionsHolder.getCorrelationRangeAction().setToolTip("Correlation Range Action");
     _dataset2OptionsHolder.getCorrelationRange2Action().setToolTip("Correlation Range Action 2");
     _dataset2OptionsHolder.getClusterDataset2Action().setToolTip("Cluster Dataset 2");
@@ -94,11 +90,11 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getFocusSelectionAction().setChecked(false);
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
 
-    _dataset1OptionsHolder.getFreezeSelectionAction().setChecked(false);
+
 
     _dataset2OptionsHolder.getFocusSelection2Action().setChecked(false);
     _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setChecked(false);
-    _dataset2OptionsHolder.getFreezeSelection2Action().setChecked(false);
+
 
 
     _dataset1OptionsHolder.getCorrelationRangeAction().setLimitsMaximum(1.00);
@@ -136,8 +132,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().initialize({ "Absolute","NonAbsolute","Positive","Negative"}, "NonAbsolute");
-    _commonOptionsHolder.getComputationTypesAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getComputationTypesAction().initialize({ "PCA Loadings", "Correlation" },"PCA Loadings");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
@@ -147,8 +141,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getNormalizeDataAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getNormalizeDataAction().setChecked(true);
 
-    _dataset1OptionsHolder.getDeSelectRowAction().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
-    _dataset2OptionsHolder.getDeSelectRow2Action().setDefaultWidgetFlags(ToggleAction::PushButtonIconText);
+
 
     _dataset1OptionsHolder.getFocusSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _dataset2OptionsHolder.getFocusSelection2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
@@ -156,8 +149,6 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
-    _dataset1OptionsHolder.getFreezeSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _dataset2OptionsHolder.getFreezeSelection2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _dataset1OptionsHolder.getCorrelationRangeAction().setDefaultWidgetFlags(IntegralRangeAction::Slider  | IntegralRangeAction::MaximumSpinBox | IntegralRangeAction::MinimumSpinBox);
     _dataset2OptionsHolder.getCorrelationRange2Action().setDefaultWidgetFlags(IntegralRangeAction::Slider | IntegralRangeAction::MaximumSpinBox | IntegralRangeAction::MinimumSpinBox );
@@ -301,10 +292,8 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _embeddingDimensionYAction(this, "Embedding Dimension Y"),
     _geneSelectionAction(this, "Gene Selection"),
     _correlationRangeAction(this, "Correlation Range"),
-    _deSelectRowAction(this, "DeSelect Row"),
     _focusSelectionAction(this, "Focus Selection"),
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
-    _freezeSelectionAction(this, "Freeze Selection"),
     _lineplotViewSelectionAction(this, "Lineplot view selection")
 {
     setText("Dataset1 Options");
@@ -318,10 +307,9 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
     addAction(&_correlationRangeAction);
-    //addAction(&_deSelectRowAction);
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
-    addAction(&_freezeSelectionAction);
+
 
 
 }
@@ -338,10 +326,8 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     _embeddingDimension2YAction(this, "Embedding Dimension 2 Y"),
     _geneSelection2Action(this, "Gene Selection 2"),
     _correlationRange2Action(this, "Correlation Range 2"),
-    _deSelectRow2Action(this, "DeSelect Row 2"),
     _focusSelection2Action(this, "Focus Selection 2"),
-    _hidePointSelection2Action(this, "Hide Point Selection Outline 2"),
-    _freezeSelection2Action(this, "Freeze Selection 2")
+    _hidePointSelection2Action(this, "Hide Point Selection Outline 2")
 {
     setText("Dataset2 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -353,10 +339,10 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     addAction(&_embeddingDimension2XAction);
     addAction(&_embeddingDimension2YAction);
     addAction(&_correlationRange2Action);
-    //addAction(&_deSelectRow2Action);
+ 
     addAction(&_focusSelection2Action);
     addAction(&_hidePointSelection2Action);
-    addAction(&_freezeSelection2Action);
+
 
 }
 
@@ -371,7 +357,6 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
     _computePCAAction(this, "Compute: Selection PCs"),
-    _computationTypesAction(this, "Computation Types"),
     _normalizeDataAction(this, "Normalize Data"),
     _normalizationTypeAction(this, "Normalization Type"),
     _selectionModeAction(this, "Selection Mode")
@@ -382,7 +367,6 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
-    addAction(&_computationTypesAction);
     addAction(&_dualPCAColoringAction);
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
