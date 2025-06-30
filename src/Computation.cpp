@@ -1631,6 +1631,10 @@ void Computation::AutoCompute()
         _selectedClusterIndices2.clear();
         _selectedClusterIndices1= getIndicesBySelectedClusters(clusters1, selectedClusters);
         _selectedClusterIndices2= getIndicesBySelectedClusters(clusters2, selectedClusters);
+
+        std::sort(_selectedClusterIndices1.begin(), _selectedClusterIndices1.end());
+        std::sort(_selectedClusterIndices2.begin(), _selectedClusterIndices2.end());
+
         _filteredSelectionIndices.clear();
         _filteredSelectionIndices.reserve(filtIndxs.size());
         for (auto idx : filtIndxs)
