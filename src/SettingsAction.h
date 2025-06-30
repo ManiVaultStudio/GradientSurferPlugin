@@ -98,7 +98,7 @@ public:
         const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
-        //new options
+
         const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
         DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
 
@@ -108,12 +108,6 @@ public:
         const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
         ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
 
-        const ToggleAction& getFreezeSelectionAction() const { return _freezeSelectionAction; }
-        ToggleAction& getFreezeSelectionAction() { return _freezeSelectionAction; }
-
-        const TriggerAction& getDeSelectRowAction() const { return _deSelectRowAction; }
-        TriggerAction& getDeSelectRowAction() { return _deSelectRowAction; }
-
  
 
 
@@ -121,7 +115,7 @@ public:
         SettingsAction&                     _settingsOptions;
         
         
-        //Dataset1 Options
+
         DatasetPickerAction                 _clusterDatasetAction;
         DatasetPickerAction                 _pointDatasetAction;
         DatasetPickerAction                 _embeddingDatasetAction;
@@ -131,12 +125,11 @@ public:
         DimensionPickerAction               _embeddingDimensionYAction;
         DimensionPickerAction               _geneSelectionAction;
 
-        //new options
+
         DecimalRangeAction                  _correlationRangeAction;
         ToggleAction                        _focusSelectionAction;
         ToggleAction                        _hidePointSelectionAction;
-        ToggleAction                        _freezeSelectionAction;
-        TriggerAction                       _deSelectRowAction;
+
   
     };
 
@@ -146,7 +139,7 @@ public:
         Dataset2OptionsHolder(SettingsAction& settingsAction);
 
 
-        // Dataset2 getters
+    
         const DatasetPickerAction& getClusterDataset2Action() const { return _clusterDataset2Action; }
         DatasetPickerAction& getClusterDataset2Action() { return _clusterDataset2Action; }
 
@@ -177,17 +170,11 @@ public:
         const ToggleAction& getHidePointSelectionOutline2Action() const { return _hidePointSelection2Action; }
         ToggleAction& getHidePointSelectionOutline2Action() { return _hidePointSelection2Action; }
 
-        const ToggleAction& getFreezeSelection2Action() const { return _freezeSelection2Action; }
-        ToggleAction& getFreezeSelection2Action() { return _freezeSelection2Action; }
-
-        const TriggerAction& getDeSelectRow2Action() const { return _deSelectRow2Action; }
-        TriggerAction& getDeSelectRow2Action() { return _deSelectRow2Action; }
-
     protected:
         SettingsAction& _settingsOptions;
 
 
-        //Dataset2 Options
+
         DatasetPickerAction                 _clusterDataset2Action;
         DatasetPickerAction                 _pointDataset2Action;
         DatasetPickerAction                 _embeddingDataset2Action;
@@ -199,8 +186,6 @@ public:
         DecimalRangeAction                  _correlationRange2Action;
         ToggleAction                        _focusSelection2Action;
         ToggleAction                        _hidePointSelection2Action;
-        ToggleAction                        _freezeSelection2Action;
-        TriggerAction                       _deSelectRow2Action;
 
     };
 
@@ -238,8 +223,7 @@ public:
         const TriggerAction& getComputePCAAction() const { return _computePCAAction; }
         TriggerAction& getComputePCAAction() { return _computePCAAction; }
 
-        const OptionAction& getComputationTypesAction() const { return _computationTypesAction; }
-        OptionAction& getComputationTypesAction() { return _computationTypesAction; }
+
 
         const ToggleAction& getNormalizeDataAction() const { return _normalizeDataAction; }
         ToggleAction& getNormalizeDataAction() { return _normalizeDataAction; }
@@ -256,8 +240,6 @@ public:
     protected:
         SettingsAction& _settingsOptions;
 
-        //Selection Options
-
         
         OptionsAction                       _clusterSelectionAction;
         TriggerAction              _computeAction;
@@ -268,8 +250,6 @@ public:
         OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
-       
-        OptionAction                 _computationTypesAction;
         ToggleAction                 _normalizeDataAction;
         OptionAction                _normalizationTypeAction;
         ToggleAction                _selectionModeAction;
@@ -292,7 +272,7 @@ public:
     protected:
         SettingsAction& _settingsOptions;
         
-        //Computation Options
+ 
         QStatusBar*                 _statusBarAction;
         StringAction                        _statusMessageAction;
     };
@@ -306,12 +286,11 @@ public:
     CommonOptionsHolder& getCommonOptionsHolder() { return _commonOptionsHolder; }
 
 
-public: // Serialization
+public: 
     void fromVariantMap(const QVariantMap& variantMap) override;
     QVariantMap toVariantMap() const override;
 
     QTableView* getTableView1Action() { return _tableView1Action; }
-    //HighPerfLineChart* getLineChart1Widget() { return _lineChart1Widget; }
     QTableView* getTableView2Action() { return _tableView2Action; }
     QTableView* getTableView3Action() { return _tableView3Action; }
 
@@ -323,7 +302,6 @@ protected:
     CommonOptionsHolder              _commonOptionsHolder;
     StatusHolder                   _statusHolder;
     QTableView*                 _tableView1Action = nullptr;
-    //HighPerfLineChart*          _lineChart1Widget = nullptr;
     QTableView*                 _tableView2Action = nullptr;
     QTableView*                 _tableView3Action = nullptr;
     friend class ChannelAction;
