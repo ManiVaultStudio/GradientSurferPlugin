@@ -79,16 +79,17 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
     _commonOptionsHolder.getAutoComputeAction().setToolTip("Auto Compute Action");
-    _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setToolTip("Link Dataset 1 and 2 Gene Table Action");
+
     _commonOptionsHolder.getPcaColoringAction().setToolTip("PCA Coloring Action");
+    _commonOptionsHolder.getSelectionModeAction().setToolTip("Selection Mode Action");
     _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
     _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension Selection Action");
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
 
-
     _commonOptionsHolder.getAutoComputeAction().setChecked(true);
-    _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setChecked(true);
+
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
+    _commonOptionsHolder.getSelectionModeAction().setChecked(true);
 
     _dataset1OptionsHolder.getFocusSelectionAction().setChecked(false);
     _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
@@ -127,15 +128,16 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getComputePCAAction().setText("Compute PCA");
 
     _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getLinkDataset1And2GeneTableAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+
     _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getSelectionModeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
     _commonOptionsHolder.getDualPCAColoringAction().initialize({ "Dataset1", "Dataset2" }, { "Dataset1", "Dataset2" });
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().initialize({ "Absolute","NonAbsolute","Positive","Negative"}, "NonAbsolute");
     _commonOptionsHolder.getComputationTypesAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getComputationTypesAction().initialize({ "Loadings Total", "PCA Loadings Per Component", "Correlation" },"PCA Loadings Per Component");
+    _commonOptionsHolder.getComputationTypesAction().initialize({ "PCA Loadings", "Correlation" },"PCA Loadings");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
@@ -316,7 +318,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
     addAction(&_correlationRangeAction);
-    addAction(&_deSelectRowAction);
+    //addAction(&_deSelectRowAction);
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
     addAction(&_freezeSelectionAction);
@@ -351,7 +353,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     addAction(&_embeddingDimension2XAction);
     addAction(&_embeddingDimension2YAction);
     addAction(&_correlationRange2Action);
-    addAction(&_deSelectRow2Action);
+    //addAction(&_deSelectRow2Action);
     addAction(&_focusSelection2Action);
     addAction(&_hidePointSelection2Action);
     addAction(&_freezeSelection2Action);
@@ -369,10 +371,11 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
     _computePCAAction(this, "Compute: Selection PCs"),
-    _linkdataset1And2GeneTableAction(this, "Link Dataset1 and Dataset2 Gene Table"),
     _computationTypesAction(this, "Computation Types"),
     _normalizeDataAction(this, "Normalize Data"),
-    _normalizationTypeAction(this, "Normalization Type")
+    _normalizationTypeAction(this, "Normalization Type"),
+    _selectionModeAction(this, "Selection Mode")
+
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -384,11 +387,12 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_autoComputeAction);
-    addAction(&_linkdataset1And2GeneTableAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizeDataAction);
     addAction(&_normalizationTypeAction);
+    addAction(&_selectionModeAction);
     addAction(&_computePCAAction);
+
     addAction(&_computeAction);
 
 }

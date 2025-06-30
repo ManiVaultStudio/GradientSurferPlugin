@@ -21,7 +21,7 @@
 #include<./actions/ColorMap1DAction.h>
 #include <./actions/HorizontalToolbarAction.h>
 #include <./actions/VerticalToolbarAction.h>
-
+#include "CorrelationBarDelegate.h"
 enum class NormalizationType {
     None,
     ZScore,
@@ -32,6 +32,33 @@ namespace mv
 {
     class CoreInterface;
 }
+struct SelectedPCData
+{
+    std::vector<float> coordinates;
+    int numberOfDimensions;
+    int numberOfPoints;
+};
+struct CorrelationGeneCoords
+{
+    int geneIndex;
+    QString geneName;
+    float correlationValue;
+    int   rank;
+    bool  isWithinRange;
+};
+struct LoadingValues {
+    int geneId1;
+    int geneId2;
+    QVector<float> loadings;
+};
+struct LoadingValuesContainer
+{
+    std::map<QString,LoadingValues> loadingValuesMap;
+    int numberOfDimensions;
+    int numberOfComponents;
+
+};
+
 using namespace mv::gui;
 struct StatusInfo {
     QString status;
@@ -57,7 +84,7 @@ StatusInfo parseStatusMessage(const QString& statusString);
 std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText);
 
 void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices, QString normTypeStr, bool normalizeData);
-
+void clearTable(QTableView* tableView);
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray);
 void normalizeVector(std::vector<float>& data, NormalizationType type);
 NormalizationType normalizationTypeFromString(const QString& str);
@@ -65,6 +92,11 @@ QString getContrastingTextColor(const QString& bgColor);
 QString statusToIconName(const QString& status);
 void selectFirstRow(QTableView* tableView);
 void deselectAllRows(QTableView* tableView);
+void makeSelection(QString value, QTableView* tableView);
+void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices);
+void setupTableModelAndSelection(QTableView* tableViewMain, std::vector<CorrelationGeneCoords>& geneCorrValues,DimensionPickerAction& geneSelectionAction, QStringList& commonGeneNames, QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2);
+void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices,QTableView* tableViewMain, float minRange, float maxRange, DimensionPickerAction& geneSelectionAction, QStringList& commonGeneNames, QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2);
+void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector, QString corrType);
 NormalizationType normalizationTypeFromString(const QString& normTypeStr);
 bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float epsilon = 1e-6f);
 std::pair<float, float> minMax(const std::vector<float>& vec);
@@ -93,3 +125,21 @@ bool isValidEmbeddingDataset(const mv::Dataset<DatasetImpl>& dataset);
 std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue);
 std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
 std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
+
+
+extern std::vector<CorrelationGeneCoords> _geneCorrValues1;
+extern std::vector<CorrelationGeneCoords> _geneCorrValues2;
+extern std::vector<CorrelationGeneCoords> _geneCorrValues3;
+extern std::vector<int> _geneOfInterestIndices1;
+extern std::vector<int> _geneOfInterestIndices2;
+extern std::vector<int> _geneOfInterestIndices3;
+extern QStringList _commonGeneNames;
+
+
+class QTableView;
+class DimensionPickerAction;
+
+
+void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allTables, const QList<DimensionPickerAction*>& allActions);
+
+void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection,QString dimensionForColoring);
