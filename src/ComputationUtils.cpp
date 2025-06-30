@@ -201,13 +201,16 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
                 freezeSelectionAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
                 if (freezeSelectionAction)
                 {
-                    freezeSelectionAction->setChecked(disableSelection);
-                    if (disableSelection) {
-                        freezeSelectionAction->setText("Enable Selection");
-                    }
-                    else {
+                    if (disableSelection)
+                    {
+                        freezeSelectionAction->setChecked(true);
                         freezeSelectionAction->setText("Disable Selection");
                     }
+                    else {
+                        freezeSelectionAction->setChecked(false);
+                        freezeSelectionAction->setText("Enable Selection");
+                    }
+ 
                 }
                 if (dimensionForColoring != "")
                 {

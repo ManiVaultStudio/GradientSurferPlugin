@@ -702,12 +702,48 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto pcaColorsToPlots = [this]() -> void {
-       
+
         if (_pacColoringPaused) {
             qDebug() << "PCA coloring paused, returning early";
             return;
-       }
-        _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+        }
+
+
+
+        if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
+        {
+            QString colorDatasetID1 = "";
+            QString colorDatasetID2 = "";
+            QString selectedDimName = ""; 
+            colorDatasetID1 = _pcaCommonGenesDataset1.getDatasetId();
+            colorDatasetID2 = _pcaCommonGenesDataset2.getDatasetId();
+            _blockSelectionMode = true;
+            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+            _blockSelectionMode = false;
+
+            selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
+            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _selectedEmbeddingPointDataset1.getDatasetId(), colorDatasetID1, _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedDimName);
+
+            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _selectedEmbeddingPointDataset2.getDatasetId(), colorDatasetID2, _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), true, selectedDimName);
+
+        }
+        else
+        {
+            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+            _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
+            deselectAllRows(_settingsAction.getTableView1Action());
+            deselectAllRows(_settingsAction.getTableView2Action());
+            deselectAllRows(_settingsAction.getTableView3Action());
+
+            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
+
+            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false, "");
+        }
+
+
+
+
+
         
         auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
         if (lineplotViewFactory)
@@ -801,6 +837,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto selectionModeToggled = [this]()
         {
+            if(_blockSelectionMode)
+                {
+                qDebug() << "Selection mode change blocked, returning early";
+                return;
+            }
             if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
             {
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
@@ -815,33 +856,18 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
             else
             {
-                QString colorDatasetID1 = "";
-                QString colorDatasetID2 = "";
+                QString colorDatasetID1 = _selectedGenePointDataset1.getDatasetId();
+                QString colorDatasetID2 = _selectedGenePointDataset2.getDatasetId();
                 QString selectedDimName = "";
-                if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
-                {
-                    colorDatasetID1 = _pcaCommonGenesDataset1.getDatasetId();
-                    colorDatasetID2 = _pcaCommonGenesDataset2.getDatasetId();
-                    selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
-                }
-                else
-                {
-                    
-                    colorDatasetID1 = _selectedGenePointDataset1.getDatasetId();
-                    colorDatasetID2 = _selectedGenePointDataset2.getDatasetId();
-                }
-
-
                 
                 modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _selectedEmbeddingPointDataset1.getDatasetId(), colorDatasetID1, _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedDimName);
 
                 modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _selectedEmbeddingPointDataset2.getDatasetId(), colorDatasetID2, _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), true, selectedDimName);
 
 
-                if (!_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
-                {
+
                     selectFirstRow(_settingsAction.getTableView1Action());
-                }
+
             }
 
 
