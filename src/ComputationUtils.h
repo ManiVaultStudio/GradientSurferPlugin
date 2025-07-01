@@ -146,4 +146,4 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 
-void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, QString embeddingPointDataset, QString clusterDataset);
+void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints,QString pcaDimensionVal);
