@@ -188,8 +188,8 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
 void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-    mv::gui::DatasetPickerAction* colorDatasetPickerAction;
-    mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+    mv::gui::DatasetPickerAction* colorDatasetPickerValueAction;
+    mv::gui::DatasetPickerAction* pointDatasetPickerValueAction;
     if ( positionDatasetID == "" || scatterplotName =="") {
         qWarning() << "Invalid parameters for scatterplot mode change:" 
                    << ", positionDatasetID:" << positionDatasetID
@@ -201,42 +201,41 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
     {
         for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
         {
-
+            qDebug() << "Processing plugin:" << plugin->getGuiName();
             if (plugin->getGuiName() == scatterplotName)
             {
-                
-                pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
-                if (pointDatasetPickerAction)
+               
+                pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
+                if (pointDatasetPickerValueAction)
                 {
-                    if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                    if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
                     {
                         auto embeddingDataset = mv::data().getDataset(positionDatasetID);
                         if (embeddingDataset.isValid())
                         {
-                            pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
+                            pointDatasetPickerValueAction->setCurrentDataset(embeddingDataset);
                         }
                     }
-                    if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                    if (pointDatasetPickerValueAction->getCurrentDataset().isValid())
                     {
                         setScatterplotDimensions(plugin, xPositionString, yPositionString);
                         if (colorDatasetID != "")
                         {
-                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
-                            if (colorDatasetPickerAction)
+                            colorDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
+                            if (colorDatasetPickerValueAction)
                             {
                                 auto clusterDataset = mv::data().getDataset(colorDatasetID);
                                 if (clusterDataset.isValid())
                                 {
-                                    auto options= colorDatasetPickerAction->getDatasets();
+                                    auto options= colorDatasetPickerValueAction->getDatasets();
                                     if (options.size() > 0)
                                     {
 
-                                        colorDatasetPickerAction->setCurrentDataset(clusterDataset);
+                                        colorDatasetPickerValueAction->setCurrentDataset(clusterDataset);
 
                                         
                                     }
                                     
-                                    //qWarning() << "Setting dataset to color dataset";
                                 }
 
                             }
@@ -247,6 +246,10 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
 
 
 
+                }
+                else
+                {
+                    qCritical() << "Position dataset action not found in plugin:" << plugin->getGuiName();
                 }
                 auto freezeSelectionValueAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
                 if (freezeSelectionValueAction)
@@ -262,17 +265,21 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
                 }
                 else
                 {
-                    qDebug() << "Freeze selection action not found in plugin:" << plugin->getGuiName();
+                    qCritical() << "Freeze selection action not found in plugin:" << plugin->getGuiName();
                 }
                 if (dimensionForColoring != "")
                 {
-                    auto geneSelectionAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
-                    if (geneSelectionAction) {
-                        geneSelectionAction->setCurrentDimensionName(dimensionForColoring);
+                    auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
+                    if (geneSelectionValueAction) {
+                        geneSelectionValueAction->setCurrentDimensionName(dimensionForColoring);
                     }
                 }
 
                 break;
+            }
+            else
+            {
+                qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
             }
 
         }

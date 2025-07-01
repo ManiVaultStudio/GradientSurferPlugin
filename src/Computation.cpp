@@ -490,6 +490,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         setStatusMessage("R", "Correlation computation in progress", "");
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
+        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
+        {
+            _blockSelectionMode = true;
+            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+            _blockSelectionMode = false;
+        }
         QApplication::processEvents();
 
         correlationAfterPCA(); 
@@ -517,6 +523,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         setStatusMessage("R", "PCA Computation in progress", "");
         _settingsAction.getCommonOptionsHolder().getComputePCAAction().setDisabled(true);
+        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
+        {
+            _blockSelectionMode = true;
+            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+            _blockSelectionMode = false;
+        }
         QApplication::processEvents();
   
         ManualCompute();
