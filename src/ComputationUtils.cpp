@@ -1006,13 +1006,14 @@ void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, s
             notSelectedIndices.push_back(i);
         }
     }
-
+    QColor contrastiveColor("#00ffff"); // Bright cyan
+    contrastiveColor.setAlpha(128); //0 to 255
     QVector<Cluster> newClusters;
     newClusters.reserve(selectedIndices.size() + 1);
     if (!notSelectedIndices.empty()) {
         Cluster notSelectedCluster;
         notSelectedCluster.setName("Not Selected");
-        notSelectedCluster.setColor(QColor("#F5F5DC")); // Creme color
+        notSelectedCluster.setColor(QColor(contrastiveColor)); // Creme color
         notSelectedCluster.setIndices(notSelectedIndices);
         newClusters.append(notSelectedCluster);
     }
