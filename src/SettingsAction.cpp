@@ -139,7 +139,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getNormalizationTypeAction().initialize({ "None", "ZScore", "MinMax", "Log2"},"None");
 
     _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getColoringMapSelectionAction().setDisabled(true);
+    //_commonOptionsHolder.getColoringMapSelectionAction().setDisabled(true);
     _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
 
     _commonOptionsHolder.getNormalizeDataAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
