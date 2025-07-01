@@ -1,4 +1,5 @@
 #include "ComputationUtils.h"
+#include "ColorUtils.h"
 
 #include <QString>
 #include <QElapsedTimer>
@@ -16,7 +17,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-
+#include <iostream>
 std::vector<CorrelationGeneCoords> _geneCorrValues1;
 std::vector<CorrelationGeneCoords> _geneCorrValues2;
 std::vector<CorrelationGeneCoords> _geneCorrValues3;
@@ -25,15 +26,59 @@ std::vector<int> _geneOfInterestIndices2;
 std::vector<int> _geneOfInterestIndices3;
 QList<QString> _commonGeneNames;
 
+void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
+{
+    QByteArray localMsg = msg.toLocal8Bit();
+    const char* colorCode = "\033[0m"; // Default
+
+    switch (type) {
+    case QtDebugMsg:
+        colorCode = "\033[1;36m"; // Cyan
+        break;
+    case QtInfoMsg:
+        colorCode = "\033[1;32m"; // Green
+        break;
+    case QtWarningMsg:
+        colorCode = "\033[1;33m"; // Yellow
+        break;
+    case QtCriticalMsg:
+        colorCode = "\033[1;31m"; // Red
+        break;
+    case QtFatalMsg:
+        colorCode = "\033[1;41m"; // Red background
+        break;
+    }
+
+    fprintf(stderr, "%s[%s] %s (%s:%u, %s)%s\n",
+        colorCode,
+        (type == QtDebugMsg ? "DEBUG" :
+            type == QtInfoMsg ? "INFO" :
+            type == QtWarningMsg ? "WARNING" :
+            type == QtCriticalMsg ? "CRITICAL" : "FATAL"),
+        localMsg.constData(),
+        context.file ? context.file : "",
+        context.line,
+        context.function ? context.function : "",
+        "\033[0m"); // Reset color
+
+    if (type == QtFatalMsg)
+        abort();
+}
+
+
 FunctionTimer::FunctionTimer(const QString& functionName)
     : _functionName(functionName)
 {
     _timer.start();
 }
+
 FunctionTimer::~FunctionTimer()
 {
-    qDebug() << _functionName << "took"
-        << _timer.elapsed() / 1000.0 << "seconds";
+    std::cout
+        << _functionName.toStdString()
+        << ":"
+        << QString::number(_timer.elapsed() / 1000.0, 'f', 3).toStdString()
+        << "sec"<<"\n";
 }
 
 std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(
@@ -141,17 +186,17 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
     isSyncing = false;
 }
 
-void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring)
+
+
+void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-    mv::gui::DatasetPickerAction* colorDatasetPickerAction;
-    mv::gui::DatasetPickerAction* pointDatasetPickerAction;
-    mv::gui::ToggleAction* freezeSelectionAction;
-    if (xPositionString == "" || yPositionString == "" || positionDatasetID == "" || colorDatasetID == "" || scatterplotName =="") {
-        qWarning() << "Invalid parameters for scatterplot mode change. xPositionString:" << xPositionString
-                   << ", yPositionString:" << yPositionString
+    mv::gui::DatasetPickerAction* colorDatasetPickerValueAction;
+    mv::gui::DatasetPickerAction* pointDatasetPickerValueAction;
+    if ( positionDatasetID == "" || scatterplotName =="") {
+        qWarning() << "Invalid parameters for scatterplot mode change:" 
                    << ", positionDatasetID:" << positionDatasetID
-                   << ", colorDatasetID:" << colorDatasetID;
+                   << ", scatterplotName:" << scatterplotName;
         return;
     }
 
@@ -159,68 +204,94 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
     {
         for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
         {
-
+            qDebug() << "Processing plugin:" << plugin->getGuiName();
             if (plugin->getGuiName() == scatterplotName)
             {
-                
-                pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
-                if (pointDatasetPickerAction)
+               
+                pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
+                if (pointDatasetPickerValueAction)
                 {
-                    if (!pointDatasetPickerAction->getCurrentDataset().isValid())
+                    if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
                     {
                         auto embeddingDataset = mv::data().getDataset(positionDatasetID);
                         if (embeddingDataset.isValid())
                         {
-                            pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
+                            pointDatasetPickerValueAction->setCurrentDataset(embeddingDataset);
                         }
                     }
-                    if (pointDatasetPickerAction->getCurrentDataset().isValid())
+                    if (pointDatasetPickerValueAction->getCurrentDataset().isValid())
                     {
-                        if (xPositionString != "" && yPositionString != "") {
-                            setScatterplotDimensions(plugin, xPositionString, yPositionString);
-                        }
-
-                        colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
-                        if (colorDatasetPickerAction)
+                        setScatterplotDimensions(plugin, xPositionString, yPositionString);
+                        if (colorDatasetID != "")
                         {
-                            auto clusterDataset = mv::data().getDataset(colorDatasetID);
-                            if (clusterDataset.isValid())
+                            colorDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
+                            if (colorDatasetPickerValueAction)
                             {
-                                colorDatasetPickerAction->setCurrentDataset(clusterDataset);
-                                //qWarning() << "Setting dataset to color dataset";
-                            }
+                                auto clusterDataset = mv::data().getDataset(colorDatasetID);
+                                if (clusterDataset.isValid())
+                                {
+                                    auto options= colorDatasetPickerValueAction->getDatasets();
+                                    if (options.size() > 0)
+                                    {
 
+                                        colorDatasetPickerValueAction->setCurrentDataset(clusterDataset);
+
+                                        
+                                    }
+                                    
+                                }
+
+                            }
                         }
+
 
                     }
 
 
 
                 }
-
-                freezeSelectionAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
-                if (freezeSelectionAction)
+                else
+                {
+                    qCritical() << "Position dataset action not found in plugin:" << plugin->getGuiName();
+                }
+                auto freezeSelectionValueAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
+                if (freezeSelectionValueAction)
                 {
                     if (disableSelection)
                     {
-                        freezeSelectionAction->setChecked(true);
-                        freezeSelectionAction->setText("Disable Selection");
+                        freezeSelectionValueAction->setChecked(true);
                     }
                     else {
-                        freezeSelectionAction->setChecked(false);
-                        freezeSelectionAction->setText("Enable Selection");
+                        freezeSelectionValueAction->setChecked(false);
                     }
  
                 }
+                else
+                {
+                    qCritical() << "Freeze selection action not found in plugin:" << plugin->getGuiName();
+                }
                 if (dimensionForColoring != "")
                 {
-                    auto geneSelectionAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
-                    if (geneSelectionAction) {
-                        geneSelectionAction->setCurrentDimensionName(dimensionForColoring);
+                    auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
+                    if (geneSelectionValueAction) {
+                        geneSelectionValueAction->setCurrentDimensionName(dimensionForColoring);
+                    }
+                }
+
+                if (colormapValue!="")
+                {
+                    auto colorMapValueAction = findActionByPath<OptionAction>(plugin, "Settings/Coloring/1D Color map/Current color map");
+                    if (colorMapValueAction)
+                    {
+                        colorMapValueAction->setCurrentText(colormapValue);
                     }
                 }
 
                 break;
+            }
+            else
+            {
+                qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
             }
 
         }
@@ -646,10 +717,40 @@ void setScatterplotDimensions(mv::plugin::Plugin* plugin, const QString& xName, 
     auto embeddingXVal = findActionByPath<OptionAction>(plugin, "Settings/Position/X/Select dimension");
     auto embeddingYVal = findActionByPath<OptionAction>(plugin, "Settings/Position/Y/Select dimension");
     if (embeddingXVal && embeddingYVal) {
-        if (embeddingXVal->getCurrentIndex() != -1) embeddingXVal->setCurrentText("");
-        if (embeddingYVal->getCurrentIndex() != -1) embeddingYVal->setCurrentText("");
-        if (embeddingXVal->getOptions().contains(xName)) embeddingXVal->setCurrentText(xName);
-        if (embeddingYVal->getOptions().contains(yName)) embeddingYVal->setCurrentText(yName);
+        if (embeddingXVal->getCurrentIndex() != -1){ 
+            embeddingXVal->setCurrentText("");
+        }
+        if (embeddingYVal->getCurrentIndex() != -1) {
+            embeddingYVal->setCurrentText("");
+        }
+        if (xName != "") {
+            if (embeddingXVal->getOptions().contains(xName)) {
+                embeddingXVal->setCurrentText(xName);
+            }
+        }
+        else
+        {
+            if (embeddingXVal->getOptions().size() > 0)
+            {
+                embeddingXVal->setCurrentIndex(0);
+            }
+        }
+        if (yName != "") {
+            if (embeddingYVal->getOptions().contains(yName)) {
+                embeddingYVal->setCurrentText(yName);
+            }
+        }
+        else
+        {
+            if (embeddingYVal->getOptions().size() > 1)
+            {
+                embeddingYVal->setCurrentIndex(1);
+            }
+            else if (embeddingYVal->getOptions().size() > 0)
+            {
+                embeddingYVal->setCurrentIndex(0);
+            }
+        }
     }
 }
 bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float epsilon)
@@ -871,4 +972,77 @@ std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates) {
         return yCoordinates[a] < yCoordinates[b];
     });
     return indices;
+}
+
+
+
+void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints, QString pcaDimensionVal)
+{
+    FunctionTimer timer(Q_FUNC_INFO);
+
+    if (pcaColoringDataset.isEmpty() || colorMapValue.isEmpty() || selectedIndices.empty() || pcaValuesDataset.isEmpty() || pcaDimensionVal.isEmpty()) {
+        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        return;
+    }
+    if (numOfTotalPoints <= 0) {
+        qWarning() << "Invalid number of total points for PCA cluster colors creation.";
+        return;
+    }
+
+    Dataset<Clusters> pcaColoringDatasetFull = mv::data().getDataset<Clusters>(pcaColoringDataset);
+    Dataset<Points> pcaValuesDatasetFull = mv::data().getDataset<Points>(pcaValuesDataset);
+    if (!pcaColoringDatasetFull.isValid() || !pcaValuesDatasetFull.isValid()) {
+        qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
+        return;
+    }
+
+    // Clear previous clusters in the PCA coloring dataset
+    pcaColoringDatasetFull->getClusters() = QVector<Cluster>();
+
+    std::vector<std::seed_seq::result_type> notSelectedIndices;
+    notSelectedIndices.reserve(numOfTotalPoints - selectedIndices.size());
+    for (int i = 0; i < numOfTotalPoints; ++i) {
+        if (std::find(selectedIndices.begin(), selectedIndices.end(), i) == selectedIndices.end()) {
+            notSelectedIndices.push_back(i);
+        }
+    }
+
+    QVector<Cluster> newClusters;
+    newClusters.reserve(selectedIndices.size() + 1);
+    if (!notSelectedIndices.empty()) {
+        Cluster notSelectedCluster;
+        notSelectedCluster.setName("Not Selected");
+        notSelectedCluster.setColor(QColor("#F5F5DC")); // Creme color
+        notSelectedCluster.setIndices(notSelectedIndices);
+        newClusters.append(notSelectedCluster);
+    }
+
+    std::vector<float> pcaValues(selectedIndices.size());
+    ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
+    std::vector<QString> getdimensionValues = pcaValuesDatasetFull->getDimensionNames();
+    auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), pcaDimensionVal);
+    int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
+    pcaValuesDatasetFull->extractDataForDimension(pcaValues, dimensionIndex);
+
+    float minValue = *std::min_element(pcaValues.begin(), pcaValues.end());
+    float maxValue = *std::max_element(pcaValues.begin(), pcaValues.end());
+
+    // Group indices by unique PCA value
+    std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
+    for (size_t i = 0; i < pcaValues.size(); ++i) {
+        valueToIndices[pcaValues[i]].push_back(static_cast<std::seed_seq::result_type>(selectedIndices.at(i)));
+    }
+
+    int clusterIdx = 0;
+    for (const auto& [value, indices] : valueToIndices) {
+        QColor color = getColorFromColormap(value, colormap, minValue, maxValue);
+        Cluster cluster;
+        cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        cluster.setColor(color);
+        cluster.setIndices(indices);
+        newClusters.append(cluster);
+    }
+
+    pcaColoringDatasetFull->getClusters() = newClusters;
+    events().notifyDatasetDataChanged(pcaColoringDatasetFull);
 }

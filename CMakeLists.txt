@@ -49,6 +49,8 @@ set(PLUGIN_SOURCES
     src/ComputationUtils.cpp
 	src/PcaFast.h
 	src/PcaFastOp.h
+	src/ColorUtils.cpp
+	src/ColorUtils.h
     PluginInfo.json
 )
 

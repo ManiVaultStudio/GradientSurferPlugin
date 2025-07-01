@@ -39,6 +39,7 @@
 #include <actions/VerticalToolbarAction.h>
 #include "QStatusBar"
 #include "HighPerfLineChart.h"
+#include <actions/ColorMap1DAction.h>
 
 using namespace mv::gui;
 class QMenu;
@@ -98,15 +99,9 @@ public:
         const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
-
         const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
         DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
 
-        const ToggleAction& getFocusSelectionAction() const { return _focusSelectionAction; }
-        ToggleAction& getFocusSelectionAction() { return _focusSelectionAction; }
-
-        const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
-        ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
 
  
 
@@ -127,8 +122,7 @@ public:
 
 
         DecimalRangeAction                  _correlationRangeAction;
-        ToggleAction                        _focusSelectionAction;
-        ToggleAction                        _hidePointSelectionAction;
+
 
   
     };
@@ -164,12 +158,6 @@ public:
         const DecimalRangeAction& getCorrelationRange2Action() const { return _correlationRange2Action; }
         DecimalRangeAction& getCorrelationRange2Action() { return _correlationRange2Action; }
 
-        const ToggleAction& getFocusSelection2Action() const { return _focusSelection2Action; }
-        ToggleAction& getFocusSelection2Action() { return _focusSelection2Action; }
-
-        const ToggleAction& getHidePointSelectionOutline2Action() const { return _hidePointSelection2Action; }
-        ToggleAction& getHidePointSelectionOutline2Action() { return _hidePointSelection2Action; }
-
     protected:
         SettingsAction& _settingsOptions;
 
@@ -184,8 +172,6 @@ public:
         DimensionPickerAction               _geneSelection2Action;
 
         DecimalRangeAction                  _correlationRange2Action;
-        ToggleAction                        _focusSelection2Action;
-        ToggleAction                        _hidePointSelection2Action;
 
     };
 
@@ -235,6 +221,17 @@ public:
         const ToggleAction& getSelectionModeAction() const { return _selectionModeAction; }
         ToggleAction& getSelectionModeAction() { return _selectionModeAction; }
 
+        const ColorMap1DAction& getColoringMapSelectionAction() const { return _coloringMapSelectionAction; }
+        ColorMap1DAction& getColoringMapSelectionAction() { return _coloringMapSelectionAction; }
+
+
+
+
+        const ToggleAction& getFocusSelectionAction() const { return _focusSelectionAction; }
+        ToggleAction& getFocusSelectionAction() { return _focusSelectionAction; }
+
+        const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
+        ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
 
 
     protected:
@@ -253,6 +250,10 @@ public:
         ToggleAction                 _normalizeDataAction;
         OptionAction                _normalizationTypeAction;
         ToggleAction                _selectionModeAction;
+        ColorMap1DAction            _coloringMapSelectionAction;
+
+        ToggleAction                        _focusSelectionAction;
+        ToggleAction                        _hidePointSelectionAction;
     };
 
 

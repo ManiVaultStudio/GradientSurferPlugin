@@ -60,10 +60,9 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _statusHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
-    _dataset1OptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
-    _dataset2OptionsHolder.getFocusSelection2Action().setToolTip("Focus Selection Action 2");
-    _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
-    _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setToolTip("Hide Point Selection Outline Action 2");
+    _commonOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
+    _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
+
     _dataset1OptionsHolder.getCorrelationRangeAction().setToolTip("Correlation Range Action");
     _dataset2OptionsHolder.getCorrelationRange2Action().setToolTip("Correlation Range Action 2");
     _dataset2OptionsHolder.getClusterDataset2Action().setToolTip("Cluster Dataset 2");
@@ -87,13 +86,12 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
     _commonOptionsHolder.getSelectionModeAction().setChecked(true);
 
-    _dataset1OptionsHolder.getFocusSelectionAction().setChecked(false);
-    _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
+    _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
+    _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
 
 
 
-    _dataset2OptionsHolder.getFocusSelection2Action().setChecked(false);
-    _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setChecked(false);
+
 
 
 
@@ -138,16 +136,20 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getNormalizationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getNormalizationTypeAction().initialize({ "None", "ZScore", "MinMax", "Log2"},"None");
 
+    _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    //_commonOptionsHolder.getColoringMapSelectionAction().setDisabled(true);
+    _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
+
     _commonOptionsHolder.getNormalizeDataAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getNormalizeDataAction().setChecked(true);
 
 
 
-    _dataset1OptionsHolder.getFocusSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _dataset2OptionsHolder.getFocusSelection2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getFocusSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
-    _dataset1OptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _dataset2OptionsHolder.getHidePointSelectionOutline2Action().setDefaultWidgetFlags(ToggleAction::CheckBox);
+
+    _commonOptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+
 
 
     _dataset1OptionsHolder.getCorrelationRangeAction().setDefaultWidgetFlags(IntegralRangeAction::Slider  | IntegralRangeAction::MaximumSpinBox | IntegralRangeAction::MinimumSpinBox);
@@ -292,8 +294,6 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _embeddingDimensionYAction(this, "Embedding Dimension Y"),
     _geneSelectionAction(this, "Gene Selection"),
     _correlationRangeAction(this, "Correlation Range"),
-    _focusSelectionAction(this, "Focus Selection"),
-    _hidePointSelectionAction(this, "Hide Point Selection Outline"),
     _lineplotViewSelectionAction(this, "Lineplot view selection")
 {
     setText("Dataset1 Options");
@@ -307,8 +307,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
     addAction(&_correlationRangeAction);
-    addAction(&_focusSelectionAction);
-    addAction(&_hidePointSelectionAction);
+
 
 
 
@@ -325,9 +324,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     _embeddingDimension2XAction(this, "Embedding Dimension 2 X"),
     _embeddingDimension2YAction(this, "Embedding Dimension 2 Y"),
     _geneSelection2Action(this, "Gene Selection 2"),
-    _correlationRange2Action(this, "Correlation Range 2"),
-    _focusSelection2Action(this, "Focus Selection 2"),
-    _hidePointSelection2Action(this, "Hide Point Selection Outline 2")
+    _correlationRange2Action(this, "Correlation Range 2")
 {
     setText("Dataset2 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -339,9 +336,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     addAction(&_embeddingDimension2XAction);
     addAction(&_embeddingDimension2YAction);
     addAction(&_correlationRange2Action);
- 
-    addAction(&_focusSelection2Action);
-    addAction(&_hidePointSelection2Action);
+
 
 
 }
@@ -359,7 +354,10 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _computePCAAction(this, "Compute: Selection PCs"),
     _normalizeDataAction(this, "Normalize Data"),
     _normalizationTypeAction(this, "Normalization Type"),
-    _selectionModeAction(this, "Selection Mode")
+    _selectionModeAction(this, "Selection Mode"),
+    _focusSelectionAction(this, "Focus Selection"),
+    _hidePointSelectionAction(this, "Hide Point Selection Outline"),
+    _coloringMapSelectionAction(this, "Coloring Map Selection")
 
 {
     setText("Shared Options");
@@ -368,15 +366,17 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
     addAction(&_dualPCAColoringAction);
+    addAction(&_focusSelectionAction);
+    addAction(&_hidePointSelectionAction);
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
+    addAction(&_coloringMapSelectionAction);
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizeDataAction);
     addAction(&_normalizationTypeAction);
     addAction(&_selectionModeAction);
     addAction(&_computePCAAction);
-
     addAction(&_computeAction);
 
 }

@@ -107,6 +107,8 @@ protected:
     std::vector<int>            _filteredSelectionIndices;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
+    mv::Dataset<Clusters>       _pcaClusterDatasetColoring1 = nullptr;
+    mv::Dataset<Clusters>       _pcaClusterDatasetColoring2 = nullptr;
     mv::Dataset<Points>         _lineChartPointDataset1 = nullptr;
     mv::Dataset<Clusters>       _lineChartColorClusterDataset1 = nullptr;
     mv::Dataset<Points>       _lineChartColorPointDataset1 = nullptr;
