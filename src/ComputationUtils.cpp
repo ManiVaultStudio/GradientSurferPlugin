@@ -16,7 +16,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-
+#include <iostream>
 std::vector<CorrelationGeneCoords> _geneCorrValues1;
 std::vector<CorrelationGeneCoords> _geneCorrValues2;
 std::vector<CorrelationGeneCoords> _geneCorrValues3;
@@ -25,15 +25,59 @@ std::vector<int> _geneOfInterestIndices2;
 std::vector<int> _geneOfInterestIndices3;
 QList<QString> _commonGeneNames;
 
+void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
+{
+    QByteArray localMsg = msg.toLocal8Bit();
+    const char* colorCode = "\033[0m"; // Default
+
+    switch (type) {
+    case QtDebugMsg:
+        colorCode = "\033[1;36m"; // Cyan
+        break;
+    case QtInfoMsg:
+        colorCode = "\033[1;32m"; // Green
+        break;
+    case QtWarningMsg:
+        colorCode = "\033[1;33m"; // Yellow
+        break;
+    case QtCriticalMsg:
+        colorCode = "\033[1;31m"; // Red
+        break;
+    case QtFatalMsg:
+        colorCode = "\033[1;41m"; // Red background
+        break;
+    }
+
+    fprintf(stderr, "%s[%s] %s (%s:%u, %s)%s\n",
+        colorCode,
+        (type == QtDebugMsg ? "DEBUG" :
+            type == QtInfoMsg ? "INFO" :
+            type == QtWarningMsg ? "WARNING" :
+            type == QtCriticalMsg ? "CRITICAL" : "FATAL"),
+        localMsg.constData(),
+        context.file ? context.file : "",
+        context.line,
+        context.function ? context.function : "",
+        "\033[0m"); // Reset color
+
+    if (type == QtFatalMsg)
+        abort();
+}
+
+
 FunctionTimer::FunctionTimer(const QString& functionName)
     : _functionName(functionName)
 {
     _timer.start();
 }
+
 FunctionTimer::~FunctionTimer()
 {
-    qDebug() << _functionName << "took"
-        << _timer.elapsed() / 1000.0 << "seconds";
+    std::cout
+        << _functionName.toStdString()
+        << ":"
+        << QString::number(_timer.elapsed() / 1000.0, 'f', 3).toStdString()
+        << "sec";
 }
 
 std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(
@@ -146,7 +190,6 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
     mv::gui::DatasetPickerAction* colorDatasetPickerAction;
     mv::gui::DatasetPickerAction* pointDatasetPickerAction;
-    mv::gui::ToggleAction* freezeSelectionAction;
     if (xPositionString == "" || yPositionString == "" || positionDatasetID == "" || colorDatasetID == "" || scatterplotName =="") {
         qWarning() << "Invalid parameters for scatterplot mode change. xPositionString:" << xPositionString
                    << ", yPositionString:" << yPositionString
@@ -197,20 +240,21 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
 
 
                 }
-
-                freezeSelectionAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
-                if (freezeSelectionAction)
+                auto freezeSelectionValueAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
+                if (freezeSelectionValueAction)
                 {
                     if (disableSelection)
                     {
-                        freezeSelectionAction->setChecked(true);
-                        freezeSelectionAction->setText("Disable Selection");
+                        freezeSelectionValueAction->setChecked(true);
                     }
                     else {
-                        freezeSelectionAction->setChecked(false);
-                        freezeSelectionAction->setText("Enable Selection");
+                        freezeSelectionValueAction->setChecked(false);
                     }
  
+                }
+                else
+                {
+                    qDebug() << "Freeze selection action not found in plugin:" << plugin->getGuiName();
                 }
                 if (dimensionForColoring != "")
                 {

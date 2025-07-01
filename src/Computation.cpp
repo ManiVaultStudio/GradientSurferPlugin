@@ -1,4 +1,5 @@
 #include "Computation.h"
+#include "ComputationUtils.h"
 
 #include <iostream>
 #include <set>
@@ -31,8 +32,6 @@
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QVector>
-#include "ComputationUtils.h"
-
 using namespace mv;
 using namespace mv::gui;
 
@@ -46,6 +45,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     _clusterSelectionDebounceTimer.setSingleShot(true);
     _correlationRangeDebounceTimer2.setSingleShot(true);
 
+
+    qInstallMessageHandler(customMessageHandler);
     const auto updateStatus = [this]() -> void {
         auto stringFull = _settingsAction.getStatusHolder().getStatusMessageAction().getString();
         StatusInfo info = parseStatusMessage(stringFull);
@@ -2648,6 +2649,8 @@ void Computation::setSelectionAndAutoCompute()
     AutoCompute();
     _blockSelectionTrigger = false;
 }
+
+
 
 
 

@@ -143,3 +143,5 @@ class DimensionPickerAction;
 void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allTables, const QList<DimensionPickerAction*>& allActions);
 
 void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection,QString dimensionForColoring);
+
+void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
