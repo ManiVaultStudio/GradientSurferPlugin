@@ -213,13 +213,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto updateGeneSelection1 = [this]() -> void {
         auto selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
+        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
         if (selectedGene == "")
         {
-            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
+            scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "", colorMapStringValue);
         }
         else
         {
-            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedGene);
+            scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedGene, colorMapStringValue);
 
             if (_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _filteredSelectionIndices.size() > 0)
             {
@@ -311,13 +312,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateGeneSelection2 = [this]() -> void {
 
         auto selectedGene2 = _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().getCurrentDimensionName();
+        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
         if (selectedGene2 == "")
         {
-            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
+            scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"", colorMapStringValue);
         }
         else
         {
-            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),true, selectedGene2);
+            scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),true, selectedGene2, colorMapStringValue);
         }
         
 
@@ -335,7 +337,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             if (_embeddingDataset.isValid())
             {
-                modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), "", "", "", false, "");
+                auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+                scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), "", "", "", false, "", colorMapStringValue);
                                
                 auto parent = _embeddingDataset->getParent();
                 if (parent.isValid())
@@ -429,7 +432,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             if (embeddingDataset2.isValid())
             {
-                modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), "", "", "", false, "");
+                auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+                scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), "", "", "", false, "", colorMapStringValue);
                 auto parent = embeddingDataset2->getParent();
                 if (parent.isValid())
                 {
@@ -552,21 +556,33 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().setDisabled(false);
             QString selectedDimName = ""; 
-            //createPCAClusterColors(_pcaClusterDatasetColoring1.getDatasetId(),colorMapStringValue,);
-            //createPCAClusterColors(_pcaClusterDatasetColoring2.getDatasetId(),colorMapStringValue,);
+            createPCAClusterColors(_pcaClusterDatasetColoring1.getDatasetId(),colorMapStringValue, _selectedClusterIndices1, _pcaCommonGenesDataset1.getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+            createPCAClusterColors(_pcaClusterDatasetColoring2.getDatasetId(),colorMapStringValue, _selectedClusterIndices2, _pcaCommonGenesDataset2.getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
             _blockSelectionMode = true;
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
             _blockSelectionMode = false;
 
             selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
 
-            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _pcaClusterDatasetColoring1.getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedDimName);
+            scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _pcaClusterDatasetColoring1.getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedDimName,colorMapStringValue);
 
-            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _pcaClusterDatasetColoring2.getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), true, selectedDimName);
+            scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _pcaClusterDatasetColoring2.getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), true, selectedDimName, colorMapStringValue);
 
         }
         else
         {
+            if (_pcaClusterDatasetColoring1.isValid())
+            {
+                _pcaClusterDatasetColoring1->getClusters() = QVector<Cluster>();
+
+            }
+            if (_pcaClusterDatasetColoring2.isValid())
+            {
+                _pcaClusterDatasetColoring2->getClusters() = QVector<Cluster>();
+            }
+            
+
+            
             _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().setDisabled(true);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
@@ -574,9 +590,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             deselectAllRows(_settingsAction.getTableView2Action());
             deselectAllRows(_settingsAction.getTableView3Action());
 
-            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
+            scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "", colorMapStringValue);
 
-            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false, "");
+            scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false, "", colorMapStringValue);
         }
 
 
@@ -692,6 +708,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 qDebug() << "Selection mode change blocked, returning early";
                 return;
             }
+            auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
             if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
             {
                 _pacColoringPaused = true;
@@ -703,9 +720,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 deselectAllRows(_settingsAction.getTableView2Action());
                 deselectAllRows(_settingsAction.getTableView3Action());
 
-                modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(),_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
+                scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(),_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "", colorMapStringValue);
 
-                modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false,"");
+                scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false,"", colorMapStringValue);
             }
             else
             {
@@ -713,9 +730,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 QString colorDatasetID2 = _selectedGenePointDataset2.getDatasetId();
                 QString selectedDimName = "";
                 
-                modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _selectedEmbeddingPointDataset1.getDatasetId(), colorDatasetID1, _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedDimName);
+                scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _selectedEmbeddingPointDataset1.getDatasetId(), colorDatasetID1, _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedDimName, colorMapStringValue);
 
-                modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _selectedEmbeddingPointDataset2.getDatasetId(), colorDatasetID2, _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), true, selectedDimName);
+                scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _selectedEmbeddingPointDataset2.getDatasetId(), colorDatasetID2, _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), true, selectedDimName, colorMapStringValue);
 
 
 
@@ -985,9 +1002,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         setStatusMessage("M", "Embedding 1 Y dimension changed", "");
         //TODO crash here with cluster dataset 
-        //modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(),false,"");
-
-        modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
+        //scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(),false,"");
+        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "", colorMapStringValue);
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged1);
@@ -997,9 +1014,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         setStatusMessage("M", "Embedding 2 Y dimension changed", "");
         //TODO crash here with cluster dataset 
-        //modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
-
-        modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false, "");
+        //scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
+        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false, "", colorMapStringValue);
 
 
 
@@ -1011,9 +1028,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         setStatusMessage("M", "Embedding 1 X dimension changed", "");
         //TODO crash here with cluster dataset 
-        //modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
-
-        modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
+        //scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
+        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "", colorMapStringValue);
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged1);
@@ -1023,8 +1040,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         setStatusMessage("M", "Embedding 2 X dimension changed", "");
         //TODO crash here with cluster dataset 
-        //modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
-        modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false, "");
+        //scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
+        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false, "", colorMapStringValue);
 
         };
 

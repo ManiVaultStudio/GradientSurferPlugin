@@ -188,7 +188,7 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
 
 
 
-void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring)
+void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
     mv::gui::DatasetPickerAction* colorDatasetPickerValueAction;
@@ -275,6 +275,15 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
                     auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
                     if (geneSelectionValueAction) {
                         geneSelectionValueAction->setCurrentDimensionName(dimensionForColoring);
+                    }
+                }
+
+                if (colormapValue!="")
+                {
+                    auto colorMapValueAction = findActionByPath<OptionAction>(plugin, "Settings/Coloring/1D Color map/Current color map");
+                    if (colorMapValueAction)
+                    {
+                        colorMapValueAction->setCurrentText(colormapValue);
                     }
                 }
 
@@ -967,7 +976,7 @@ std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates) {
 
 
 
-void createPCAClusterColors()
+void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, QString embeddingPointDataset, QString clusterDataset)
 {
     //FunctionTimer timer(Q_FUNC_INFO);
     //Dataset<Clusters> clusterDataset = _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset();

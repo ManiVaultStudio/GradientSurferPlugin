@@ -142,8 +142,8 @@ class DimensionPickerAction;
 
 void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allTables, const QList<DimensionPickerAction*>& allActions);
 
-void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection,QString dimensionForColoring);
+void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection,QString dimensionForColoring,QString colormapValue);
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 
-void createPCAClusterColors();
+void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, QString embeddingPointDataset, QString clusterDataset);

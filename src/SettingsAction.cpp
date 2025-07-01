@@ -140,6 +140,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getColoringMapSelectionAction().setDisabled(true);
+    _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
 
     _commonOptionsHolder.getNormalizeDataAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getNormalizeDataAction().setChecked(true);
