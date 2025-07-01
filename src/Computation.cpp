@@ -550,19 +550,19 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
         {
-            QString colorDatasetID1 = "";
-            QString colorDatasetID2 = "";
+
             QString selectedDimName = ""; 
-            colorDatasetID1 = _pcaCommonGenesDataset1.getDatasetId();
-            colorDatasetID2 = _pcaCommonGenesDataset2.getDatasetId();
+            //createPCAClusterColors(_pcaClusterDatasetColoring1.getDatasetId(),);
+            //createPCAClusterColors(_pcaClusterDatasetColoring2.getDatasetId(),);
             _blockSelectionMode = true;
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
             _blockSelectionMode = false;
 
             selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
-            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _selectedEmbeddingPointDataset1.getDatasetId(), colorDatasetID1, _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedDimName);
 
-            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _selectedEmbeddingPointDataset2.getDatasetId(), colorDatasetID2, _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), true, selectedDimName);
+            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _pcaClusterDatasetColoring1.getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedDimName);
+
+            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _pcaClusterDatasetColoring2.getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), true, selectedDimName);
 
         }
         else
@@ -1675,6 +1675,16 @@ void Computation::processAfterPCAComplete()
         _pcaCommonGenesDataset2 = mv::data().createDataset("Points", "PCA Dataset 2", _selectedGenePointDataset2);
         _pcaCommonGenesDataset2->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
+    }
+    if(!_pcaClusterDatasetColoring1.isValid()) {
+        _pcaClusterDatasetColoring1 = mv::data().createDataset("Cluster", "PCA Cluster Dataset 1");  
+        _pcaClusterDatasetColoring1->setGroupIndex(555);
+        mv::events().notifyDatasetAdded(_pcaClusterDatasetColoring1);
+    }
+    if(!_pcaClusterDatasetColoring2.isValid()) {
+        _pcaClusterDatasetColoring2 = mv::data().createDataset("Cluster", "PCA Cluster Dataset 2");
+        _pcaClusterDatasetColoring2->setGroupIndex(555);
+        mv::events().notifyDatasetAdded(_pcaClusterDatasetColoring2);
     }
 
     setStatusMessage("R", "Computation after PCA", "");

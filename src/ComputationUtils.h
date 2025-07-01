@@ -145,3 +145,5 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
 void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection,QString dimensionForColoring);
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
+
+void createPCAClusterColors();

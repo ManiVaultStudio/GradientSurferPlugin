@@ -1,4 +1,5 @@
 #include "ComputationUtils.h"
+#include "ColorUtils.h"
 
 #include <QString>
 #include <QElapsedTimer>
@@ -184,6 +185,8 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
 
     isSyncing = false;
 }
+
+
 
 void modeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring)
 {
@@ -961,3 +964,41 @@ std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates) {
     });
     return indices;
 }
+
+
+
+void createPCAClusterColors()
+{
+    //FunctionTimer timer(Q_FUNC_INFO);
+    //Dataset<Clusters> clusterDataset = _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset();
+    //if (clusterDataset.isValid() && _lineChartColorClusterDataset1.isValid())
+    //{
+    //    _lineChartColorClusterDataset1->getClusters() = QVector<Cluster>();
+    //    events().notifyDatasetDataChanged(_lineChartColorClusterDataset1);
+    //    auto clusters = clusterDataset->getClusters();
+    //    for (const auto& cluster : clusters)
+    //    {
+    //        std::vector<std::seed_seq::result_type> newClusterIndices;
+    //        auto clusterIndices = cluster.getIndices();
+    //        for (int index : clusterIndices) {
+    //            auto it = std::find(_filteredSelectionIndices.begin(), _filteredSelectionIndices.end(), index);
+    //            if (it != _filteredSelectionIndices.end()) {
+    //                newClusterIndices.push_back(static_cast<int>(std::distance(_filteredSelectionIndices.begin(), it)));
+    //            }
+    //        }
+
+    //        if (newClusterIndices.size() > 0)
+    //        {
+    //            Cluster remappedCluster;
+    //            remappedCluster.setName(cluster.getName());
+    //            remappedCluster.setColor(cluster.getColor());
+    //            remappedCluster.setIndices(newClusterIndices);
+    //            _lineChartColorClusterDataset1->addCluster(remappedCluster);
+    //        }
+
+
+    //    }
+    //    events().notifyDatasetDataChanged(_lineChartColorClusterDataset1);
+    //}
+}
+
