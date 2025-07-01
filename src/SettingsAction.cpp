@@ -138,6 +138,9 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getNormalizationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getNormalizationTypeAction().initialize({ "None", "ZScore", "MinMax", "Log2"},"None");
 
+    _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getColoringMapSelectionAction().setDisabled(true);
+
     _commonOptionsHolder.getNormalizeDataAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getNormalizeDataAction().setChecked(true);
 
@@ -359,7 +362,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _computePCAAction(this, "Compute: Selection PCs"),
     _normalizeDataAction(this, "Normalize Data"),
     _normalizationTypeAction(this, "Normalization Type"),
-    _selectionModeAction(this, "Selection Mode")
+    _selectionModeAction(this, "Selection Mode"),
+    _coloringMapSelectionAction(this, "Coloring Map Selection")
 
 {
     setText("Shared Options");
@@ -370,13 +374,13 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_dualPCAColoringAction);
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
+    addAction(&_coloringMapSelectionAction);
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizeDataAction);
     addAction(&_normalizationTypeAction);
     addAction(&_selectionModeAction);
     addAction(&_computePCAAction);
-
     addAction(&_computeAction);
 
 }

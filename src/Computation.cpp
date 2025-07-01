@@ -547,13 +547,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
 
 
-
+        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
         if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
         {
-
+            _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().setDisabled(false);
             QString selectedDimName = ""; 
-            //createPCAClusterColors(_pcaClusterDatasetColoring1.getDatasetId(),);
-            //createPCAClusterColors(_pcaClusterDatasetColoring2.getDatasetId(),);
+            //createPCAClusterColors(_pcaClusterDatasetColoring1.getDatasetId(),colorMapStringValue,);
+            //createPCAClusterColors(_pcaClusterDatasetColoring2.getDatasetId(),colorMapStringValue,);
             _blockSelectionMode = true;
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
             _blockSelectionMode = false;
@@ -567,6 +567,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         else
         {
+            _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().setDisabled(true);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
@@ -601,6 +602,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
                             if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
                             {
+
                                 if (clusterDatasetAction && _lineChartColorPointDataset1.isValid())
                                 {
                                     clusterDatasetAction->setCurrentDataset(_lineChartColorPointDataset1);
@@ -614,6 +616,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                                     else
                                     {
                                         qWarning() << "LinePlot color dimension action not found";
+                                    }
+                                    auto colormapValAction = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point Dataset Dimension Color Map/Current color map");
+                                    if (colormapValAction)
+                                    {
+                                        colormapValAction->setCurrentText(colorMapStringValue);
+                                    }
+                                    else
+                                    {
+                                        qWarning() << "LinePlot color map action not found";
                                     }
                                 }
                                 else
@@ -672,6 +683,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToPlots);
+    connect(&_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, pcaColorsToPlots);
 
     const auto selectionModeToggled = [this]()
         {

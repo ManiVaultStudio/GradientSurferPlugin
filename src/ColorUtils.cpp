@@ -1,7 +1,7 @@
 #include <array>
 #include <algorithm>
 #include "ColorUtils.h"
-
+#include <QHash>
 // --- Colormap definitions ---
 
 static const std::array<QColor, 10> kQualitative10 = {
@@ -112,6 +112,33 @@ static const std::array<QColor, 11> kPiYG = {
     QColor("#7fbc41"), QColor("#4d9221"), QColor("#276419")
 };
 
+ColormapTypeValue getColorMapFromString(const QString& colormapselectedVal)
+{
+    static const QHash<QString, ColormapTypeValue> colormapMap = {
+        { "Black to white", ColormapTypeValue::BlackWhite },
+        { "RdYlBu",         ColormapTypeValue::RdYlBu },
+        { "qualitative",    ColormapTypeValue::Qualitative10 },
+        { "YlGn",           ColormapTypeValue::YlGn },
+        { "RdYlGn",         ColormapTypeValue::RdYlGn },
+        { "GnBu",           ColormapTypeValue::GnBu },
+        { "YlGnBu",         ColormapTypeValue::YlGnBu },
+        { "Spectral",       ColormapTypeValue::Spectral },
+        { "BrBG",           ColormapTypeValue::BrBg },
+        { "YlOrBr",         ColormapTypeValue::YlOrBr },
+        { "RdBu",           ColormapTypeValue::RdBu },
+        { "RdPu",           ColormapTypeValue::RdPu },
+        { "Plasma",         ColormapTypeValue::Plasma },
+        { "PuOr",           ColormapTypeValue::PuOr },
+        { "BuPu",           ColormapTypeValue::BuPu },
+        { "Reds",           ColormapTypeValue::Reds },
+        { "Viridis",        ColormapTypeValue::Viridis },
+        { "Q_BlGrRd",       ColormapTypeValue::Q_BiGrRd },
+        { "Magma",          ColormapTypeValue::Magma },
+        { "PiYG",           ColormapTypeValue::PiYG }
+    };
+    return colormapMap.value(colormapselectedVal, ColormapTypeValue::Constant);
+}
+
 // --- Colormap lookup function ---
 
 QColor getColorFromColormap(float t, ColormapTypeValue type, float minVal, float maxVal) {
@@ -123,7 +150,7 @@ QColor getColorFromColormap(float t, ColormapTypeValue type, float minVal, float
         int idx = static_cast<int>(t * (arr.size() - 1) + 0.5f);
         idx = std::clamp(idx, 0, static_cast<int>(arr.size() - 1));
         return arr[idx];
-    };
+        };
 
     switch (type) {
     case ColormapTypeValue::BlackWhite:
@@ -153,7 +180,8 @@ QColor getColorFromColormap(float t, ColormapTypeValue type, float minVal, float
         if (t < 0.5f) {
             float s = t * 2.0f;
             return QColor::fromRgbF(1.0f, s, 0.0f); // red to yellow
-        } else {
+        }
+        else {
             float s = (t - 0.5f) * 2.0f;
             return QColor::fromRgbF(1.0f - s, 1.0f - s, s); // yellow to blue
         }

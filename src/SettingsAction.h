@@ -39,6 +39,7 @@
 #include <actions/VerticalToolbarAction.h>
 #include "QStatusBar"
 #include "HighPerfLineChart.h"
+#include <actions/ColorMap1DAction.h>
 
 using namespace mv::gui;
 class QMenu;
@@ -235,6 +236,9 @@ public:
         const ToggleAction& getSelectionModeAction() const { return _selectionModeAction; }
         ToggleAction& getSelectionModeAction() { return _selectionModeAction; }
 
+        const ColorMap1DAction& getColoringMapSelectionAction() const { return _coloringMapSelectionAction; }
+        ColorMap1DAction& getColoringMapSelectionAction() { return _coloringMapSelectionAction; }
+
 
 
     protected:
@@ -253,6 +257,7 @@ public:
         ToggleAction                 _normalizeDataAction;
         OptionAction                _normalizationTypeAction;
         ToggleAction                _selectionModeAction;
+        ColorMap1DAction            _coloringMapSelectionAction;
     };
 
 

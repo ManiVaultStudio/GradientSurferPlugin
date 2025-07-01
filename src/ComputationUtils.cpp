@@ -986,7 +986,7 @@ void createPCAClusterColors()
     //                newClusterIndices.push_back(static_cast<int>(std::distance(_filteredSelectionIndices.begin(), it)));
     //            }
     //        }
-
+    //QColor color = getColorFromColormap(value, colormap, minValue, maxValue);
     //        if (newClusterIndices.size() > 0)
     //        {
     //            Cluster remappedCluster;
