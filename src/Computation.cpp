@@ -212,156 +212,96 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getPointDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset2);
 
     const auto updateGeneSelection1 = [this]() -> void {
-        if ( _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() == -1)
-        {
-            qWarning() << "No gene selected";
-
-            return;
-        }
-
-        auto selectedGene =  _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
+        auto selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
         if (selectedGene == "")
         {
-            qWarning() << "No gene selected";
-
-            return;
-        }
-        if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() &&  _filteredSelectionIndices.size() > 0)
-        {
-
-            auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
-            if (lineplotViewFactory)
-            {
-                auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-                if (lineplotView.isEmpty())
-                {
-                    qWarning() << "No scatterplot view 2 selected";
-                }
-                
-
-                for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
-                {
-
-                    if (plugin->getGuiName() == lineplotView)
-                    {
-                        
-                        _pacColoringPaused = true;
-                        _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-
-                        mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                        mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Color dataset");
-                        if (pointDatasetAction && _lineChartPointDataset1.isValid())
-                        {
-                            pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
-                            
-                            if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
-                            {
-                                clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
-                            }
-                            mv::gui::StringAction* chartTitle = findActionByPath<StringAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Chart Title");
-                            if (chartTitle)
-                            {
-                                QString titleText = QString("%1 vs %2 expression of selected cells (%3)")
-                                    .arg(QStringLiteral("Rotated Y Coordinates"))
-                                    .arg(selectedGene)
-                                    .arg(static_cast<int>(_filteredSelectionIndices.size()));
-                                chartTitle->setString(titleText);
-
-                            }
-
-
-                            mv::gui::OptionAction* dimensionX = findActionByPath<OptionAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Data Dimension X Selection/Select dimension");
-                            mv::gui::OptionAction* dimensionY = findActionByPath<OptionAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Data Dimension Y Selection/Select dimension");
-                            if (dimensionX)
-                            {
-                                dimensionX->setCurrentText("Rotated Y Coordinates");
-                            }
-                            if (dimensionY)
-                            {
-                                dimensionY->setCurrentText(selectedGene);
-                            }
-
-                            mv::gui::OptionAction* smoothingType = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Type");
-                            mv::gui::IntegralAction* smoothingWindow = findActionByPath<IntegralAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Window");
-                            if (smoothingType && smoothingWindow)
-                            {
-                                smoothingType->setCurrentText("Moving Average");
-                                int maxVal = _lineChartPointDataset1->getNumPoints()-1;
-                                int currentVal = static_cast<int>(std::round(maxVal * 0.2));
-                                smoothingWindow->setMaximum(maxVal);
-                                smoothingWindow->setMinimum(2);
-                                smoothingWindow->setValue(currentVal);
-                            }
-
-
-
-                            events().notifyDatasetDataChanged(_lineChartPointDataset1);
-
-                        }
-                        _pacColoringPaused = false;
-
-                    }
-                }
-            }
-
+            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
         }
         else
         {
-            qWarning() << "No point dataset selected";
-        }
+            modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedGene);
 
-
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
-        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
-
-        DimensionPickerAction* geneSelectionAction;
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            if (_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _filteredSelectionIndices.size() > 0)
             {
-                if (plugin->getGuiName() == _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText())
+                //TODO
+                auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+                if (lineplotViewFactory)
                 {
-                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
-                    if (pointDatasetPickerAction)
+                    auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+                    if (lineplotView.isEmpty())
                     {
-                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-                            if (embeddingDataset.isValid())
-                            {
-                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
-                            }
-                        }
-                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
-                            if (colorDatasetPickerAction)
-                            {
-                                auto dataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
-                                if (dataset.isValid())
-                                {
-                                    colorDatasetPickerAction->setCurrentDataset(dataset);
-                                }
-
-                            }
-                            geneSelectionAction = findActionByPath<DimensionPickerAction>(plugin,"Settings/Coloring/Dimension");
-                            if (geneSelectionAction)
-                            {
-                                geneSelectionAction->setCurrentDimensionName(selectedGene);
-                            }
-                            else
-                            {
-                                qWarning() << "Gene selection action not found";
-                            }
-                        }
-
-
-
+                        qWarning() << "No scatterplot view 2 selected";
                     }
 
+
+                    for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+                    {
+
+                        if (plugin->getGuiName() == lineplotView)
+                        {
+
+                            _pacColoringPaused = true;
+                            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
+
+                            mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
+                            mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
+                            if (pointDatasetAction && _lineChartPointDataset1.isValid())
+                            {
+                                pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
+
+                                if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
+                                {
+                                    clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
+                                }
+                                mv::gui::StringAction* chartTitle = findActionByPath<StringAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Chart Title");
+                                if (chartTitle)
+                                {
+                                    QString titleText = QString("%1 vs %2 expression of selected cells (%3)")
+                                        .arg(QStringLiteral("Rotated Y Coordinates"))
+                                        .arg(selectedGene)
+                                        .arg(static_cast<int>(_filteredSelectionIndices.size()));
+                                    chartTitle->setString(titleText);
+
+                                }
+
+
+                                mv::gui::OptionAction* dimensionX = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Data Dimension X Selection/Select dimension");
+                                mv::gui::OptionAction* dimensionY = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Data Dimension Y Selection/Select dimension");
+                                if (dimensionX)
+                                {
+                                    dimensionX->setCurrentText("Rotated Y Coordinates");
+                                }
+                                if (dimensionY)
+                                {
+                                    dimensionY->setCurrentText(selectedGene);
+                                }
+
+                                mv::gui::OptionAction* smoothingType = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Type");
+                                mv::gui::IntegralAction* smoothingWindow = findActionByPath<IntegralAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Window");
+                                if (smoothingType && smoothingWindow)
+                                {
+                                    smoothingType->setCurrentText("Moving Average");
+                                    int maxVal = _lineChartPointDataset1->getNumPoints() - 1;
+                                    int currentVal = static_cast<int>(std::round(maxVal * 0.2));
+                                    smoothingWindow->setMaximum(maxVal);
+                                    smoothingWindow->setMinimum(2);
+                                    smoothingWindow->setValue(currentVal);
+                                }
+
+
+
+                                events().notifyDatasetDataChanged(_lineChartPointDataset1);
+
+                            }
+                            _pacColoringPaused = false;
+
+                        }
+                    }
                 }
+
             }
+
+
         }
         };
 
@@ -373,72 +313,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         auto selectedGene2 = _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().getCurrentDimensionName();
         if (selectedGene2 == "")
         {
-            qWarning() << "No gene selected";
-
-            return;
+            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
         }
-
-        auto selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
-        if (selectedGene == "")
+        else
         {
-            qWarning() << "No gene selected";
-
-            return;
+            modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),true, selectedGene2);
         }
-
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
-        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
-
-        DimensionPickerAction* geneSelectionAction;
-
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
-                {
-                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
-                    if (pointDatasetPickerAction)
-                    {
-                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
-                            if (embeddingDataset2.isValid())
-                            {
-                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
-                            }
-                        }
-                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
-                            if (colorDatasetPickerAction)
-                            {
-                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
-                                if (dataset2.isValid())
-                                {
-                                    colorDatasetPickerAction->setCurrentDataset(dataset2);
-                                }
-
-                            }
-                            geneSelectionAction = findActionByPath<DimensionPickerAction>(plugin,"Settings/Coloring/Dimension");
-                            if (geneSelectionAction)
-                            {
-                                geneSelectionAction->setCurrentDimensionName(selectedGene2);
-                            }
-                            else
-                            {
-                                qWarning() << "Gene selection action not found";
-                            }
-                        }
-
-
-
-                    }
-
-                }
-            }
-        }
+        
 
         };
 
@@ -454,30 +335,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             if (_embeddingDataset.isValid())
             {
-                auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-                if (scatterplotViewFactory)
-                {
-                    auto scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-                    if (!scatterplotName.isEmpty())
-                    {
-                        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-                        {
-                            if (plugin->getGuiName() == scatterplotName)
-                            {
-                                mv::gui::DatasetPickerAction* pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
-                                if (pointDatasetPickerAction)
-                                {
-
-
-                                    pointDatasetPickerAction->setCurrentDataset(_embeddingDataset);
-
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                
+                modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), "", "", "", false, "");
+                               
                 auto parent = _embeddingDataset->getParent();
                 if (parent.isValid())
                 {
@@ -567,31 +426,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             
 
             auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
-            
+
             if (embeddingDataset2.isValid())
             {
-                auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-                if (scatterplotViewFactory)
-                {
-                    auto scatterplotName = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
-                    if (!scatterplotName.isEmpty())
-                    {
-                        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-                        {
-                            if (plugin->getGuiName() == scatterplotName)
-                            {
-                                mv::gui::DatasetPickerAction* pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
-                                if (pointDatasetPickerAction)
-                                {
-
-
-                                    pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
-
-                                }
-                            }
-                        }
-                    }
-                }
+                modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), "", "", "", false, "");
                 auto parent = embeddingDataset2->getParent();
                 if (parent.isValid())
                 {
@@ -832,6 +670,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
             if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
             {
+                _pacColoringPaused = true;
+                _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
+                _pacColoringPaused = false;
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
                 _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
                 deselectAllRows(_settingsAction.getTableView1Action());
@@ -1119,69 +960,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto embeddingDimensionYActionChanged1 = [this]() -> void {
 
         setStatusMessage("M", "Embedding 1 Y dimension changed", "");
-        QString scatterplotName = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        if (scatterplotName.isEmpty())
-        {
-            qWarning() << "No scatterplot view selected";
-            setStatusMessage("E", "No scatterplot view selected", "");
-            return;
-        }
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
-        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+        //TODO crash here with cluster dataset 
+        //modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(),false,"");
 
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == scatterplotName)
-                {
-
-                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
-                    if (pointDatasetPickerAction)
-                    {
-                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-                            if (embeddingDataset.isValid())
-                            {
-                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
-                            }
-                        }
-                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto xPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
-                            auto yPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
-                            if (xPosition != "" && yPosition != "") {
-             
-
-                                setScatterplotDimensions(plugin, xPosition, yPosition);
-                            }
-
-                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
-                            if (colorDatasetPickerAction)
-                            {
-                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
-                                if (dataset.isValid())
-                                {
-                                    //colorDatasetPickerAction->setCurrentDataset(dataset);
-                                    //qDebug() << "Setting dataset to color dataset";
-                                }
-
-                            }
-
-                        }
-
-
-
-                    }
-
-                }
-            }
-        }
-
-
-
+        modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged1);
@@ -1190,65 +972,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto embeddingDimensionYActionChanged2 = [this]() -> void {
 
         setStatusMessage("M", "Embedding 2 Y dimension changed", "");
-        QString scatterplotName = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
-        if (scatterplotName.isEmpty())
-        {
-            qWarning() << "No scatterplot view 2 selected";
-            setStatusMessage("E", "No scatterplot view 2 selected", "");
-            return;
-        }
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
-        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+        //TODO crash here with cluster dataset 
+        //modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
 
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == scatterplotName)
-                {
-
-                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
-                    if (pointDatasetPickerAction)
-                    {
-                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
-                            if (embeddingDataset2.isValid())
-                            {
-                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
-                            }
-                        }
-                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
-                            auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
-                            if (xPosition2 != "" && yPosition2 != "") {
-                                setScatterplotDimensions(plugin, xPosition2, yPosition2);
-                            }
-
-                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
-                            if (colorDatasetPickerAction)
-                            {
-                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
-                                if (dataset2.isValid())
-                                {
-                                    //colorDatasetPickerAction->setCurrentDataset(dataset2);
-                                    //qDebug() << "Setting dataset to color dataset";
-                                }
-
-                            }
-
-                        }
-
-
-
-                    }
-
-                }
-            }
-        }
-
+        modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false, "");
 
 
 
@@ -1259,58 +986,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto embeddingDimensionXActionChanged1 = [this]() -> void {
 
         setStatusMessage("M", "Embedding 1 X dimension changed", "");
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
-        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
+        //TODO crash here with cluster dataset 
+        //modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
 
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText())
-                {
-
-                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
-                    if (pointDatasetPickerAction)
-                    {
-                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-                            if (embeddingDataset.isValid())
-                            {
-                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset);
-                            }
-                        }
-                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto xPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName();
-                            auto yPosition =  _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName();
-                            if (xPosition != "" && yPosition != "") {
-                                setScatterplotDimensions(plugin, xPosition, yPosition);
-                            }
-
-                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
-                            if (colorDatasetPickerAction)
-                            {
-                                auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
-                                if (dataset.isValid())
-                                {
-                                    //colorDatasetPickerAction->setCurrentDataset(dataset);
-                                    //qDebug() << "Setting dataset to color dataset";
-                                }
-
-                            }
-
-                        }
-
-
-
-                    }
-
-                }
-            }
-        }
-
+        modeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged1);
@@ -1318,65 +997,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto embeddingDimensionXActionChanged2 = [this]() -> void {
 
-        setStatusMessage("M", "Embedding 1 X dimension changed", "");
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        mv::gui::DatasetPickerAction* colorDatasetPickerAction;
-        mv::gui::DatasetPickerAction* pointDatasetPickerAction;
-
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText())
-                {
-
-                    pointDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Position");
-                    if (pointDatasetPickerAction)
-                    {
-                        if (!pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
-                            if (embeddingDataset2.isValid())
-                            {
-                                pointDatasetPickerAction->setCurrentDataset(embeddingDataset2);
-                            }
-                        }
-                        if (pointDatasetPickerAction->getCurrentDataset().isValid())
-                        {
-                            auto xPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName();
-                            auto yPosition2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName();
-                            if (xPosition2 != "" && yPosition2 != "") {
-                                setScatterplotDimensions(plugin, xPosition2, yPosition2);
-                            }
-
-                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin,"Settings/Datasets/Color");
-                            if (colorDatasetPickerAction)
-                            {
-                                auto dataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
-                                if (dataset2.isValid())
-                                {
-                                    //colorDatasetPickerAction->setCurrentDataset(dataset2);
-                                    //qDebug() << "Setting dataset to color dataset";
-                                }
-
-                            }
-
-                        }
-
-
-
-                    }
-
-                }
-            }
-        }
+        setStatusMessage("M", "Embedding 2 X dimension changed", "");
+        //TODO crash here with cluster dataset 
+        //modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
+        modeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), "", _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false, "");
 
         };
 
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged2);
 
 
-
+   
     const auto scatterplotviewSelectionChanged1= [this]() -> void {
 
         setStatusMessage("M", "Scatterplotview selection 1 updated", "");

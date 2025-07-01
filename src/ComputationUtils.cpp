@@ -77,7 +77,7 @@ FunctionTimer::~FunctionTimer()
         << _functionName.toStdString()
         << ":"
         << QString::number(_timer.elapsed() / 1000.0, 'f', 3).toStdString()
-        << "sec";
+        << "sec"<<"\n";
 }
 
 std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(
@@ -190,11 +190,10 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
     mv::gui::DatasetPickerAction* colorDatasetPickerAction;
     mv::gui::DatasetPickerAction* pointDatasetPickerAction;
-    if (xPositionString == "" || yPositionString == "" || positionDatasetID == "" || colorDatasetID == "" || scatterplotName =="") {
-        qWarning() << "Invalid parameters for scatterplot mode change. xPositionString:" << xPositionString
-                   << ", yPositionString:" << yPositionString
+    if ( positionDatasetID == "" || scatterplotName =="") {
+        qWarning() << "Invalid parameters for scatterplot mode change:" 
                    << ", positionDatasetID:" << positionDatasetID
-                   << ", colorDatasetID:" << colorDatasetID;
+                   << ", scatterplotName:" << scatterplotName;
         return;
     }
 
@@ -219,21 +218,30 @@ void modeChange(QString scatterplotName, QString positionDatasetID, QString colo
                     }
                     if (pointDatasetPickerAction->getCurrentDataset().isValid())
                     {
-                        if (xPositionString != "" && yPositionString != "") {
-                            setScatterplotDimensions(plugin, xPositionString, yPositionString);
-                        }
-
-                        colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
-                        if (colorDatasetPickerAction)
+                        setScatterplotDimensions(plugin, xPositionString, yPositionString);
+                        if (colorDatasetID != "")
                         {
-                            auto clusterDataset = mv::data().getDataset(colorDatasetID);
-                            if (clusterDataset.isValid())
+                            colorDatasetPickerAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
+                            if (colorDatasetPickerAction)
                             {
-                                colorDatasetPickerAction->setCurrentDataset(clusterDataset);
-                                //qWarning() << "Setting dataset to color dataset";
-                            }
+                                auto clusterDataset = mv::data().getDataset(colorDatasetID);
+                                if (clusterDataset.isValid())
+                                {
+                                    auto options= colorDatasetPickerAction->getDatasets();
+                                    if (options.size() > 0)
+                                    {
 
+                                        colorDatasetPickerAction->setCurrentDataset(clusterDataset);
+
+                                        
+                                    }
+                                    
+                                    //qWarning() << "Setting dataset to color dataset";
+                                }
+
+                            }
                         }
+
 
                     }
 
@@ -690,10 +698,40 @@ void setScatterplotDimensions(mv::plugin::Plugin* plugin, const QString& xName, 
     auto embeddingXVal = findActionByPath<OptionAction>(plugin, "Settings/Position/X/Select dimension");
     auto embeddingYVal = findActionByPath<OptionAction>(plugin, "Settings/Position/Y/Select dimension");
     if (embeddingXVal && embeddingYVal) {
-        if (embeddingXVal->getCurrentIndex() != -1) embeddingXVal->setCurrentText("");
-        if (embeddingYVal->getCurrentIndex() != -1) embeddingYVal->setCurrentText("");
-        if (embeddingXVal->getOptions().contains(xName)) embeddingXVal->setCurrentText(xName);
-        if (embeddingYVal->getOptions().contains(yName)) embeddingYVal->setCurrentText(yName);
+        if (embeddingXVal->getCurrentIndex() != -1){ 
+            embeddingXVal->setCurrentText("");
+        }
+        if (embeddingYVal->getCurrentIndex() != -1) {
+            embeddingYVal->setCurrentText("");
+        }
+        if (xName != "") {
+            if (embeddingXVal->getOptions().contains(xName)) {
+                embeddingXVal->setCurrentText(xName);
+            }
+        }
+        else
+        {
+            if (embeddingXVal->getOptions().size() > 0)
+            {
+                embeddingXVal->setCurrentIndex(0);
+            }
+        }
+        if (yName != "") {
+            if (embeddingYVal->getOptions().contains(yName)) {
+                embeddingYVal->setCurrentText(yName);
+            }
+        }
+        else
+        {
+            if (embeddingYVal->getOptions().size() > 1)
+            {
+                embeddingYVal->setCurrentIndex(1);
+            }
+            else if (embeddingYVal->getOptions().size() > 0)
+            {
+                embeddingYVal->setCurrentIndex(0);
+            }
+        }
     }
 }
 bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float epsilon)
