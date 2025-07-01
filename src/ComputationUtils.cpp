@@ -1008,7 +1008,7 @@ void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, s
     }
 
     QVector<Cluster> newClusters;
-    newClusters.reserve(selectedIndices.size()+1);
+    newClusters.reserve(selectedIndices.size() + 1);
     if (!notSelectedIndices.empty()) {
         Cluster notSelectedCluster;
         notSelectedCluster.setName("Not Selected");
@@ -1016,25 +1016,33 @@ void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, s
         notSelectedCluster.setIndices(notSelectedIndices);
         newClusters.append(notSelectedCluster);
     }
+
     std::vector<float> pcaValues(selectedIndices.size());
     ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
     std::vector<QString> getdimensionValues = pcaValuesDatasetFull->getDimensionNames();
     auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), pcaDimensionVal);
     int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
     pcaValuesDatasetFull->extractDataForDimension(pcaValues, dimensionIndex);
+
     float minValue = *std::min_element(pcaValues.begin(), pcaValues.end());
     float maxValue = *std::max_element(pcaValues.begin(), pcaValues.end());
-    for (int i = 0; i < pcaValues.size(); i++) {
-        float value = pcaValues.at(i);
+
+    // Group indices by unique PCA value
+    std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
+    for (size_t i = 0; i < pcaValues.size(); ++i) {
+        valueToIndices[pcaValues[i]].push_back(static_cast<std::seed_seq::result_type>(selectedIndices.at(i)));
+    }
+
+    int clusterIdx = 0;
+    for (const auto& [value, indices] : valueToIndices) {
         QColor color = getColorFromColormap(value, colormap, minValue, maxValue);
         Cluster cluster;
-        cluster.setName(QString("Cluster %1").arg(i));
+        cluster.setName(QString("Cluster %1").arg(clusterIdx++));
         cluster.setColor(color);
-        std::vector<std::seed_seq::result_type> indices = { static_cast<std::seed_seq::result_type>(selectedIndices.at(i)) };
-        cluster.setIndices({ indices });
+        cluster.setIndices(indices);
         newClusters.append(cluster);
     }
 
+    pcaColoringDatasetFull->getClusters() = newClusters;
     events().notifyDatasetDataChanged(pcaColoringDatasetFull);
 }
-
