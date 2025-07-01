@@ -1006,8 +1006,8 @@ void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, s
             notSelectedIndices.push_back(i);
         }
     }
-    QColor contrastiveColor("#00ffff"); // Bright cyan
-    contrastiveColor.setAlpha(128); //0 to 255
+    QColor contrastiveColor("#D3D3D3"); 
+    contrastiveColor.setAlpha(255); //0 to 255
     QVector<Cluster> newClusters;
     newClusters.reserve(selectedIndices.size() + 1);
     if (!notSelectedIndices.empty()) {
