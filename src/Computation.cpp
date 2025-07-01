@@ -832,9 +832,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         setStatusMessage("C", "Correlation table 2 updated", "");
         });
 
-    const auto showPointSelectionChanged1 = [this]() -> void {
+    const auto showPointSelectionChanged = [this]() -> void {
 
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
 
 
         if (scatterplotName1.isEmpty())
@@ -842,19 +843,23 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             qWarning() << "No scatterplot view 1 selected";
 
         }
+        if (scatterplotName2.isEmpty())
+        {
+            qWarning() << "No scatterplot view 2 selected";
+        }
 
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == scatterplotName1)
+                if (plugin->getGuiName() == scatterplotName1|| plugin->getGuiName() == scatterplotName2)
                 {
                     auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Scale");
                     auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Opacity");
                     if (pointSelectionScaleAction)
                     {
-                        if ( _settingsAction.getDataset1OptionsHolder().getHidePointSelectionOutlineAction().isChecked())
+                        if ( _settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked())
                         {
                             pointSelectionScaleAction->setValue(100.0);
                         }
@@ -870,7 +875,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     }
                     if (pointSelectionOpacityAction)
                     {
-                        if ( _settingsAction.getDataset1OptionsHolder().getHidePointSelectionOutlineAction().isChecked())
+                        if ( _settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked())
                         {
                             pointSelectionOpacityAction->setValue(0.0);
                         }
@@ -889,12 +894,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
         };
 
-    connect(& _settingsAction.getDataset1OptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged1);
+    connect(& _settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged);
 
 
-    const auto focusSelectionChanged1 = [this]() -> void {
+    const auto focusSelectionChanged = [this]() -> void {
 
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
 
 
         if (scatterplotName1.isEmpty())
@@ -902,18 +908,22 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             qWarning() << "No scatterplot view 1 selected";
 
         }
+        if (scatterplotName2.isEmpty())
+        {
+            qWarning() << "No scatterplot view 2 selected";
+        }
 
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                if (plugin->getGuiName() == scatterplotName1 )
+                if (plugin->getGuiName() == scatterplotName1 || plugin->getGuiName() == scatterplotName2)
                 {
                     auto focusAction = findActionByPath<ToggleAction>(plugin,"Settings/Plot/Point/Focus selection");
                     if (focusAction)
                     {
-                        focusAction->setChecked(_settingsAction.getDataset1OptionsHolder().getFocusSelectionAction().isChecked());
+                        focusAction->setChecked(_settingsAction.getCommonOptionsHolder().getFocusSelectionAction().isChecked());
                     }
                     else
                     {
@@ -925,102 +935,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         };
 
-    connect(& _settingsAction.getDataset1OptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged1);
-
-
-
-    const auto showPointSelectionChanged2 = [this]() -> void {
-
-        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
-
-
-        if (scatterplotName2.isEmpty())
-        {
-            qWarning() << "No scatterplot view 2 selected";
-
-        }
-
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == scatterplotName2 )
-                {
-                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Scale");
-                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Opacity");
-                    if (pointSelectionScaleAction)
-                    {
-                        if (_settingsAction.getDataset2OptionsHolder().getHidePointSelectionOutline2Action().isChecked())
-                        {
-                            pointSelectionScaleAction->setValue(100.0);
-                        }
-                        else
-                        {
-                            pointSelectionScaleAction->setValue(160.0);
-                        }
-
-                    }
-                    else
-                    {
-                        qWarning() << "Point selection scale action not found";
-                    }
-                    if (pointSelectionOpacityAction)
-                    {
-                        if (_settingsAction.getDataset2OptionsHolder().getHidePointSelectionOutline2Action().isChecked())
-                        {
-                            pointSelectionOpacityAction->setValue(0.0);
-                        }
-                        else
-                        {
-                            pointSelectionOpacityAction->setValue(100.0);
-                        }
-
-                    }
-                    else
-                    {
-                        qWarning() << "Point selection opacity action not found";
-                    }
-                }
-            }
-        }
-        };
-
-    connect(&_settingsAction.getDataset1OptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged2);
-
-
-    const auto focusSelectionChanged2 = [this]() -> void {
-
-        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
-
-        if (scatterplotName2.isEmpty())
-        {
-            qWarning() << "No scatterplot view 2 selected";
-
-        }
-        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == scatterplotName2)
-                {
-                    auto focusAction = findActionByPath<ToggleAction>(plugin,"Settings/Plot/Point/Focus selection");
-                    if (focusAction)
-                    {
-                        focusAction->setChecked(_settingsAction.getDataset2OptionsHolder().getFocusSelection2Action().isChecked());
-                    }
-                    else
-                    {
-                        qWarning() << "Focus selection action not found";
-                    }
-                }
-            }
-        }
-
-        };
-
-    connect(&_settingsAction.getDataset2OptionsHolder().getFocusSelection2Action(), &ToggleAction::toggled, this, focusSelectionChanged2);
+    connect(& _settingsAction.getCommonOptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged);
 
 
     const auto embeddingDimensionYActionChanged1 = [this]() -> void {
