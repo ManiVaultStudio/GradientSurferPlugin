@@ -1409,7 +1409,7 @@ void Computation::AutoCompute()
 
             }
             xPositionString = "Rotated Y Coordinates";
-            yPositionString = "Mean Expr Selected Genes";
+            yPositionString = "Mean Expr All Genes";
             titleText= QString("%1 vs %2 expression of selected cells (%3)")
                                         .arg(xPositionString)
                                         .arg(yPositionString)
@@ -2139,13 +2139,14 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
 
 
     std::vector<QString> dimensionNamesWithYCoords = { QStringLiteral("Rotated Y Coordinates") };
+    dimensionNamesWithYCoords.push_back("Mean Expr All Genes");
     dimensionNamesWithYCoords.push_back("Mean Expr Selected Genes");
     dimensionNamesWithYCoords.insert(dimensionNamesWithYCoords.end(), dimensionNames.begin(), dimensionNames.end());
 
 
     std::vector<float> rotatedYCoord(numCells * 1);
     _rotatedSelectedEmbeddingDataset->extractDataForDimension(rotatedYCoord, 1);
-
+    std::vector<float> meanSelectedGenes(numCells, 0.0f);
     std::vector<float> meanAllGenes(numCells, 0.0f);
     for (size_t iC = 0; iC < numCells; ++iC) {
         float sum = 0.0f;
@@ -2160,22 +2161,24 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         }
     }
 
-    std::vector<float> linechartdata(numCells * (2 + numGenes));
+    std::vector<float> linechartdata(numCells * (3 + numGenes));
 
 
     for (size_t i = 0; i < numCells; ++i) {
         // First column: Rotated Y coordinate
-        linechartdata[i * (2 + numGenes)] = rotatedYCoord[i];
+        linechartdata[i * (3 + numGenes)] = rotatedYCoord[i];
         // Second column: Mean of all genes
-        linechartdata[i * (2 + numGenes) + 1] = meanAllGenes[i];
+        linechartdata[i * (3 + numGenes) + 1] = meanAllGenes[i];
+        // Third column: Mean of selected genes
+        linechartdata[i * (3 + numGenes) + 2] = meanSelectedGenes[i];
         // Remaining columns: All gene values
         for (size_t j = 0; j < numGenes; ++j) {
-            linechartdata[i * (2 + numGenes) + 2 + j] = cellbygenematrix[i * numGenes + j];
+            linechartdata[i * (3 + numGenes) + 3 + j] = cellbygenematrix[i * numGenes + j];
         }
     }
 
 
-    _lineChartPointDataset1->setData(linechartdata.data(), static_cast<int>(numCells), noOfDimensions + 2);
+    _lineChartPointDataset1->setData(linechartdata.data(), static_cast<int>(numCells), noOfDimensions + 3);
     _lineChartPointDataset1->setDimensionNames(dimensionNamesWithYCoords);
     mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
 
@@ -2386,6 +2389,49 @@ bool Computation::setupAndTriggerPCA()
     _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numAllFilteredCells1, numDimsOfInterest);
     _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
+
+    if (_lineChartPointDataset1.isValid() &&
+        _selectedGenePointDataset1.isValid() &&
+        !_geneOfInterestIndices1.empty() &&
+        !_filteredSelectionIndices.empty())
+    {
+        const int numRows = _lineChartPointDataset1->getNumPoints();
+        const int numCols = _lineChartPointDataset1->getNumDimensions();
+        const int numGenes = _selectedGenePointDataset1->getNumDimensions();
+
+        // Ensure sizes match expectations
+        if (static_cast<int>(_filteredSelectionIndices.size()) == numRows &&
+            static_cast<int>(_geneOfInterestIndices1.size()) == numGenes)
+        {
+            // Prepare dimension indices [0, 1, ..., numGenes-1]
+            std::vector<int> dimIndices(numGenes);
+            std::iota(dimIndices.begin(), dimIndices.end(), 0);
+
+            // Prepare buffer for selected gene expression data (row-major: cell x gene)
+            std::vector<float> expDataSelectedCellGene(numRows * numGenes);
+            _selectedGenePointDataset1->populateDataForDimensions(
+                expDataSelectedCellGene, dimIndices, _filteredSelectionIndices);
+
+            // Compute mean expression for each cell
+            std::vector<float> meanOfSelectedGenes(numRows, 0.0f);
+            for (int i = 0; i < numRows; ++i) {
+                float sum = 0.0f;
+                for (int j = 0; j < numGenes; ++j) {
+                    sum += expDataSelectedCellGene[i * numGenes + j];
+                }
+                meanOfSelectedGenes[i] = (numGenes > 0) ? (sum / static_cast<float>(numGenes)) : 0.0f;
+            }
+            const int stride = _lineChartPointDataset1->getNumDimensions();
+            // Update the third column ("Mean Expr Selected Genes") in the line chart dataset
+            for (int i = 0; i < numRows; ++i) {
+                _lineChartPointDataset1->setValueAt(i * stride + 2, meanOfSelectedGenes[i]);
+            }
+
+            // Notify that the dataset has changed
+            events().notifyDatasetDataChanged(_lineChartPointDataset1);
+        }
+    }
+
 
     _selectedEmbeddingPointDataset1->setData(embeddingMatrix1.data(), numAllFilteredCells1, fullEmbeddingDataset1->getNumDimensions());
     _selectedEmbeddingPointDataset1->setDimensionNames(fullEmbeddingDataset1->getDimensionNames());
