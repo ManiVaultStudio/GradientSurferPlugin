@@ -1510,9 +1510,15 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointData
 
     bottomNRows = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
     topNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
-    if (bottomNRows <1 || topNRows <1) {
-        qWarning() << "Invalid correlation range";
-        setStatusMessage("E", "Invalid correlation range", "");
+    if (bottomNRows <0 || topNRows <0) {
+        qWarning() << "Bottom or top N rows are negative";
+        setStatusMessage("E", "Bottom or top N rows are negative", "");
+        return false;
+    }
+    if (bottomNRows < 1 && topNRows < 1)
+    {
+        qWarning() << "Both bottom and top N rows are set to 0";
+        setStatusMessage("E", "Both bottom and top N rows are set to 0", "");
         return false;
     }
     qWarning() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex
