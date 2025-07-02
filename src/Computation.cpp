@@ -1742,8 +1742,8 @@ void Computation::processAfterPCAComplete()
     _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMinimum(0);
     _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMinimum(0);
 
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(20, static_cast<int>(commonGeneNames.size())));
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(20, static_cast<int>(commonGeneNames.size())));
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), static_cast<int>(commonGeneNames.size())));
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), static_cast<int>(commonGeneNames.size())));
 
     const int nCommon = static_cast<int>(_geneOfInterestIndices1.size());
     if (geneOfInterestIndices2.size() != nCommon || commonGeneNames.size() != nCommon) {
