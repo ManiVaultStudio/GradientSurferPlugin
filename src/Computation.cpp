@@ -1511,8 +1511,8 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointData
         return false;
     }
 
-    topNRows = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
-     bottomNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
+    bottomNRows = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
+      topNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
     if (bottomNRows <0 || topNRows <0) {
         qWarning() << "Bottom or top N rows are negative";
         setStatusMessage("E", "Bottom or top N rows are negative", "");
@@ -1875,7 +1875,7 @@ void Computation::processAfterPCAComplete()
 void Computation::checkForRankLimits()
 {
     int maxLimit = 0;
-    int minLimit = 20;
+    int minLimit = 0;
     if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid() || _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
     {
 
@@ -1902,14 +1902,14 @@ void Computation::checkForRankLimits()
 
         
     }
-    minLimit = std::min(minLimit, maxLimit);
+    
     _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMaximum(maxLimit);
     _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMaximum(maxLimit);
     _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMinimum(minLimit);
     _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMinimum(minLimit);
 
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), maxLimit));
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), maxLimit));
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(20, maxLimit));
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(20, maxLimit));
 }
 
 void Computation::correlationAfterPCA()
