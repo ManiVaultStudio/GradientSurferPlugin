@@ -41,9 +41,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     _settingsAction(SettingsAction)
 {
 
-    _correlationRangeDebounceTimer1.setSingleShot(true);
+    _NRangeDebounceTimer.setSingleShot(true);
     _clusterSelectionDebounceTimer.setSingleShot(true);
-    _correlationRangeDebounceTimer2.setSingleShot(true);
 
 
     qInstallMessageHandler(customMessageHandler);
@@ -794,17 +793,25 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
 
-    connect(& _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction(),
-        &DecimalRangeAction::rangeChanged,
+    connect(&_settingsAction.getCommonOptionsHolder().getTopNRowsAction(),
+        &IntegralAction::valueChanged,
         this,
         [this]() {
-            _correlationRangeDebounceTimer1.start(1000);
+            _NRangeDebounceTimer.start(1000);
         });
-    connect(&_correlationRangeDebounceTimer1, &QTimer::timeout, this, [this]() {
-        setStatusMessage("R", "Updating correlation 1 table", "");
-        resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1,_settingsAction.getTableView1Action(), _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum(), _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum(),_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _commonGeneNames, _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
+    connect(&_settingsAction.getCommonOptionsHolder().getBottomNRowsAction(),
+        &IntegralAction::valueChanged,
+        this,
+        [this]() {
+            _NRangeDebounceTimer.start(1000);
+        });
+    connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
+        setStatusMessage("R", "Updating table", "");
+        resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
+        resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction());
+        resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3, _settingsAction.getTableView3Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
         selectFirstRow(_settingsAction.getTableView1Action());
-        setStatusMessage("C", "Correlation table 1 updated", "");
+        setStatusMessage("C", "Table updated", "");
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
             setStatusMessage("R", "Computation in progress", "");
@@ -818,19 +825,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         });
 
 
-    connect(&_settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action(),
-        &DecimalRangeAction::rangeChanged,
-        this,
-        [this]() {
-            _correlationRangeDebounceTimer2.start(300);
-        });
-    connect(&_correlationRangeDebounceTimer2, &QTimer::timeout, this, [this]() {
-        setStatusMessage("R", "Updating correlation 2 table", "");
-        resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2,_settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum(), _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum(),_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(),_commonGeneNames, _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(),_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction());
-        resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3,_settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum(), _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum(),_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _commonGeneNames, _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
-        selectFirstRow(_settingsAction.getTableView3Action());
-        setStatusMessage("C", "Correlation table 2 updated", "");
-        });
 
     const auto showPointSelectionChanged = [this]() -> void {
 
@@ -1139,6 +1133,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged2);
     _pca1.setCompletionCallback(nullptr);
     _pca1.setCompletionCallback([this](bool success, const std::string& message) {
+        _isPCATriggerComputing = false;
         if (success) {
             qDebug() << "PCA 1 finished successfully:" << message.c_str();
             processAfterPCAComplete();
@@ -1154,9 +1149,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 void Computation::AutoCompute()
 {
-    if (_isComputing) return;
-    _isComputing = true;
-    auto guard = qScopeGuard([&] { _isComputing = false; });
+    if (_isAutoComputeComputing) return;
+    _isAutoComputeComputing = true;
+    auto guard = qScopeGuard([&] { _isAutoComputeComputing = false; });
     try
     {
         
@@ -1204,10 +1199,10 @@ void Computation::AutoCompute()
         mv::Dataset<Points> fullPointDataset1;
         mv::Dataset<Clusters> fullClusterDataset1;
         mv::Dataset<Clusters> fullClusterDataset2;
-        int xEmbeddingIndex = -1, yEmbeddingIndex = -1; float maxCorrelation = 1.0f, minCorrelation = 0.0f;
+        int xEmbeddingIndex = -1, yEmbeddingIndex = -1, topNRows = -1, bottomNRows = -1;
         std::vector<int> selectedIndices;
         QString scatterplotViewName;
-        if (!validateAndRetrieveDatasets(fullPointDataset1, fullClusterDataset1, fullClusterDataset2,xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, minCorrelation, maxCorrelation))
+        if (!validateAndRetrieveDatasets(fullPointDataset1, fullClusterDataset1, fullClusterDataset2,xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, topNRows, bottomNRows))
             return;
 
   
@@ -1339,7 +1334,7 @@ void Computation::AutoCompute()
 
         
         try {
-            populateGenesByCorrelationRange(corrGeneCoords, minCorrelation, maxCorrelation, dimensionNames, _geneCorrValues1, _geneOfInterestIndices1);
+            populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames, _geneCorrValues1, _geneOfInterestIndices1,true);
         }
         catch (const std::exception& ex) {
             qWarning() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -1348,7 +1343,8 @@ void Computation::AutoCompute()
         }
 
 
-        setupTableModelAndSelection(_settingsAction.getTableView1Action(), _geneCorrValues1, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _commonGeneNames, _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
+        setupTableModelAndSelection(_settingsAction.getTableView1Action(), _geneCorrValues1, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
+
 
         selectFirstRow(_settingsAction.getTableView1Action());
         if (lineplotViewFactory)
@@ -1407,11 +1403,15 @@ void Computation::AutoCompute()
         qWarning() << "Unknown exception in Computation";
         setStatusMessage("E", "Unknown error occurred during computation", "");
     }
-    _isComputing = false;
+    _isAutoComputeComputing = false;
 }
 
 void Computation::ManualCompute()
 {
+    if (_isManualComputeComputing) return;
+    _isManualComputeComputing = true;
+    auto guard = qScopeGuard([&] { _isManualComputeComputing = false; });
+
     
     bool complete = setupAndTriggerPCA();
     if (!complete)
@@ -1420,6 +1420,8 @@ void Computation::ManualCompute()
         clearTable(_settingsAction.getTableView2Action());
         return;
     }
+
+    _isManualComputeComputing = false;
     
 }
 
@@ -1436,11 +1438,28 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     obj["status"] = status;
     obj["message"] = message;
     obj["color"] = resolvedColor;
-    _settingsAction.getStatusHolder().getStatusMessageAction().setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+
+
+    auto* statusHolder = &_settingsAction.getStatusHolder();
+    if (!statusHolder) {
+        qWarning() << "StatusHolder is null in setStatusMessage";
+        return;
+    }
+    auto* statusMessageAction = &(statusHolder->getStatusMessageAction());
+    if (!statusMessageAction) {
+        qWarning() << "StatusMessageAction is null in setStatusMessage";
+        return;
+    }
+
+    try {
+        statusMessageAction->setString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+    } catch (...) {
+        qWarning() << "Exception thrown in setStatusMessage when calling setString";
+    }
 }
 
 
-bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointDataset1, mv::Dataset<Clusters>& fullClusterDataset1, mv::Dataset<Clusters>& fullClusterDataset2, int& xEmbeddingIndex, int& yEmbeddingIndex, std::vector<int>& selectedIndices, QString& scatterplotViewName, float& minCorrelation, float& maxCorrelation)
+bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointDataset1, mv::Dataset<Clusters>& fullClusterDataset1, mv::Dataset<Clusters>& fullClusterDataset2, int& xEmbeddingIndex, int& yEmbeddingIndex, std::vector<int>& selectedIndices, QString& scatterplotViewName, int& bottomNRows, int& topNRows)
 {
 
     fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
@@ -1489,15 +1508,15 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointData
         return false;
     }
 
-    minCorrelation = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum();
-    maxCorrelation = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum();
-    if (minCorrelation < -1.0f || maxCorrelation > 1.0f || minCorrelation >= maxCorrelation) {
+    bottomNRows = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
+    topNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
+    if (bottomNRows <1 || topNRows <1) {
         qWarning() << "Invalid correlation range";
         setStatusMessage("E", "Invalid correlation range", "");
         return false;
     }
     qWarning() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex
-        << "scatterplotViewName:" << scatterplotViewName << "minCorrelation:" << minCorrelation << "maxCorrelation:" << maxCorrelation;
+        << "scatterplotViewName:" << scatterplotViewName << "bottomNRows:" << bottomNRows << "topNRows:" << topNRows;
 
 
     return true;
@@ -1894,17 +1913,15 @@ void Computation::correlationAfterPCA()
     computeCorrelationGenePC(fullDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2, normTypeStr, normalizeDataVal);
     computeCorrelationGenePC(fullDataset1, selectedPC1, correlationGenePC1, _selectedClusterIndices1, normTypeStr, normalizeDataVal);
 
-    const float minCorrelation2 = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMinimum();
-    const float maxCorrelation2 = _settingsAction.getDataset2OptionsHolder().getCorrelationRange2Action().getMaximum();
+    const int topNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
+    const int bottomNRows = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
     const auto dimensionNames2 = fullDataset2->getDimensionNames();
     
-    const float minCorrelation1 = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMinimum();
-    const float maxCorrelation1 = _settingsAction.getDataset1OptionsHolder().getCorrelationRangeAction().getMaximum();
     const auto dimensionNames1 = fullDataset1->getDimensionNames();
 
      try {
-        populateGenesByCorrelationRange(correlationGenePC2, minCorrelation2, maxCorrelation2, dimensionNames2, _geneCorrValues2, _geneOfInterestIndices2);
-        populateGenesByCorrelationRange(correlationGenePC1, minCorrelation1, maxCorrelation1, dimensionNames1, _geneCorrValues3, _geneOfInterestIndices3);
+        populateGenesByCorrelationRange(correlationGenePC2, topNRows, bottomNRows, dimensionNames2, _geneCorrValues2, _geneOfInterestIndices2,false);
+        populateGenesByCorrelationRange(correlationGenePC1, topNRows, bottomNRows, dimensionNames1, _geneCorrValues3, _geneOfInterestIndices3,false);
     }
     catch (const std::exception& ex) {
         qWarning() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -1912,8 +1929,8 @@ void Computation::correlationAfterPCA()
         return;
     }
 
-    setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), _commonGeneNames, _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction());
-    setupTableModelAndSelection(_settingsAction.getTableView3Action(), _geneCorrValues3, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _commonGeneNames, _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
+    setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction());
+    setupTableModelAndSelection(_settingsAction.getTableView3Action(), _geneCorrValues3, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
     selectFirstRow(_settingsAction.getTableView3Action());
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
 }
@@ -2105,6 +2122,11 @@ void Computation::populateLineChartColorPointData()
 
 bool Computation::setupAndTriggerPCA()
 {
+    if (_isPCATriggerComputing) return false;
+    _isPCATriggerComputing = true;
+    auto guard = qScopeGuard([this]() { _isPCATriggerComputing = false; });
+
+
     FunctionTimer timer(Q_FUNC_INFO);
 
     auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
@@ -2272,6 +2294,10 @@ void Computation::setSelectionAndAutoCompute()
     AutoCompute();
     _blockSelectionTrigger = false;
 }
+
+
+
+
 
 
 

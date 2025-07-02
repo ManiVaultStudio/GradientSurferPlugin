@@ -99,8 +99,6 @@ public:
         const DimensionPickerAction& getGeneSelectionAction() const { return _geneSelectionAction; }
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
-        const DecimalRangeAction& getCorrelationRangeAction() const { return _correlationRangeAction; }
-        DecimalRangeAction& getCorrelationRangeAction() { return _correlationRangeAction; }
 
 
  
@@ -121,7 +119,6 @@ public:
         DimensionPickerAction               _geneSelectionAction;
 
 
-        DecimalRangeAction                  _correlationRangeAction;
 
 
   
@@ -155,8 +152,7 @@ public:
         const DimensionPickerAction& getGeneSelection2Action() const { return _geneSelection2Action; }
         DimensionPickerAction& getGeneSelection2Action() { return _geneSelection2Action; }
 
-        const DecimalRangeAction& getCorrelationRange2Action() const { return _correlationRange2Action; }
-        DecimalRangeAction& getCorrelationRange2Action() { return _correlationRange2Action; }
+ 
 
     protected:
         SettingsAction& _settingsOptions;
@@ -171,7 +167,6 @@ public:
         DimensionPickerAction               _embeddingDimension2YAction;
         DimensionPickerAction               _geneSelection2Action;
 
-        DecimalRangeAction                  _correlationRange2Action;
 
     };
 
@@ -233,6 +228,12 @@ public:
         const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
         ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
 
+        const IntegralAction& getBottomNRowsAction() const { return _bottomNRowsAction; }
+        IntegralAction& getBottomNRowsAction() { return _bottomNRowsAction; }
+
+        const IntegralAction& getTopNRowsAction() const { return _topNRowsAction; }
+        IntegralAction& getTopNRowsAction() { return _topNRowsAction; }
+
 
     protected:
         SettingsAction& _settingsOptions;
@@ -254,6 +255,9 @@ public:
 
         ToggleAction                        _focusSelectionAction;
         ToggleAction                        _hidePointSelectionAction;
+
+        IntegralAction              _bottomNRowsAction;
+        IntegralAction              _topNRowsAction;
     };
 
 
