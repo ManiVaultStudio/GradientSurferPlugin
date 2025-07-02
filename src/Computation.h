@@ -87,7 +87,7 @@ private:
         int noOfDimensions,
         const std::vector<int>& columnIndices,
         const std::vector<QString>& dimensionNames);
-
+    void checkForRankLimits();
     bool setupAndTriggerPCA();
     void setSelectionAndAutoCompute();
     void correlationAfterPCA();
