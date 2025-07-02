@@ -807,9 +807,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         });
     connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
         setStatusMessage("R", "Updating table", "");
-        resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
-        resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction());
-        resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3, _settingsAction.getTableView3Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action());
+        resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(),true);
+        resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),false);
+        resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3, _settingsAction.getTableView3Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(),false);
         selectFirstRow(_settingsAction.getTableView1Action());
         setStatusMessage("C", "Table updated", "");
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
@@ -1737,7 +1737,13 @@ void Computation::processAfterPCAComplete()
             return;
         }
     }
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMaximum(commonGeneNames.size());
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMaximum(commonGeneNames.size());
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMinimum(0);
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMinimum(0);
 
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(20, static_cast<int>(commonGeneNames.size())));
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(20, static_cast<int>(commonGeneNames.size())));
 
     const int nCommon = static_cast<int>(_geneOfInterestIndices1.size());
     if (geneOfInterestIndices2.size() != nCommon || commonGeneNames.size() != nCommon) {

@@ -545,18 +545,33 @@ void populateGenesByCorrelationRange(
     }
 }
 
-void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, QTableView* tableViewMain, float minRange, float maxRange, DimensionPickerAction& geneSelectionAction, QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2)
+void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, QTableView* tableViewMain, int topNRows, int bottomNRows, DimensionPickerAction& geneSelectionAction, QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2, bool isMainTable)
 {
-
     constexpr float epsilon = 1e-6f;
     geneOfInterestIndices.clear();
     geneOfInterestIndices.reserve(geneCorrValues.size());
 
+    int count = static_cast<int>(geneCorrValues.size());
 
+    if (isMainTable)
+    {
+        _commonGeneListSelectedInTables.clear();
+    }
     for (auto& gene : geneCorrValues) {
 
+        bool isWithinRange = false;
+        // Only mark as within range if topNRows or bottomNRows > 0 and within those bounds
+        if (isMainTable) {
+            if ((topNRows > 0 && gene.rank <= topNRows) ||
+                (bottomNRows > 0 && gene.rank > (count - bottomNRows))) {
+                isWithinRange = true;
+                _commonGeneListSelectedInTables.push_back(gene.geneName);
+            }
+        }
+        else {
+            isWithinRange = _commonGeneListSelectedInTables.contains(gene.geneName);
+        }
 
-        bool isWithinRange = isCorrelationWithinRange(gene.correlationValue, minRange, maxRange);
         gene.isWithinRange = isWithinRange;
         if (isWithinRange) {
             geneOfInterestIndices.push_back(gene.geneIndex);

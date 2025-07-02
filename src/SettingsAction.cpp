@@ -91,10 +91,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
 
-    _commonOptionsHolder.getBottomNRowsAction().setMinimum(1);
+    _commonOptionsHolder.getBottomNRowsAction().setMinimum(0);
     _commonOptionsHolder.getBottomNRowsAction().setMaximum(100);
     _commonOptionsHolder.getBottomNRowsAction().setValue(20);
-    _commonOptionsHolder.getTopNRowsAction().setMinimum(1);
+    _commonOptionsHolder.getTopNRowsAction().setMinimum(0);
     _commonOptionsHolder.getTopNRowsAction().setMaximum(100);
     _commonOptionsHolder.getTopNRowsAction().setValue(20);
 
