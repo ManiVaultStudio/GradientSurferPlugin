@@ -1462,7 +1462,7 @@ void Computation::setStatusMessage(const QString& status, const QString& message
 }
 
 
-bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointDataset1, mv::Dataset<Clusters>& fullClusterDataset1, mv::Dataset<Clusters>& fullClusterDataset2, int& xEmbeddingIndex, int& yEmbeddingIndex, std::vector<int>& selectedIndices, QString& scatterplotViewName, int& bottomNRows, int& topNRows)
+bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointDataset1, mv::Dataset<Clusters>& fullClusterDataset1, mv::Dataset<Clusters>& fullClusterDataset2, int& xEmbeddingIndex, int& yEmbeddingIndex, std::vector<int>& selectedIndices, QString& scatterplotViewName,  int& topNRows,int& bottomNRows )
 {
 
     fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
@@ -1512,7 +1512,7 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointData
     }
 
     bottomNRows = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
-    topNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
+      topNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
     if (bottomNRows <0 || topNRows <0) {
         qWarning() << "Bottom or top N rows are negative";
         setStatusMessage("E", "Bottom or top N rows are negative", "");
@@ -1908,8 +1908,8 @@ void Computation::checkForRankLimits()
     _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMinimum(minLimit);
     _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMinimum(minLimit);
 
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), maxLimit));
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), maxLimit));
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(20, maxLimit));
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(20, maxLimit));
 }
 
 void Computation::correlationAfterPCA()

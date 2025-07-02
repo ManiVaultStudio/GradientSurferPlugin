@@ -68,8 +68,8 @@ private:
         int& xEmbeddingIndex,
         int& yEmbeddingIndex,
         std::vector<int>& selectedIndices,
-        QString& scatterplotViewName,
-        int& bottomNRows, int& topNRows
+        QString& scatterplotViewName, int& topNRows,
+        int& bottomNRows
     );
 
     bool createDatasetsIfNeeded();
