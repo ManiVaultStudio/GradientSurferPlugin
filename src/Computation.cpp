@@ -1616,18 +1616,18 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_rotatedSelectedEmbeddingDataset);
     }
     if (!_lineChartPointDataset1.isValid()) {
-        _lineChartPointDataset1 = mv::data().createDataset("Points", "Line Chart Point Data 1");
-        _lineChartPointDataset1->setGroupIndex(670);
+        _lineChartPointDataset1 = mv::data().createDataset("Points", "Line Chart Point Data 1", _selectedCellPointDataset);
+        _lineChartPointDataset1->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_lineChartPointDataset1);
     }
     if(!_lineChartColorClusterDataset1.isValid()) {
         _lineChartColorClusterDataset1 = mv::data().createDataset("Cluster", "Line Chart Color Cluster Data 1", _lineChartPointDataset1);
-        _lineChartColorClusterDataset1->setGroupIndex(670);
+        _lineChartColorClusterDataset1->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_lineChartColorClusterDataset1);
     }
     if (!_lineChartColorPCAPointDataset1.isValid()) {
         _lineChartColorPCAPointDataset1 = mv::data().createDataset("Points", "Line Chart Color PCA Point Data 1", _lineChartPointDataset1);
-        _lineChartColorPCAPointDataset1->setGroupIndex(670);
+        _lineChartColorPCAPointDataset1->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_lineChartColorPCAPointDataset1);
     }
 
