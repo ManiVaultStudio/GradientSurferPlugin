@@ -25,6 +25,7 @@ std::vector<int> _geneOfInterestIndices1;
 std::vector<int> _geneOfInterestIndices2;
 std::vector<int> _geneOfInterestIndices3;
 QList<QString> _commonGeneNames;
+QStringList _commonGeneListSelectedInTables;
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
@@ -303,7 +304,6 @@ void setupTableModelAndSelection(
     QTableView* tableViewMain,
     std::vector<CorrelationGeneCoords>& geneCorrValues,
     DimensionPickerAction& geneSelectionAction,
-    QStringList& commonGeneNames,
     QTableView* tableViewOther1,
     QTableView* tableViewOther2,
     DimensionPickerAction& geneSelectionAction2
@@ -320,7 +320,8 @@ void setupTableModelAndSelection(
         minCorr = std::min(minCorr, entry.correlationValue);
         maxCorr = std::max(maxCorr, entry.correlationValue);
     }
-    commonGeneNames.clear();
+    _commonGeneNames.clear();
+
 
     QVector<QStandardItem*> rowItems(3);
     for (int i = 0; i < rowCount; ++i) {
@@ -346,7 +347,7 @@ void setupTableModelAndSelection(
             rankItem->setBackground(QColor("#FFB6C1"));
             rankItem->setForeground(QColor("#000000"));
 
-            commonGeneNames.append(entry.geneName);
+            _commonGeneNames.append(entry.geneName);
         }
 
         corrItem->setForeground(QColor("#000000"));
@@ -477,28 +478,35 @@ void deselectAllRows(QTableView* tableView)
     QTimer::singleShot(0, tableView, [tableView]() { tableView->viewport()->update(); tableView->repaint(); });
 }
 
-void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, float minCorr, float maxCorr, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices)
+void populateGenesByCorrelationRange(
+    const std::vector<float>& correlationVector,
+    int topNRows,
+    int bottomNRows,
+    const std::vector<QString>& geneNameOrdered,
+    std::vector<CorrelationGeneCoords>& geneCorrValues,
+    std::vector<int>& geneOfInterestIndices,
+    bool isMainTable)
 {
     constexpr float epsilon = 1e-6f;
     const int count = std::min(static_cast<int>(correlationVector.size()), static_cast<int>(geneNameOrdered.size()));
-    if (count == 0) return;
-
+    if (count == 0 || topNRows < 0 || bottomNRows < 0) return;
 
     std::vector<int> indices(count);
     std::iota(indices.begin(), indices.end(), 0);
-
 
     std::sort(indices.begin(), indices.end(),
         [&correlationVector](int a, int b) {
             return correlationVector[a] > correlationVector[b];
         });
 
-
     geneCorrValues.clear();
     geneCorrValues.reserve(count);
     geneOfInterestIndices.clear();
     geneOfInterestIndices.reserve(count);
 
+    if (isMainTable) {
+        _commonGeneListSelectedInTables.clear();
+    }
 
     int rank = 1;
     float prevCorr = std::numeric_limits<float>::quiet_NaN();
@@ -506,11 +514,22 @@ void populateGenesByCorrelationRange(const std::vector<float>& correlationVector
         int idx = indices[i];
         float corr = correlationVector[idx];
 
-        bool isWithinRange = isCorrelationWithinRange(corr, minCorr, maxCorr);
-
+        // Assign rank: same correlation values get the same rank
         if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
             rank = i + 1;
             prevCorr = corr;
+        }
+
+        bool isWithinRange = false;
+        // Only mark as within range if topNRows or bottomNRows > 0 and within those bounds
+        if (isMainTable) {
+            if ((topNRows > 0 && rank <= topNRows) ||
+                (bottomNRows > 0 && rank > (count - bottomNRows))) {
+                isWithinRange = true;
+                _commonGeneListSelectedInTables.push_back(geneNameOrdered[idx]);
+            }
+        } else {
+            isWithinRange = _commonGeneListSelectedInTables.contains(geneNameOrdered[idx]);
         }
 
         geneCorrValues.emplace_back(CorrelationGeneCoords{
@@ -519,32 +538,47 @@ void populateGenesByCorrelationRange(const std::vector<float>& correlationVector
             corr,
             rank,
             isWithinRange
-            });
+        });
         if (isWithinRange) {
             geneOfInterestIndices.push_back(idx);
         }
     }
 }
 
-void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, QTableView* tableViewMain, float minRange, float maxRange, DimensionPickerAction& geneSelectionAction, QStringList& commonGeneNames, QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2)
+void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, QTableView* tableViewMain, int topNRows, int bottomNRows, DimensionPickerAction& geneSelectionAction, QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2, bool isMainTable)
 {
-
     constexpr float epsilon = 1e-6f;
     geneOfInterestIndices.clear();
     geneOfInterestIndices.reserve(geneCorrValues.size());
 
+    int count = static_cast<int>(geneCorrValues.size());
 
+    if (isMainTable)
+    {
+        _commonGeneListSelectedInTables.clear();
+    }
     for (auto& gene : geneCorrValues) {
 
+        bool isWithinRange = false;
+        // Only mark as within range if topNRows or bottomNRows > 0 and within those bounds
+        if (isMainTable) {
+            if ((topNRows > 0 && gene.rank <= topNRows) ||
+                (bottomNRows > 0 && gene.rank > (count - bottomNRows))) {
+                isWithinRange = true;
+                _commonGeneListSelectedInTables.push_back(gene.geneName);
+            }
+        }
+        else {
+            isWithinRange = _commonGeneListSelectedInTables.contains(gene.geneName);
+        }
 
-        bool isWithinRange = isCorrelationWithinRange(gene.correlationValue, minRange, maxRange);
         gene.isWithinRange = isWithinRange;
         if (isWithinRange) {
             geneOfInterestIndices.push_back(gene.geneIndex);
 
         }
     }
-    setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, commonGeneNames, tableViewOther1, tableViewOther2, geneSelectionAction2);
+    setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, tableViewOther1, tableViewOther2, geneSelectionAction2);
 
 }
 
@@ -1006,13 +1040,14 @@ void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, s
             notSelectedIndices.push_back(i);
         }
     }
-
+    QColor contrastiveColor("#D3D3D3"); 
+    contrastiveColor.setAlpha(255); //0 to 255
     QVector<Cluster> newClusters;
     newClusters.reserve(selectedIndices.size() + 1);
     if (!notSelectedIndices.empty()) {
         Cluster notSelectedCluster;
         notSelectedCluster.setName("Not Selected");
-        notSelectedCluster.setColor(QColor("#F5F5DC")); // Creme color
+        notSelectedCluster.setColor(QColor(contrastiveColor)); // Creme color
         notSelectedCluster.setIndices(notSelectedIndices);
         newClusters.append(notSelectedCluster);
     }

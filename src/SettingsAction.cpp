@@ -30,16 +30,14 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getClusterDatasetAction().setSerializationName("LayerSurfer:Clusterdataset");
     _dataset1OptionsHolder.getPointDatasetAction().setSerializationName("LayerSurfer:PointDataset");
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setSerializationName("LayerSurfer:EmbeddingDataset");
-    _commonOptionsHolder.getClusterSelectionAction().setSerializationName("LayerSurfer:ClusterSelection");
+    _commonOptionsHolder.getTopNRowsAction().setSerializationName("LayerSurfer:TopNRows");
+    _commonOptionsHolder.getBottomNRowsAction().setSerializationName("LayerSurfer:BottomNRows");
     _dataset1OptionsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
     _dataset2OptionsHolder.getGeneSelection2Action().setSerializationName("LayerSurfer:GeneSelection2");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("LayerSurfer:ScatterplotViewSelection");
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setSerializationName("LayerSurfer:LineplotViewSelection");
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("LayerSurfer:EmbeddingDimensionX");
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("LayerSurfer:EmbeddingDimensionY");
-    _dataset1OptionsHolder.getCorrelationRangeAction().setSerializationName("LayerSurfer:CorrelationRange");
-    
-    _dataset2OptionsHolder.getCorrelationRange2Action().setSerializationName("LayerSurfer:CorrelationRange2");
     _dataset2OptionsHolder.getClusterDataset2Action().setSerializationName("LayerSurfer:ClusterDataset2");
     _dataset2OptionsHolder.getPointDataset2Action().setSerializationName("LayerSurfer:PointDataset2");
     _dataset2OptionsHolder.getEmbeddingDataset2Action().setSerializationName("LayerSurfer:EmbeddingDataset2");
@@ -63,8 +61,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
 
-    _dataset1OptionsHolder.getCorrelationRangeAction().setToolTip("Correlation Range Action");
-    _dataset2OptionsHolder.getCorrelationRange2Action().setToolTip("Correlation Range Action 2");
+    _commonOptionsHolder.getTopNRowsAction().setToolTip("Top N Rows Action");
+    _commonOptionsHolder.getBottomNRowsAction().setToolTip("Bottom N Rows Action");
     _dataset2OptionsHolder.getClusterDataset2Action().setToolTip("Cluster Dataset 2");
     _dataset2OptionsHolder.getPointDataset2Action().setToolTip("Point Dataset 2");
     _dataset2OptionsHolder.getEmbeddingDataset2Action().setToolTip("Embedding Dataset 2");
@@ -93,17 +91,13 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
 
+    _commonOptionsHolder.getBottomNRowsAction().setMinimum(0);
+    _commonOptionsHolder.getBottomNRowsAction().setMaximum(100);
+    _commonOptionsHolder.getBottomNRowsAction().setValue(20);
+    _commonOptionsHolder.getTopNRowsAction().setMinimum(0);
+    _commonOptionsHolder.getTopNRowsAction().setMaximum(100);
+    _commonOptionsHolder.getTopNRowsAction().setValue(20);
 
-
-    _dataset1OptionsHolder.getCorrelationRangeAction().setLimitsMaximum(1.00);
-    _dataset1OptionsHolder.getCorrelationRangeAction().setLimitsMinimum(-1.00);
-    _dataset1OptionsHolder.getCorrelationRangeAction().setMaximum(0.50);
-    _dataset1OptionsHolder.getCorrelationRangeAction().setMinimum(-1.00);
-
-    _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMaximum(1.00);
-    _dataset2OptionsHolder.getCorrelationRange2Action().setLimitsMinimum(-1.00);
-    _dataset2OptionsHolder.getCorrelationRange2Action().setMaximum(0.50);
-    _dataset2OptionsHolder.getCorrelationRange2Action().setMinimum(-1.00);
 
     _dataset1OptionsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -151,9 +145,9 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
 
+    _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
+    _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
 
-    _dataset1OptionsHolder.getCorrelationRangeAction().setDefaultWidgetFlags(IntegralRangeAction::Slider  | IntegralRangeAction::MaximumSpinBox | IntegralRangeAction::MinimumSpinBox);
-    _dataset2OptionsHolder.getCorrelationRange2Action().setDefaultWidgetFlags(IntegralRangeAction::Slider | IntegralRangeAction::MaximumSpinBox | IntegralRangeAction::MinimumSpinBox );
 
     _dataset2OptionsHolder.getClusterDataset2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset2OptionsHolder.getPointDataset2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -293,7 +287,6 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _embeddingDimensionXAction(this, "Embedding Dimension X"),
     _embeddingDimensionYAction(this, "Embedding Dimension Y"),
     _geneSelectionAction(this, "Gene Selection"),
-    _correlationRangeAction(this, "Correlation Range"),
     _lineplotViewSelectionAction(this, "Lineplot view selection")
 {
     setText("Dataset1 Options");
@@ -306,7 +299,6 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_lineplotViewSelectionAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
-    addAction(&_correlationRangeAction);
 
 
 
@@ -323,8 +315,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     _scatterplotViewSelection2Action(this, "Scatterplot view selection 2"),
     _embeddingDimension2XAction(this, "Embedding Dimension 2 X"),
     _embeddingDimension2YAction(this, "Embedding Dimension 2 Y"),
-    _geneSelection2Action(this, "Gene Selection 2"),
-    _correlationRange2Action(this, "Correlation Range 2")
+    _geneSelection2Action(this, "Gene Selection 2")
 {
     setText("Dataset2 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -335,7 +326,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     addAction(&_scatterplotViewSelection2Action);
     addAction(&_embeddingDimension2XAction);
     addAction(&_embeddingDimension2YAction);
-    addAction(&_correlationRange2Action);
+
 
 
 
@@ -357,7 +348,9 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _selectionModeAction(this, "Selection Mode"),
     _focusSelectionAction(this, "Focus Selection"),
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
-    _coloringMapSelectionAction(this, "Coloring Map Selection")
+    _coloringMapSelectionAction(this, "Coloring Map Selection"),
+    _topNRowsAction(this, "Top N Rows Selection"),
+    _bottomNRowsAction(this, "Bottom N Rows Selection")
 
 {
     setText("Shared Options");
@@ -368,6 +361,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_dualPCAColoringAction);
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
+    addAction(&_topNRowsAction);
+    addAction(&_bottomNRowsAction);
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_coloringMapSelectionAction);
@@ -418,8 +413,8 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _commonOptionsHolder.getClusterSelectionAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelection2Action().fromParentVariantMap(variantMap);
-    _dataset1OptionsHolder.getCorrelationRangeAction().fromParentVariantMap(variantMap);
-    _dataset2OptionsHolder.getCorrelationRange2Action().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getTopNRowsAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getBottomNRowsAction().fromParentVariantMap(variantMap);
 
     _dataset2OptionsHolder.getClusterDataset2Action().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getPointDataset2Action().fromParentVariantMap(variantMap);
@@ -447,8 +442,8 @@ QVariantMap SettingsAction::toVariantMap() const
     _commonOptionsHolder.getClusterSelectionAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelection2Action().insertIntoVariantMap(variantMap);
-    _dataset1OptionsHolder.getCorrelationRangeAction().insertIntoVariantMap(variantMap);
-    _dataset2OptionsHolder.getCorrelationRange2Action().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getTopNRowsAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getBottomNRowsAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getClusterDataset2Action().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getPointDataset2Action().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDataset2Action().insertIntoVariantMap(variantMap);

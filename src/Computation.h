@@ -69,8 +69,7 @@ private:
         int& yEmbeddingIndex,
         std::vector<int>& selectedIndices,
         QString& scatterplotViewName,
-        float& minCorrelation,
-        float& maxCorrelation
+        int& bottomNRows, int& topNRows
     );
 
     bool createDatasetsIfNeeded();
@@ -115,17 +114,17 @@ protected:
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
     SelectedPCData              _selectedPCData1;
-    QTimer _correlationRangeDebounceTimer1;
     QTimer _clusterSelectionDebounceTimer;
-    QTimer _correlationRangeDebounceTimer2;
-
+    QTimer _NRangeDebounceTimer;
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
     int             _numOfPointsInLine1=0;
     int             _numOfPointsInLine2 = 0;
     QString    _selectedGene1 = "";
     QString    _selectedGene2 = "";
-    bool _isComputing = false;
+    bool _isAutoComputeComputing = false;
+    bool _isManualComputeComputing = false;
+    bool _isPCATriggerComputing = false;
     PcaFast _pca1;
     bool _blockSelectionTrigger=false;
     std::vector<int>   _selectedClusterIndices1;
