@@ -1162,37 +1162,58 @@ void Computation::AutoCompute()
         clearTable(_settingsAction.getTableView2Action());
         clearTable(_settingsAction.getTableView1Action());
 
-        auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
-        if (lineplotViewFactory)
+        if (_lineChartPointDataset1.isValid())
         {
-            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-            if (lineplotView.isEmpty())
-            {
-                qWarning() << "No scatterplot view 2 selected";
-            }
-            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
-            {
+            QString linePlotName = "";
+            QString positionDatasetID = "";
+            QString xPositionString = "";
+            QString yPositionString = "";
+            QString colorDatasetID = "";
+            QString colordatasetType = "";
+            int colorDatasetDimensionIndx = -1;
+            QString titleText = "";
+            QString smoothingType = "";
+            int smoothingWindow = -1;
+            QString colorMapStringValue = "";
 
-                if (plugin->getGuiName() == lineplotView)
+            linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            /*positionDatasetID = _lineChartPointDataset1.getId();
+            xPositionString = "Rotated Y Coordinates";
+            yPositionString = selectedGene;
+
+            auto colordatasetCopy = &_lineChartColorPCAPointDataset1; // _lineChartColorGeneExpPointDataset1 or _lineChartColorPCAPointDataset1
+            if (colordatasetCopy.isValid())
+            {
+                colorDatasetID = colordatasetCopy.getId();
+                colorMapStringValue = _settingsAction.getCommonOptionsHolder().getPcaColoringAction().getCurrentColorMap();
+                if (colordatasetCopy->getDatasetType() == PointType)
                 {
-
-                    mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                    mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Color dataset");
-                    if (clusterDatasetAction)
-                    {
-                        clusterDatasetAction->setCurrentIndex(-1);
-                    }
-                    if (pointDatasetAction)
-                    {
-                        pointDatasetAction->setCurrentIndex(-1);
-                    }
-                    if (_lineChartPointDataset1.isValid())
-                    {
-                        events().notifyDatasetDataChanged(_lineChartPointDataset1);
-                    }
-
+                    colordatasetType = "Points";
                 }
+                else if (colordatasetCopy->getDatasetType()  == ClusterType)
+                {
+                    colordatasetType = "Clusters";
+                }
+                colorDatasetDimensionIndx = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
             }
+            titleText= QString("%1 vs %2 expression of selected cells (%3)")
+                                        .arg(QStringLiteral("Rotated Y Coordinates"))
+                                        .arg(selectedGene)
+                                        .arg(static_cast<int>(_filteredSelectionIndices.size()));
+            smoothingType = "Moving Average";
+
+
+            smoothingWindow = static_cast<int>(std::round(_lineChartPointDataset1->getNumPoints() * 0.2));
+            colorMapStringValue = _settingsAction.getCommonOptionsHolder().getPcaColoringAction().getCurrentColorMap();
+            */
+
+            //_pacColoringPaused = true;
+
+            lineplotModeChange(linePlotName, positionDatasetID, colorDatasetID, colordatasetType, colorDatasetDimensionIndx, xPositionString, yPositionString, titleText, smoothingType, smoothingWindow, colorMapStringValue);
+
+            events().notifyDatasetDataChanged(_lineChartPointDataset1);
+
+            //_pacColoringPaused = false;
         }
 
 
@@ -1350,6 +1371,7 @@ void Computation::AutoCompute()
 
 
         selectFirstRow(_settingsAction.getTableView1Action());
+        auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
         if (lineplotViewFactory)
         {
             auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
