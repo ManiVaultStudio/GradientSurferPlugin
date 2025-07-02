@@ -183,6 +183,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
              _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset({});
         }
+        checkForRankLimits();
         setStatusMessage("M", "Point dataset 1 updated", "");
         };
 
@@ -205,6 +206,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setPointsDataset({});
         }
+        checkForRankLimits();
         setStatusMessage("M", "Point dataset 2 updated", "");
         };
 
@@ -412,11 +414,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
 
+ 
             }
 
 
         }
-
+        
         setStatusMessage("M", "Embedding dataset 1 updated", "");
         };
 
@@ -483,7 +486,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
         }
-
+        
         setStatusMessage("M", "Embedding dataset 2 updated", "");
         };
 
@@ -1743,13 +1746,7 @@ void Computation::processAfterPCAComplete()
             return;
         }
     }
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMaximum(commonGeneNames.size());
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMaximum(commonGeneNames.size());
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMinimum(0);
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMinimum(0);
 
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), static_cast<int>(commonGeneNames.size())));
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), static_cast<int>(commonGeneNames.size())));
 
     const int nCommon = static_cast<int>(_geneOfInterestIndices1.size());
     if (geneOfInterestIndices2.size() != nCommon || commonGeneNames.size() != nCommon) {
@@ -1873,6 +1870,46 @@ void Computation::processAfterPCAComplete()
         correlationAfterPCA();
     }
     populateLineChartColorPointData();
+}
+
+void Computation::checkForRankLimits()
+{
+    int maxLimit = 0;
+    int minLimit = 0;
+    if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid() || _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
+    {
+
+        if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid())
+        {
+            Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
+            if (fullDataset2.isValid())
+            {
+                maxLimit = fullDataset2->getNumDimensions();
+
+            }
+        
+
+        }
+        if (_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
+        {
+            Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
+            if (fullDataset1.isValid())
+            {
+                maxLimit = std::min(maxLimit, static_cast<int>(fullDataset1->getNumDimensions()));
+
+            }
+        }
+
+        
+    }
+    
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMaximum(maxLimit);
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMaximum(maxLimit);
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMinimum(minLimit);
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMinimum(minLimit);
+
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), maxLimit));
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(_settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), maxLimit));
 }
 
 void Computation::correlationAfterPCA()
