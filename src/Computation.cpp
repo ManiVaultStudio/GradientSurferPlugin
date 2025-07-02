@@ -646,9 +646,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                             if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
                             {
 
-                                if (clusterDatasetAction && _lineChartColorPointDataset1.isValid())
+                                if (clusterDatasetAction && _lineChartColorPCAPointDataset1.isValid())
                                 {
-                                    clusterDatasetAction->setCurrentDataset(_lineChartColorPointDataset1);
+                                    clusterDatasetAction->setCurrentDataset(_lineChartColorPCAPointDataset1);
                                     DimensionPickerAction* colorDim = findActionByPath<DimensionPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color Point Dataset Dimension");
                                     if (colorDim)
                                     {
@@ -1578,10 +1578,10 @@ bool Computation::createDatasetsIfNeeded()
         _lineChartColorClusterDataset1->setGroupIndex(670);
         mv::events().notifyDatasetAdded(_lineChartColorClusterDataset1);
     }
-    if (!_lineChartColorPointDataset1.isValid()) {
-        _lineChartColorPointDataset1 = mv::data().createDataset("Points", "Line Chart Color Point Data 1", _lineChartPointDataset1);
-        _lineChartColorPointDataset1->setGroupIndex(670);
-        mv::events().notifyDatasetAdded(_lineChartColorPointDataset1);
+    if (!_lineChartColorPCAPointDataset1.isValid()) {
+        _lineChartColorPCAPointDataset1 = mv::data().createDataset("Points", "Line Chart Color PCA Point Data 1", _lineChartPointDataset1);
+        _lineChartColorPCAPointDataset1->setGroupIndex(670);
+        mv::events().notifyDatasetAdded(_lineChartColorPCAPointDataset1);
     }
 
     if (!_selectedEmbeddingDataset.isValid()) {
@@ -1590,7 +1590,7 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_selectedEmbeddingDataset);
     }
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColorClusterDataset1.isValid() || !_lineChartColorPointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid() ||!_selectedEmbeddingPointDataset1.isValid() ||!_selectedEmbeddingPointDataset2.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColorClusterDataset1.isValid() || !_lineChartColorPCAPointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid() ||!_selectedEmbeddingPointDataset1.isValid() ||!_selectedEmbeddingPointDataset2.isValid()) {
         qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -2043,7 +2043,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         !_rotatedSelectedEmbeddingDataset.isValid() ||
         !_lineChartPointDataset1.isValid() ||
         !_lineChartColorClusterDataset1.isValid() ||
-        !_lineChartColorPointDataset1.isValid() ||
+        !_lineChartColorPCAPointDataset1.isValid() ||
         !_selectedGenePointDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() ||
         !_selectedEmbeddingDataset.isValid() ||
@@ -2152,20 +2152,20 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
 
 void Computation::populateLineChartColorPointData()
 {
-    if (!_selectedPCData1.coordinates.empty() && _selectedPCData1.numberOfPoints > 0 && _selectedPCData1.numberOfDimensions > 0 && _lineChartColorPointDataset1.isValid())
+    if (!_selectedPCData1.coordinates.empty() && _selectedPCData1.numberOfPoints > 0 && _selectedPCData1.numberOfDimensions > 0 && _lineChartColorPCAPointDataset1.isValid())
     {
         //std::vector<QString> dimensionNamesPC;
         //for (int i = 0; i < _selectedPCData1.numberOfDimensions; ++i) {
             //dimensionNamesPC.push_back(QString("PC%1").arg(i + 1));
         //}
-        _lineChartColorPointDataset1->setData(_selectedPCData1.coordinates.data(), _selectedPCData1.numberOfPoints, _selectedPCData1.numberOfDimensions);
+        _lineChartColorPCAPointDataset1->setData(_selectedPCData1.coordinates.data(), _selectedPCData1.numberOfPoints, _selectedPCData1.numberOfDimensions);
 
-        //_lineChartColorPointDataset1->setDimensionNames(dimensionNamesPC);
-        mv::events().notifyDatasetDataChanged(_lineChartColorPointDataset1);
+        //_lineChartColorPCAPointDataset1->setDimensionNames(dimensionNamesPC);
+        mv::events().notifyDatasetDataChanged(_lineChartColorPCAPointDataset1);
     }
-    else if (_lineChartColorPointDataset1.isValid())
+    else if (_lineChartColorPCAPointDataset1.isValid())
     {
-        _lineChartColorPointDataset1->setData(nullptr, 0, 0);
+        _lineChartColorPCAPointDataset1->setData(nullptr, 0, 0);
     }
 }
 
