@@ -144,6 +144,7 @@ class DimensionPickerAction;
 void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allTables, const QList<DimensionPickerAction*>& allActions);
 
 void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection,QString dimensionForColoring,QString colormapValue);
+void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString colorDatasetID, QString colordatasetType, int colorDatasetDimensionIndx, QString xPositionString, QString yPositionString, QString titleText, QString smoothingType, int smoothingWindow, QString colorMapStringValue);
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 

@@ -110,7 +110,7 @@ protected:
     mv::Dataset<Clusters>       _pcaClusterDatasetColoring2 = nullptr;
     mv::Dataset<Points>         _lineChartPointDataset1 = nullptr;
     mv::Dataset<Clusters>       _lineChartColorClusterDataset1 = nullptr;
-    mv::Dataset<Points>       _lineChartColorPointDataset1 = nullptr;
+    mv::Dataset<Points>       _lineChartColorPCAPointDataset1 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
     SelectedPCData              _selectedPCData1;
@@ -130,6 +130,7 @@ protected:
     std::vector<int>   _selectedClusterIndices1;
     std::vector<int>   _selectedClusterIndices2;
     bool    _pacColoringPaused = false;
+    bool _geneSelectionPaused = false;
     bool _blockSelectionMode = false;
     friend class ChannelAction;
 };

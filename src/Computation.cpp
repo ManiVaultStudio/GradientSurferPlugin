@@ -213,8 +213,98 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getPointDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset2);
 
     const auto updateGeneSelection1 = [this]() -> void {
-        auto selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
-        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        QString selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
+        int selectedGeneIndx= _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
+
+        QString colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        if (_lineChartPointDataset1.isValid())
+        {
+
+            QString linePlotName = "";
+            QString positionDatasetID = "";
+            QString xPositionString = "";
+            QString yPositionString = "";
+            QString colorDatasetID = "";
+            QString colordatasetType = "";
+            int colorDatasetDimensionIndx = -1;
+            QString titleText = "";
+            QString smoothingType = "";
+            int smoothingWindow = -1;
+            
+
+            linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            positionDatasetID = _lineChartPointDataset1.getDatasetId();
+            xPositionString = "Rotated Y Coordinates";
+
+
+
+            if (selectedGene == "")
+            {
+                yPositionString = "Mean Expr Selected Genes";
+                titleText = QString("%1 vs %2 of selected cells (%3)")
+                    .arg(xPositionString)
+                    .arg(yPositionString)
+                    .arg(static_cast<int>(_filteredSelectionIndices.size()));
+                if (_lineChartColorClusterDataset1.isValid())
+                {
+                    colorDatasetID = _lineChartColorClusterDataset1.getDatasetId();
+                    if (_lineChartColorClusterDataset1->getDataType() == PointType)
+                    {
+                        colordatasetType = "Points";
+                    }
+                    else if (_lineChartColorClusterDataset1->getDataType() == ClusterType)
+                    {
+                        colordatasetType = "Clusters";
+                    }
+                }
+                else
+                {
+                    qWarning() << "LineChart color dataset for PCA is not valid";
+                }
+
+            }
+            else
+            {
+                yPositionString = selectedGene;
+                titleText = QString("%1 vs %2 expression of selected cells (%3)")
+                    .arg(xPositionString)
+                    .arg(yPositionString)
+                    .arg(static_cast<int>(_filteredSelectionIndices.size()));
+                if (_selectedCellPointDataset.isValid())
+                {
+                    colorDatasetID = _selectedCellPointDataset.getDatasetId();
+                    if (_selectedCellPointDataset->getDataType() == PointType)
+                    {
+                        colordatasetType = "Points";
+                    }
+                    else if (_selectedCellPointDataset->getDataType() == ClusterType)
+                    {
+                        colordatasetType = "Clusters";
+                    }
+                    std::vector<QString> dimensions = _selectedCellPointDataset->getDimensionNames();
+                    //find index of QString selectedGene from std::vector<QString> dimensions
+                    //auto it = std::find(dimensions.begin(), dimensions.end(), selectedGene);
+                    //int selectedGeneIndex = (it != dimensions.end()) ? static_cast<int>(std::distance(dimensions.begin(), it)) : -1;
+                    colorDatasetDimensionIndx = selectedGeneIndx;
+
+                }
+                else
+                {
+                    qWarning() << "LineChart color dataset for clustering is not valid";
+                }
+
+            }
+
+
+
+            smoothingType = "Moving Average";
+
+            smoothingWindow = static_cast<int>(std::round(_lineChartPointDataset1->getNumPoints() * 0.2));
+            lineplotModeChange(linePlotName, positionDatasetID, colorDatasetID, colordatasetType, colorDatasetDimensionIndx, xPositionString, yPositionString, titleText, smoothingType, smoothingWindow, colorMapStringValue);
+
+            events().notifyDatasetDataChanged(_lineChartPointDataset1);
+
+        }
         if (selectedGene == "")
         {
             scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "", colorMapStringValue);
@@ -223,88 +313,20 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedGene, colorMapStringValue);
 
-            if (_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() && _filteredSelectionIndices.size() > 0)
-            {
-                //TODO
-                auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
-                if (lineplotViewFactory)
-                {
-                    auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-                    if (lineplotView.isEmpty())
-                    {
-                        qWarning() << "No scatterplot view 2 selected";
-                    }
 
-
-                    for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
-                    {
-
-                        if (plugin->getGuiName() == lineplotView)
-                        {
-
-                            _pacColoringPaused = true;
-                            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-
-                            mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                            mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
-                            if (pointDatasetAction && _lineChartPointDataset1.isValid())
-                            {
-                                pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
-
-                                if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
-                                {
-                                    clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
-                                }
-                                mv::gui::StringAction* chartTitle = findActionByPath<StringAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Chart Title");
-                                if (chartTitle)
-                                {
-                                    QString titleText = QString("%1 vs %2 expression of selected cells (%3)")
-                                        .arg(QStringLiteral("Rotated Y Coordinates"))
-                                        .arg(selectedGene)
-                                        .arg(static_cast<int>(_filteredSelectionIndices.size()));
-                                    chartTitle->setString(titleText);
-
-                                }
-
-
-                                mv::gui::OptionAction* dimensionX = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Data Dimension X Selection/Select dimension");
-                                mv::gui::OptionAction* dimensionY = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Data Dimension Y Selection/Select dimension");
-                                if (dimensionX)
-                                {
-                                    dimensionX->setCurrentText("Rotated Y Coordinates");
-                                }
-                                if (dimensionY)
-                                {
-                                    dimensionY->setCurrentText(selectedGene);
-                                }
-
-                                mv::gui::OptionAction* smoothingType = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Type");
-                                mv::gui::IntegralAction* smoothingWindow = findActionByPath<IntegralAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Window");
-                                if (smoothingType && smoothingWindow)
-                                {
-                                    smoothingType->setCurrentText("Moving Average");
-                                    int maxVal = _lineChartPointDataset1->getNumPoints() - 1;
-                                    int currentVal = static_cast<int>(std::round(maxVal * 0.2));
-                                    smoothingWindow->setMaximum(maxVal);
-                                    smoothingWindow->setMinimum(2);
-                                    smoothingWindow->setValue(currentVal);
-                                }
-
-
-
-                                events().notifyDatasetDataChanged(_lineChartPointDataset1);
-
-                            }
-                            _pacColoringPaused = false;
-
-                        }
-                    }
-                }
-
-            }
 
 
         }
+
+
+
+
+            _pacColoringPaused = true;
+            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
+            _pacColoringPaused = false;
+
+
+        
         };
 
     connect(& _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection1);
@@ -554,6 +576,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
         auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+        _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
+        deselectAllRows(_settingsAction.getTableView1Action());
+        deselectAllRows(_settingsAction.getTableView2Action());
+        deselectAllRows(_settingsAction.getTableView3Action());
         if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
         {
             //_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().setDisabled(false);
@@ -566,6 +593,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 return;
 
             }
+            _blockSelectionMode = true;
+            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+            _blockSelectionMode = false;
 
             int totalPoints1 = 0;
             int totalPoints2 = 0;
@@ -583,9 +613,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             }
             createPCAClusterColors(_pcaClusterDatasetColoring1.getDatasetId(),colorMapStringValue, _selectedClusterIndices1, _pcaCommonGenesDataset1.getDatasetId(), totalPoints1, selectedDimName);
             createPCAClusterColors(_pcaClusterDatasetColoring2.getDatasetId(),colorMapStringValue, _selectedClusterIndices2, _pcaCommonGenesDataset2.getDatasetId(), totalPoints2, selectedDimName);
-            _blockSelectionMode = true;
-            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-            _blockSelectionMode = false;
+
 
             
 
@@ -608,14 +636,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 events().notifyDatasetDataChanged(_pcaClusterDatasetColoring2);
             }
             
-
+            _blockSelectionMode = true;
+            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+            _blockSelectionMode = false;
             
             //_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().setDisabled(true);
-            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
-            _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
-            deselectAllRows(_settingsAction.getTableView1Action());
-            deselectAllRows(_settingsAction.getTableView2Action());
-            deselectAllRows(_settingsAction.getTableView3Action());
+
 
             scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "", colorMapStringValue);
 
@@ -625,103 +651,88 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
 
-
-        
-        auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
-        if (lineplotViewFactory)
+        if (_lineChartPointDataset1.isValid())
         {
-            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-            if (!lineplotView.isEmpty())
+            QString linePlotName = "";
+            QString positionDatasetID = "";
+            QString xPositionString = "";
+            QString yPositionString = "";
+            QString colorDatasetID = "";
+            QString colordatasetType = "";
+            int colorDatasetDimensionIndx = -1;
+            QString titleText = "";
+            QString smoothingType = "";
+            int smoothingWindow = -1;
+            QString colorMapStringValue = "";
+
+            linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            positionDatasetID = _lineChartPointDataset1.getDatasetId();
+            xPositionString = "Rotated Y Coordinates";
+            yPositionString = "Mean Expr Selected Genes";
+
+
+
+            if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
             {
-                for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+                if (_lineChartColorPCAPointDataset1.isValid())
                 {
-
-                    if (plugin->getGuiName() == lineplotView)
+                    colorDatasetID = _lineChartColorPCAPointDataset1.getDatasetId();
+                    if (_lineChartColorPCAPointDataset1->getDataType() == PointType)
                     {
-                        mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                        mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
-                        if (pointDatasetAction && _lineChartPointDataset1.isValid())
-                        {
-                            pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
-                            if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
-                            {
-
-                                if (clusterDatasetAction && _lineChartColorPointDataset1.isValid())
-                                {
-                                    clusterDatasetAction->setCurrentDataset(_lineChartColorPointDataset1);
-                                    DimensionPickerAction* colorDim = findActionByPath<DimensionPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color Point Dataset Dimension");
-                                    if (colorDim)
-                                    {
-                                        int selectedDimInd = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
-                                        QString selectedDimName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
-                                        colorDim->setCurrentDimensionIndex(selectedDimInd);
-                                    }
-                                    else
-                                    {
-                                        qWarning() << "LinePlot color dimension action not found";
-                                    }
-                                    auto colormapValAction = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point Dataset Dimension Color Map/Current color map");
-                                    if (colormapValAction)
-                                    {
-                                        colormapValAction->setCurrentText(colorMapStringValue);
-                                    }
-                                    else
-                                    {
-                                        qWarning() << "LinePlot color map action not found";
-                                    }
-                                }
-                                else
-                                {
-                                    qWarning() << "LinePlot color dataset action not found";
-                                }
-                            }
-                            else
-                            {
-                                if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
-                                {
-                                    clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
-                                }
-                                else
-                                {
-                                    qWarning() << "LinePlot color dataset action not found";
-                                }
-                            }
-
-                            int maxVal = _lineChartPointDataset1->getNumPoints();
-                            mv::gui::OptionAction* smoothingType = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Type");
-                            mv::gui::IntegralAction* smoothingWindow = findActionByPath<IntegralAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Window");
-                            if (smoothingType && smoothingWindow)
-                            {
-                                smoothingType->setCurrentText("Moving Average");
-                                int maxVal = _lineChartPointDataset1->getNumPoints()-1;
-                                int currentVal = static_cast<int>(std::round(maxVal * 0.2));
-                                smoothingWindow->setMaximum(maxVal);
-                                smoothingWindow->setMinimum(2);
-                                smoothingWindow->setValue(currentVal);
-                            }
-
-                            events().notifyDatasetDataChanged(_lineChartPointDataset1);
-                        }
-                        else
-                        {
-                            qWarning() << "LinePlot point dataset action not found";
-                        }
-
+                        colordatasetType = "Points";
                     }
+                    else if (_lineChartColorPCAPointDataset1->getDataType() == ClusterType)
+                    {
+                        colordatasetType = "Clusters";
+                    }
+                    colorDatasetDimensionIndx = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
                 }
-                
+                else
+                {
+                    qWarning() << "LineChart color dataset for PCA is not valid";
+                }
+
             }
             else
             {
-                qWarning() << "No lineplot view selected";
+                if (_lineChartColorClusterDataset1.isValid())
+                {
+                    colorDatasetID = _lineChartColorClusterDataset1.getDatasetId();
+                    if (_lineChartColorClusterDataset1->getDataType() == PointType)
+                    {
+                        colordatasetType = "Points";
+                    }
+                    else if (_lineChartColorClusterDataset1->getDataType() == ClusterType)
+                    {
+                        colordatasetType = "Clusters";
+                    }
+
+                }
+                else
+                {
+                    qWarning() << "LineChart color dataset for clustering is not valid";
+                }
+
             }
+            titleText = QString("%1 vs %2 expression of selected cells (%3)")
+                .arg(xPositionString)
+                .arg(yPositionString)
+                .arg(static_cast<int>(_filteredSelectionIndices.size()));
+            smoothingType = "Moving Average";
+
+
+            smoothingWindow = static_cast<int>(std::round(_lineChartPointDataset1->getNumPoints() * 0.2));
+            colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+
+
+            lineplotModeChange(linePlotName, positionDatasetID, colorDatasetID, colordatasetType, colorDatasetDimensionIndx, xPositionString, yPositionString, titleText, smoothingType, smoothingWindow, colorMapStringValue);
+
+            events().notifyDatasetDataChanged(_lineChartPointDataset1);
 
 
         }
-        else
-        {
-            qWarning() << "LinePlot View plugin not found";
-        }
+
+
 
         };
 
@@ -750,6 +761,56 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(),_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "", colorMapStringValue);
 
                 scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(), false,"", colorMapStringValue);
+
+                if (_lineChartPointDataset1.isValid())
+                {
+                    QString linePlotName = "";
+                    QString positionDatasetID = "";
+                    QString xPositionString = "";
+                    QString yPositionString = "";
+                    QString colorDatasetID = "";
+                    QString colordatasetType = "";
+                    int colorDatasetDimensionIndx = -1;
+                    QString titleText = "";
+                    QString smoothingType = "";
+                    int smoothingWindow = -1;
+                    QString colorMapStringValue = "";
+
+                    linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+                    positionDatasetID = _lineChartPointDataset1.getDatasetId();
+                    if (_lineChartColorClusterDataset1.isValid())
+                    {
+                        colorDatasetID = _lineChartColorClusterDataset1.getDatasetId();
+                        if (_lineChartColorClusterDataset1->getDataType() == PointType)
+                        {
+                            colordatasetType = "Points";
+                        }
+                        else if (_lineChartColorClusterDataset1->getDataType() == ClusterType)
+                        {
+                            colordatasetType = "Clusters";
+                        }
+
+                    }
+                    xPositionString = "Rotated Y Coordinates";
+                    yPositionString = "Mean Expr Selected Genes";
+                    titleText = QString("%1 vs %2 expression of selected cells (%3)")
+                        .arg(xPositionString)
+                        .arg(yPositionString)
+                        .arg(static_cast<int>(_filteredSelectionIndices.size()));
+                    smoothingType = "Moving Average";
+
+
+                    smoothingWindow = static_cast<int>(std::round(_lineChartPointDataset1->getNumPoints() * 0.2));
+                    colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+
+
+                    lineplotModeChange(linePlotName, positionDatasetID, colorDatasetID, colordatasetType, colorDatasetDimensionIndx, xPositionString, yPositionString, titleText, smoothingType, smoothingWindow, colorMapStringValue);
+
+                    events().notifyDatasetDataChanged(_lineChartPointDataset1);
+
+
+                }
+
             }
             else
             {
@@ -1162,37 +1223,26 @@ void Computation::AutoCompute()
         clearTable(_settingsAction.getTableView2Action());
         clearTable(_settingsAction.getTableView1Action());
 
-        auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
-        if (lineplotViewFactory)
+        if (_lineChartPointDataset1.isValid())
         {
-            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-            if (lineplotView.isEmpty())
-            {
-                qWarning() << "No scatterplot view 2 selected";
-            }
-            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
-            {
+            QString linePlotName = "";
+            QString positionDatasetID = "";
+            QString xPositionString = "";
+            QString yPositionString = "";
+            QString colorDatasetID = "";
+            QString colordatasetType = "";
+            int colorDatasetDimensionIndx = -1;
+            QString titleText = "";
+            QString smoothingType = "";
+            int smoothingWindow = -1;
+            QString colorMapStringValue = "";
 
-                if (plugin->getGuiName() == lineplotView)
-                {
+            linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
 
-                    mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                    mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Color dataset");
-                    if (clusterDatasetAction)
-                    {
-                        clusterDatasetAction->setCurrentIndex(-1);
-                    }
-                    if (pointDatasetAction)
-                    {
-                        pointDatasetAction->setCurrentIndex(-1);
-                    }
-                    if (_lineChartPointDataset1.isValid())
-                    {
-                        events().notifyDatasetDataChanged(_lineChartPointDataset1);
-                    }
+            lineplotModeChange(linePlotName, positionDatasetID, colorDatasetID, colordatasetType, colorDatasetDimensionIndx, xPositionString, yPositionString, titleText, smoothingType, smoothingWindow, colorMapStringValue);
 
-                }
-            }
+            events().notifyDatasetDataChanged(_lineChartPointDataset1);
+
         }
 
 
@@ -1350,36 +1400,55 @@ void Computation::AutoCompute()
 
 
         selectFirstRow(_settingsAction.getTableView1Action());
-        if (lineplotViewFactory)
+
+        if (_lineChartPointDataset1.isValid())
         {
-            auto lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-            if (lineplotView.isEmpty())
-            {
-                qWarning() << "No scatterplot view 2 selected";
-            }
+            QString linePlotName = "";
+            QString positionDatasetID = "";
+            QString xPositionString = "";
+            QString yPositionString = "";
+            QString colorDatasetID = "";
+            QString colordatasetType = "";
+            int colorDatasetDimensionIndx = -1;
+            QString titleText = "";
+            QString smoothingType = "";
+            int smoothingWindow = -1;
+            QString colorMapStringValue = "";
 
-            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+            positionDatasetID = _lineChartPointDataset1.getDatasetId();
+            if (_lineChartColorClusterDataset1.isValid())
             {
-
-                if (plugin->getGuiName() == lineplotView)
+                colorDatasetID = _lineChartColorClusterDataset1.getDatasetId();
+                if (_lineChartColorClusterDataset1->getDataType() == PointType)
                 {
-                    
-                   mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Point dataset");
-                   mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin,"LinePlotViewPlugin/Dataset1 Options/Color dataset");
-                   if (pointDatasetAction && _lineChartPointDataset1.isValid())
-                   {
-                       pointDatasetAction->setCurrentDataset(_lineChartPointDataset1);
-                       if (clusterDatasetAction && _lineChartColorClusterDataset1.isValid())
-                       {
-                           clusterDatasetAction->setCurrentDataset(_lineChartColorClusterDataset1);
-                       }
-                       events().notifyDatasetDataChanged(_lineChartPointDataset1);
-                   }
-
+                    colordatasetType = "Points";
                 }
-            }
-        }
+                else if (_lineChartColorClusterDataset1->getDataType()  == ClusterType)
+                {
+                    colordatasetType = "Clusters";
+                }
 
+            }
+            xPositionString = "Rotated Y Coordinates";
+            yPositionString = "Mean Expr All Genes";
+            titleText= QString("%1 vs %2 expression of selected cells (%3)")
+                                        .arg(xPositionString)
+                                        .arg(yPositionString)
+                                        .arg(static_cast<int>(_filteredSelectionIndices.size()));
+            smoothingType = "Moving Average";
+
+
+            smoothingWindow = static_cast<int>(std::round(_lineChartPointDataset1->getNumPoints() * 0.2));
+            colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+            
+
+            lineplotModeChange(linePlotName, positionDatasetID, colorDatasetID, colordatasetType, colorDatasetDimensionIndx, xPositionString, yPositionString, titleText, smoothingType, smoothingWindow, colorMapStringValue);
+
+            events().notifyDatasetDataChanged(_lineChartPointDataset1);
+
+
+        }
 
         setStatusMessage("C", "Computation completed", "#28a745");
 
@@ -1569,19 +1638,19 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_rotatedSelectedEmbeddingDataset);
     }
     if (!_lineChartPointDataset1.isValid()) {
-        _lineChartPointDataset1 = mv::data().createDataset("Points", "Line Chart Point Data 1");
-        _lineChartPointDataset1->setGroupIndex(670);
+        _lineChartPointDataset1 = mv::data().createDataset("Points", "Line Chart Point Data 1", _selectedCellPointDataset);
+        _lineChartPointDataset1->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_lineChartPointDataset1);
     }
     if(!_lineChartColorClusterDataset1.isValid()) {
         _lineChartColorClusterDataset1 = mv::data().createDataset("Cluster", "Line Chart Color Cluster Data 1", _lineChartPointDataset1);
-        _lineChartColorClusterDataset1->setGroupIndex(670);
+        _lineChartColorClusterDataset1->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_lineChartColorClusterDataset1);
     }
-    if (!_lineChartColorPointDataset1.isValid()) {
-        _lineChartColorPointDataset1 = mv::data().createDataset("Points", "Line Chart Color Point Data 1", _lineChartPointDataset1);
-        _lineChartColorPointDataset1->setGroupIndex(670);
-        mv::events().notifyDatasetAdded(_lineChartColorPointDataset1);
+    if (!_lineChartColorPCAPointDataset1.isValid()) {
+        _lineChartColorPCAPointDataset1 = mv::data().createDataset("Points", "Line Chart Color PCA Point Data 1", _lineChartPointDataset1);
+        _lineChartColorPCAPointDataset1->setGroupIndex(666);
+        mv::events().notifyDatasetAdded(_lineChartColorPCAPointDataset1);
     }
 
     if (!_selectedEmbeddingDataset.isValid()) {
@@ -1590,7 +1659,7 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_selectedEmbeddingDataset);
     }
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColorClusterDataset1.isValid() || !_lineChartColorPointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid() ||!_selectedEmbeddingPointDataset1.isValid() ||!_selectedEmbeddingPointDataset2.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColorClusterDataset1.isValid() || !_lineChartColorPCAPointDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid() ||!_selectedEmbeddingPointDataset1.isValid() ||!_selectedEmbeddingPointDataset2.isValid()) {
         qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -2043,7 +2112,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         !_rotatedSelectedEmbeddingDataset.isValid() ||
         !_lineChartPointDataset1.isValid() ||
         !_lineChartColorClusterDataset1.isValid() ||
-        !_lineChartColorPointDataset1.isValid() ||
+        !_lineChartColorPCAPointDataset1.isValid() ||
         !_selectedGenePointDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() ||
         !_selectedEmbeddingDataset.isValid() ||
@@ -2070,8 +2139,8 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
-    if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
-    { 
+    if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
+    {
         QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
         NormalizationType normType = normalizationTypeFromString(normTypeStr);
         normalizeVector(cellbygenematrix, normType);
@@ -2084,35 +2153,54 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
     _rotatedSelectedEmbeddingDataset->setData(rotatedXYCordinates.data(), static_cast<int>(numCells), 2);
     _rotatedSelectedEmbeddingDataset->setDimensionNames({ QStringLiteral("X"), QStringLiteral("Y") });
     mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
-    
-    
+
+
     _selectedEmbeddingDataset->setData(XYCordinates.data(), static_cast<int>(numCells), 2);
     _selectedEmbeddingDataset->setDimensionNames({ QStringLiteral("X"), QStringLiteral("Y") });
     mv::events().notifyDatasetDataChanged(_selectedEmbeddingDataset);
 
 
     std::vector<QString> dimensionNamesWithYCoords = { QStringLiteral("Rotated Y Coordinates") };
+    dimensionNamesWithYCoords.push_back("Mean Expr All Genes");
+    dimensionNamesWithYCoords.push_back("Mean Expr Selected Genes");
     dimensionNamesWithYCoords.insert(dimensionNamesWithYCoords.end(), dimensionNames.begin(), dimensionNames.end());
 
 
     std::vector<float> rotatedYCoord(numCells * 1);
     _rotatedSelectedEmbeddingDataset->extractDataForDimension(rotatedYCoord, 1);
+    std::vector<float> meanSelectedGenes(numCells, 0.0f);
+    std::vector<float> meanAllGenes(numCells, 0.0f);
+    for (size_t iC = 0; iC < numCells; ++iC) {
+        float sum = 0.0f;
+        if (numGenes > 0) {
+            for (size_t iG = 0; iG < numGenes; ++iG) {
+                sum += _selectedCellPointDataset->getValueAt(iC * numGenes + iG);
+            }
+            meanAllGenes[iC] = sum / static_cast<float>(numGenes);
+        }
+        else {
+            meanAllGenes[iC] = 0.0f;
+        }
+    }
 
-    std::vector<float> linechartdata(numCells * (1 + numGenes));
+    std::vector<float> linechartdata(numCells * (3 + numGenes));
 
 
     for (size_t i = 0; i < numCells; ++i) {
-     
-        linechartdata[i * (1 + numGenes)] = rotatedYCoord[i];
-
-  
+        // First column: Rotated Y coordinate
+        linechartdata[i * (3 + numGenes)] = rotatedYCoord[i];
+        // Second column: Mean of all genes
+        linechartdata[i * (3 + numGenes) + 1] = meanAllGenes[i];
+        // Third column: Mean of selected genes
+        linechartdata[i * (3 + numGenes) + 2] = meanSelectedGenes[i];
+        // Remaining columns: All gene values
         for (size_t j = 0; j < numGenes; ++j) {
-            linechartdata[i * (1 + numGenes) + 1 + j] = cellbygenematrix[i * numGenes + j];
+            linechartdata[i * (3 + numGenes) + 3 + j] = cellbygenematrix[i * numGenes + j];
         }
     }
 
 
-    _lineChartPointDataset1->setData(linechartdata.data(), static_cast<int>(numCells), noOfDimensions + 1);
+    _lineChartPointDataset1->setData(linechartdata.data(), static_cast<int>(numCells), noOfDimensions + 3);
     _lineChartPointDataset1->setDimensionNames(dimensionNamesWithYCoords);
     mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
 
@@ -2152,20 +2240,20 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
 
 void Computation::populateLineChartColorPointData()
 {
-    if (!_selectedPCData1.coordinates.empty() && _selectedPCData1.numberOfPoints > 0 && _selectedPCData1.numberOfDimensions > 0 && _lineChartColorPointDataset1.isValid())
+    if (!_selectedPCData1.coordinates.empty() && _selectedPCData1.numberOfPoints > 0 && _selectedPCData1.numberOfDimensions > 0 && _lineChartColorPCAPointDataset1.isValid())
     {
         //std::vector<QString> dimensionNamesPC;
         //for (int i = 0; i < _selectedPCData1.numberOfDimensions; ++i) {
             //dimensionNamesPC.push_back(QString("PC%1").arg(i + 1));
         //}
-        _lineChartColorPointDataset1->setData(_selectedPCData1.coordinates.data(), _selectedPCData1.numberOfPoints, _selectedPCData1.numberOfDimensions);
+        _lineChartColorPCAPointDataset1->setData(_selectedPCData1.coordinates.data(), _selectedPCData1.numberOfPoints, _selectedPCData1.numberOfDimensions);
 
-        //_lineChartColorPointDataset1->setDimensionNames(dimensionNamesPC);
-        mv::events().notifyDatasetDataChanged(_lineChartColorPointDataset1);
+        //_lineChartColorPCAPointDataset1->setDimensionNames(dimensionNamesPC);
+        mv::events().notifyDatasetDataChanged(_lineChartColorPCAPointDataset1);
     }
-    else if (_lineChartColorPointDataset1.isValid())
+    else if (_lineChartColorPCAPointDataset1.isValid())
     {
-        _lineChartColorPointDataset1->setData(nullptr, 0, 0);
+        _lineChartColorPCAPointDataset1->setData(nullptr, 0, 0);
     }
 }
 
@@ -2323,6 +2411,49 @@ bool Computation::setupAndTriggerPCA()
     _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numAllFilteredCells1, numDimsOfInterest);
     _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
+
+    if (_lineChartPointDataset1.isValid() &&
+        _selectedGenePointDataset1.isValid() &&
+        !_geneOfInterestIndices1.empty() &&
+        !_filteredSelectionIndices.empty())
+    {
+        const int numRows = _lineChartPointDataset1->getNumPoints();
+        const int numCols = _lineChartPointDataset1->getNumDimensions();
+        const int numGenes = _selectedGenePointDataset1->getNumDimensions();
+
+        // Ensure sizes match expectations
+        if (static_cast<int>(_filteredSelectionIndices.size()) == numRows &&
+            static_cast<int>(_geneOfInterestIndices1.size()) == numGenes)
+        {
+            // Prepare dimension indices [0, 1, ..., numGenes-1]
+            std::vector<int> dimIndices(numGenes);
+            std::iota(dimIndices.begin(), dimIndices.end(), 0);
+
+            // Prepare buffer for selected gene expression data (row-major: cell x gene)
+            std::vector<float> expDataSelectedCellGene(numRows * numGenes);
+            _selectedGenePointDataset1->populateDataForDimensions(
+                expDataSelectedCellGene, dimIndices, _filteredSelectionIndices);
+
+            // Compute mean expression for each cell
+            std::vector<float> meanOfSelectedGenes(numRows, 0.0f);
+            for (int i = 0; i < numRows; ++i) {
+                float sum = 0.0f;
+                for (int j = 0; j < numGenes; ++j) {
+                    sum += expDataSelectedCellGene[i * numGenes + j];
+                }
+                meanOfSelectedGenes[i] = (numGenes > 0) ? (sum / static_cast<float>(numGenes)) : 0.0f;
+            }
+            const int stride = _lineChartPointDataset1->getNumDimensions();
+            // Update the third column ("Mean Expr Selected Genes") in the line chart dataset
+            for (int i = 0; i < numRows; ++i) {
+                _lineChartPointDataset1->setValueAt(i * stride + 2, meanOfSelectedGenes[i]);
+            }
+
+            // Notify that the dataset has changed
+            events().notifyDatasetDataChanged(_lineChartPointDataset1);
+        }
+    }
+
 
     _selectedEmbeddingPointDataset1->setData(embeddingMatrix1.data(), numAllFilteredCells1, fullEmbeddingDataset1->getNumDimensions());
     _selectedEmbeddingPointDataset1->setDimensionNames(fullEmbeddingDataset1->getDimensionNames());

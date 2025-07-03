@@ -187,7 +187,176 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
     isSyncing = false;
 }
 
+void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString colorDatasetID, QString colordatasetType, int colorDatasetDimensionIndx,  QString xPositionString, QString yPositionString, QString titleText, QString smoothingType, int smoothingWindow, QString colorMapStringValue)
+{
 
+    auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+    if (lineplotViewFactory)
+    {
+        if (linePlotName.isEmpty() || positionDatasetID.isEmpty() || xPositionString.isEmpty() || yPositionString.isEmpty())
+        {
+            qWarning() << "LinePlot name or position dataset ID is empty";
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            {
+                if (plugin->getGuiName() == linePlotName)
+                {
+                    mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
+                    mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
+                    if (clusterDatasetAction)
+                    {
+                        clusterDatasetAction->setCurrentIndex(-1);
+                    }
+                    if (pointDatasetAction)
+                    {
+                        pointDatasetAction->setCurrentIndex(-1);
+                    }
+                    mv::gui::StringAction* chartTitle = findActionByPath<StringAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Chart Title");
+                    if (chartTitle)
+                    {
+                        chartTitle->setString(titleText);
+                    }
+                }
+            }
+            return;
+        }
+        else
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            {
+                if (plugin->getGuiName() == linePlotName)
+                {
+                    Dataset<Points> pointDataset = mv::data().getDataset<Points>(positionDatasetID);
+                    if (pointDataset.isValid())
+                    {
+                        mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
+                        if (pointDatasetAction)
+                        {
+                            pointDatasetAction->setCurrentDataset(pointDataset);
+
+                            mv::gui::OptionAction* dimensionXAction = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Data Dimension X Selection/Select dimension");
+                            mv::gui::OptionAction* dimensionYAction = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Data Dimension Y Selection/Select dimension");
+                            if (dimensionXAction && dimensionYAction)
+                            {
+                                dimensionXAction->setCurrentText(xPositionString);
+                                dimensionYAction->setCurrentText(yPositionString);
+                                if (colordatasetType == "Clusters")
+                                {
+                                    mv::Dataset<Clusters> colorDataset = mv::data().getDataset<Clusters>(colorDatasetID);
+
+                                    if (colorDataset.isValid())
+                                    {
+                                        mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
+                                        if (clusterDatasetAction)
+                                        {
+                                            clusterDatasetAction->setCurrentDataset(colorDataset);
+                                        }
+                                        else
+                                        {
+                                            qWarning() << "LinePlot color dataset action not found";
+                                        }
+                                    }
+
+                                }
+                                else if (colordatasetType == "Points")
+                                {
+                                    mv::Dataset<Points> colorDataset = mv::data().getDataset<Points>(colorDatasetID);
+
+                                    if (colorDataset.isValid())
+                                    {
+                                        mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
+                                        if (clusterDatasetAction)
+                                        {
+                                            clusterDatasetAction->setCurrentDataset(colorDataset);
+                                            if (colorDatasetDimensionIndx >= 0)
+                                            {
+                                                DimensionPickerAction* colorDimAction = findActionByPath<DimensionPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color Point Dataset Dimension");
+                                                if (colorDimAction)
+                                                {
+
+                                                    colorDimAction->setCurrentDimensionIndex(colorDatasetDimensionIndx);
+                                                }
+                                                else
+                                                {
+                                                    qWarning() << "LinePlot color dimension action not found";
+                                                }
+                                                if (!colorMapStringValue.isEmpty())
+                                                {
+                                                    auto colormapValAction = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point Dataset Dimension Color Map/Current color map");
+                                                    if (colormapValAction)
+                                                    {
+                                                        colormapValAction->setCurrentText(colorMapStringValue);
+                                                    }
+                                                    else
+                                                    {
+                                                        qWarning() << "LinePlot color map action not found";
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    qWarning() << "LinePlot color map string value is empty";
+                                                }
+                                            }
+                                            else
+                                            {
+                                                qWarning() << "LinePlot color dataset dimension is empty";
+                                            }
+                                        }
+                                        else
+                                        {
+                                            qWarning() << "LinePlot color dataset action not found";
+                                        }
+                                    }
+
+                                }
+                                mv::gui::StringAction* chartTitle = findActionByPath<StringAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Chart Title");
+                                if (chartTitle)
+                                {
+                                    chartTitle->setString(titleText);
+                                }
+                                mv::gui::OptionAction* smoothingTypeAction = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Type");
+                                mv::gui::IntegralAction* smoothingWindowAction = findActionByPath<IntegralAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Smoothing Window");
+                                if (smoothingTypeAction && smoothingWindowAction)
+                                {
+                                    smoothingTypeAction->setCurrentText(smoothingType);
+                                    int maxVal = pointDataset->getNumPoints() - 1;
+                                    int currentVal = static_cast<int>(std::round(maxVal * 0.2));
+                                    smoothingWindowAction->setMaximum(maxVal);
+                                    smoothingWindowAction->setMinimum(2);
+                                    smoothingWindowAction->setValue(currentVal);
+                                }
+                                else
+                                {
+                                    qWarning() << "Smoothing type or window action not found";
+                                }
+                            }
+                            else
+                            {
+                                qWarning() << "LinePlot dimension actions not found";
+                            }
+
+                        }
+                        else
+                        {
+                            qWarning() << "LinePlot point dataset action not found";
+                        }
+                    }
+                    else
+                    {
+                        qWarning() << "LinePlot position dataset is not valid";
+                    }
+                }
+                else
+                {
+                    qWarning() << "LinePlot View plugin not found";
+                }
+            }
+        }
+    }
+    else
+    {
+        qWarning() << "LinePlot View plugin not found";
+    }
+}
 
 void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue)
 {
