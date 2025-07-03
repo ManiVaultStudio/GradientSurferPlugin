@@ -2030,7 +2030,7 @@ void Computation::correlationAfterPCA()
     bool normalizeDataVal = _settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked();
     computeCorrelationGenePC(fullDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2, normTypeStr, normalizeDataVal);
     computeCorrelationGenePC(fullDataset1, selectedPC1, correlationGenePC1, _selectedClusterIndices1, normTypeStr, normalizeDataVal);
-
+    
     const int topNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
     const int bottomNRows = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
     const auto dimensionNames2 = fullDataset2->getDimensionNames();
@@ -2412,49 +2412,6 @@ bool Computation::setupAndTriggerPCA()
     _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
 
-    if (_lineChartPointDataset1.isValid() &&
-        _selectedGenePointDataset1.isValid() &&
-        !_geneOfInterestIndices1.empty() &&
-        !_filteredSelectionIndices.empty())
-    {
-        const int numRows = _lineChartPointDataset1->getNumPoints();
-        const int numCols = _lineChartPointDataset1->getNumDimensions();
-        const int numGenes = _selectedGenePointDataset1->getNumDimensions();
-
-        // Ensure sizes match expectations
-        if (static_cast<int>(_filteredSelectionIndices.size()) == numRows &&
-            static_cast<int>(_geneOfInterestIndices1.size()) == numGenes)
-        {
-            // Prepare dimension indices [0, 1, ..., numGenes-1]
-            std::vector<int> dimIndices(numGenes);
-            std::iota(dimIndices.begin(), dimIndices.end(), 0);
-
-            // Prepare buffer for selected gene expression data (row-major: cell x gene)
-            std::vector<float> expDataSelectedCellGene(numRows * numGenes);
-            _selectedGenePointDataset1->populateDataForDimensions(
-                expDataSelectedCellGene, dimIndices, _filteredSelectionIndices);
-
-            // Compute mean expression for each cell
-            std::vector<float> meanOfSelectedGenes(numRows, 0.0f);
-            for (int i = 0; i < numRows; ++i) {
-                float sum = 0.0f;
-                for (int j = 0; j < numGenes; ++j) {
-                    sum += expDataSelectedCellGene[i * numGenes + j];
-                }
-                meanOfSelectedGenes[i] = (numGenes > 0) ? (sum / static_cast<float>(numGenes)) : 0.0f;
-            }
-            const int stride = _lineChartPointDataset1->getNumDimensions();
-            // Update the third column ("Mean Expr Selected Genes") in the line chart dataset
-            for (int i = 0; i < numRows; ++i) {
-                _lineChartPointDataset1->setValueAt(i * stride + 2, meanOfSelectedGenes[i]);
-            }
-
-            // Notify that the dataset has changed
-            events().notifyDatasetDataChanged(_lineChartPointDataset1);
-        }
-    }
-
-
     _selectedEmbeddingPointDataset1->setData(embeddingMatrix1.data(), numAllFilteredCells1, fullEmbeddingDataset1->getNumDimensions());
     _selectedEmbeddingPointDataset1->setDimensionNames(fullEmbeddingDataset1->getDimensionNames());
     mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset1);
@@ -2462,6 +2419,58 @@ bool Computation::setupAndTriggerPCA()
     _selectedEmbeddingPointDataset2->setData(embeddingMatrix2.data(), numAllFilteredCells2, fullEmbeddingDataset2->getNumDimensions());
     _selectedEmbeddingPointDataset2->setDimensionNames(fullEmbeddingDataset2->getDimensionNames());
     mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset2);
+
+
+
+
+    if (_lineChartPointDataset1.isValid() &&
+        !_geneOfInterestIndices1.empty() &&
+        !_filteredSelectionIndices.empty())
+    {
+        const int numRowsLine = _lineChartPointDataset1->getNumPoints();
+        const int numColsLine = _lineChartPointDataset1->getNumDimensions();
+        Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
+        if (fullDataset1.isValid())
+        {
+
+            if (static_cast<int>(_filteredSelectionIndices.size()) == numRowsLine)
+            {
+                int numOfGenes = _geneOfInterestIndices1.size();
+
+                std::vector<float> expDataSelectedCellGene(numRowsLine * numOfGenes);
+                fullDataset1->populateDataForDimensions(
+                    expDataSelectedCellGene, _geneOfInterestIndices1, _filteredSelectionIndices);
+
+                if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
+                {
+                    QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+                    NormalizationType normType = normalizationTypeFromString(normTypeStr);
+                    normalizeVector(expDataSelectedCellGene, normType);
+                }
+
+                // Compute mean expression for each cell
+                std::vector<float> meanOfSelectedGenes(numRowsLine, 0.0f);
+                for (int i = 0; i < numRowsLine; ++i) {
+                    float sum = 0.0f;
+                    for (int j = 0; j < numOfGenes; ++j) {
+                        sum += expDataSelectedCellGene[i * numOfGenes + j];
+                    }
+                    meanOfSelectedGenes[i] = (numOfGenes > 0) ? (sum / static_cast<float>(numOfGenes)) : 0.0f;
+                }
+                const int stride = _lineChartPointDataset1->getNumDimensions();
+                // Update the third column ("Mean Expr Selected Genes") in the line chart dataset
+                for (int i = 0; i < numRowsLine; ++i) {
+                    _lineChartPointDataset1->setValueAt(i * stride + 2, meanOfSelectedGenes[i]);
+                }
+
+                // Notify that the dataset has changed
+                events().notifyDatasetDataChanged(_lineChartPointDataset1);
+            }
+
+        }
+
+
+    }
 
     setStatusMessage("R", "PCA Started", "");
     _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
