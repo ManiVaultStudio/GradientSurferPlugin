@@ -79,7 +79,7 @@ private:
     bool populateEmbeddingCoordinates(
         int xEmbeddingIndex, int yEmbeddingIndex,
         std::vector<float>& XYCoordinates);
-
+    void changeColorLimits();
     bool populateAndUpdateDatasets(
         mv::Dataset<Points>& fullPointDataset,
         const std::vector<float>& rotatedXYCordinates,

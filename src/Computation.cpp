@@ -173,7 +173,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             auto dataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
             if (dataset.isValid())
             {
-                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
+                changeColorLimits();
+                _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
                 
             }
@@ -196,6 +197,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
             if (dataset.isValid())
             {
+                changeColorLimits();
                 _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
 
@@ -350,6 +352,19 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     connect(&_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection2);
 
+    const auto normalizationModified = [this]() -> void {
+        changeColorLimits();
+        
+        setStatusMessage("M", "Selected indices changed", "");
+        setStatusMessage("R", "Computation in progress", "");
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
+        QApplication::processEvents();
+        setSelectionAndAutoCompute();
+
+        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        };
+    connect(&_settingsAction.getCommonOptionsHolder().getNormalizeDataAction(), &ToggleAction::toggled, this, normalizationModified);
+    connect(&_settingsAction.getCommonOptionsHolder().getNormalizationTypeAction(), &OptionAction::currentIndexChanged, this, normalizationModified);
 
     const auto updateEmbeddingDataset1 = [this]() -> void {
         if ( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid())
@@ -2115,6 +2130,65 @@ bool Computation::populateEmbeddingCoordinates(int xEmbeddingIndex, int yEmbeddi
     return true;
 }
 
+void Computation::changeColorLimits()
+{
+    float minValue = std::numeric_limits<float>::infinity();
+    float maxValue = -std::numeric_limits<float>::infinity();
+
+    auto computeMinMax = [this](const auto& datasetAction) -> std::pair<float, float> {
+        auto dataset = mv::data().getDataset<Points>(datasetAction.getCurrentDataset().getDatasetId());
+        if (!dataset.isValid()) return { std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity() };
+
+        int numDims = dataset->getNumDimensions();
+        int numCells = dataset->getNumPoints();
+        if (numDims == 0 || numCells == 0) return { std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity() };
+
+        std::vector<float> data(numCells * numDims);
+        std::vector<int> columns(numDims);
+        std::iota(columns.begin(), columns.end(), 0);
+        dataset->populateDataForDimensions(data, columns);
+
+        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) {
+            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+            NormalizationType normType = normalizationTypeFromString(normTypeStr);
+            normalizeVector(data, normType);
+        }
+
+        auto [minIt, maxIt] = std::minmax_element(data.begin(), data.end());
+        return { *minIt, *maxIt };
+        };
+
+    bool foundValid = false;
+
+    // Dataset 1
+    if (_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid()) {
+        auto [min1, max1] = computeMinMax(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction());
+        if (min1 < minValue) minValue = min1;
+        if (max1 > maxValue) maxValue = max1;
+        foundValid = true;
+    }
+
+    // Dataset 2
+    if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid()) {
+        auto [min2, max2] = computeMinMax(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action());
+        if (min2 < minValue) minValue = min2;
+        if (max2 > maxValue) maxValue = max2;
+        foundValid = true;
+    }
+
+    if (!foundValid) {
+        // No valid datasets, set to default range
+        minValue = 0.0f;
+        maxValue = 1.0f;
+    }
+
+    auto& exprRange = _settingsAction.getCommonOptionsHolder().getExpressionColoringRangeAction();
+    exprRange.setLimitsMaximum(maxValue);
+    exprRange.setLimitsMinimum(minValue);
+    exprRange.setMaximum(maxValue);
+    exprRange.setMinimum(minValue);
+}
+
 bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDataset, const std::vector<float>& rotatedXYCordinates, const std::vector<float>& XYCordinates, int noOfDimensions, const std::vector<int>& columnIndices, const std::vector<QString>& dimensionNames)
 {
 
@@ -2155,6 +2229,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         NormalizationType normType = normalizationTypeFromString(normTypeStr);
         normalizeVector(cellbygenematrix, normType);
     }
+
 
     _selectedCellPointDataset->setData(cellbygenematrix.data(), static_cast<int>(numCells), noOfDimensions);
     _selectedCellPointDataset->setDimensionNames(dimensionNames);
