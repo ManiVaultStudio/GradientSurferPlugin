@@ -234,6 +234,9 @@ public:
         const IntegralAction& getTopNRowsAction() const { return _topNRowsAction; }
         IntegralAction& getTopNRowsAction() { return _topNRowsAction; }
 
+        const DecimalRangeAction& getExpressionColoringRangeAction() const { return _expressionColoringRangeAction; }
+        DecimalRangeAction& getExpressionColoringRangeAction() { return _expressionColoringRangeAction; }
+
 
     protected:
         SettingsAction& _settingsOptions;
@@ -258,6 +261,7 @@ public:
 
         IntegralAction              _bottomNRowsAction;
         IntegralAction              _topNRowsAction;
+        DecimalRangeAction          _expressionColoringRangeAction;
     };
 
 
