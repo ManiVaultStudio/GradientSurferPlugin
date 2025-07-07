@@ -1,7 +1,7 @@
 #include "LayerSurferPlugin.h"
 
 #include <event/Event.h>
-
+#include <QApplication>
 #include <DatasetsMimeData.h>
 
 #include <QDebug>
@@ -23,6 +23,8 @@ LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
 
 void LayerSurferPlugin::init()
 {
+
+    qApp->setStyleSheet("QToolTip { color: black; background: #ffffe1; border: 1px solid black; }");
 
     GroupsAction* groupForAction = new GroupsAction(this, "Settings");
     _settingsAction.getDataset1OptionsHolder().setExpanded(false);

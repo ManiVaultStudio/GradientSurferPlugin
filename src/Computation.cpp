@@ -43,6 +43,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     _NRangeDebounceTimer.setSingleShot(true);
     _clusterSelectionDebounceTimer.setSingleShot(true);
+    _expressionColoringRangeDebounceTimer.setSingleShot(true);
 
 
     qInstallMessageHandler(customMessageHandler);
@@ -308,12 +309,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         if (selectedGene == "")
         {
             scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "", colorMapStringValue);
+
         }
         else
         {
             scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), true, selectedGene, colorMapStringValue);
 
-
+            ScopedBlocker blocker(_blockToggle);
+            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
 
 
         }
@@ -321,9 +324,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
 
-            _pacColoringPaused = true;
-            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-            _pacColoringPaused = false;
 
 
         
@@ -520,9 +520,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
         {
-            _blockSelectionMode = true;
+            ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-            _blockSelectionMode = false;
         }
         QApplication::processEvents();
 
@@ -553,9 +552,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _settingsAction.getCommonOptionsHolder().getComputePCAAction().setDisabled(true);
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
         {
-            _blockSelectionMode = true;
+            ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-            _blockSelectionMode = false;
+
         }
         QApplication::processEvents();
   
@@ -569,11 +568,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto pcaColorsToPlots = [this]() -> void {
 
-        if (_pacColoringPaused) {
+        if (_blockToggle) {
             qDebug() << "PCA coloring paused, returning early";
             return;
         }
-
 
         auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
         _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
@@ -593,9 +591,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 return;
 
             }
-            _blockSelectionMode = true;
+            ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-            _blockSelectionMode = false;
+
 
             int totalPoints1 = 0;
             int totalPoints2 = 0;
@@ -636,9 +634,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 events().notifyDatasetDataChanged(_pcaClusterDatasetColoring2);
             }
             
-            _blockSelectionMode = true;
+            ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
-            _blockSelectionMode = false;
+
             
             //_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().setDisabled(true);
 
@@ -733,7 +731,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         }
 
 
-
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToPlots);
@@ -741,7 +738,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto selectionModeToggled = [this]()
         {
-            if(_blockSelectionMode)
+            if(_blockToggle)
                 {
                 qDebug() << "Selection mode change blocked, returning early";
                 return;
@@ -749,9 +746,9 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
             if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
             {
-                _pacColoringPaused = true;
+                ScopedBlocker blocker(_blockToggle);
                 _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-                _pacColoringPaused = false;
+   
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
                 _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
                 deselectAllRows(_settingsAction.getTableView1Action());
@@ -855,7 +852,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         });
 
-
+    connect(&_settingsAction.getCommonOptionsHolder().getExpressionColoringRangeAction(),
+        &DecimalRangeAction::rangeChanged,
+        this,
+        [this]() {
+            _expressionColoringRangeDebounceTimer.start(800);
+        });
+    connect(&_expressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
+        //TODO: Update the coloring range in the scatterplot views
+        qDebug() << "Expression coloring range changed, updating scatterplot views";
+        });
 
     connect(&_settingsAction.getCommonOptionsHolder().getTopNRowsAction(),
         &IntegralAction::valueChanged,
@@ -1452,6 +1458,10 @@ void Computation::AutoCompute()
 
         setStatusMessage("C", "Computation completed", "#28a745");
 
+        ScopedBlocker blocker(_blockToggle);
+        _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+        _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
+
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
             setStatusMessage("R", "Computation in progress", "");
@@ -1977,8 +1987,8 @@ void Computation::checkForRankLimits()
     _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMinimum(minLimit);
     _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMinimum(minLimit);
 
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(20, maxLimit));
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(20, maxLimit));
+    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(10, maxLimit));
+    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(0, maxLimit));
 }
 
 void Computation::correlationAfterPCA()

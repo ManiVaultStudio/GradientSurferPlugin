@@ -62,6 +62,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
 
     _commonOptionsHolder.getTopNRowsAction().setToolTip("Top N Rows Action");
+    _commonOptionsHolder.getExpressionColoringRangeAction().setToolTip("Expression Coloring Range");
     _commonOptionsHolder.getBottomNRowsAction().setToolTip("Bottom N Rows Action");
     _dataset2OptionsHolder.getClusterDataset2Action().setToolTip("Cluster Dataset 2");
     _dataset2OptionsHolder.getPointDataset2Action().setToolTip("Point Dataset 2");
@@ -93,11 +94,16 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _commonOptionsHolder.getBottomNRowsAction().setMinimum(0);
     _commonOptionsHolder.getBottomNRowsAction().setMaximum(100);
-    _commonOptionsHolder.getBottomNRowsAction().setValue(20);
+    _commonOptionsHolder.getBottomNRowsAction().setValue(0);
     _commonOptionsHolder.getTopNRowsAction().setMinimum(0);
     _commonOptionsHolder.getTopNRowsAction().setMaximum(100);
     _commonOptionsHolder.getTopNRowsAction().setValue(20);
 
+
+    _commonOptionsHolder.getExpressionColoringRangeAction().setLimitsMaximum(1.00);
+    _commonOptionsHolder.getExpressionColoringRangeAction().setLimitsMinimum(-1.00);
+    _commonOptionsHolder.getExpressionColoringRangeAction().setMaximum(1.00);
+    _commonOptionsHolder.getExpressionColoringRangeAction().setMinimum(-1.00);
 
     _dataset1OptionsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -128,14 +134,17 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
     _commonOptionsHolder.getNormalizationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getNormalizationTypeAction().initialize({ "None", "ZScore", "MinMax", "Log2"},"None");
+    _commonOptionsHolder.getNormalizationTypeAction().initialize({ "None", "ZScore", "MinMax", "Log2"},"ZScore");
 
     _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     //_commonOptionsHolder.getColoringMapSelectionAction().setDisabled(true);
     _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
+    _commonOptionsHolder.getColoringMapSelectionAction().getSettingsAction().setVisible(false);
+    _commonOptionsHolder.getColoringMapSelectionAction().getSettings1DAction().setVisible(false);
+    _commonOptionsHolder.getColoringMapSelectionAction().getSettings2DAction().setVisible(false);
 
     _commonOptionsHolder.getNormalizeDataAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getNormalizeDataAction().setChecked(false);
+    _commonOptionsHolder.getNormalizeDataAction().setChecked(true);
 
 
 
@@ -147,6 +156,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
+
+    _commonOptionsHolder.getExpressionColoringRangeAction().setDefaultWidgetFlags(DecimalRangeAction::Slider | DecimalRangeAction::MaximumSpinBox| DecimalRangeAction::MinimumSpinBox);
 
 
     _dataset2OptionsHolder.getClusterDataset2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -350,7 +361,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
     _coloringMapSelectionAction(this, "Coloring Map Selection"),
     _topNRowsAction(this, "Top N Rows Selection"),
-    _bottomNRowsAction(this, "Bottom N Rows Selection")
+    _bottomNRowsAction(this, "Bottom N Rows Selection"),
+    _expressionColoringRangeAction(this, "Expression Coloring Range")
 
 {
     setText("Shared Options");
@@ -366,6 +378,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_coloringMapSelectionAction);
+    addAction(&_expressionColoringRangeAction);
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizeDataAction);

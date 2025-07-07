@@ -68,6 +68,12 @@ struct StatusInfo {
     QString textColor;
     QString iconName;
 };
+class ScopedBlocker {
+    bool& flag;
+public:
+    explicit ScopedBlocker(bool& f) : flag(f) { flag = true; }
+    ~ScopedBlocker() { flag = false; }
+};
 template<typename ActionType>
 ActionType* findActionByPath(mv::plugin::Plugin* plugin, const QString& path) {
     return dynamic_cast<ActionType*>(plugin->findChildByPath(path));

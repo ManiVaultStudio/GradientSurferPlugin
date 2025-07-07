@@ -116,6 +116,7 @@ protected:
     SelectedPCData              _selectedPCData1;
     QTimer _clusterSelectionDebounceTimer;
     QTimer _NRangeDebounceTimer;
+    QTimer _expressionColoringRangeDebounceTimer;
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
     int             _numOfPointsInLine1=0;
@@ -129,8 +130,10 @@ protected:
     bool _blockSelectionTrigger=false;
     std::vector<int>   _selectedClusterIndices1;
     std::vector<int>   _selectedClusterIndices2;
-    bool    _pacColoringPaused = false;
-    bool _geneSelectionPaused = false;
-    bool _blockSelectionMode = false;
+    //bool    _pacColoringPaused = false;
+    //bool _geneSelectionPaused = false;
+    //bool _blockSelectionMode = false;
+    //bool _blockMutualToggle = false;
+    bool _blockToggle = false;
     friend class ChannelAction;
 };
