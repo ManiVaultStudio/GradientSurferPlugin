@@ -76,7 +76,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 # -----------------------------------------------------------------------------
 # Target properties
 # -----------------------------------------------------------------------------
-target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+endif()
+
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 if(MV_UNITY_BUILD)
