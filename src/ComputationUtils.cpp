@@ -529,6 +529,7 @@ void setupTableModelAndSelection(
     }
 
     tableViewMain->setModel(model);
+    tableViewMain->setColumnHidden(2, true);
     //deselectAllRows(tableViewMain);
     // Ensure only one row can be selected at a time and the full row gets selected
     tableViewMain->setSelectionMode(QAbstractItemView::SingleSelection);
