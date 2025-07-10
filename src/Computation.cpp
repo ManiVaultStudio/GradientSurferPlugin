@@ -867,15 +867,30 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         });
 
-    connect(&_settingsAction.getCommonOptionsHolder().getExpressionColoringRangeAction(),
-        &DecimalRangeAction::rangeChanged,
+    connect(&_settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() {
+            _expressionColoringRangeDebounceTimer.start(800);
+        });
+    connect(&_settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction(),
+        &DecimalAction::valueChanged,
         this,
         [this]() {
             _expressionColoringRangeDebounceTimer.start(800);
         });
     connect(&_expressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
         //TODO: Update the coloring range in the scatterplot views
-        qDebug() << "Expression coloring range changed, updating scatterplot views";
+        //qDebug() << "Expression coloring range changed, updating scatterplot views";
+
+        //if upper less than lower then set lower to upper
+        if (_settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().getValue() > _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().getValue())
+        {
+
+            _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().setValue(_settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().getValue());
+            return;
+        }
+
         });
 
     connect(&_settingsAction.getCommonOptionsHolder().getTopNRowsAction(),
@@ -2182,11 +2197,12 @@ void Computation::changeColorLimits()
         maxValue = 1.0f;
     }
 
-    auto& exprRange = _settingsAction.getCommonOptionsHolder().getExpressionColoringRangeAction();
-    exprRange.setLimitsMaximum(maxValue);
-    exprRange.setLimitsMinimum(minValue);
-    exprRange.setMaximum(maxValue);
-    exprRange.setMinimum(minValue);
+    auto& exprRangeUpper = _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction();
+    auto& exprRangeLower= _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction();
+    exprRangeUpper.setMaximum(maxValue);
+    exprRangeUpper.setMinimum(minValue);
+    exprRangeLower.setMaximum(maxValue);
+    exprRangeLower.setMinimum(minValue);
 }
 
 bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDataset, const std::vector<float>& rotatedXYCordinates, const std::vector<float>& XYCordinates, int noOfDimensions, const std::vector<int>& columnIndices, const std::vector<QString>& dimensionNames)
