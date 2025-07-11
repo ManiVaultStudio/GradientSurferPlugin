@@ -2371,7 +2371,14 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
         NormalizationType normType = normalizationTypeFromString(normTypeStr);
         normalizeVector(cellbygenematrix, normType);
     }
-
+    int currentLowVal = _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().getValue();
+    int currentHighVal = _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().getValue();
+    float minValue = *std::min_element(cellbygenematrix.begin(), cellbygenematrix.end());
+    float maxValue = *std::max_element(cellbygenematrix.begin(), cellbygenematrix.end());
+    if (minValue < currentLowVal || maxValue > currentHighVal) {
+        _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().setValue(static_cast<int>(minValue));
+        _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().setValue(static_cast<int>(maxValue));
+    }
 
     _selectedCellPointDataset->setData(cellbygenematrix.data(), static_cast<int>(numCells), noOfDimensions);
     _selectedCellPointDataset->setDimensionNames(dimensionNames);
@@ -2630,6 +2637,8 @@ bool Computation::setupAndTriggerPCA()
     auto [minVal1, maxVal1] = std::minmax_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end());
     qInfo() << "PCA cellByGeneMatrix2 min:" << *minVal2 << "max:" << *maxVal2
         << "PCA cellByGeneMatrix1 min:" << *minVal1 << "max:" << *maxVal1;
+    _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().setValue(maxVal2 > maxVal1 ? *maxVal2 : *maxVal1);
+    _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().setValue(minVal2 < minVal1 ? *minVal2 : *minVal1);
 
     _selectedGenePointDataset2->setData(cellByGeneMatrix2.data(), numAllFilteredCells2, numDimsOfInterest);
     _selectedGenePointDataset2->setDimensionNames(dimensionNamesOfInterest);
