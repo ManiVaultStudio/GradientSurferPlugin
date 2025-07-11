@@ -318,10 +318,10 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
                                 if (smoothingTypeAction && smoothingWindowAction)
                                 {
                                     smoothingTypeAction->setCurrentText(smoothingType);
-                                    int maxVal = pointDataset->getNumPoints() - 1;
-                                    int currentVal = static_cast<int>(std::round(maxVal * 0.2));
+                                    int maxVal = (pointDataset->getNumPoints());
+                                    int currentVal = static_cast<int>(std::round(maxVal * 0.50));
                                     smoothingWindowAction->setMaximum(maxVal);
-                                    smoothingWindowAction->setMinimum(2);
+                                    smoothingWindowAction->setMinimum(1);
                                     smoothingWindowAction->setValue(currentVal);
                                 }
                                 else
@@ -370,102 +370,216 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
         return;
     }
 
-    if (scatterplotViewFactory)
+    auto viewPlugins = mv::plugins().getPluginsByType(mv::plugin::Type::VIEW);
+    if (false)
     {
-        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+        if (viewPlugins.size() > 0)
         {
-            qDebug() << "Processing plugin:" << plugin->getGuiName();
-            if (plugin->getGuiName() == scatterplotName)
+            for (auto plugin : viewPlugins)
             {
-               
-                pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
-                if (pointDatasetPickerValueAction)
+                if (plugin->getGuiName() == scatterplotName)
                 {
-                    if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
+
+                    pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
+                    if (pointDatasetPickerValueAction)
                     {
-                        auto embeddingDataset = mv::data().getDataset(positionDatasetID);
-                        if (embeddingDataset.isValid())
+                        if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
                         {
-                            pointDatasetPickerValueAction->setCurrentDataset(embeddingDataset);
-                        }
-                    }
-                    if (pointDatasetPickerValueAction->getCurrentDataset().isValid())
-                    {
-                        setScatterplotDimensions(plugin, xPositionString, yPositionString);
-                        if (colorDatasetID != "")
-                        {
-                            colorDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
-                            if (colorDatasetPickerValueAction)
+                            auto embeddingDataset = mv::data().getDataset(positionDatasetID);
+                            if (embeddingDataset.isValid())
                             {
-                                auto clusterDataset = mv::data().getDataset(colorDatasetID);
-                                if (clusterDataset.isValid())
-                                {
-                                    auto options= colorDatasetPickerValueAction->getDatasets();
-                                    if (options.size() > 0)
-                                    {
-
-                                        colorDatasetPickerValueAction->setCurrentDataset(clusterDataset);
-
-                                        
-                                    }
-                                    
-                                }
-
+                                pointDatasetPickerValueAction->setCurrentDataset(embeddingDataset);
                             }
                         }
+                        if (pointDatasetPickerValueAction->getCurrentDataset().isValid())
+                        {
+                            setScatterplotDimensions(plugin, xPositionString, yPositionString);
+                            if (colorDatasetID != "")
+                            {
+                                colorDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
+                                if (colorDatasetPickerValueAction)
+                                {
+                                    auto clusterDataset = mv::data().getDataset(colorDatasetID);
+                                    if (clusterDataset.isValid())
+                                    {
+                                        auto options = colorDatasetPickerValueAction->getDatasets();
+                                        if (options.size() > 0)
+                                        {
+                                            try {
+                                                colorDatasetPickerValueAction->setCurrentDataset(clusterDataset);
+                                            }
+                                            catch (const std::exception& e)
+                                            {
+                                                qCritical() << "Error setting current dataset:" << e.what();
+                                            }
+
+
+
+                                        }
+
+                                    }
+
+                                }
+                            }
+
+
+                        }
+
 
 
                     }
+                    else
+                    {
+                        qCritical() << "Position dataset action not found in plugin:" << plugin->getGuiName();
+                    }
+                    auto freezeSelectionValueAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
+                    if (freezeSelectionValueAction)
+                    {
+                        if (disableSelection)
+                        {
+                            freezeSelectionValueAction->setChecked(true);
+                        }
+                        else {
+                            freezeSelectionValueAction->setChecked(false);
+                        }
 
+                    }
+                    else
+                    {
+                        qCritical() << "Freeze selection action not found in plugin:" << plugin->getGuiName();
+                    }
+                    if (dimensionForColoring != "")
+                    {
+                        auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
+                        if (geneSelectionValueAction) {
+                            geneSelectionValueAction->setCurrentDimensionName(dimensionForColoring);
+                        }
+                    }
 
+                    if (colormapValue != "")
+                    {
+                        auto colorMapValueAction = findActionByPath<OptionAction>(plugin, "Settings/Coloring/1D Color map/Current color map");
+                        if (colorMapValueAction)
+                        {
+                            colorMapValueAction->setCurrentText(colormapValue);
+                        }
+                    }
 
+                    break;
                 }
                 else
                 {
-                    qCritical() << "Position dataset action not found in plugin:" << plugin->getGuiName();
+                    qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
                 }
-                auto freezeSelectionValueAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
-                if (freezeSelectionValueAction)
-                {
-                    if (disableSelection)
-                    {
-                        freezeSelectionValueAction->setChecked(true);
-                    }
-                    else {
-                        freezeSelectionValueAction->setChecked(false);
-                    }
- 
-                }
-                else
-                {
-                    qCritical() << "Freeze selection action not found in plugin:" << plugin->getGuiName();
-                }
-                if (dimensionForColoring != "")
-                {
-                    auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
-                    if (geneSelectionValueAction) {
-                        geneSelectionValueAction->setCurrentDimensionName(dimensionForColoring);
-                    }
-                }
-
-                if (colormapValue!="")
-                {
-                    auto colorMapValueAction = findActionByPath<OptionAction>(plugin, "Settings/Coloring/1D Color map/Current color map");
-                    if (colorMapValueAction)
-                    {
-                        colorMapValueAction->setCurrentText(colormapValue);
-                    }
-                }
-
-                break;
             }
-            else
-            {
-                qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
-            }
-
         }
     }
+    else
+    {
+        if (scatterplotViewFactory)
+        {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                qDebug() << "Processing plugin:" << plugin->getGuiName();
+                if (plugin->getGuiName() == scatterplotName)
+                {
+
+                    pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
+                    if (pointDatasetPickerValueAction)
+                    {
+                        if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
+                        {
+                            auto embeddingDataset = mv::data().getDataset(positionDatasetID);
+                            if (embeddingDataset.isValid())
+                            {
+                                pointDatasetPickerValueAction->setCurrentDataset(embeddingDataset);
+                            }
+                        }
+                        if (pointDatasetPickerValueAction->getCurrentDataset().isValid())
+                        {
+                            setScatterplotDimensions(plugin, xPositionString, yPositionString);
+                            if (colorDatasetID != "")
+                            {
+                                colorDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
+                                if (colorDatasetPickerValueAction)
+                                {
+                                    auto clusterDataset = mv::data().getDataset(colorDatasetID);
+                                    if (clusterDataset.isValid())
+                                    {
+                                        auto options = colorDatasetPickerValueAction->getDatasets();
+                                        if (options.size() > 0)
+                                        {
+                                            try {
+                                                colorDatasetPickerValueAction->setCurrentDataset(clusterDataset);
+                                            }
+                                            catch (const std::exception& e)
+                                            {
+                                                qCritical() << "Error setting current dataset:" << e.what();
+                                            }
+
+
+
+                                        }
+
+                                    }
+
+                                }
+                            }
+
+
+                        }
+
+
+
+                    }
+                    else
+                    {
+                        qCritical() << "Position dataset action not found in plugin:" << plugin->getGuiName();
+                    }
+                    auto freezeSelectionValueAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
+                    if (freezeSelectionValueAction)
+                    {
+                        if (disableSelection)
+                        {
+                            freezeSelectionValueAction->setChecked(true);
+                        }
+                        else {
+                            freezeSelectionValueAction->setChecked(false);
+                        }
+
+                    }
+                    else
+                    {
+                        qCritical() << "Freeze selection action not found in plugin:" << plugin->getGuiName();
+                    }
+                    if (dimensionForColoring != "")
+                    {
+                        auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
+                        if (geneSelectionValueAction) {
+                            geneSelectionValueAction->setCurrentDimensionName(dimensionForColoring);
+                        }
+                    }
+
+                    if (colormapValue != "")
+                    {
+                        auto colorMapValueAction = findActionByPath<OptionAction>(plugin, "Settings/Coloring/1D Color map/Current color map");
+                        if (colorMapValueAction)
+                        {
+                            colorMapValueAction->setCurrentText(colormapValue);
+                        }
+                    }
+
+                    break;
+                }
+                else
+                {
+                    qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
+                }
+
+            }
+        }
+    }
+
 
 }
 

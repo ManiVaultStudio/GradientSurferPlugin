@@ -135,5 +135,6 @@ protected:
     //bool _blockSelectionMode = false;
     //bool _blockMutualToggle = false;
     bool _blockToggle = false;
+    bool _projectOpened = true;
     friend class ChannelAction;
 };

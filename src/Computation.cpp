@@ -40,6 +40,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     _viewerPlugin(LayerSurferPlugin),
     _settingsAction(SettingsAction)
 {
+    connect(&mv::projects(), &AbstractProjectManager::projectAboutToBeOpened, this,
+        [this]() {
+            _projectOpened = false;
+        });
+    connect(&mv::projects(), &AbstractProjectManager::projectOpened, this,
+        [this]() {
+            _projectOpened = true;
+        });
 
     _NRangeDebounceTimer.setSingleShot(true);
     _clusterSelectionDebounceTimer.setSingleShot(true);
@@ -154,6 +162,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     );
 
     const auto updateClusterDataset1 = [this]() -> void {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         updateClusterOptions();
         setStatusMessage("M", "Cluster dataset updated", "");
         };
@@ -161,6 +174,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset1);
 
     const auto updateClusterDataset2 = [this]() -> void {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         updateClusterOptions();
         setStatusMessage("M", "Cluster dataset updated", "");
         };
@@ -168,6 +186,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset2);
 
     const auto updatePointDataset1 = [this]() -> void {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
         {
             auto dataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
@@ -192,6 +215,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(& _settingsAction.getDataset1OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset1);
 
     const auto updatePointDataset2 = [this]() -> void {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid())
         {
             auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
@@ -216,6 +244,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getPointDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset2);
 
     const auto updateGeneSelection1 = [this]() -> void {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         QString selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
         int selectedGeneIndx= _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
 
@@ -335,7 +368,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto updateGeneSelection2 = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         auto selectedGene2 = _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().getCurrentDimensionName();
         auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
         if (selectedGene2 == "")
@@ -353,6 +390,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection2);
 
     const auto normalizationModified = [this]() -> void {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         changeColorLimits();
         
         setStatusMessage("M", "Selected indices changed", "");
@@ -367,6 +409,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getCommonOptionsHolder().getNormalizationTypeAction(), &OptionAction::currentIndexChanged, this, normalizationModified);
 
     const auto updateEmbeddingDataset1 = [this]() -> void {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         if ( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid())
         {
 
@@ -463,6 +510,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset1);
 
     const auto updateEmbeddingDataset2 = [this]() -> void {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         if (_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().isValid())
         {
             
@@ -530,7 +582,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset2);
 
     const auto computeInfo = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("R", "Correlation computation in progress", "");
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
@@ -548,7 +604,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
 
     const auto correlationCalculationTypeActionChanged = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("R", "Computation in progress", "");
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
         QApplication::processEvents();
@@ -562,7 +622,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto computePCATrigger = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("R", "PCA Computation in progress", "");
         _settingsAction.getCommonOptionsHolder().getComputePCAAction().setDisabled(true);
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
@@ -582,7 +646,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto pcaColorsToPlots = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         if (_blockToggle) {
             qDebug() << "PCA coloring paused, returning early";
             return;
@@ -753,6 +821,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     const auto selectionModeToggled = [this]()
         {
+            if (!_projectOpened)
+            {
+                qDebug() << "Project opening";
+                return;
+            }
             if(_blockToggle)
                 {
                 qDebug() << "Selection mode change blocked, returning early";
@@ -763,9 +836,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 ScopedBlocker blocker(_blockToggle);
                 _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-   
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
                 _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setCurrentDimensionIndex(-1);
+
+
                 deselectAllRows(_settingsAction.getTableView1Action());
                 deselectAllRows(_settingsAction.getTableView2Action());
                 deselectAllRows(_settingsAction.getTableView3Action());
@@ -857,6 +931,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _clusterSelectionDebounceTimer.start(800);
         });
     connect(&_clusterSelectionDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("R", "Computation in progress", "");
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
         QApplication::processEvents();
@@ -882,7 +961,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_expressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
         //TODO: Update the coloring range in the scatterplot views
         //qDebug() << "Expression coloring range changed, updating scatterplot views";
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         //if upper less than lower then set lower to upper
         if (_settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().getValue() > _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().getValue())
         {
@@ -906,6 +989,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _NRangeDebounceTimer.start(1000);
         });
     connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("R", "Updating table", "");
         resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(),true);
         resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),false);
@@ -927,7 +1015,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto showPointSelectionChanged = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
 
@@ -992,7 +1084,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto focusSelectionChanged = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
 
@@ -1033,7 +1129,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto embeddingDimensionYActionChanged1 = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("M", "Embedding 1 Y dimension changed", "");
         //TODO crash here with cluster dataset 
         //scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(),false,"");
@@ -1045,7 +1145,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto embeddingDimensionYActionChanged2 = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("M", "Embedding 2 Y dimension changed", "");
         //TODO crash here with cluster dataset 
         //scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
@@ -1059,7 +1163,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged2);
 
     const auto embeddingDimensionXActionChanged1 = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("M", "Embedding 1 X dimension changed", "");
         //TODO crash here with cluster dataset 
         //scatterplotModeChange(_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().getCurrentDimensionName(), _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().getCurrentDimensionName(), false, "");
@@ -1071,7 +1179,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto embeddingDimensionXActionChanged2 = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("M", "Embedding 2 X dimension changed", "");
         //TODO crash here with cluster dataset 
         //scatterplotModeChange(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().getCurrentDimensionName(), _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().getCurrentDimensionName(),false,"");
@@ -1085,7 +1197,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
    
     const auto scatterplotviewSelectionChanged1= [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("M", "Scatterplotview selection 1 updated", "");
 
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
@@ -1153,7 +1269,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged1);
     
     const auto lineplotviewSelectionChanged1 = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("M", "Lineplotview selection 1 updated", "");
         //TODO
         };
@@ -1165,7 +1285,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto scatterplotviewSelectionChanged2 = [this]() -> void {
-
+        if (!_projectOpened)
+        {
+            qDebug() << "Project opening";
+            return;
+        }
         setStatusMessage("M", "Scatterplotview selection 2 updated", "");
 
         QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();
