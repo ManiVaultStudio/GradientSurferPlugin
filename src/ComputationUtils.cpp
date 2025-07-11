@@ -196,10 +196,12 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
         if (linePlotName.isEmpty() || positionDatasetID.isEmpty() || xPositionString.isEmpty() || yPositionString.isEmpty())
         {
             qWarning() << "LinePlot name or position dataset ID is empty";
+            bool pluginfound = false;
             for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
             {
                 if (plugin->getGuiName() == linePlotName)
                 {
+                    pluginfound = true;
                     mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
                     mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
                     if (clusterDatasetAction)
@@ -217,14 +219,22 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
                     }
                 }
             }
+            if (!pluginfound)
+            {
+                qWarning() << "LinePlot View plugin not found with name:" << linePlotName;
+            }
+
             return;
         }
         else
         {
+            bool pluginfound = false;
             for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
             {
+                
                 if (plugin->getGuiName() == linePlotName)
                 {
+                    pluginfound = true;
                     Dataset<Points> pointDataset = mv::data().getDataset<Points>(positionDatasetID);
                     if (pointDataset.isValid())
                     {
@@ -345,10 +355,10 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
                         qWarning() << "LinePlot position dataset is not valid";
                     }
                 }
-                else
-                {
-                    qWarning() << "LinePlot View plugin not found";
-                }
+            }
+            if (!pluginfound)
+            {
+                qWarning() << "LinePlot View plugin not found with name:" << linePlotName;
             }
         }
     }
@@ -375,11 +385,12 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
     {
         if (viewPlugins.size() > 0)
         {
+            bool pluginfound = false;
             for (auto plugin : viewPlugins)
             {
                 if (plugin->getGuiName() == scatterplotName)
                 {
-
+                    pluginfound = true;
                     pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
                     if (pointDatasetPickerValueAction)
                     {
@@ -467,10 +478,10 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
 
                     break;
                 }
-                else
-                {
-                    qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
-                }
+            }
+            if (!pluginfound)
+            {
+                qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
             }
         }
     }
@@ -478,12 +489,12 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
     {
         if (scatterplotViewFactory)
         {
+            bool pluginfound = false;
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                qDebug() << "Processing plugin:" << plugin->getGuiName();
                 if (plugin->getGuiName() == scatterplotName)
                 {
-
+                    pluginfound = true;
                     pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
                     if (pointDatasetPickerValueAction)
                     {
@@ -571,11 +582,11 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
 
                     break;
                 }
-                else
-                {
-                    qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
-                }
 
+            }
+            if (!pluginfound)
+            {
+                qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
             }
         }
     }
