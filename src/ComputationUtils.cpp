@@ -1305,7 +1305,7 @@ std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates) {
 
 
 
-void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints, QString pcaDimensionVal)
+void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints, QString pcaDimensionVal, float minValue, float maxValue)
 {
     FunctionTimer timer(Q_FUNC_INFO);
 
@@ -1354,8 +1354,8 @@ void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, s
     int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
     pcaValuesDatasetFull->extractDataForDimension(pcaValues, dimensionIndex);
 
-    float minValue = *std::min_element(pcaValues.begin(), pcaValues.end());
-    float maxValue = *std::max_element(pcaValues.begin(), pcaValues.end());
+    //float minValue = *std::min_element(pcaValues.begin(), pcaValues.end());
+    //float maxValue = *std::max_element(pcaValues.begin(), pcaValues.end());
 
     // Group indices by unique PCA value
     std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;

@@ -154,4 +154,4 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 
-void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints,QString pcaDimensionVal);
+void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints,QString pcaDimensionVal, float minValue, float maxValue);

@@ -692,8 +692,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 totalPoints2 = embeddingDataset2->getNumPoints();
             }
-            createPCAClusterColors(_pcaClusterDatasetColoring1.getDatasetId(),colorMapStringValue, _selectedClusterIndices1, _pcaCommonGenesDataset1.getDatasetId(), totalPoints1, selectedDimName);
-            createPCAClusterColors(_pcaClusterDatasetColoring2.getDatasetId(),colorMapStringValue, _selectedClusterIndices2, _pcaCommonGenesDataset2.getDatasetId(), totalPoints2, selectedDimName);
+            float minVaValue = _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().getValue();
+            float maxVaValue = _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().getValue();
+            createPCAClusterColors(_pcaClusterDatasetColoring1.getDatasetId(),colorMapStringValue, _selectedClusterIndices1, _pcaCommonGenesDataset1.getDatasetId(), totalPoints1, selectedDimName, minVaValue, maxVaValue);
+            createPCAClusterColors(_pcaClusterDatasetColoring2.getDatasetId(),colorMapStringValue, _selectedClusterIndices2, _pcaCommonGenesDataset2.getDatasetId(), totalPoints2, selectedDimName, minVaValue, maxVaValue);
 
 
             
