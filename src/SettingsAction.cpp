@@ -62,7 +62,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
 
     _commonOptionsHolder.getTopNRowsAction().setToolTip("Top N Rows Action");
-    _commonOptionsHolder.getExpressionColoringRangeAction().setToolTip("Expression Coloring Range");
+    _commonOptionsHolder.getExpressionUpperColoringRangeAction().setToolTip("Expression Upper Coloring Range");
+    _commonOptionsHolder.getExpressionLowerColoringRangeAction().setToolTip("Expression Lower Coloring Range");
     _commonOptionsHolder.getBottomNRowsAction().setToolTip("Bottom N Rows Action");
     _dataset2OptionsHolder.getClusterDataset2Action().setToolTip("Cluster Dataset 2");
     _dataset2OptionsHolder.getPointDataset2Action().setToolTip("Point Dataset 2");
@@ -100,10 +101,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getTopNRowsAction().setValue(20);
 
 
-    _commonOptionsHolder.getExpressionColoringRangeAction().setLimitsMaximum(1.00);
-    _commonOptionsHolder.getExpressionColoringRangeAction().setLimitsMinimum(-1.00);
-    _commonOptionsHolder.getExpressionColoringRangeAction().setMaximum(1.00);
-    _commonOptionsHolder.getExpressionColoringRangeAction().setMinimum(-1.00);
+    _commonOptionsHolder.getExpressionUpperColoringRangeAction().setMaximum(1.00);
+    _commonOptionsHolder.getExpressionUpperColoringRangeAction().setMinimum(-1.00);
+    _commonOptionsHolder.getExpressionLowerColoringRangeAction().setMaximum(1.00);
+    _commonOptionsHolder.getExpressionLowerColoringRangeAction().setMinimum(-1.00);
 
     _dataset1OptionsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -157,7 +158,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
 
-    _commonOptionsHolder.getExpressionColoringRangeAction().setDefaultWidgetFlags(DecimalRangeAction::Slider | DecimalRangeAction::MaximumSpinBox| DecimalRangeAction::MinimumSpinBox);
+    _commonOptionsHolder.getExpressionUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _commonOptionsHolder.getExpressionLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
 
 
     _dataset2OptionsHolder.getClusterDataset2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -362,7 +364,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _coloringMapSelectionAction(this, "Coloring Map Selection"),
     _topNRowsAction(this, "Top N Rows Selection"),
     _bottomNRowsAction(this, "Bottom N Rows Selection"),
-    _expressionColoringRangeAction(this, "Expression Coloring Range")
+    _expressionUpperColoringRangeAction(this, "Expression UpperColoring Range"),
+    _expressionLowerColoringRangeAction(this, "Expression Lower Coloring Range")
 
 {
     setText("Shared Options");
@@ -378,7 +381,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_coloringMapSelectionAction);
-    addAction(&_expressionColoringRangeAction);
+    addAction(&_expressionUpperColoringRangeAction);
+    addAction(&_expressionLowerColoringRangeAction);
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizeDataAction);

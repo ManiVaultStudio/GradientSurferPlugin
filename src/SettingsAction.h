@@ -234,9 +234,10 @@ public:
         const IntegralAction& getTopNRowsAction() const { return _topNRowsAction; }
         IntegralAction& getTopNRowsAction() { return _topNRowsAction; }
 
-        const DecimalRangeAction& getExpressionColoringRangeAction() const { return _expressionColoringRangeAction; }
-        DecimalRangeAction& getExpressionColoringRangeAction() { return _expressionColoringRangeAction; }
-
+        const DecimalAction& getExpressionUpperColoringRangeAction() const { return _expressionUpperColoringRangeAction; }
+        DecimalAction& getExpressionUpperColoringRangeAction() { return _expressionUpperColoringRangeAction; }
+        const DecimalAction& getExpressionLowerColoringRangeAction() const { return _expressionLowerColoringRangeAction; }
+        DecimalAction& getExpressionLowerColoringRangeAction() { return _expressionLowerColoringRangeAction; }
 
     protected:
         SettingsAction& _settingsOptions;
@@ -261,7 +262,8 @@ public:
 
         IntegralAction              _bottomNRowsAction;
         IntegralAction              _topNRowsAction;
-        DecimalRangeAction          _expressionColoringRangeAction;
+        DecimalAction          _expressionUpperColoringRangeAction;
+        DecimalAction          _expressionLowerColoringRangeAction;
     };
 
 
