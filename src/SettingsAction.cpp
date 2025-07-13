@@ -105,7 +105,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getExpressionUpperColoringRangeAction().setMinimum(-1.00);
     _commonOptionsHolder.getExpressionLowerColoringRangeAction().setMaximum(1.00);
     _commonOptionsHolder.getExpressionLowerColoringRangeAction().setMinimum(-1.00);
-
+    _commonOptionsHolder.getExpressionUpperColoringRangeAction().setSingleStep(0.01);
+    _commonOptionsHolder.getExpressionLowerColoringRangeAction().setSingleStep(0.01);
+    _commonOptionsHolder.getExpressionUpperColoringRangeAction().setNumberOfDecimals(6);
+    _commonOptionsHolder.getExpressionLowerColoringRangeAction().setNumberOfDecimals(6);
     _dataset1OptionsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
