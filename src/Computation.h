@@ -91,7 +91,11 @@ private:
     bool setupAndTriggerPCA();
     void setSelectionAndAutoCompute();
     void correlationAfterPCA();
-    void populateLineChartColorPointData();
+    //void populateLineChartColorPointData();
+    void coloringScatterPlots();
+    void coloringLinePlots();
+    void clearLinePlots();
+    void clearTables();
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
@@ -106,11 +110,14 @@ protected:
     std::vector<int>            _filteredSelectionIndices;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
-    mv::Dataset<Clusters>       _pcaClusterDatasetColoring1 = nullptr;
-    mv::Dataset<Clusters>       _pcaClusterDatasetColoring2 = nullptr;
+    //mv::Dataset<Clusters>       _pcaClusterDatasetColoring1 = nullptr;
+    //mv::Dataset<Clusters>       _pcaClusterDatasetColoring2 = nullptr;
     mv::Dataset<Points>         _lineChartPointDataset1 = nullptr;
-    mv::Dataset<Clusters>       _lineChartColorClusterDataset1 = nullptr;
-    mv::Dataset<Points>       _lineChartColorPCAPointDataset1 = nullptr;
+    //mv::Dataset<Clusters>       _lineChartColorClusterDataset1 = nullptr;
+    mv::Dataset<Clusters>       _lineChartColoringDataset1 = nullptr;
+    mv::Dataset<Clusters>       _scatterplotColoringDataset1 = nullptr;
+    mv::Dataset<Clusters>       _scatterplotColoringDataset2 = nullptr;
+    //mv::Dataset<Points>       _lineChartColorPCAPointDataset1 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
     SelectedPCData              _selectedPCData1;
