@@ -26,7 +26,15 @@ enum class NormalizationType {
     None,
     ZScore,
     MinMax,
-    Log2
+    Log2,
+    MaxAbs,
+    L2,
+    L1,
+    Mean,
+    Softmax,
+    Robust,
+    UnitRange,
+    Binarize
 };
 namespace mv
 {

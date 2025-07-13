@@ -1030,26 +1030,106 @@ QStringList getCommonSortedNames(const QSet<QString>& names1, const QSet<QString
     return clusterNamesCommon;
 }
 void normalizeVector(std::vector<float>& data, NormalizationType type) {
-    if (type == NormalizationType::None) return;
-    if (data.empty()) return;
-    if (type == NormalizationType::ZScore) {
+    if (type == NormalizationType::None || data.empty()) return;
+
+    switch (type) {
+    case NormalizationType::ZScore: {
         float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
         float sq_sum = std::inner_product(data.begin(), data.end(), data.begin(), 0.0f);
-        float stdev = std::sqrt(sq_sum / data.size() - mean * mean);
-        if (stdev > 0.0f) {
+        float variance = sq_sum / data.size() - mean * mean;
+        float stdev = std::sqrt(std::max(variance, 0.0f));
+        if (stdev > std::numeric_limits<float>::epsilon()) {
             for (auto& v : data) v = (v - mean) / stdev;
         }
+        break;
     }
-    else if (type == NormalizationType::MinMax) {
+    case NormalizationType::MinMax: {
         auto [minIt, maxIt] = std::minmax_element(data.begin(), data.end());
         float minV = *minIt, maxV = *maxIt;
         float range = maxV - minV;
-        if (range > 0.0f) {
+        if (range > std::numeric_limits<float>::epsilon()) {
             for (auto& v : data) v = (v - minV) / range;
         }
+        break;
     }
-    else if (type == NormalizationType::Log2) {
-        for (auto& v : data) v = std::log2(v + 1.0f);
+    case NormalizationType::Log2: {
+        for (auto& v : data) v = std::log2(std::max(v + 1.0f, 1e-6f));
+        break;
+    }
+    case NormalizationType::MaxAbs: {
+        float maxAbs = 0.0f;
+        for (const auto& v : data) maxAbs = std::max(maxAbs, std::fabs(v));
+        if (maxAbs > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v /= maxAbs;
+        }
+        break;
+    }
+    case NormalizationType::L2: {
+        float sumSquares = std::inner_product(data.begin(), data.end(), data.begin(), 0.0f);
+        float norm = std::sqrt(sumSquares);
+        if (norm > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v /= norm;
+        }
+        break;
+    }
+    case NormalizationType::L1: {
+        float sumAbs = std::accumulate(data.begin(), data.end(), 0.0f, [](float a, float b) {
+            return a + std::fabs(b);
+            });
+        if (sumAbs > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v /= sumAbs;
+        }
+        break;
+    }
+    case NormalizationType::Mean: {
+        float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
+        for (auto& v : data) v -= mean;
+        break;
+    }
+    case NormalizationType::Softmax: {
+        float maxVal = *std::max_element(data.begin(), data.end());  // for numerical stability
+        std::vector<float> expVals(data.size());
+        float sumExp = 0.0f;
+        for (size_t i = 0; i < data.size(); ++i) {
+            expVals[i] = std::exp(data[i] - maxVal);
+            sumExp += expVals[i];
+        }
+        if (sumExp > std::numeric_limits<float>::epsilon()) {
+            for (size_t i = 0; i < data.size(); ++i) {
+                data[i] = expVals[i] / sumExp;
+            }
+        }
+        break;
+    }
+    case NormalizationType::Robust: {
+        std::vector<float> sorted = data;
+        std::sort(sorted.begin(), sorted.end());
+        float median = sorted[sorted.size() / 2];
+        float q1 = sorted[sorted.size() / 4];
+        float q3 = sorted[(3 * sorted.size()) / 4];
+        float iqr = q3 - q1;
+        if (iqr > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v = (v - median) / iqr;
+        }
+        break;
+    }
+    case NormalizationType::UnitRange: {
+        auto [minIt, maxIt] = std::minmax_element(data.begin(), data.end());
+        float minV = *minIt, maxV = *maxIt;
+        float mid = (maxV + minV) / 2.0f;
+        float range = maxV - minV;
+        if (range > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v = (v - mid) / (range / 2.0f);
+        }
+        break;
+    }
+    case NormalizationType::Binarize: {
+        float threshold = 0.0f; // or make this configurable
+        for (auto& v : data) v = (v > threshold) ? 1.0f : 0.0f;
+        break;
+    }
+    default:
+        break;
     }
 }
 
@@ -1057,6 +1137,14 @@ NormalizationType normalizationTypeFromString(const QString& str) {
     if (str == "ZScore") return NormalizationType::ZScore;
     if (str == "MinMax") return NormalizationType::MinMax;
     if (str == "Log2") return NormalizationType::Log2;
+    if (str == "MaxAbs") return NormalizationType::MaxAbs;
+    if (str == "L2") return NormalizationType::L2;
+    if (str == "L1") return NormalizationType::L1;
+    if (str == "Mean") return NormalizationType::Mean;
+    if (str == "Softmax") return NormalizationType::Softmax;
+    if (str == "Robust") return NormalizationType::Robust;
+    if (str == "UnitRange") return NormalizationType::UnitRange;
+    if (str == "Binarize") return NormalizationType::Binarize;
     return NormalizationType::None;
 }
 
