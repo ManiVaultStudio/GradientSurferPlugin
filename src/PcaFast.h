@@ -162,7 +162,7 @@ private:
     }
 
     Eigen::MatrixXf computePcaSvd(const Eigen::MatrixXf& centered_data, int n_components) {
-        qDebug() << "Computing PCA using SVD...";
+        //qDebug() << "Computing PCA using SVD...";
         Eigen::BDCSVD<Eigen::MatrixXf> svd(centered_data, Eigen::ComputeThinV);
 
         if (svd.info() != Eigen::Success) {
@@ -174,7 +174,7 @@ private:
     }
 
     Eigen::MatrixXf computePcaCov(const Eigen::MatrixXf& centered_data, int n_components) {
-        qDebug() << "Computing PCA using covariance matrix...";
+        //qDebug() << "Computing PCA using covariance matrix...";
 
         Eigen::MatrixXf cov_matrix = centered_data.transpose() * centered_data;
         Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> solver(cov_matrix);

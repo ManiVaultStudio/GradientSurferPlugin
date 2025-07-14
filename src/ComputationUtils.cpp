@@ -76,11 +76,7 @@ FunctionTimer::FunctionTimer(const QString& functionName)
 
 FunctionTimer::~FunctionTimer()
 {
-    std::cout
-        << _functionName.toStdString()
-        << ":"
-        << QString::number(_timer.elapsed() / 1000.0, 'f', 3).toStdString()
-        << "sec"<<"\n";
+    //std::cout<< _functionName.toStdString()<< ":"<< QString::number(_timer.elapsed() / 1000.0, 'f', 3).toStdString() << "sec"<<"\n";
 }
 
 std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(

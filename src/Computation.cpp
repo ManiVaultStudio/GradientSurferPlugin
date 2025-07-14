@@ -169,7 +169,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateClusterDataset1 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         updateClusterOptions();
@@ -181,7 +181,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateClusterDataset2 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         updateClusterOptions();
@@ -193,7 +193,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updatePointDataset1 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
@@ -222,7 +222,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updatePointDataset2 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid())
@@ -251,7 +251,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateGeneSelection1 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         if (_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() >= 0)
@@ -270,7 +270,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateGeneSelection2 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         if (_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().getCurrentDimensionIndex()>=0)
@@ -288,7 +288,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto normalizationModified = [this]() -> void {
         if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }
         changeColorLimits();
@@ -307,7 +307,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateEmbeddingDataset1 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         if ( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid())
@@ -372,7 +372,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
                     if (_blockSelectionTrigger)
                     {
-                        qDebug() << "Selection change blocked, returning early";
+                        //qDebug() << "Selection change blocked, returning early";
                         //_blockSelectionTrigger = false;
                         return;
                     }
@@ -407,7 +407,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto updateEmbeddingDataset2 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         if (_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().isValid())
@@ -479,7 +479,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto computeInfo = [this]() -> void {
         if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }
         setStatusMessage("R", "Correlation computation in progress", "");
@@ -501,7 +501,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto correlationCalculationTypeActionChanged = [this]() -> void {
         if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }
         setStatusMessage("R", "Computation in progress", "");
@@ -519,7 +519,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto computePCATrigger = [this]() -> void {
         if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }
         setStatusMessage("R", "PCA Computation in progress", "");
@@ -543,12 +543,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto pcaColorsToPlots = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
 
         if (_blockToggle) {
-            qDebug() << "PCA coloring paused, returning early";
+            //qDebug() << "PCA coloring paused, returning early";
             return;
         }
 
@@ -580,12 +580,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             /*if (!_projectOpened)
             {
-                qDebug() << "Project opening";
+                //qDebug() << "Project opening";
                 return;
             }*/
             if(_blockToggle)
                 {
-                qDebug() << "Selection mode change blocked, returning early";
+                //qDebug() << "Selection mode change blocked, returning early";
                 return;
             }
             if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
@@ -625,7 +625,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_clusterSelectionDebounceTimer, &QTimer::timeout, this, [this]() {
         if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }
         setStatusMessage("R", "Computation in progress", "");
@@ -655,7 +655,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         //qDebug() << "Expression coloring range changed, updating scatterplot views";
         if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }
         //if upper less than lower then set lower to upper
@@ -684,7 +684,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
         if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }
         setStatusMessage("R", "Updating table", "");
@@ -710,7 +710,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto showPointSelectionChanged = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
@@ -779,7 +779,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto focusSelectionChanged = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
@@ -824,7 +824,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto embeddingDimensionYActionChanged1 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         setStatusMessage("M", "Embedding 1 Y dimension changed", "");
@@ -838,7 +838,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto embeddingDimensionYActionChanged2 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         setStatusMessage("M", "Embedding 2 Y dimension changed", "");
@@ -854,7 +854,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto embeddingDimensionXActionChanged1 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         setStatusMessage("M", "Embedding 1 X dimension changed", "");
@@ -868,7 +868,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto embeddingDimensionXActionChanged2 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         setStatusMessage("M", "Embedding 2 X dimension changed", "");
@@ -884,7 +884,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto scatterplotviewSelectionChanged1= [this]() -> void {
         if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }
         setStatusMessage("M", "Scatterplotview selection 1 updated", "");
@@ -956,7 +956,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto lineplotviewSelectionChanged1 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         setStatusMessage("M", "Lineplotview selection 1 updated", "");
@@ -972,7 +972,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     const auto scatterplotviewSelectionChanged2 = [this]() -> void {
         /*if (!_projectOpened)
         {
-            qDebug() << "Project opening";
+            //qDebug() << "Project opening";
             return;
         }*/
         setStatusMessage("M", "Scatterplotview selection 2 updated", "");
@@ -1044,7 +1044,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     _pca1.setCompletionCallback([this](bool success, const std::string& message) {
         _isPCATriggerComputing = false;
         if (success) {
-            qDebug() << "PCA 1 finished successfully:" << message.c_str();
+            //qDebug() << "PCA 1 finished successfully:" << message.c_str();
             processAfterPCAComplete();
             
         }
@@ -2340,7 +2340,7 @@ void Computation::setSelectionAndAutoCompute()
 {
     if (!_projectOpened)
 {
-    qDebug() << "Project opening";
+    //qDebug() << "Project opening";
     return;
 }
     AutoCompute();
@@ -2351,7 +2351,7 @@ void Computation::coloringLinePlots()
 {
     if (!_projectOpened)
     {
-        qDebug() << "Project opening";
+        //qDebug() << "Project opening";
         return;
     }
     QString linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
@@ -2471,7 +2471,7 @@ void Computation::coloringScatterPlots()
 {
     if (!_projectOpened)
     {
-        qDebug() << "Project opening";
+        //qDebug() << "Project opening";
         return;
     }
 
