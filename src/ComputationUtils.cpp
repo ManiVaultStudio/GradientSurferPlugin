@@ -27,6 +27,7 @@ std::vector<int> _geneOfInterestIndices3;
 QList<QString> _commonGeneNames;
 QStringList _commonGeneListSelectedInTables;
 
+
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
     QByteArray localMsg = msg.toLocal8Bit();
@@ -75,11 +76,7 @@ FunctionTimer::FunctionTimer(const QString& functionName)
 
 FunctionTimer::~FunctionTimer()
 {
-    std::cout
-        << _functionName.toStdString()
-        << ":"
-        << QString::number(_timer.elapsed() / 1000.0, 'f', 3).toStdString()
-        << "sec"<<"\n";
+    //std::cout<< _functionName.toStdString()<< ":"<< QString::number(_timer.elapsed() / 1000.0, 'f', 3).toStdString() << "sec"<<"\n";
 }
 
 std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(
@@ -187,7 +184,7 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
     isSyncing = false;
 }
 
-void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString colorDatasetID, QString colordatasetType, int colorDatasetDimensionIndx,  QString xPositionString, QString yPositionString, QString titleText, QString smoothingType, int smoothingWindow, QString colorMapStringValue)
+void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString colorDatasetID, QString colordatasetType, int colorDatasetDimensionIndx,  QString xPositionString, QString yPositionString, QString titleText, QString smoothingType, int smoothingWindow, QString colorMapStringValue, float minValue, float maxValue)
 {
 
     auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
@@ -196,10 +193,12 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
         if (linePlotName.isEmpty() || positionDatasetID.isEmpty() || xPositionString.isEmpty() || yPositionString.isEmpty())
         {
             qWarning() << "LinePlot name or position dataset ID is empty";
+            bool pluginfound = false;
             for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
             {
                 if (plugin->getGuiName() == linePlotName)
                 {
+                    pluginfound = true;
                     mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
                     mv::gui::DatasetPickerAction* clusterDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Color dataset");
                     if (clusterDatasetAction)
@@ -217,14 +216,22 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
                     }
                 }
             }
+            if (!pluginfound)
+            {
+                qWarning() << "LinePlot View plugin not found with name:" << linePlotName;
+            }
+
             return;
         }
         else
         {
+            bool pluginfound = false;
             for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
             {
+                
                 if (plugin->getGuiName() == linePlotName)
                 {
+                    pluginfound = true;
                     Dataset<Points> pointDataset = mv::data().getDataset<Points>(positionDatasetID);
                     if (pointDataset.isValid())
                     {
@@ -285,6 +292,19 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
                                                     if (colormapValAction)
                                                     {
                                                         colormapValAction->setCurrentText(colorMapStringValue);
+                                                        DecimalAction* minValAction = findActionByPath<DecimalAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Lower Color Limit");
+                                                        DecimalAction* maxValAction = findActionByPath<DecimalAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Upper Color Limit");
+                                                        if (minValAction && maxValAction)
+                                                        {
+                                                            minValAction->setValue(minValue);
+                                                            maxValAction->setValue(maxValue);
+                                                        }
+                                                        else
+                                                        {
+                                                            qWarning() << "LinePlot color map min/max value actions not found";
+                                                            minValAction->setValue(0);
+                                                            maxValAction->setValue(0);
+                                                        }
                                                     }
                                                     else
                                                     {
@@ -345,10 +365,10 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
                         qWarning() << "LinePlot position dataset is not valid";
                     }
                 }
-                else
-                {
-                    qWarning() << "LinePlot View plugin not found";
-                }
+            }
+            if (!pluginfound)
+            {
+                qWarning() << "LinePlot View plugin not found with name:" << linePlotName;
             }
         }
     }
@@ -358,7 +378,7 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
     }
 }
 
-void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue)
+void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue, float minValue, float maxValue)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
     mv::gui::DatasetPickerAction* colorDatasetPickerValueAction;
@@ -369,121 +389,15 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                    << ", scatterplotName:" << scatterplotName;
         return;
     }
-
-    auto viewPlugins = mv::plugins().getPluginsByType(mv::plugin::Type::VIEW);
-    if (false)
-    {
-        if (viewPlugins.size() > 0)
-        {
-            for (auto plugin : viewPlugins)
-            {
-                if (plugin->getGuiName() == scatterplotName)
-                {
-
-                    pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
-                    if (pointDatasetPickerValueAction)
-                    {
-                        if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
-                        {
-                            auto embeddingDataset = mv::data().getDataset(positionDatasetID);
-                            if (embeddingDataset.isValid())
-                            {
-                                pointDatasetPickerValueAction->setCurrentDataset(embeddingDataset);
-                            }
-                        }
-                        if (pointDatasetPickerValueAction->getCurrentDataset().isValid())
-                        {
-                            setScatterplotDimensions(plugin, xPositionString, yPositionString);
-                            if (colorDatasetID != "")
-                            {
-                                colorDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Color");
-                                if (colorDatasetPickerValueAction)
-                                {
-                                    auto clusterDataset = mv::data().getDataset(colorDatasetID);
-                                    if (clusterDataset.isValid())
-                                    {
-                                        auto options = colorDatasetPickerValueAction->getDatasets();
-                                        if (options.size() > 0)
-                                        {
-                                            try {
-                                                colorDatasetPickerValueAction->setCurrentDataset(clusterDataset);
-                                            }
-                                            catch (const std::exception& e)
-                                            {
-                                                qCritical() << "Error setting current dataset:" << e.what();
-                                            }
-
-
-
-                                        }
-
-                                    }
-
-                                }
-                            }
-
-
-                        }
-
-
-
-                    }
-                    else
-                    {
-                        qCritical() << "Position dataset action not found in plugin:" << plugin->getGuiName();
-                    }
-                    auto freezeSelectionValueAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
-                    if (freezeSelectionValueAction)
-                    {
-                        if (disableSelection)
-                        {
-                            freezeSelectionValueAction->setChecked(true);
-                        }
-                        else {
-                            freezeSelectionValueAction->setChecked(false);
-                        }
-
-                    }
-                    else
-                    {
-                        qCritical() << "Freeze selection action not found in plugin:" << plugin->getGuiName();
-                    }
-                    if (dimensionForColoring != "")
-                    {
-                        auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
-                        if (geneSelectionValueAction) {
-                            geneSelectionValueAction->setCurrentDimensionName(dimensionForColoring);
-                        }
-                    }
-
-                    if (colormapValue != "")
-                    {
-                        auto colorMapValueAction = findActionByPath<OptionAction>(plugin, "Settings/Coloring/1D Color map/Current color map");
-                        if (colorMapValueAction)
-                        {
-                            colorMapValueAction->setCurrentText(colormapValue);
-                        }
-                    }
-
-                    break;
-                }
-                else
-                {
-                    qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
-                }
-            }
-        }
-    }
-    else
     {
         if (scatterplotViewFactory)
         {
+            bool pluginfound = false;
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
             {
-                qDebug() << "Processing plugin:" << plugin->getGuiName();
                 if (plugin->getGuiName() == scatterplotName)
                 {
-
+                    pluginfound = true;
                     pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
                     if (pointDatasetPickerValueAction)
                     {
@@ -571,11 +485,11 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
 
                     break;
                 }
-                else
-                {
-                    qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
-                }
 
+            }
+            if (!pluginfound)
+            {
+                qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
             }
         }
     }
@@ -1112,33 +1026,172 @@ QStringList getCommonSortedNames(const QSet<QString>& names1, const QSet<QString
     return clusterNamesCommon;
 }
 void normalizeVector(std::vector<float>& data, NormalizationType type) {
-    if (type == NormalizationType::None) return;
-    if (data.empty()) return;
-    if (type == NormalizationType::ZScore) {
-        float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
-        float sq_sum = std::inner_product(data.begin(), data.end(), data.begin(), 0.0f);
-        float stdev = std::sqrt(sq_sum / data.size() - mean * mean);
-        if (stdev > 0.0f) {
-            for (auto& v : data) v = (v - mean) / stdev;
+    if (type == NormalizationType::None || data.empty()) return;
+
+    auto cpm = [](std::vector<float>& vec) {
+        float sum = std::accumulate(vec.begin(), vec.end(), 0.0f);
+        if (sum > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : vec) v = (v / sum) * 1e6f;
         }
-    }
-    else if (type == NormalizationType::MinMax) {
+        };
+
+    auto log1p = [](std::vector<float>& vec) {
+        for (auto& v : vec) v = std::log1p(std::max(v, 0.0f));  // log(1 + x)
+        };
+
+    auto zscore = [](std::vector<float>& vec) {
+        float mean = std::accumulate(vec.begin(), vec.end(), 0.0f) / vec.size();
+        float sq_sum = std::inner_product(vec.begin(), vec.end(), vec.begin(), 0.0f);
+        float variance = sq_sum / vec.size() - mean * mean;
+        float stdev = std::sqrt(std::max(variance, 0.0f));
+        if (stdev > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : vec) v = (v - mean) / stdev;
+        }
+        };
+
+    switch (type) {
+    case NormalizationType::CPM:
+        cpm(data);
+        break;
+
+    case NormalizationType::Log1p:
+        log1p(data);
+        break;
+
+    case NormalizationType::CPM_Log1p:
+        cpm(data);
+        log1p(data);
+        break;
+
+    case NormalizationType::CPM_Log1p_ZScore:
+        cpm(data);
+        log1p(data);
+        zscore(data);
+        break;
+
+    case NormalizationType::ZScore:
+        zscore(data);
+        break;
+
+    case NormalizationType::MinMax: {
         auto [minIt, maxIt] = std::minmax_element(data.begin(), data.end());
         float minV = *minIt, maxV = *maxIt;
         float range = maxV - minV;
-        if (range > 0.0f) {
+        if (range > std::numeric_limits<float>::epsilon()) {
             for (auto& v : data) v = (v - minV) / range;
         }
+        break;
     }
-    else if (type == NormalizationType::Log2) {
-        for (auto& v : data) v = std::log2(v + 1.0f);
+
+    case NormalizationType::Log2:
+        for (auto& v : data) v = std::log2(std::max(v + 1.0f, 1e-6f));
+        break;
+
+    case NormalizationType::MaxAbs: {
+        float maxAbs = 0.0f;
+        for (const auto& v : data) maxAbs = std::max(maxAbs, std::fabs(v));
+        if (maxAbs > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v /= maxAbs;
+        }
+        break;
+    }
+
+    case NormalizationType::L2: {
+        float sumSquares = std::inner_product(data.begin(), data.end(), data.begin(), 0.0f);
+        float norm = std::sqrt(sumSquares);
+        if (norm > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v /= norm;
+        }
+        break;
+    }
+
+    case NormalizationType::L1: {
+        float sumAbs = std::accumulate(data.begin(), data.end(), 0.0f, [](float a, float b) {
+            return a + std::fabs(b);
+            });
+        if (sumAbs > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v /= sumAbs;
+        }
+        break;
+    }
+
+    case NormalizationType::Mean: {
+        float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
+        for (auto& v : data) v -= mean;
+        break;
+    }
+
+    case NormalizationType::Softmax: {
+        // Softmax: exp(x_i) / sum(exp(x_j))
+        std::vector<float> expVals(data.size());
+        float maxVal = *std::max_element(data.begin(), data.end());
+        float sumExp = 0.0f;
+        for (size_t i = 0; i < data.size(); ++i) {
+            expVals[i] = std::exp(data[i] - maxVal); // for numerical stability
+            sumExp += expVals[i];
+        }
+        if (sumExp > std::numeric_limits<float>::epsilon()) {
+            for (size_t i = 0; i < data.size(); ++i) {
+                data[i] = expVals[i] / sumExp;
+            }
+        }
+        break;
+    }
+
+    case NormalizationType::Robust: {
+        // Robust: (x - median) / IQR
+        std::vector<float> sorted(data);
+        std::sort(sorted.begin(), sorted.end());
+        float median = sorted[sorted.size() / 2];
+        float q1 = sorted[sorted.size() / 4];
+        float q3 = sorted[(3 * sorted.size()) / 4];
+        float iqr = q3 - q1;
+        if (iqr > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v = (v - median) / iqr;
+        }
+        break;
+    }
+
+    case NormalizationType::UnitRange: {
+        // UnitRange: scale to [-1, 1]
+        auto [minIt, maxIt] = std::minmax_element(data.begin(), data.end());
+        float minV = *minIt, maxV = *maxIt;
+        float range = maxV - minV;
+        if (range > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : data) v = 2.0f * (v - minV) / range - 1.0f;
+        }
+        break;
+    }
+
+    case NormalizationType::Binarize: {
+        // Binarize: set to 1 if above mean, else 0
+        float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
+        for (auto& v : data) v = (v > mean) ? 1.0f : 0.0f;
+        break;
+    }
+
+    default:
+        break;
     }
 }
+
 
 NormalizationType normalizationTypeFromString(const QString& str) {
     if (str == "ZScore") return NormalizationType::ZScore;
     if (str == "MinMax") return NormalizationType::MinMax;
     if (str == "Log2") return NormalizationType::Log2;
+    if (str == "MaxAbs") return NormalizationType::MaxAbs;
+    if (str == "L2") return NormalizationType::L2;
+    if (str == "L1") return NormalizationType::L1;
+    if (str == "Mean") return NormalizationType::Mean;
+    if (str == "Softmax") return NormalizationType::Softmax;
+    if (str == "Robust") return NormalizationType::Robust;
+    if (str == "UnitRange") return NormalizationType::UnitRange;
+    if (str == "Binarize") return NormalizationType::Binarize;
+    if (str == "CPM") return NormalizationType::CPM;
+    if (str == "Log1p") return NormalizationType::Log1p;
+    if (str == "CPM_Log1p") return NormalizationType::CPM_Log1p;
+    if (str == "CPM_Log1p_ZScore") return NormalizationType::CPM_Log1p_ZScore;
     return NormalizationType::None;
 }
 
@@ -1294,11 +1347,12 @@ std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates) {
 
 
 
-void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints, QString pcaDimensionVal)
+void createLineChartClusterColors(QString coloringDataset,QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue)
 {
+
     FunctionTimer timer(Q_FUNC_INFO);
 
-    if (pcaColoringDataset.isEmpty() || colorMapValue.isEmpty() || selectedIndices.empty() || pcaValuesDataset.isEmpty() || pcaDimensionVal.isEmpty()) {
+    if (coloringDataset.isEmpty() || colorMapValue.isEmpty() || selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty()) {
         qWarning() << "Invalid parameters for PCA cluster colors creation.";
         return;
     }
@@ -1307,15 +1361,118 @@ void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, s
         return;
     }
 
-    Dataset<Clusters> pcaColoringDatasetFull = mv::data().getDataset<Clusters>(pcaColoringDataset);
-    Dataset<Points> pcaValuesDatasetFull = mv::data().getDataset<Points>(pcaValuesDataset);
-    if (!pcaColoringDatasetFull.isValid() || !pcaValuesDatasetFull.isValid()) {
+    Dataset<Clusters> coloringDatasetFull = mv::data().getDataset<Clusters>(coloringDataset);
+    Dataset<Points> pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
+    if (!coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid()) {
         qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
         return;
     }
 
     // Clear previous clusters in the PCA coloring dataset
-    pcaColoringDatasetFull->getClusters() = QVector<Cluster>();
+    coloringDatasetFull->getClusters() = QVector<Cluster>();
+    //events().notifyDatasetDataChanged(coloringDatasetFull);
+    QVector<Cluster> newClusters;
+    newClusters.reserve(selectedIndices.size());
+
+    std::vector<float> geneExpValues(selectedIndices.size());
+    ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
+    std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
+    auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
+    int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
+    pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
+
+    std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
+    for (size_t i = 0; i < geneExpValues.size(); ++i) {
+        valueToIndices[geneExpValues[i]].push_back(static_cast<std::seed_seq::result_type>(selectedIndices.at(i)));
+    }
+
+    int clusterIdx = 0;
+    for (const auto& [value, indices] : valueToIndices) {
+        QColor color = getColorFromColormap(value, colormap, minValue, maxValue);
+        Cluster cluster;
+        cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        cluster.setColor(color);
+        cluster.setIndices(indices);
+        newClusters.append(cluster);
+    }
+
+    coloringDatasetFull->getClusters() = newClusters;
+    events().notifyDatasetDataChanged(coloringDatasetFull);
+}
+
+void createClusterLineChartClusterColors(QString coloringChangeDataset, QString coloringReferenceDataset, std::vector<int>& selectedIndices)
+{
+
+    FunctionTimer timer(Q_FUNC_INFO);
+
+    if (coloringChangeDataset.isEmpty() || coloringReferenceDataset.isEmpty() || selectedIndices.empty() ) {
+        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        return;
+    }
+
+
+    Dataset<Clusters> coloringChangeDatasetFull = mv::data().getDataset<Clusters>(coloringChangeDataset);
+    Dataset<Clusters> coloringReferenceDatasetFull = mv::data().getDataset<Clusters>(coloringReferenceDataset);
+    if (!coloringChangeDatasetFull.isValid() ||!coloringReferenceDatasetFull.isValid()) {
+        qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
+        return;
+    }
+
+    // Clear previous clusters in the PCA coloring dataset
+    coloringChangeDatasetFull->getClusters() = QVector<Cluster>();
+    //events().notifyDatasetDataChanged(coloringChangeDatasetFull);
+
+        auto clusters = coloringReferenceDatasetFull->getClusters();
+        for (const auto& cluster : clusters)
+        {
+            std::vector<std::seed_seq::result_type> newClusterIndices;
+            auto clusterIndices = cluster.getIndices();
+            for (int index : clusterIndices) {
+                auto it = std::find(selectedIndices.begin(), selectedIndices.end(), index);
+                if (it != selectedIndices.end()) {
+                    newClusterIndices.push_back(static_cast<int>(std::distance(selectedIndices.begin(), it)));
+                }
+            }
+
+            if (newClusterIndices.size() > 0)
+            {
+                Cluster remappedCluster;
+                remappedCluster.setName(cluster.getName());
+                remappedCluster.setColor(cluster.getColor());
+                remappedCluster.setIndices(newClusterIndices);
+                coloringChangeDatasetFull->addCluster(remappedCluster);
+            }
+
+
+        }
+        events().notifyDatasetDataChanged(coloringChangeDatasetFull);
+    
+}
+
+
+void createScatterplotClusterColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue)
+{
+
+    FunctionTimer timer(Q_FUNC_INFO);
+
+    if (coloringDataset.isEmpty() || colorMapValue.isEmpty() || selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty()) {
+        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        return;
+    }
+    if (numOfTotalPoints <= 0) {
+        qWarning() << "Invalid number of total points for PCA cluster colors creation.";
+        return;
+    }
+
+    Dataset<Clusters> coloringDatasetFull = mv::data().getDataset<Clusters>(coloringDataset);
+    Dataset<Points> pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
+    if (!coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid()) {
+        qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
+        return;
+    }
+
+    // Clear previous clusters in the PCA coloring dataset
+    coloringDatasetFull->getClusters() = QVector<Cluster>();
 
     std::vector<std::seed_seq::result_type> notSelectedIndices;
     notSelectedIndices.reserve(numOfTotalPoints - selectedIndices.size());
@@ -1336,20 +1493,17 @@ void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, s
         newClusters.append(notSelectedCluster);
     }
 
-    std::vector<float> pcaValues(selectedIndices.size());
+    std::vector<float> geneExpValues(selectedIndices.size());
     ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
-    std::vector<QString> getdimensionValues = pcaValuesDatasetFull->getDimensionNames();
-    auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), pcaDimensionVal);
+    std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
+    auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
     int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
-    pcaValuesDatasetFull->extractDataForDimension(pcaValues, dimensionIndex);
-
-    float minValue = *std::min_element(pcaValues.begin(), pcaValues.end());
-    float maxValue = *std::max_element(pcaValues.begin(), pcaValues.end());
+    pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
 
     // Group indices by unique PCA value
     std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
-    for (size_t i = 0; i < pcaValues.size(); ++i) {
-        valueToIndices[pcaValues[i]].push_back(static_cast<std::seed_seq::result_type>(selectedIndices.at(i)));
+    for (size_t i = 0; i < geneExpValues.size(); ++i) {
+        valueToIndices[geneExpValues[i]].push_back(static_cast<std::seed_seq::result_type>(selectedIndices.at(i)));
     }
 
     int clusterIdx = 0;
@@ -1362,6 +1516,6 @@ void createPCAClusterColors(QString pcaColoringDataset, QString colorMapValue, s
         newClusters.append(cluster);
     }
 
-    pcaColoringDatasetFull->getClusters() = newClusters;
-    events().notifyDatasetDataChanged(pcaColoringDatasetFull);
+    coloringDatasetFull->getClusters() = newClusters;
+    events().notifyDatasetDataChanged(coloringDatasetFull);
 }
