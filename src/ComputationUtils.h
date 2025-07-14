@@ -34,7 +34,11 @@ enum class NormalizationType {
     Softmax,
     Robust,
     UnitRange,
-    Binarize
+    Binarize,
+    CPM,
+    Log1p,
+    CPM_Log1p,
+    CPM_Log1p_ZScore
 };
 namespace mv
 {

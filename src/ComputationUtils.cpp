@@ -1032,17 +1032,51 @@ QStringList getCommonSortedNames(const QSet<QString>& names1, const QSet<QString
 void normalizeVector(std::vector<float>& data, NormalizationType type) {
     if (type == NormalizationType::None || data.empty()) return;
 
-    switch (type) {
-    case NormalizationType::ZScore: {
-        float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
-        float sq_sum = std::inner_product(data.begin(), data.end(), data.begin(), 0.0f);
-        float variance = sq_sum / data.size() - mean * mean;
+    auto cpm = [](std::vector<float>& vec) {
+        float sum = std::accumulate(vec.begin(), vec.end(), 0.0f);
+        if (sum > std::numeric_limits<float>::epsilon()) {
+            for (auto& v : vec) v = (v / sum) * 1e6f;
+        }
+        };
+
+    auto log1p = [](std::vector<float>& vec) {
+        for (auto& v : vec) v = std::log1p(std::max(v, 0.0f));  // log(1 + x)
+        };
+
+    auto zscore = [](std::vector<float>& vec) {
+        float mean = std::accumulate(vec.begin(), vec.end(), 0.0f) / vec.size();
+        float sq_sum = std::inner_product(vec.begin(), vec.end(), vec.begin(), 0.0f);
+        float variance = sq_sum / vec.size() - mean * mean;
         float stdev = std::sqrt(std::max(variance, 0.0f));
         if (stdev > std::numeric_limits<float>::epsilon()) {
-            for (auto& v : data) v = (v - mean) / stdev;
+            for (auto& v : vec) v = (v - mean) / stdev;
         }
+        };
+
+    switch (type) {
+    case NormalizationType::CPM:
+        cpm(data);
         break;
-    }
+
+    case NormalizationType::Log1p:
+        log1p(data);
+        break;
+
+    case NormalizationType::CPM_Log1p:
+        cpm(data);
+        log1p(data);
+        break;
+
+    case NormalizationType::CPM_Log1p_ZScore:
+        cpm(data);
+        log1p(data);
+        zscore(data);
+        break;
+
+    case NormalizationType::ZScore:
+        zscore(data);
+        break;
+
     case NormalizationType::MinMax: {
         auto [minIt, maxIt] = std::minmax_element(data.begin(), data.end());
         float minV = *minIt, maxV = *maxIt;
@@ -1052,10 +1086,11 @@ void normalizeVector(std::vector<float>& data, NormalizationType type) {
         }
         break;
     }
-    case NormalizationType::Log2: {
+
+    case NormalizationType::Log2:
         for (auto& v : data) v = std::log2(std::max(v + 1.0f, 1e-6f));
         break;
-    }
+
     case NormalizationType::MaxAbs: {
         float maxAbs = 0.0f;
         for (const auto& v : data) maxAbs = std::max(maxAbs, std::fabs(v));
@@ -1064,6 +1099,7 @@ void normalizeVector(std::vector<float>& data, NormalizationType type) {
         }
         break;
     }
+
     case NormalizationType::L2: {
         float sumSquares = std::inner_product(data.begin(), data.end(), data.begin(), 0.0f);
         float norm = std::sqrt(sumSquares);
@@ -1072,6 +1108,7 @@ void normalizeVector(std::vector<float>& data, NormalizationType type) {
         }
         break;
     }
+
     case NormalizationType::L1: {
         float sumAbs = std::accumulate(data.begin(), data.end(), 0.0f, [](float a, float b) {
             return a + std::fabs(b);
@@ -1081,17 +1118,20 @@ void normalizeVector(std::vector<float>& data, NormalizationType type) {
         }
         break;
     }
+
     case NormalizationType::Mean: {
         float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
         for (auto& v : data) v -= mean;
         break;
     }
+
     case NormalizationType::Softmax: {
-        float maxVal = *std::max_element(data.begin(), data.end());  // for numerical stability
+        // Softmax: exp(x_i) / sum(exp(x_j))
         std::vector<float> expVals(data.size());
+        float maxVal = *std::max_element(data.begin(), data.end());
         float sumExp = 0.0f;
         for (size_t i = 0; i < data.size(); ++i) {
-            expVals[i] = std::exp(data[i] - maxVal);
+            expVals[i] = std::exp(data[i] - maxVal); // for numerical stability
             sumExp += expVals[i];
         }
         if (sumExp > std::numeric_limits<float>::epsilon()) {
@@ -1101,8 +1141,10 @@ void normalizeVector(std::vector<float>& data, NormalizationType type) {
         }
         break;
     }
+
     case NormalizationType::Robust: {
-        std::vector<float> sorted = data;
+        // Robust: (x - median) / IQR
+        std::vector<float> sorted(data);
         std::sort(sorted.begin(), sorted.end());
         float median = sorted[sorted.size() / 2];
         float q1 = sorted[sorted.size() / 4];
@@ -1113,25 +1155,30 @@ void normalizeVector(std::vector<float>& data, NormalizationType type) {
         }
         break;
     }
+
     case NormalizationType::UnitRange: {
+        // UnitRange: scale to [-1, 1]
         auto [minIt, maxIt] = std::minmax_element(data.begin(), data.end());
         float minV = *minIt, maxV = *maxIt;
-        float mid = (maxV + minV) / 2.0f;
         float range = maxV - minV;
         if (range > std::numeric_limits<float>::epsilon()) {
-            for (auto& v : data) v = (v - mid) / (range / 2.0f);
+            for (auto& v : data) v = 2.0f * (v - minV) / range - 1.0f;
         }
         break;
     }
+
     case NormalizationType::Binarize: {
-        float threshold = 0.0f; // or make this configurable
-        for (auto& v : data) v = (v > threshold) ? 1.0f : 0.0f;
+        // Binarize: set to 1 if above mean, else 0
+        float mean = std::accumulate(data.begin(), data.end(), 0.0f) / data.size();
+        for (auto& v : data) v = (v > mean) ? 1.0f : 0.0f;
         break;
     }
+
     default:
         break;
     }
 }
+
 
 NormalizationType normalizationTypeFromString(const QString& str) {
     if (str == "ZScore") return NormalizationType::ZScore;
@@ -1145,6 +1192,10 @@ NormalizationType normalizationTypeFromString(const QString& str) {
     if (str == "Robust") return NormalizationType::Robust;
     if (str == "UnitRange") return NormalizationType::UnitRange;
     if (str == "Binarize") return NormalizationType::Binarize;
+    if (str == "CPM") return NormalizationType::CPM;
+    if (str == "Log1p") return NormalizationType::Log1p;
+    if (str == "CPM_Log1p") return NormalizationType::CPM_Log1p;
+    if (str == "CPM_Log1p_ZScore") return NormalizationType::CPM_Log1p_ZScore;
     return NormalizationType::None;
 }
 
