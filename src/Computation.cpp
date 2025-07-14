@@ -318,8 +318,23 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             if (_embeddingDataset.isValid())
             {
-                coloringLinePlots(); //TODO Check
-                coloringScatterPlots(); //TODO Check
+                _filteredSelectionIndices.clear();
+                _selectedClusterIndices1.clear();
+                _selectedClusterIndices2.clear();
+                _geneCorrValues1.clear();
+                _geneCorrValues2.clear();
+                _geneCorrValues3.clear();
+                _geneOfInterestIndices1.clear();
+                _geneOfInterestIndices2.clear();
+                _geneOfInterestIndices3.clear();
+                _commonGeneNames.clear();
+                _commonGeneListSelectedInTables.clear();
+                clearTables();
+                clearLinePlots();
+
+                ScopedBlocker blocker(_blockToggle);
+                _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+                //coloringLinePlots(); //TODO Check
                 auto parent = _embeddingDataset->getParent();
                 if (parent.isValid())
                 {
@@ -392,13 +407,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 {
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
-
+               
  
             }
 
 
         }
-        
+        coloringScatterPlots(); //TODO Check
         setStatusMessage("M", "Embedding dataset 1 updated", "");
         };
 
@@ -417,9 +432,23 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             if (embeddingDataset2.isValid())
             {
+                _filteredSelectionIndices.clear();
+                _selectedClusterIndices1.clear();
+                _selectedClusterIndices2.clear();
+                _geneCorrValues1.clear();
+                _geneCorrValues2.clear();
+                _geneCorrValues3.clear();
+                _geneOfInterestIndices1.clear();
+                _geneOfInterestIndices2.clear();
+                _geneOfInterestIndices3.clear();
+                _commonGeneNames.clear();
+                _commonGeneListSelectedInTables.clear();
+                clearTables();
+                clearLinePlots();
 
-                coloringLinePlots(); //TODO Check
-                coloringScatterPlots(); //TODO Check
+                ScopedBlocker blocker(_blockToggle);
+                _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+                //coloringLinePlots(); //TODO Check
                 auto parent = embeddingDataset2->getParent();
                 if (parent.isValid())
                 {
@@ -466,11 +495,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setCurrentDimensionIndex(-1);
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setCurrentDimensionIndex(-1);
                 }
+              
+                
             }
 
 
         }
-        
+        coloringScatterPlots(); //TODO Check
         setStatusMessage("M", "Embedding dataset 2 updated", "");
         };
 
@@ -557,6 +588,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+            qDebug() << "it was here0";
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
             deselectAllRows(_settingsAction.getTableView3Action());
@@ -566,6 +598,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+            qDebug() << "it was here1";
         }
 
 
@@ -593,6 +626,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 ScopedBlocker blocker(_blockToggle);
                 _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+                qDebug() << "it was here2";
                 deselectAllRows(_settingsAction.getTableView1Action());
                 deselectAllRows(_settingsAction.getTableView2Action());
                 deselectAllRows(_settingsAction.getTableView3Action());
@@ -2440,9 +2474,14 @@ void Computation::coloringLinePlots()
             else
             {
                 QString selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
+                if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
+                {
+                    setStatusMessage("E", "No valid point dataset selected for coloring", "");
+                    return;
+                }
                 if (!selectedGene.isEmpty())
                 {
-                    QString geneDataset1ID = _selectedGenePointDataset1.getDatasetId();
+                    QString geneDataset1ID = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId();
                     if (geneDataset1ID.isEmpty())
                     {
                         setStatusMessage("E", "No valid  datasets", "");
@@ -2584,14 +2623,15 @@ void Computation::coloringScatterPlots()
         }
         else
         {
-            if (!_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid())
+            
+            if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() || !_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid())
             {
                 setStatusMessage("E", "No valid PCA datasets", "");
                 return;
             }
 
-            QString geneDataset1ID = _selectedGenePointDataset1.getDatasetId();
-            QString geneDataset2ID = _selectedGenePointDataset2.getDatasetId();
+            QString geneDataset1ID = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId();
+            QString geneDataset2ID = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId();
             if (geneDataset1ID.isEmpty() || geneDataset2ID.isEmpty())
             {
                 setStatusMessage("E", "No valid PCA datasets", "");
