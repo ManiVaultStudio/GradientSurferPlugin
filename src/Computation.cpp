@@ -558,8 +558,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
-            //deselectAllRows(_settingsAction.getTableView2Action());
-            //deselectAllRows(_settingsAction.getTableView3Action());
+            deselectAllRows(_settingsAction.getTableView2Action());
+            deselectAllRows(_settingsAction.getTableView3Action());
         }
         else
         {
@@ -594,8 +594,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
                 deselectAllRows(_settingsAction.getTableView1Action());
-                //deselectAllRows(_settingsAction.getTableView2Action());
-                //deselectAllRows(_settingsAction.getTableView3Action());
+                deselectAllRows(_settingsAction.getTableView2Action());
+                deselectAllRows(_settingsAction.getTableView3Action());
             }
             else
             {
