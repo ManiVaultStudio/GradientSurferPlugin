@@ -1390,7 +1390,8 @@ void createLineChartClusterColors(QString coloringDataset,QString colorMapValue,
     for (const auto& [value, indices] : valueToIndices) {
         QColor color = getColorFromColormap(value, colormap, minValue, maxValue);
         Cluster cluster;
-        cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        //cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        cluster.setName(QString::number(value, 'g', 6));
         cluster.setColor(color);
         cluster.setIndices(indices);
         newClusters.append(cluster);
@@ -1510,7 +1511,8 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
     for (const auto& [value, indices] : valueToIndices) {
         QColor color = getColorFromColormap(value, colormap, minValue, maxValue);
         Cluster cluster;
-        cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        //cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        cluster.setName(QString::number(value, 'g', 6));
         cluster.setColor(color);
         cluster.setIndices(indices);
         newClusters.append(cluster);
