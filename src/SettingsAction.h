@@ -204,14 +204,11 @@ public:
         const TriggerAction& getComputePCAAction() const { return _computePCAAction; }
         TriggerAction& getComputePCAAction() { return _computePCAAction; }
 
-
-
-        const ToggleAction& getNormalizeDataAction() const { return _normalizeDataAction; }
-        ToggleAction& getNormalizeDataAction() { return _normalizeDataAction; }
-
         const OptionAction& getNormalizationTypeAction() const { return _normalizationTypeAction; }
         OptionAction& getNormalizationTypeAction() { return _normalizationTypeAction; }
 
+        const ToggleAction& getNormalizeCombinedDatasetsAction() const { return _normalizeCombinedDatasetsAction; }
+        ToggleAction& getNormalizeCombinedDatasetsAction() { return _normalizeCombinedDatasetsAction; }
 
         const ToggleAction& getSelectionModeAction() const { return _selectionModeAction; }
         ToggleAction& getSelectionModeAction() { return _selectionModeAction; }
@@ -252,7 +249,7 @@ public:
         OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
-        ToggleAction                 _normalizeDataAction;
+        ToggleAction                 _normalizeCombinedDatasetsAction;
         OptionAction                _normalizationTypeAction;
         ToggleAction                _selectionModeAction;
         ColorMap1DAction            _coloringMapSelectionAction;

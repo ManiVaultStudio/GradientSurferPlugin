@@ -101,7 +101,7 @@ std::vector<int> getIndicesBySelectedClusters(
 StatusInfo parseStatusMessage(const QString& statusString);
 std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText);
 
-void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices, QString normTypeStr, bool normalizeData);
+void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices);
 void clearTable(QTableView* tableView);
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray);
 void normalizeVector(std::vector<float>& data, NormalizationType type);

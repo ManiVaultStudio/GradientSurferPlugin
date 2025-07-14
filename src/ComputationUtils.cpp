@@ -869,7 +869,7 @@ void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv:
 
 
 }
-void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices, QString normTypeStr, bool normalizeData)
+void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices)
 {
     FunctionTimer timer(Q_FUNC_INFO);
 
@@ -900,12 +900,6 @@ void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std:
         //fullDataset->extractDataForDimension(geneVals, geneIdx);
         std::vector<int> geneIndex = { geneIdx };
         fullDataset->populateDataForDimensions(geneVals,geneIndex, allClusterFilteredIndices);
-        if (normalizeData)
-        {
-            NormalizationType normType = normalizationTypeFromString(normTypeStr);
-
-            normalizeVector(geneVals, normType);
-        }
         float sumGene = 0.0f;
         for (float v : geneVals) sumGene += v;
         float meanGene = sumGene / numCellsFilt;

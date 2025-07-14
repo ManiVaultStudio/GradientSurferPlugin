@@ -147,8 +147,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getColoringMapSelectionAction().getSettings1DAction().setVisible(false);
     _commonOptionsHolder.getColoringMapSelectionAction().getSettings2DAction().setVisible(false);
 
-    _commonOptionsHolder.getNormalizeDataAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getNormalizeDataAction().setChecked(true);
+    _commonOptionsHolder.getNormalizeCombinedDatasetsAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getNormalizeCombinedDatasetsAction().setChecked(true);
 
 
 
@@ -359,7 +359,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
     _computePCAAction(this, "Compute: Selection PCs"),
-    _normalizeDataAction(this, "Normalize Data"),
+    _normalizeCombinedDatasetsAction(this, "Normalize Combined Datasets"),
     _normalizationTypeAction(this, "Normalization Type"),
     _selectionModeAction(this, "Selection Mode"),
     _focusSelectionAction(this, "Focus Selection"),
@@ -388,8 +388,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_expressionLowerColoringRangeAction);
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
-    addAction(&_normalizeDataAction);
     addAction(&_normalizationTypeAction);
+    addAction(&_normalizeCombinedDatasetsAction);
     addAction(&_selectionModeAction);
     addAction(&_computePCAAction);
     addAction(&_computeAction);

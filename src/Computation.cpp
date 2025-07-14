@@ -46,6 +46,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         connect(&mv::projects(), &AbstractProjectManager::projectOpened, this,
             [this]() {
                 _projectOpened = true;
+                normalizeData();
                 coloringScatterPlots(); //TODO Check
                 clearTables();
                 clearLinePlots();
@@ -60,6 +61,32 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     qInstallMessageHandler(customMessageHandler);
+
+
+    if (!_normalizedFullDataset1.isValid()) {
+        _normalizedFullDataset1 = mv::data().createDataset("Points", "Normalized Full Dataset 1");
+        _normalizedFullDataset1->setGroupIndex(555);
+        mv::events().notifyDatasetAdded(_normalizedFullDataset1);
+    }
+    if (!_normalizedFullDataset2.isValid()) {
+        _normalizedFullDataset2 = mv::data().createDataset("Points", "Normalized Full Dataset 2");
+        _normalizedFullDataset2->setGroupIndex(555);
+        mv::events().notifyDatasetAdded(_normalizedFullDataset2);
+    }
+
+
+    if (!_scatterplotColoringDataset1.isValid()) {
+        _scatterplotColoringDataset1 = mv::data().createDataset("Cluster", "Scatterplot Color Dataset 1", _normalizedFullDataset1);
+        _scatterplotColoringDataset1->setGroupIndex(555);
+        mv::events().notifyDatasetAdded(_scatterplotColoringDataset1);
+    }
+    if (!_scatterplotColoringDataset2.isValid()) {
+        _scatterplotColoringDataset2 = mv::data().createDataset("Cluster", "Scatterplot Color Dataset 2", _normalizedFullDataset2);
+        _scatterplotColoringDataset2->setGroupIndex(555);
+        mv::events().notifyDatasetAdded(_scatterplotColoringDataset2);
+    }
+
+
     const auto updateStatus = [this]() -> void {
         auto stringFull = _settingsAction.getStatusHolder().getStatusMessageAction().getString();
         StatusInfo info = parseStatusMessage(stringFull);
@@ -201,7 +228,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             auto dataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
             if (dataset.isValid())
             {
-                changeColorLimits();
+                normalizeData();
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
                 
@@ -213,7 +240,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
              _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset({});
         }
-        checkForRankLimits();
         setStatusMessage("M", "Point dataset 1 updated", "");
         };
 
@@ -230,7 +256,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             auto dataset = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
             if (dataset.isValid())
             {
-                changeColorLimits();
+                normalizeData();
                 _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
 
@@ -242,7 +268,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().setPointsDataset({});
         }
-        checkForRankLimits();
+        
         setStatusMessage("M", "Point dataset 2 updated", "");
         };
 
@@ -291,7 +317,8 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             //qDebug() << "Project opening";
             return;
         }
-        changeColorLimits();
+
+        normalizeData();
         
         setStatusMessage("M", "Selected indices changed", "");
         setStatusMessage("R", "Computation in progress", "");
@@ -301,7 +328,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         };
-    connect(&_settingsAction.getCommonOptionsHolder().getNormalizeDataAction(), &ToggleAction::toggled, this, normalizationModified);
+    connect(&_settingsAction.getCommonOptionsHolder().getNormalizeCombinedDatasetsAction(), &ToggleAction::toggled, this, normalizationModified);
     connect(&_settingsAction.getCommonOptionsHolder().getNormalizationTypeAction(), &OptionAction::currentIndexChanged, this, normalizationModified);
 
     const auto updateEmbeddingDataset1 = [this]() -> void {
@@ -1132,13 +1159,13 @@ void Computation::AutoCompute()
         _numOfPointsInLine1 = 0;
         QApplication::processEvents();
 
-        mv::Dataset<Points> fullPointDataset1;
+        //mv::Dataset<Points> fullPointDataset1;
         mv::Dataset<Clusters> fullClusterDataset1;
         mv::Dataset<Clusters> fullClusterDataset2;
         int xEmbeddingIndex = -1, yEmbeddingIndex = -1, topNRows = -1, bottomNRows = -1;
         std::vector<int> selectedIndices;
         QString scatterplotViewName;
-        if (!validateAndRetrieveDatasets(fullPointDataset1, fullClusterDataset1, fullClusterDataset2,xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, topNRows, bottomNRows))
+        if (!validateAndRetrieveDatasets(fullClusterDataset1, fullClusterDataset2,xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, topNRows, bottomNRows))
             return;
 
   
@@ -1245,13 +1272,13 @@ void Computation::AutoCompute()
             return;
         }
 
-        int noOfDimensions = fullPointDataset1->getNumDimensions();
-        const auto& dimensionNames = fullPointDataset1->getDimensionNames();
+        int noOfDimensions = _normalizedFullDataset1->getNumDimensions();
+        const auto& dimensionNames = _normalizedFullDataset1->getDimensionNames();
         std::vector<int> columnIndices(noOfDimensions);
         std::iota(columnIndices.begin(), columnIndices.end(), 0);
 
 
-        if (!populateAndUpdateDatasets(fullPointDataset1, rotatedXYCordinates, XYCoordinates, noOfDimensions, columnIndices, dimensionNames))
+        if (!populateAndUpdateDatasets(_normalizedFullDataset1, rotatedXYCordinates, XYCoordinates, noOfDimensions, columnIndices, dimensionNames))
         {
             return setStatusMessage("E", "Error occurred during dataset population", "");
         }
@@ -1265,7 +1292,7 @@ void Computation::AutoCompute()
 
         std::vector<float> corrGeneCoords;
         QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
-        computeCorrelationGeneCoords(_filteredSelectionIndices, fullPointDataset1, yCoordinates, corrGeneCoords,corrType);
+        computeCorrelationGeneCoords(_filteredSelectionIndices, _normalizedFullDataset1, yCoordinates, corrGeneCoords,corrType);
 
         
         try {
@@ -1370,14 +1397,13 @@ void Computation::setStatusMessage(const QString& status, const QString& message
 }
 
 
-bool Computation::validateAndRetrieveDatasets(mv::Dataset<Points>& fullPointDataset1, mv::Dataset<Clusters>& fullClusterDataset1, mv::Dataset<Clusters>& fullClusterDataset2, int& xEmbeddingIndex, int& yEmbeddingIndex, std::vector<int>& selectedIndices, QString& scatterplotViewName,  int& topNRows,int& bottomNRows )
+bool Computation::validateAndRetrieveDatasets(mv::Dataset<Clusters>& fullClusterDataset1, mv::Dataset<Clusters>& fullClusterDataset2, int& xEmbeddingIndex, int& yEmbeddingIndex, std::vector<int>& selectedIndices, QString& scatterplotViewName,  int& topNRows,int& bottomNRows )
 {
 
-    fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
     fullClusterDataset1 = mv::data().getDataset<Clusters>(_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
     fullClusterDataset2 = mv::data().getDataset<Clusters>(_settingsAction.getDataset2OptionsHolder().getClusterDataset2Action().getCurrentDataset().getDatasetId());
 
-    if (!_embeddingDataset.isValid() || !fullPointDataset1.isValid() || !fullClusterDataset1.isValid() || !fullClusterDataset2.isValid()) {
+    if (!_embeddingDataset.isValid() || !_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid() || !fullClusterDataset1.isValid() || !fullClusterDataset2.isValid()) {
         qWarning() << "Invalid datasets";
         setStatusMessage("E", "Error occured during dataset creation", "");
         return false;
@@ -1562,14 +1588,19 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "Selected gene point datasets are invalid", "");
         return;
     }
+    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
+        qWarning() << "Normalized full datasets are invalid";
+        setStatusMessage("E", "Normalized full datasets are invalid", "");
+        return;
+    }
 
-    Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
-    Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
-    if (!fullDataset1.isValid() || !fullDataset2.isValid()) {
+    //Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
+    //Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
+    /*if (!fullDataset1.isValid() || !fullDataset2.isValid()) {
         qWarning() << "Full datasets are invalid";
         setStatusMessage("E", "Full datasets are invalid", "");
         return;
-    }
+    }*/
 
 
     if (!_pcaCommonGenesDataset1.isValid()) {
@@ -1581,16 +1612,6 @@ void Computation::processAfterPCAComplete()
         _pcaCommonGenesDataset2 = mv::data().createDataset("Points", "PCA Dataset 2", _selectedGenePointDataset2);
         _pcaCommonGenesDataset2->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
-    }
-    if(!_scatterplotColoringDataset1.isValid()) {
-        _scatterplotColoringDataset1 = mv::data().createDataset("Cluster", "Scatterplot Color Dataset 1");
-        _scatterplotColoringDataset1->setGroupIndex(555);
-        mv::events().notifyDatasetAdded(_scatterplotColoringDataset1);
-    }
-    if(!_scatterplotColoringDataset2.isValid()) {
-        _scatterplotColoringDataset2 = mv::data().createDataset("Cluster", "Scatterplot Color Dataset 2");
-        _scatterplotColoringDataset2->setGroupIndex(555);
-        mv::events().notifyDatasetAdded(_scatterplotColoringDataset2);
     }
 
     setStatusMessage("R", "Computation after PCA", "");
@@ -1631,8 +1652,8 @@ void Computation::processAfterPCAComplete()
 
     std::vector<int> geneOfInterestIndices2;
     QStringList commonGeneNames;
-    const auto& genedims1 = fullDataset1->getDimensionNames();
-    const auto& genedims2 = fullDataset2->getDimensionNames();
+    const auto& genedims1 = _normalizedFullDataset1->getDimensionNames();
+    const auto& genedims2 = _normalizedFullDataset2->getDimensionNames();
     geneOfInterestIndices2.reserve(_geneOfInterestIndices1.size());
     commonGeneNames.reserve(_geneOfInterestIndices1.size());
 
@@ -1714,22 +1735,16 @@ void Computation::processAfterPCAComplete()
         std::vector<float> genePointVector2(numPointsReduced2, 0.0f);
         std::vector<int> geneIDVector1(1, geneId1);
         std::vector<int> geneIDVector2(1, geneId2);
-        if (geneId1 < 0 || geneId1 >= fullDataset1->getNumDimensions() || geneId2 < 0 || geneId2 >= fullDataset2->getNumDimensions()) {
+        if (geneId1 < 0 || geneId1 >= _normalizedFullDataset1->getNumDimensions() || geneId2 < 0 || geneId2 >= _normalizedFullDataset2->getNumDimensions()) {
             qWarning() << "Invalid gene indices for PCA computation: geneId1 =" << geneId1 << ", geneId2 =" << geneId2;
             setStatusMessage("E", "Invalid gene indices for PCA computation", "");
             return;
         }
         //qDebug() << "Gene ID Vector 1:" << geneIDVector1 << "Gene ID Vector 2:" << geneIDVector2;
 
-        fullDataset1->populateDataForDimensions(genePointVector1, geneIDVector1,_selectedClusterIndices1);
-        fullDataset2->populateDataForDimensions(genePointVector2, geneIDVector2,_selectedClusterIndices2);
-        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
-        {
-            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-            NormalizationType normType = normalizationTypeFromString(normTypeStr);
-            normalizeVector(genePointVector1, normType);
-            normalizeVector(genePointVector2, normType);
-        }
+        _normalizedFullDataset1->populateDataForDimensions(genePointVector1, geneIDVector1,_selectedClusterIndices1);
+        _normalizedFullDataset2->populateDataForDimensions(genePointVector2, geneIDVector2,_selectedClusterIndices2);
+
         for (int j = 0; j < loadings.size(); j++)
         {
             float loadingVal = loadings[j];
@@ -1780,58 +1795,17 @@ void Computation::processAfterPCAComplete()
     //populateLineChartColorPointData();
 }
 
-void Computation::checkForRankLimits()
-{
-    int maxLimit = 0;
-    int minLimit = 0;
-    if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid() || _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
-    {
-
-        if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid())
-        {
-            Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
-            if (fullDataset2.isValid())
-            {
-                maxLimit = fullDataset2->getNumDimensions();
-
-            }
-        
-
-        }
-        if (_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
-        {
-            Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
-            if (fullDataset1.isValid())
-            {
-                maxLimit = std::min(maxLimit, static_cast<int>(fullDataset1->getNumDimensions()));
-
-            }
-        }
-
-        
-    }
-    
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMaximum(maxLimit);
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMaximum(maxLimit);
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setMinimum(minLimit);
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setMinimum(minLimit);
-
-    _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(std::min(10, maxLimit));
-    _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(std::min(0, maxLimit));
-}
 
 void Computation::correlationAfterPCA()
 {
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
 
-    Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
-    Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
-    if (!fullDataset2.isValid()) {
+    if (!_normalizedFullDataset1.isValid()) {
         setStatusMessage("E", "Point dataset 2 is invalid", "");
         return;
     }
-    if (!fullDataset1.isValid()) {
+    if (!_normalizedFullDataset2.isValid()) {
         setStatusMessage("E", "Point dataset 1 is invalid", "");
         return;
     }
@@ -1845,12 +1819,12 @@ void Computation::correlationAfterPCA()
         setStatusMessage("E", "No PCA dimension selected for dataset 2", "");
         return;
     }
-    const int numAllCells2 = fullDataset2->getNumPoints();
+    const int numAllCells2 = _normalizedFullDataset2->getNumPoints();
     if (numAllCells2 <= 0) {
         setStatusMessage("E", "No cells in point dataset 2", "");
         return;
     }
-    const int numAllCells1 = fullDataset1->getNumPoints();
+    const int numAllCells1 = _normalizedFullDataset1->getNumPoints();
     if (numAllCells1 <= 0) {
         setStatusMessage("E", "No cells in point dataset 1", "");
         return;
@@ -1865,16 +1839,14 @@ void Computation::correlationAfterPCA()
     std::vector<float> correlationGenePC2;
     std::vector<float> correlationGenePC1;
 
-    QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-    bool normalizeDataVal = _settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked();
-    computeCorrelationGenePC(fullDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2, normTypeStr, normalizeDataVal);
-    computeCorrelationGenePC(fullDataset1, selectedPC1, correlationGenePC1, _selectedClusterIndices1, normTypeStr, normalizeDataVal);
+    computeCorrelationGenePC(_normalizedFullDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2);
+    computeCorrelationGenePC(_normalizedFullDataset1, selectedPC1, correlationGenePC1, _selectedClusterIndices1);
     
     const int topNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
     const int bottomNRows = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
-    const auto dimensionNames2 = fullDataset2->getDimensionNames();
+    const auto dimensionNames2 = _normalizedFullDataset2->getDimensionNames();
     
-    const auto dimensionNames1 = fullDataset1->getDimensionNames();
+    const auto dimensionNames1 = _normalizedFullDataset1->getDimensionNames();
 
      try {
         populateGenesByCorrelationRange(correlationGenePC2, topNRows, bottomNRows, dimensionNames2, _geneCorrValues2, _geneOfInterestIndices2,false);
@@ -1944,77 +1916,17 @@ bool Computation::populateEmbeddingCoordinates(int xEmbeddingIndex, int yEmbeddi
     return true;
 }
 
-void Computation::changeColorLimits()
-{
-    float minValue = std::numeric_limits<float>::infinity();
-    float maxValue = -std::numeric_limits<float>::infinity();
-
-    auto computeMinMax = [this](const auto& datasetAction) -> std::pair<float, float> {
-        auto dataset = mv::data().getDataset<Points>(datasetAction.getCurrentDataset().getDatasetId());
-        if (!dataset.isValid()) return { std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity() };
-
-        int numDims = dataset->getNumDimensions();
-        int numCells = dataset->getNumPoints();
-        if (numDims == 0 || numCells == 0) return { std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity() };
-
-        std::vector<float> data(numCells * numDims);
-        std::vector<int> columns(numDims);
-        std::iota(columns.begin(), columns.end(), 0);
-        dataset->populateDataForDimensions(data, columns);
-
-        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) {
-            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-            NormalizationType normType = normalizationTypeFromString(normTypeStr);
-            normalizeVector(data, normType);
-        }
-
-        auto [minIt, maxIt] = std::minmax_element(data.begin(), data.end());
-        return { *minIt, *maxIt };
-        };
-
-    bool foundValid = false;
-
-    // Dataset 1
-    if (_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid()) {
-        auto [min1, max1] = computeMinMax(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction());
-        if (min1 < minValue) minValue = min1;
-        if (max1 > maxValue) maxValue = max1;
-        foundValid = true;
-    }
-
-    // Dataset 2
-    if (_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid()) {
-        auto [min2, max2] = computeMinMax(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action());
-        if (min2 < minValue) minValue = min2;
-        if (max2 > maxValue) maxValue = max2;
-        foundValid = true;
-    }
-
-    if (!foundValid) {
-        // No valid datasets, set to default range
-        minValue = 0.0f;
-        maxValue = 1.0f;
-    }
-
-    auto& exprRangeUpper = _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction();
-    auto& exprRangeLower= _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction();
-    exprRangeUpper.setMaximum(maxValue);
-    exprRangeUpper.setMinimum(minValue);
-    exprRangeLower.setMaximum(maxValue);
-    exprRangeLower.setMinimum(minValue);
-}
-
-bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDataset, const std::vector<float>& rotatedXYCordinates, const std::vector<float>& XYCordinates, int noOfDimensions, const std::vector<int>& columnIndices, const std::vector<QString>& dimensionNames)
+bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedPointDataset, const std::vector<float>& rotatedXYCordinates, const std::vector<float>& XYCordinates, int noOfDimensions, const std::vector<int>& columnIndices, const std::vector<QString>& dimensionNames)
 {
 
     if (!_selectedCellPointDataset.isValid() ||
         !_rotatedSelectedEmbeddingDataset.isValid() ||
         !_lineChartPointDataset1.isValid() ||
         !_lineChartColoringDataset1.isValid() ||
-        /*!_lineChartColorPCAPointDataset1.isValid() ||*/
         !_selectedGenePointDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() ||
         !_selectedEmbeddingDataset.isValid() ||
+        !fullNormalizedPointDataset.isValid() ||
         _filteredSelectionIndices.empty() ||
         columnIndices.empty() ||
         dimensionNames.size() != static_cast<size_t>(noOfDimensions))
@@ -2031,19 +1943,14 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullPointDatase
 
 
     try {
-        fullPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, _filteredSelectionIndices);
+        fullNormalizedPointDataset->populateDataForDimensions(cellbygenematrix, columnIndices, _filteredSelectionIndices);
     }
     catch (const std::exception& ex) {
         qWarning() << "Exception in populateDataForDimensions:" << ex.what();
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
-    if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
-    {
-        QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-        NormalizationType normType = normalizationTypeFromString(normTypeStr);
-        normalizeVector(cellbygenematrix, normType);
-    }
+
     //TODO TEST START
     float currentLowVal = _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().getValue();
     float currentHighVal = _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().getValue();
@@ -2136,28 +2043,25 @@ bool Computation::setupAndTriggerPCA()
 
     FunctionTimer timer(Q_FUNC_INFO);
 
-    auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
-    auto fullPointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
-
     auto fullEmbeddingDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
     auto fullEmbeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().getDatasetId());
 
-    if (!_selectedGenePointDataset1.isValid() || !fullPointDataset1.isValid() ||
-        !_selectedGenePointDataset2.isValid() || !fullPointDataset2.isValid() ||!fullEmbeddingDataset1.isValid() || !fullEmbeddingDataset2.isValid()) {
+    if (!_selectedGenePointDataset1.isValid() || !_normalizedFullDataset1.isValid() ||
+        !_selectedGenePointDataset2.isValid() || !_normalizedFullDataset2.isValid() ||!fullEmbeddingDataset1.isValid() || !fullEmbeddingDataset2.isValid()) {
         qWarning() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return false;
     }
 
     const int numCells0 = static_cast<int>(_filteredSelectionIndices.size());
-    const int numAllCellsAll2 = fullPointDataset2->getNumPoints();
-    const int numAllCellsAll1 = fullPointDataset1->getNumPoints();
+    const int numAllCellsAll2 = _normalizedFullDataset2->getNumPoints();
+    const int numAllCellsAll1 = _normalizedFullDataset1->getNumPoints();
     const int numAllFilteredCells2 = _selectedClusterIndices2.size();
     const int numAllFilteredCells1 = _selectedClusterIndices1.size();
     const int numOfIntGenes = static_cast<int>(_geneOfInterestIndices1.size());
 
-    const auto& dimensionNames1 = fullPointDataset1->getDimensionNames();
-    const auto& dimensionNames2 = fullPointDataset2->getDimensionNames();
+    const auto& dimensionNames1 = _normalizedFullDataset1->getDimensionNames();
+    const auto& dimensionNames2 = _normalizedFullDataset2->getDimensionNames();
 
     if (numCells0 <= 0 || numAllCellsAll2 <= 0 || numOfIntGenes <= 0 || numAllCellsAll1 <=0 || numAllFilteredCells2<=0 || numAllFilteredCells1<=0) {
         qWarning() << "Invalid dataset sizes: numAllCells1:" << numCells0 << "numOfIntGenes:" << numOfIntGenes << "numAllFilteredCells2:" << numAllFilteredCells2 << "numAllFilteredCells1:" << numAllFilteredCells1 << "numAllCellsAll2:" << numAllCellsAll2 << "numAllCellsAll1:" << numAllCellsAll1;
@@ -2203,13 +2107,7 @@ bool Computation::setupAndTriggerPCA()
 
     std::vector<float> cellByGeneMatrix0(numCells0 * numDimsOfInterest);
     try {
-        fullPointDataset1->populateDataForDimensions(cellByGeneMatrix0, geneDataset0, cellIndices0);
-        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
-        {
-            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-            NormalizationType normType = normalizationTypeFromString(normTypeStr);
-            normalizeVector(cellByGeneMatrix0, normType);
-        }
+        _normalizedFullDataset1->populateDataForDimensions(cellByGeneMatrix0, geneDataset0, cellIndices0);
     }
     catch (const std::exception& ex) {
         qWarning() << "Exception in populateDataForDimensions:" << ex.what();
@@ -2249,19 +2147,10 @@ bool Computation::setupAndTriggerPCA()
 
 
     try {
-        fullPointDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, _selectedClusterIndices2);
-        fullPointDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, _selectedClusterIndices1);
+        _normalizedFullDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, _selectedClusterIndices2);
+        _normalizedFullDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, _selectedClusterIndices1);
         fullEmbeddingDataset1->populateDataForDimensions(embeddingMatrix1, embeddingGeneIndices1, _selectedClusterIndices1);
         fullEmbeddingDataset2->populateDataForDimensions(embeddingMatrix2, embeddingGeneIndices2, _selectedClusterIndices2);
-
-
-        if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked()) 
-        {
-            QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-            NormalizationType normType = normalizationTypeFromString(normTypeStr);
-            normalizeVector(cellByGeneMatrix2, normType);
-            normalizeVector(cellByGeneMatrix1, normType);
-        }
 
     }
     catch (const std::exception& ex) {
@@ -2319,8 +2208,8 @@ bool Computation::setupAndTriggerPCA()
     {
         const int numRowsLine = _lineChartPointDataset1->getNumPoints();
         const int numColsLine = _lineChartPointDataset1->getNumDimensions();
-        Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
-        if (fullDataset1.isValid())
+
+        if (_normalizedFullDataset1.isValid())
         {
 
             if (static_cast<int>(_filteredSelectionIndices.size()) == numRowsLine)
@@ -2328,15 +2217,8 @@ bool Computation::setupAndTriggerPCA()
                 int numOfGenes = _geneOfInterestIndices1.size();
 
                 std::vector<float> expDataSelectedCellGene(numRowsLine * numOfGenes);
-                fullDataset1->populateDataForDimensions(
+                _normalizedFullDataset1->populateDataForDimensions(
                     expDataSelectedCellGene, _geneOfInterestIndices1, _filteredSelectionIndices);
-
-                if (_settingsAction.getCommonOptionsHolder().getNormalizeDataAction().isChecked())
-                {
-                    QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
-                    NormalizationType normType = normalizationTypeFromString(normTypeStr);
-                    normalizeVector(expDataSelectedCellGene, normType);
-                }
 
                 // Compute mean expression for each cell
                 std::vector<float> meanOfSelectedGenes(numRowsLine, 0.0f);
@@ -2365,6 +2247,123 @@ bool Computation::setupAndTriggerPCA()
     setStatusMessage("R", "PCA Started", "");
     _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
     return true;
+}
+
+void Computation::normalizeData()
+{
+    if (!_projectOpened)
+        return;
+
+    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid())
+    {
+        setStatusMessage("E", "No valid datasets for normalization", "");
+        return;
+    }
+
+    FunctionTimer timer(Q_FUNC_INFO);
+    setStatusMessage("R", "Normalizing data", "#28a745");
+
+    auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+    auto fullPointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId());
+
+    if (!fullPointDataset1.isValid() || !fullPointDataset2.isValid())
+    {
+        setStatusMessage("E", "Invalid point datasets for normalization", "");
+        return;
+    }
+
+    const int numPoints1 = fullPointDataset1->getNumPoints();
+    const int numDims1 = fullPointDataset1->getNumDimensions();
+    const int numPoints2 = fullPointDataset2->getNumPoints();
+    const int numDims2 = fullPointDataset2->getNumDimensions();
+
+    std::vector<float> data1(numPoints1 * numDims1);
+    std::vector<float> data2(numPoints2 * numDims2);
+
+    std::vector<int> columns1(numDims1);
+    std::vector<int> columns2(numDims2);
+    std::iota(columns1.begin(), columns1.end(), 0);
+    std::iota(columns2.begin(), columns2.end(), 0);
+
+    try {
+        fullPointDataset1->populateDataForDimensions(data1, columns1);
+        fullPointDataset2->populateDataForDimensions(data2, columns2);
+    }
+    catch (const std::exception& ex) {
+        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
+        setStatusMessage("E", "Error occurred during populating data for normalization", "");
+        return;
+    }
+
+    QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
+    NormalizationType normType = normalizationTypeFromString(normTypeStr);
+    float minValue = std::numeric_limits<float>::infinity();
+    float maxValue = -std::numeric_limits<float>::infinity();
+    if (_settingsAction.getCommonOptionsHolder().getNormalizeCombinedDatasetsAction().isChecked())
+    {
+        // Normalize data1 and data2 together for consistent scaling
+        std::vector<float> combinedData(data1.size() + data2.size());
+        std::copy(data1.begin(), data1.end(), combinedData.begin());
+        std::copy(data2.begin(), data2.end(), combinedData.begin() + data1.size());
+
+        // Run normalization in a separate thread
+        QFuture<void> future = QtConcurrent::run([&combinedData, normType]() {
+            normalizeVector(combinedData, normType);
+            });
+        future.waitForFinished();
+        minValue = *std::min_element(combinedData.begin(), combinedData.end());
+        maxValue = *std::max_element(combinedData.begin(), combinedData.end());
+
+        std::copy(combinedData.begin(), combinedData.begin() + data1.size(), data1.begin());
+        std::copy(combinedData.begin() + data1.size(), combinedData.end(), data2.begin());
+    }
+    else
+    {
+        // Normalize data1 and data2 in parallel
+        QFuture<void> future1 = QtConcurrent::run([&data1, normType]() {
+            normalizeVector(data1, normType);
+            });
+        QFuture<void> future2 = QtConcurrent::run([&data2, normType]() {
+            normalizeVector(data2, normType);
+            });
+        future1.waitForFinished();
+        future2.waitForFinished();
+        minValue = std::min(*std::min_element(data1.begin(), data1.end()), *std::min_element(data2.begin(), data2.end()));
+        maxValue = std::max(*std::max_element(data1.begin(), data1.end()), *std::max_element(data2.begin(), data2.end()));
+    }
+
+    _normalizedFullDataset1->setData(data1.data(), numPoints1, numDims1);
+    _normalizedFullDataset1->setDimensionNames(fullPointDataset1->getDimensionNames());
+    mv::events().notifyDatasetDataChanged(_normalizedFullDataset1);
+
+    _normalizedFullDataset2->setData(data2.data(), numPoints2, numDims2);
+    _normalizedFullDataset2->setDimensionNames(fullPointDataset2->getDimensionNames());
+    mv::events().notifyDatasetDataChanged(_normalizedFullDataset2);
+
+    auto& exprRangeUpper = _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction();
+    auto& exprRangeLower = _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction();
+    exprRangeUpper.setMaximum(maxValue);
+    exprRangeUpper.setMinimum(minValue);
+    exprRangeLower.setMaximum(maxValue);
+    exprRangeLower.setMinimum(minValue);
+
+    int maxRankLimit = 0;
+    int minRankLimit = 0;
+
+    maxRankLimit = _normalizedFullDataset2->getNumDimensions();
+    maxRankLimit = std::min(maxRankLimit, static_cast<int>(_normalizedFullDataset1->getNumDimensions()));
+
+    auto& topNRowsAction = _settingsAction.getCommonOptionsHolder().getTopNRowsAction();
+    auto& bottomNRowsAction = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction();
+
+    topNRowsAction.setMaximum(maxRankLimit);
+    bottomNRowsAction.setMaximum(maxRankLimit);
+    topNRowsAction.setMinimum(minRankLimit);
+    bottomNRowsAction.setMinimum(minRankLimit);
+
+    topNRowsAction.setValue(std::min(10, maxRankLimit));
+    bottomNRowsAction.setValue(std::min(minRankLimit, maxRankLimit));
+
 }
 
 void Computation::setSelectionAndAutoCompute()
@@ -2471,14 +2470,14 @@ void Computation::coloringLinePlots()
             else
             {
                 QString selectedGene = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
-                if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
+                if (!_normalizedFullDataset1.isValid())
                 {
                     setStatusMessage("E", "No valid point dataset selected for coloring", "");
                     return;
                 }
                 if (!selectedGene.isEmpty())
                 {
-                    QString geneDataset1ID = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId();
+                    QString geneDataset1ID = _normalizedFullDataset1.getDatasetId();
                     if (geneDataset1ID.isEmpty())
                     {
                         setStatusMessage("E", "No valid  datasets", "");
@@ -2621,14 +2620,14 @@ void Computation::coloringScatterPlots()
         else
         {
             
-            if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() || !_settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().isValid())
+            if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid())
             {
                 setStatusMessage("E", "No valid PCA datasets", "");
                 return;
             }
 
-            QString geneDataset1ID = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId();
-            QString geneDataset2ID = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset().getDatasetId();
+            QString geneDataset1ID = _normalizedFullDataset1.getDatasetId();
+            QString geneDataset2ID = _normalizedFullDataset2.getDatasetId();
             if (geneDataset1ID.isEmpty() || geneDataset2ID.isEmpty())
             {
                 setStatusMessage("E", "No valid PCA datasets", "");
