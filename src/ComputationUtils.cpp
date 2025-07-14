@@ -192,7 +192,7 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
     {
         if (linePlotName.isEmpty() || positionDatasetID.isEmpty() || xPositionString.isEmpty() || yPositionString.isEmpty())
         {
-            qWarning() << "LinePlot name or position dataset ID is empty";
+            //qWarning() << "LinePlot name or position dataset ID is empty";
             bool pluginfound = false;
             for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
             {
