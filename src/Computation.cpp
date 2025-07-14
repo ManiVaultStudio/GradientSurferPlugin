@@ -2355,10 +2355,16 @@ void Computation::coloringLinePlots()
         return;
     }
     QString linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-    if (!_lineChartPointDataset1.isValid() && linePlotName.isEmpty() && _filteredSelectionIndices.size()<1 && _lineChartPointDataset1->getNumPoints()<1)
+    if (!_lineChartPointDataset1.isValid() || linePlotName.isEmpty() || _filteredSelectionIndices.size()<1)
     {
         clearLinePlots();
         setStatusMessage("E", "No valid line chart dataset or line plot name", "");
+        return;
+    }
+    if (_lineChartPointDataset1->getNumPoints() < 1)
+    {
+        clearLinePlots();
+        setStatusMessage("E", "No valid line chart dataset", "");
         return;
     }
     int totalPoints1 = 0;
@@ -2475,7 +2481,7 @@ void Computation::coloringScatterPlots()
         return;
     }
 
-    if (!_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid() &&
+    if (!_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid() ||
         !_settingsAction.getDataset2OptionsHolder().getEmbeddingDataset2Action().getCurrentDataset().isValid())
     {
         setStatusMessage("E", "No valid embedding datasets", "");
@@ -2496,7 +2502,7 @@ void Computation::coloringScatterPlots()
     }
     QString embeddingDataset1Id = embeddingDataset1.getDatasetId();
     QString embeddingDataset2Id = embeddingDataset2.getDatasetId();
-    if (embeddingDataset1Id.isEmpty() && embeddingDataset2Id.isEmpty())
+    if (embeddingDataset1Id.isEmpty() || embeddingDataset2Id.isEmpty())
     {
         setStatusMessage("E", "No valid dataset ids", "");
         return;
@@ -2533,7 +2539,7 @@ void Computation::coloringScatterPlots()
     }
     else
     {
-        if(!_scatterplotColoringDataset1.isValid() && !_scatterplotColoringDataset2.isValid())
+        if(!_scatterplotColoringDataset1.isValid() || !_scatterplotColoringDataset2.isValid())
         {
             setStatusMessage("E", "No valid coloring datasets", "");
             return;
