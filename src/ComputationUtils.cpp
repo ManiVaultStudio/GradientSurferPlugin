@@ -401,7 +401,7 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                     pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
                     if (pointDatasetPickerValueAction)
                     {
-                        if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
+                        //if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
                         {
                             auto embeddingDataset = mv::data().getDataset(positionDatasetID);
                             if (embeddingDataset.isValid())
