@@ -359,9 +359,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 clearTables();
                 clearLinePlots();
 
-                ScopedBlocker blocker(_blockToggle);
-                _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
-                //coloringLinePlots(); //TODO Check
                 auto parent = _embeddingDataset->getParent();
                 if (parent.isValid())
                 {
@@ -434,13 +431,16 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 {
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
-               
+                //ScopedBlocker blocker(_blockToggle);
+                //_settingsAction.getCommonOptionsHolder().getComputePCAAction().setChecked(false);
+                _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+                coloringScatterPlots(); //TODO Check
  
             }
 
 
         }
-        coloringScatterPlots(); //TODO Check
+
         setStatusMessage("M", "Embedding dataset 1 updated", "");
         };
 
@@ -473,9 +473,6 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 clearTables();
                 clearLinePlots();
 
-                ScopedBlocker blocker(_blockToggle);
-                _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
-                //coloringLinePlots(); //TODO Check
                 auto parent = embeddingDataset2->getParent();
                 if (parent.isValid())
                 {
@@ -522,13 +519,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2XAction().setCurrentDimensionIndex(-1);
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimension2YAction().setCurrentDimensionIndex(-1);
                 }
-              
-                
+                //ScopedBlocker blocker(_blockToggle);
+                //_settingsAction.getCommonOptionsHolder().getComputePCAAction().setChecked(false);
+                _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+                //coloringScatterPlots(); //TODO Check
             }
 
 
         }
-        coloringScatterPlots(); //TODO Check
+        
         setStatusMessage("M", "Embedding dataset 2 updated", "");
         };
 
@@ -2552,7 +2551,8 @@ void Computation::coloringScatterPlots()
         setStatusMessage("E", "No valid embedding dimensions selected", "");
         return;
     }
-
+    qDebug() << "Embedding1 datasetName: " << embeddingDataset1->getGuiName() << " embeddingDimensionX1: " << embeddingDimensionX1 << " embeddingDimensionY1: " << embeddingDimensionY1;
+    qDebug() << "Embedding2 datasetName: " << embeddingDataset2->getGuiName() << " embeddingDimensionX2: " << embeddingDimensionX2 << " embeddingDimensionY2: " << embeddingDimensionY2;
     
     QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
     QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelection2Action().getCurrentText();

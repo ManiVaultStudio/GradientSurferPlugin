@@ -1368,12 +1368,14 @@ void createLineChartClusterColors(QString coloringDataset,QString colorMapValue,
     QVector<Cluster> newClusters;
     newClusters.reserve(selectedIndices.size());
 
-    std::vector<float> geneExpValues(selectedIndices.size());
+    
     ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
     std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
     auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
     int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
-    pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
+    std::vector<int> dimensionIndxContainer = { dimensionIndex };
+    std::vector<float> geneExpValues(selectedIndices.size()* dimensionIndxContainer.size());
+    pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimensionIndxContainer, selectedIndices);
 
     std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
     for (size_t i = 0; i < geneExpValues.size(); ++i) {
@@ -1488,12 +1490,14 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
         newClusters.append(notSelectedCluster);
     }
 
-    std::vector<float> geneExpValues(selectedIndices.size());
+
     ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
     std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
     auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
     int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
-    pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
+    std::vector<int> dimensionIndxContainer = { dimensionIndex };
+    std::vector<float> geneExpValues(selectedIndices.size() * dimensionIndxContainer.size());
+    pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimensionIndxContainer, selectedIndices);
 
     // Group indices by unique PCA value
     std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
