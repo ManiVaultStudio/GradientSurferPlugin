@@ -62,7 +62,6 @@ private:
 
     // Helper functions for AutoCompute refactor
     bool validateAndRetrieveDatasets(
-        mv::Dataset<Points>& fullPointDataset1,
         mv::Dataset<Clusters>& fullClusterDataset1,
         mv::Dataset<Clusters>& fullClusterDataset2,
         int& xEmbeddingIndex,
@@ -79,7 +78,6 @@ private:
     bool populateEmbeddingCoordinates(
         int xEmbeddingIndex, int yEmbeddingIndex,
         std::vector<float>& XYCoordinates);
-    void changeColorLimits();
     bool populateAndUpdateDatasets(
         mv::Dataset<Points>& fullPointDataset,
         const std::vector<float>& rotatedXYCordinates,
@@ -87,7 +85,6 @@ private:
         int noOfDimensions,
         const std::vector<int>& columnIndices,
         const std::vector<QString>& dimensionNames);
-    void checkForRankLimits();
     bool setupAndTriggerPCA();
     void setSelectionAndAutoCompute();
     void correlationAfterPCA();
@@ -96,6 +93,7 @@ private:
     void coloringLinePlots();
     void clearLinePlots();
     void clearTables();
+    void  normalizeData();
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
@@ -117,6 +115,9 @@ protected:
     mv::Dataset<Clusters>       _lineChartColoringDataset1 = nullptr;
     mv::Dataset<Clusters>       _scatterplotColoringDataset1 = nullptr;
     mv::Dataset<Clusters>       _scatterplotColoringDataset2 = nullptr;
+    mv::Dataset<Points>         _normalizedFullDataset1 = nullptr;
+    mv::Dataset<Points>         _normalizedFullDataset2 = nullptr;
+    QString                    _currentNormalizationMethod = "";
     //mv::Dataset<Points>       _lineChartColorPCAPointDataset1 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset2Plugin = nullptr;
@@ -137,6 +138,7 @@ protected:
     bool _blockSelectionTrigger=false;
     std::vector<int>   _selectedClusterIndices1;
     std::vector<int>   _selectedClusterIndices2;
+    
     //bool    _pacColoringPaused = false;
     //bool _geneSelectionPaused = false;
     //bool _blockSelectionMode = false;

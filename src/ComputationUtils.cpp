@@ -192,7 +192,7 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
     {
         if (linePlotName.isEmpty() || positionDatasetID.isEmpty() || xPositionString.isEmpty() || yPositionString.isEmpty())
         {
-            qWarning() << "LinePlot name or position dataset ID is empty";
+            //qWarning() << "LinePlot name or position dataset ID is empty";
             bool pluginfound = false;
             for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
             {
@@ -401,7 +401,7 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                     pointDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
                     if (pointDatasetPickerValueAction)
                     {
-                        if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
+                        //if (!pointDatasetPickerValueAction->getCurrentDataset().isValid())
                         {
                             auto embeddingDataset = mv::data().getDataset(positionDatasetID);
                             if (embeddingDataset.isValid())
@@ -869,7 +869,7 @@ void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv:
 
 
 }
-void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices, QString normTypeStr, bool normalizeData)
+void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices)
 {
     FunctionTimer timer(Q_FUNC_INFO);
 
@@ -900,12 +900,6 @@ void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std:
         //fullDataset->extractDataForDimension(geneVals, geneIdx);
         std::vector<int> geneIndex = { geneIdx };
         fullDataset->populateDataForDimensions(geneVals,geneIndex, allClusterFilteredIndices);
-        if (normalizeData)
-        {
-            NormalizationType normType = normalizationTypeFromString(normTypeStr);
-
-            normalizeVector(geneVals, normType);
-        }
         float sumGene = 0.0f;
         for (float v : geneVals) sumGene += v;
         float meanGene = sumGene / numCellsFilt;
@@ -1374,12 +1368,14 @@ void createLineChartClusterColors(QString coloringDataset,QString colorMapValue,
     QVector<Cluster> newClusters;
     newClusters.reserve(selectedIndices.size());
 
-    std::vector<float> geneExpValues(selectedIndices.size());
+    
     ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
     std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
     auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
     int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
-    pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
+    std::vector<int> dimensionIndxContainer = { dimensionIndex };
+    std::vector<float> geneExpValues(selectedIndices.size()* dimensionIndxContainer.size());
+    pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimensionIndxContainer, selectedIndices);
 
     std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
     for (size_t i = 0; i < geneExpValues.size(); ++i) {
@@ -1390,7 +1386,8 @@ void createLineChartClusterColors(QString coloringDataset,QString colorMapValue,
     for (const auto& [value, indices] : valueToIndices) {
         QColor color = getColorFromColormap(value, colormap, minValue, maxValue);
         Cluster cluster;
-        cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        //cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        cluster.setName(QString::number(value, 'g', 6));
         cluster.setColor(color);
         cluster.setIndices(indices);
         newClusters.append(cluster);
@@ -1493,12 +1490,14 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
         newClusters.append(notSelectedCluster);
     }
 
-    std::vector<float> geneExpValues(selectedIndices.size());
+
     ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
     std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
     auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
     int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
-    pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
+    std::vector<int> dimensionIndxContainer = { dimensionIndex };
+    std::vector<float> geneExpValues(selectedIndices.size() * dimensionIndxContainer.size());
+    pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimensionIndxContainer, selectedIndices);
 
     // Group indices by unique PCA value
     std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
@@ -1510,7 +1509,8 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
     for (const auto& [value, indices] : valueToIndices) {
         QColor color = getColorFromColormap(value, colormap, minValue, maxValue);
         Cluster cluster;
-        cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        //cluster.setName(QString("Cluster %1").arg(clusterIdx++));
+        cluster.setName(QString::number(value, 'g', 6));
         cluster.setColor(color);
         cluster.setIndices(indices);
         newClusters.append(cluster);
