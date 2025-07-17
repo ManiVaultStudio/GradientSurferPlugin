@@ -70,7 +70,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     }
     if (!_normalizedFullDataset2.isValid()) {
         _normalizedFullDataset2 = mv::data().createDataset("Points", "Normalized Full Dataset 2");
-        _normalizedFullDataset2->setGroupIndex(555);
+        _normalizedFullDataset2->setGroupIndex(556);
         mv::events().notifyDatasetAdded(_normalizedFullDataset2);
     }
 
@@ -82,7 +82,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     }
     if (!_scatterplotColoringDataset2.isValid()) {
         _scatterplotColoringDataset2 = mv::data().createDataset("Cluster", "Scatterplot Color Dataset 2", _normalizedFullDataset2);
-        _scatterplotColoringDataset2->setGroupIndex(555);
+        _scatterplotColoringDataset2->setGroupIndex(556);
         mv::events().notifyDatasetAdded(_scatterplotColoringDataset2);
     }
 
@@ -1296,7 +1296,7 @@ void Computation::AutoCompute()
         std::iota(columnIndices.begin(), columnIndices.end(), 0);
 
 
-        if (!populateAndUpdateDatasets(_normalizedFullDataset1, rotatedXYCordinates, XYCoordinates, noOfDimensions, columnIndices, dimensionNames))
+        if (!populateAndUpdateDatasets(_normalizedFullDataset1, rotatedXYCordinates, /*XYCoordinates,*/ noOfDimensions, columnIndices, dimensionNames))
         {
             return setStatusMessage("E", "Error occurred during dataset population", "");
         }
@@ -1494,7 +1494,7 @@ bool Computation::createDatasetsIfNeeded()
 
     if (!_selectedGenePointDataset2.isValid()) {
         _selectedGenePointDataset2 = mv::data().createDataset("Points", "Selected Gene Point Data 2");
-        _selectedGenePointDataset2->setGroupIndex(667);
+        _selectedGenePointDataset2->setGroupIndex(668);
         mv::events().notifyDatasetAdded(_selectedGenePointDataset2);
     }
 
@@ -1536,13 +1536,13 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_lineChartColorPCAPointDataset1);
     }*/
 
-    if (!_selectedEmbeddingDataset.isValid()) {
+    /*if (!_selectedEmbeddingDataset.isValid()) {
         _selectedEmbeddingDataset = mv::data().createDataset("Points", "Selected Embedding Data", _selectedCellPointDataset);
         _selectedEmbeddingDataset->setGroupIndex(666);
         mv::events().notifyDatasetAdded(_selectedEmbeddingDataset);
-    }
+    }*/
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColoringDataset1.isValid() /* || !_lineChartColorPCAPointDataset1.isValid() */ || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid() /*|| !_selectedEmbeddingPointDataset1.isValid() || !_selectedEmbeddingPointDataset2.isValid()*/) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColoringDataset1.isValid() /* || !_lineChartColorPCAPointDataset1.isValid() */ || !_selectedGenePointDataset2.isValid() /*|| !_selectedEmbeddingDataset.isValid() */|| !_selectedCellPointDataset.isValid() /*|| !_selectedEmbeddingPointDataset1.isValid() || !_selectedEmbeddingPointDataset2.isValid()*/) {
         qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -1628,7 +1628,7 @@ void Computation::processAfterPCAComplete()
     }
     if (!_pcaCommonGenesDataset2.isValid()) {
         _pcaCommonGenesDataset2 = mv::data().createDataset("Points", "PCA Dataset 2", _selectedGenePointDataset2);
-        _pcaCommonGenesDataset2->setGroupIndex(667);
+        _pcaCommonGenesDataset2->setGroupIndex(668);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
     }
 
@@ -1934,7 +1934,7 @@ bool Computation::populateEmbeddingCoordinates(int xEmbeddingIndex, int yEmbeddi
     return true;
 }
 
-bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedPointDataset, const std::vector<float>& rotatedXYCordinates, const std::vector<float>& XYCordinates, int noOfDimensions, const std::vector<int>& columnIndices, const std::vector<QString>& dimensionNames)
+bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedPointDataset, const std::vector<float>& rotatedXYCordinates, /*const std::vector<float>& XYCordinates,*/ int noOfDimensions, const std::vector<int>& columnIndices, const std::vector<QString>& dimensionNames)
 {
 
     if (!_selectedCellPointDataset.isValid() ||
@@ -1943,7 +1943,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
         !_lineChartColoringDataset1.isValid() ||
         !_selectedGenePointDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() ||
-        !_selectedEmbeddingDataset.isValid() ||
+        /*!_selectedEmbeddingDataset.isValid() ||*/
         !fullNormalizedPointDataset.isValid() ||
         _filteredSelectionIndices.empty() ||
         columnIndices.empty() ||
@@ -1997,9 +1997,9 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
     mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
 
 
-    _selectedEmbeddingDataset->setData(XYCordinates.data(), static_cast<int>(numCells), 2);
+    /*_selectedEmbeddingDataset->setData(XYCordinates.data(), static_cast<int>(numCells), 2);
     _selectedEmbeddingDataset->setDimensionNames({ QStringLiteral("X"), QStringLiteral("Y") });
-    mv::events().notifyDatasetDataChanged(_selectedEmbeddingDataset);
+    mv::events().notifyDatasetDataChanged(_selectedEmbeddingDataset);*/
 
 
     std::vector<QString> dimensionNamesWithYCoords = { QStringLiteral("Rotated Y Coordinates") };
