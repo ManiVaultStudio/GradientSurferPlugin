@@ -100,7 +100,10 @@ public:
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
 
-
+        const DecimalAction& getExpressionUpperColoringRangeAction() const { return _expressionUpperColoringRangeAction; }
+        DecimalAction& getExpressionUpperColoringRangeAction() { return _expressionUpperColoringRangeAction; }
+        const DecimalAction& getExpressionLowerColoringRangeAction() const { return _expressionLowerColoringRangeAction; }
+        DecimalAction& getExpressionLowerColoringRangeAction() { return _expressionLowerColoringRangeAction; }
  
 
 
@@ -119,7 +122,8 @@ public:
         DimensionPickerAction               _geneSelectionAction;
 
 
-
+        DecimalAction          _expressionUpperColoringRangeAction;
+        DecimalAction          _expressionLowerColoringRangeAction;
 
   
     };
@@ -131,43 +135,49 @@ public:
 
 
     
-        const DatasetPickerAction& getClusterDataset2Action() const { return _clusterDataset2Action; }
-        DatasetPickerAction& getClusterDataset2Action() { return _clusterDataset2Action; }
+        const DatasetPickerAction& getClusterDatasetAction() const { return _clusterDatasetAction; }
+        DatasetPickerAction& getClusterDatasetAction() { return _clusterDatasetAction; }
 
-        const DatasetPickerAction& getPointDataset2Action() const { return _pointDataset2Action; }
-        DatasetPickerAction& getPointDataset2Action() { return _pointDataset2Action; }
+        const DatasetPickerAction& getPointDatasetAction() const { return _pointDatasetAction; }
+        DatasetPickerAction& getPointDatasetAction() { return _pointDatasetAction; }
 
-        const DatasetPickerAction& getEmbeddingDataset2Action() const { return _embeddingDataset2Action; }
-        DatasetPickerAction& getEmbeddingDataset2Action() { return _embeddingDataset2Action; }
+        const DatasetPickerAction& getEmbeddingDatasetAction() const { return _embeddingDatasetAction; }
+        DatasetPickerAction& getEmbeddingDatasetAction() { return _embeddingDatasetAction; }
 
-        const OptionAction& getScatterplotViewSelection2Action() const { return _scatterplotViewSelection2Action; }
-        OptionAction& getScatterplotViewSelection2Action() { return _scatterplotViewSelection2Action; }
+        const OptionAction& getScatterplotViewSelectionAction() const { return _scatterplotViewSelectionAction; }
+        OptionAction& getScatterplotViewSelectionAction() { return _scatterplotViewSelectionAction; }
 
-        const DimensionPickerAction& getEmbeddingDimension2XAction() const { return _embeddingDimension2XAction; }
-        DimensionPickerAction& getEmbeddingDimension2XAction() { return _embeddingDimension2XAction; }
+        const DimensionPickerAction& getEmbeddingDimensionXAction() const { return _embeddingDimensionXAction; }
+        DimensionPickerAction& getEmbeddingDimensionXAction() { return _embeddingDimensionXAction; }
 
-        const DimensionPickerAction& getEmbeddingDimension2YAction() const { return _embeddingDimension2YAction; }
-        DimensionPickerAction& getEmbeddingDimension2YAction() { return _embeddingDimension2YAction; }
+        const DimensionPickerAction& getEmbeddingDimensionYAction() const { return _embeddingDimensionYAction; }
+        DimensionPickerAction& getEmbeddingDimensionYAction() { return _embeddingDimensionYAction; }
 
-        const DimensionPickerAction& getGeneSelection2Action() const { return _geneSelection2Action; }
-        DimensionPickerAction& getGeneSelection2Action() { return _geneSelection2Action; }
+        const DimensionPickerAction& getGeneSelection2Action() const { return _geneSelectionAction; }
+        DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
  
+        const DecimalAction& getExpressionUpperColoringRangeAction() const { return _expressionUpperColoringRangeAction; }
+        DecimalAction& getExpressionUpperColoringRangeAction() { return _expressionUpperColoringRangeAction; }
+        const DecimalAction& getExpressionLowerColoringRangeAction() const { return _expressionLowerColoringRangeAction; }
+        DecimalAction& getExpressionLowerColoringRangeAction() { return _expressionLowerColoringRangeAction; }
+
+
 
     protected:
         SettingsAction& _settingsOptions;
 
 
 
-        DatasetPickerAction                 _clusterDataset2Action;
-        DatasetPickerAction                 _pointDataset2Action;
-        DatasetPickerAction                 _embeddingDataset2Action;
-        OptionAction                        _scatterplotViewSelection2Action;
-        DimensionPickerAction               _embeddingDimension2XAction;
-        DimensionPickerAction               _embeddingDimension2YAction;
-        DimensionPickerAction               _geneSelection2Action;
-
-
+        DatasetPickerAction                 _clusterDatasetAction;
+        DatasetPickerAction                 _pointDatasetAction;
+        DatasetPickerAction                 _embeddingDatasetAction;
+        OptionAction                        _scatterplotViewSelectionAction;
+        DimensionPickerAction               _embeddingDimensionXAction;
+        DimensionPickerAction               _embeddingDimensionYAction;
+        DimensionPickerAction               _geneSelectionAction;
+        DecimalAction                       _expressionUpperColoringRangeAction;
+        DecimalAction                       _expressionLowerColoringRangeAction;
     };
 
     class CommonOptionsHolder : public VerticalGroupAction
@@ -231,10 +241,7 @@ public:
         const IntegralAction& getTopNRowsAction() const { return _topNRowsAction; }
         IntegralAction& getTopNRowsAction() { return _topNRowsAction; }
 
-        const DecimalAction& getExpressionUpperColoringRangeAction() const { return _expressionUpperColoringRangeAction; }
-        DecimalAction& getExpressionUpperColoringRangeAction() { return _expressionUpperColoringRangeAction; }
-        const DecimalAction& getExpressionLowerColoringRangeAction() const { return _expressionLowerColoringRangeAction; }
-        DecimalAction& getExpressionLowerColoringRangeAction() { return _expressionLowerColoringRangeAction; }
+
 
     protected:
         SettingsAction& _settingsOptions;
@@ -259,8 +266,7 @@ public:
 
         IntegralAction              _bottomNRowsAction;
         IntegralAction              _topNRowsAction;
-        DecimalAction          _expressionUpperColoringRangeAction;
-        DecimalAction          _expressionLowerColoringRangeAction;
+
     };
 
 
