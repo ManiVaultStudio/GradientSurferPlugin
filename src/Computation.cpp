@@ -1498,7 +1498,7 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_selectedGenePointDataset2);
     }
 
-    if (!_selectedEmbeddingPointDataset1.isValid()) {
+    /*if (!_selectedEmbeddingPointDataset1.isValid()) {
         _selectedEmbeddingPointDataset1 = mv::data().createDataset("Points", "Selected Embedding Point Data 1", _selectedGenePointDataset1);
         _selectedEmbeddingPointDataset1->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_selectedEmbeddingPointDataset1);
@@ -1508,7 +1508,7 @@ bool Computation::createDatasetsIfNeeded()
         _selectedEmbeddingPointDataset2 = mv::data().createDataset("Points", "Selected Embedding Point Data 2", _selectedGenePointDataset2);
         _selectedEmbeddingPointDataset2->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_selectedEmbeddingPointDataset2);
-    }
+    }*/
     
     if (!_selectedCellPointDataset.isValid()) {
         _selectedCellPointDataset = mv::data().createDataset("Points", "Selected Cell Point Data");
@@ -1542,7 +1542,7 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_selectedEmbeddingDataset);
     }
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColoringDataset1.isValid() /* || !_lineChartColorPCAPointDataset1.isValid() */ || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid() || !_selectedEmbeddingPointDataset1.isValid() || !_selectedEmbeddingPointDataset2.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColoringDataset1.isValid() /* || !_lineChartColorPCAPointDataset1.isValid() */ || !_selectedGenePointDataset2.isValid() || !_selectedEmbeddingDataset.isValid() || !_selectedCellPointDataset.isValid() /*|| !_selectedEmbeddingPointDataset1.isValid() || !_selectedEmbeddingPointDataset2.isValid()*/) {
         qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -2060,11 +2060,11 @@ bool Computation::setupAndTriggerPCA()
 
     FunctionTimer timer(Q_FUNC_INFO);
 
-    auto fullEmbeddingDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-    auto fullEmbeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+    //auto fullEmbeddingDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+    //auto fullEmbeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
 
     if (!_selectedGenePointDataset1.isValid() || !_normalizedFullDataset1.isValid() ||
-        !_selectedGenePointDataset2.isValid() || !_normalizedFullDataset2.isValid() ||!fullEmbeddingDataset1.isValid() || !fullEmbeddingDataset2.isValid()) {
+        !_selectedGenePointDataset2.isValid() || !_normalizedFullDataset2.isValid() /*||!fullEmbeddingDataset1.isValid() || !fullEmbeddingDataset2.isValid()*/) {
         qWarning() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return false;
@@ -2137,9 +2137,9 @@ bool Computation::setupAndTriggerPCA()
     std::vector<float> cellByGeneMatrix2(numAllFilteredCells2 * numDimsOfInterest);
     std::vector<float> cellByGeneMatrix1(numAllFilteredCells1 * numDimsOfInterest);
 
-    std::vector<float> embeddingMatrix1(numAllFilteredCells1 * fullEmbeddingDataset1->getNumDimensions());
-    std::vector<float> embeddingMatrix2(numAllFilteredCells2 * fullEmbeddingDataset2->getNumDimensions());
-
+    //std::vector<float> embeddingMatrix1(numAllFilteredCells1 * fullEmbeddingDataset1->getNumDimensions());
+    //std::vector<float> embeddingMatrix2(numAllFilteredCells2 * fullEmbeddingDataset2->getNumDimensions());
+    /*
     std::vector<int> embeddingGeneIndices1(fullEmbeddingDataset1->getNumDimensions());
     for (int i = 0; i < fullEmbeddingDataset1->getNumDimensions(); ++i) {
         embeddingGeneIndices1[i] = i;
@@ -2148,7 +2148,7 @@ bool Computation::setupAndTriggerPCA()
     for (int i = 0; i < fullEmbeddingDataset2->getNumDimensions(); ++i) {
         embeddingGeneIndices2[i] = i;
     }
-
+    */
 
     if(_selectedClusterIndices1 .empty() || _selectedClusterIndices2.empty())
     {
@@ -2166,8 +2166,8 @@ bool Computation::setupAndTriggerPCA()
     try {
         _normalizedFullDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, _selectedClusterIndices2);
         _normalizedFullDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, _selectedClusterIndices1);
-        fullEmbeddingDataset1->populateDataForDimensions(embeddingMatrix1, embeddingGeneIndices1, _selectedClusterIndices1);
-        fullEmbeddingDataset2->populateDataForDimensions(embeddingMatrix2, embeddingGeneIndices2, _selectedClusterIndices2);
+        //fullEmbeddingDataset1->populateDataForDimensions(embeddingMatrix1, embeddingGeneIndices1, _selectedClusterIndices1);
+        //fullEmbeddingDataset2->populateDataForDimensions(embeddingMatrix2, embeddingGeneIndices2, _selectedClusterIndices2);
 
     }
     catch (const std::exception& ex) {
@@ -2208,13 +2208,13 @@ bool Computation::setupAndTriggerPCA()
         _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().setValue((maxValue));
     }*/
     //TODO TEST END
-    _selectedEmbeddingPointDataset1->setData(embeddingMatrix1.data(), numAllFilteredCells1, fullEmbeddingDataset1->getNumDimensions());
-    _selectedEmbeddingPointDataset1->setDimensionNames(fullEmbeddingDataset1->getDimensionNames());
-    mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset1);
+    //_selectedEmbeddingPointDataset1->setData(embeddingMatrix1.data(), numAllFilteredCells1, fullEmbeddingDataset1->getNumDimensions());
+    //_selectedEmbeddingPointDataset1->setDimensionNames(fullEmbeddingDataset1->getDimensionNames());
+    //mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset1);
 
-    _selectedEmbeddingPointDataset2->setData(embeddingMatrix2.data(), numAllFilteredCells2, fullEmbeddingDataset2->getNumDimensions());
-    _selectedEmbeddingPointDataset2->setDimensionNames(fullEmbeddingDataset2->getDimensionNames());
-    mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset2);
+    //_selectedEmbeddingPointDataset2->setData(embeddingMatrix2.data(), numAllFilteredCells2, fullEmbeddingDataset2->getNumDimensions());
+    //_selectedEmbeddingPointDataset2->setDimensionNames(fullEmbeddingDataset2->getDimensionNames());
+    //mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset2);
 
 
 
