@@ -2576,8 +2576,8 @@ void Computation::coloringScatterPlots()
         setStatusMessage("E", "No valid embedding dimensions selected", "");
         return;
     }
-    qDebug() << "Embedding1 datasetName: " << embeddingDataset1->getGuiName() << " embeddingDimensionX1: " << embeddingDimensionX1 << " embeddingDimensionY1: " << embeddingDimensionY1;
-    qDebug() << "Embedding2 datasetName: " << embeddingDataset2->getGuiName() << " embeddingDimensionX2: " << embeddingDimensionX2 << " embeddingDimensionY2: " << embeddingDimensionY2;
+    //qDebug() << "Embedding1 datasetName: " << embeddingDataset1->getGuiName() << " embeddingDimensionX1: " << embeddingDimensionX1 << " embeddingDimensionY1: " << embeddingDimensionY1;
+    //qDebug() << "Embedding2 datasetName: " << embeddingDataset2->getGuiName() << " embeddingDimensionX2: " << embeddingDimensionX2 << " embeddingDimensionY2: " << embeddingDimensionY2;
     
     QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
     QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
