@@ -99,6 +99,7 @@ protected:
     SettingsAction&             _settingsAction;
     mv::Dataset<Points>         _selectedCellPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
+    mv::Dataset<Points>         _pcaSelectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _embeddingDataset = nullptr;
     //mv::Dataset<Points>         _selectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset1 = nullptr;

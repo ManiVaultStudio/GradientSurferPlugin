@@ -1341,7 +1341,7 @@ std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates) {
 
 
 
-void createLineChartClusterColors(QString coloringDataset,QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue)
+void createLineChartClusterColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool useFulldata)
 {
 
     FunctionTimer timer(Q_FUNC_INFO);
@@ -1361,32 +1361,58 @@ void createLineChartClusterColors(QString coloringDataset,QString colorMapValue,
         qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
         return;
     }
+    if (pointValuesDatasetFull->getNumPoints() <=0 || pointValuesDatasetFull->getNumDimensions() <= 0) {
+        qWarning() << "Point values dataset is empty or invalid.";
+        return;
+    }
 
     // Clear previous clusters in the PCA coloring dataset
     coloringDatasetFull->getClusters() = QVector<Cluster>();
     //events().notifyDatasetDataChanged(coloringDatasetFull);
     QVector<Cluster> newClusters;
-    newClusters.reserve(selectedIndices.size());
-
     
-    ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
-    std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
-    auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
-    int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
-    std::vector<int> dimensionIndxContainer = { dimensionIndex };
-    std::vector<float> geneExpValues(selectedIndices.size()* dimensionIndxContainer.size());
-    pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimensionIndxContainer, selectedIndices);
 
     std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
+    
+    ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
+
+
+    std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
+
+
+    auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
+    int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
+
+    if (dimensionIndex < 0) {
+        qWarning() << "Dimension" << dimensionVal << "not found in dataset" << pointValuesDataset;
+        return;
+    }
+
+    std::vector<float> geneExpValues;
+
+    if (useFulldata) {
+        geneExpValues.resize(pointValuesDatasetFull->getNumPoints());
+        newClusters.reserve(pointValuesDatasetFull->getNumPoints());
+        pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
+    }
+    else
+        {
+        std::vector<int> dimensionIndxContainer = { dimensionIndex };
+        geneExpValues.resize(selectedIndices.size());
+        newClusters.reserve(selectedIndices.size());
+        pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimensionIndxContainer, selectedIndices);
+    }
+    
+    
     for (size_t i = 0; i < geneExpValues.size(); ++i) {
         valueToIndices[geneExpValues[i]].push_back(static_cast<std::seed_seq::result_type>(selectedIndices.at(i)));
     }
+
 
     int clusterIdx = 0;
     for (const auto& [value, indices] : valueToIndices) {
         QColor color = getColorFromColormap(value, colormap, minValue, maxValue);
         Cluster cluster;
-        //cluster.setName(QString("Cluster %1").arg(clusterIdx++));
         cluster.setName(QString::number(value, 'g', 6));
         cluster.setColor(color);
         cluster.setIndices(indices);

@@ -1611,6 +1611,11 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "Normalized full datasets are invalid", "");
         return;
     }
+    if (!_selectedCellPointDataset.isValid()) {
+        qWarning() << "selected embedding dataset is invalid";
+        setStatusMessage("E", "selected embedding dataset is invalid", "");
+        return;
+    }
 
     //Dataset<Points> fullDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDataset2Action().getCurrentDataset();
     //Dataset<Points> fullDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
@@ -1619,20 +1624,40 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "Full datasets are invalid", "");
         return;
     }*/
-
-
+    
+    if (!_pcaSelectedEmbeddingDataset.isValid()) {
+        _pcaSelectedEmbeddingDataset = mv::data().createDerivedDataset("PCA Dataset Selected Cells", _selectedCellPointDataset);
+        _pcaSelectedEmbeddingDataset->setGroupIndex(666);
+        mv::events().notifyDatasetAdded(_pcaSelectedEmbeddingDataset);
+    }
     if (!_pcaCommonGenesDataset1.isValid()) {
-        _pcaCommonGenesDataset1 = mv::data().createDataset("Points", "PCA Dataset 1", _selectedGenePointDataset1);
+        _pcaCommonGenesDataset1 = mv::data().createDerivedDataset("PCA Dataset 1", _selectedGenePointDataset1);
         _pcaCommonGenesDataset1->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset1);
     }
     if (!_pcaCommonGenesDataset2.isValid()) {
-        _pcaCommonGenesDataset2 = mv::data().createDataset("Points", "PCA Dataset 2", _selectedGenePointDataset2);
+        _pcaCommonGenesDataset2 = mv::data().createDerivedDataset("PCA Dataset 2", _selectedGenePointDataset2);
         _pcaCommonGenesDataset2->setGroupIndex(668);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
     }
 
     setStatusMessage("R", "Computation after PCA", "");
+    if (!_pcaSelectedEmbeddingDataset.isValid())
+    {
+        qWarning() << "PCA selected embedding dataset is invalid";
+        setStatusMessage("E", "PCA selected embedding dataset is invalid", "");
+        return;
+    }
+    if (!_pcaCommonGenesDataset1.isValid()) {
+        qWarning() << "PCA common genes dataset 1 is invalid";
+        setStatusMessage("E", "PCA common genes dataset 1 is invalid", "");
+        return;
+    }
+    if (!_pcaCommonGenesDataset2.isValid()) {
+        qWarning() << "PCA common genes dataset 2 is invalid";
+        setStatusMessage("E", "PCA common genes dataset 2 is invalid", "");
+        return;
+    }
 
     if (!_selectedGenePointDataset2.isValid()) {
         qWarning() << "Selected gene point dataset 2 is invalid";
@@ -1644,7 +1669,7 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "Selected gene point dataset 2 dimensions do not match PCA dimensions", "");
         return;
     }
-
+    
     if (loadings1.empty()) {
         qWarning() << "PCA loadings are empty";
         setStatusMessage("E", "PCA loadings are empty", "");
@@ -1667,6 +1692,8 @@ void Computation::processAfterPCAComplete()
         return;
     }
 
+    _pcaSelectedEmbeddingDataset->setData(_selectedPCData1.coordinates.data(), _selectedPCData1.numberOfPoints, _selectedPCData1.numberOfDimensions);
+    mv::events().notifyDatasetDataChanged(_pcaSelectedEmbeddingDataset);
 
     std::vector<int> geneOfInterestIndices2;
     QStringList commonGeneNames;
@@ -2409,7 +2436,9 @@ void Computation::coloringLinePlots()
         return;
     }
     QString linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-    if (!_lineChartPointDataset1.isValid() || linePlotName.isEmpty() || _filteredSelectionIndices.size()<1)
+
+
+    if (!_lineChartPointDataset1.isValid() || linePlotName.isEmpty() || _filteredSelectionIndices.size()<1 || !_selectedCellPointDataset.isValid())
     {
         clearLinePlots();
         setStatusMessage("E", "No valid line chart dataset or line plot name", "");
@@ -2421,21 +2450,19 @@ void Computation::coloringLinePlots()
         setStatusMessage("E", "No valid line chart dataset", "");
         return;
     }
-    int totalPoints1 = 0;
-    int totalPoints2 = 0;
-    Dataset<Points> embeddingDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-    Dataset<Points> embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-    if (embeddingDataset1.isValid())
+    if (_selectedCellPointDataset->getNumPoints() != _lineChartPointDataset1->getNumPoints())
     {
-        totalPoints1 = embeddingDataset1->getNumPoints();
+        clearLinePlots();
+        setStatusMessage("E", "Selected cell dataset and line chart dataset do not match in number of points", "");
+        return;
     }
-    if (embeddingDataset2.isValid())
-    {
-        totalPoints2 = embeddingDataset2->getNumPoints();
-    }
+
+    int totalSelectedPoints = _selectedCellPointDataset->getNumPoints();
+    
+
     QString smoothingType = "Moving Average";
     QString xPositionString = "Rotated Y Coordinates";
-    int smoothingWindow = static_cast<int>(std::round(_lineChartPointDataset1->getNumPoints() * 0.2));
+    int smoothingWindow = static_cast<int>(std::round(totalSelectedPoints * 0.2));
     QString yPositionString = "";
     QString titleText = "";
     auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
@@ -2474,7 +2501,12 @@ void Computation::coloringLinePlots()
 
             if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
             {
-                QString pcaDataset1ID = _pcaCommonGenesDataset1.getDatasetId();
+                if (!_pcaSelectedEmbeddingDataset.isValid())
+                {
+                    setStatusMessage("E", "No valid PCA dataset selected for coloring", "");
+                    return;
+                }
+                QString pcaDataset1ID = _pcaSelectedEmbeddingDataset.getDatasetId();
                 if (pcaDataset1ID.isEmpty() )
                 {
                     setStatusMessage("E", "No valid PCA datasets", "");
@@ -2483,7 +2515,7 @@ void Computation::coloringLinePlots()
                 
                 QString selectedPCADimensionName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
                 int selectedPCADimensionIndx = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
-                createLineChartClusterColors(colorDatasetID, colorMapStringValue, _selectedClusterIndices1, pcaDataset1ID, totalPoints1, selectedPCADimensionName, minVal, maxVal);
+                createLineChartClusterColors(colorDatasetID, colorMapStringValue, _filteredSelectionIndices, pcaDataset1ID, totalSelectedPoints, selectedPCADimensionName, minVal, maxVal,true);
                 yPositionString = "Mean Expr All Genes";
                 titleText = QString("%1 vs %2 expression of selected cells (%3)")
                     .arg(xPositionString)
@@ -2510,7 +2542,7 @@ void Computation::coloringLinePlots()
                     yPositionString = selectedGene;
                     QString selectedGeneName = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
                     int selectedGeneIndx = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
-                    createLineChartClusterColors(colorDatasetID, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalPoints1, selectedGeneName, minVal, maxVal);
+                    createLineChartClusterColors(colorDatasetID, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalSelectedPoints, selectedGeneName, minVal, maxVal,false);
                 }
                 else
                 {
