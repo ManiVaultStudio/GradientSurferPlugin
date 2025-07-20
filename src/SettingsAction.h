@@ -241,6 +241,9 @@ public:
         const IntegralAction& getTopNRowsAction() const { return _topNRowsAction; }
         IntegralAction& getTopNRowsAction() { return _topNRowsAction; }
 
+        const OptionAction& getComputationTypeAction() const { return _computationTypeAction; }
+        OptionAction& getComputationTypeAction() { return _computationTypeAction; }
+
 
 
     protected:
@@ -266,6 +269,7 @@ public:
 
         IntegralAction              _bottomNRowsAction;
         IntegralAction              _topNRowsAction;
+        OptionAction               _computationTypeAction;
 
     };
 

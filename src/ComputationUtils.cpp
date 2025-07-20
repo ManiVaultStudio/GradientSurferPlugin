@@ -985,11 +985,11 @@ bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float ep
 }
 std::pair<float, float> minMax(const std::vector<float>& vec)
 {
-    auto [minVal, maxVal] = std::minmax_element(vec.begin(), vec.end());
-    if (minVal == vec.end() || maxVal == vec.end()) {
+    if (vec.empty()) {
         throw std::invalid_argument("Input vector is empty.");
     }
-    return { *minVal, *maxVal };
+    auto [minIt, maxIt] = std::minmax_element(vec.begin(), vec.end());
+    return { *minIt, *maxIt };
 }
 QLabel* createStatusLabel(const QString& labelText, const QString& backgroundColor, const QString& textColor, const QPixmap& iconPixmap, const QFont& font) {
     QLabel* statusLabel = new QLabel;

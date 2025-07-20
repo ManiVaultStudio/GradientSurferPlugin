@@ -153,6 +153,13 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getNormalizationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getNormalizationTypeAction().initialize({ "None", "ZScore", "MinMax", "Log2","MaxAbs","L2","L1","Mean","Softmax","Robust","UnitRange","Binarize","CPM","Log1p","CPM_Log1p","CPM_Log1p_ZScore"}, "ZScore");
 
+    _commonOptionsHolder.getNormalizationTypeAction().setToolTip("Normalization Type Action");
+
+    _commonOptionsHolder.getComputationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getComputationTypeAction().initialize({ "Full PCA", "Partial PCA" }, "Partial PCA");
+    _commonOptionsHolder.getComputationTypeAction().setToolTip("Computation Type Action");
+
+
     _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     //_commonOptionsHolder.getColoringMapSelectionAction().setDisabled(true);
     _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
@@ -389,7 +396,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
     _coloringMapSelectionAction(this, "Coloring Map Selection"),
     _topNRowsAction(this, "Top N Rows Selection"),
-    _bottomNRowsAction(this, "Bottom N Rows Selection")
+    _bottomNRowsAction(this, "Bottom N Rows Selection"),
+    _computationTypeAction(this, "Computation Type")
 
 {
     setText("Shared Options");
@@ -410,6 +418,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_normalizationTypeAction);
     addAction(&_normalizeCombinedDatasetsAction);
     addAction(&_selectionModeAction);
+    addAction(&_computationTypeAction);
     addAction(&_computePCAAction);
     addAction(&_computeAction);
 
