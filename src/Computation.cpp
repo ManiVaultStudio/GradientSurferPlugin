@@ -2078,8 +2078,6 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
     _lineChartPointDataset1->setDimensionNames(dimensionNamesWithYCoords);
     mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
 
-    //createClusterLineChartClusterColors();
-
     return true;
 }
 
@@ -2092,11 +2090,9 @@ bool Computation::setupAndTriggerPCA()
 
     FunctionTimer timer(Q_FUNC_INFO);
 
-    //auto fullEmbeddingDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-    //auto fullEmbeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
 
     if (!_selectedGenePointDataset1.isValid() || !_normalizedFullDataset1.isValid() ||
-        !_selectedGenePointDataset2.isValid() || !_normalizedFullDataset2.isValid() /*||!fullEmbeddingDataset1.isValid() || !fullEmbeddingDataset2.isValid()*/) {
+        !_selectedGenePointDataset2.isValid() || !_normalizedFullDataset2.isValid()) {
         qWarning() << "One or more datasets are invalid!";
         setStatusMessage("E", "Internal error: invalid dataset pointer", "");
         return false;
@@ -2175,18 +2171,7 @@ bool Computation::setupAndTriggerPCA()
     std::vector<float> cellByGeneMatrix2(numAllFilteredCells2 * numDimsOfInterest);
     std::vector<float> cellByGeneMatrix1(numAllFilteredCells1 * numDimsOfInterest);
 
-    //std::vector<float> embeddingMatrix1(numAllFilteredCells1 * fullEmbeddingDataset1->getNumDimensions());
-    //std::vector<float> embeddingMatrix2(numAllFilteredCells2 * fullEmbeddingDataset2->getNumDimensions());
-    /*
-    std::vector<int> embeddingGeneIndices1(fullEmbeddingDataset1->getNumDimensions());
-    for (int i = 0; i < fullEmbeddingDataset1->getNumDimensions(); ++i) {
-        embeddingGeneIndices1[i] = i;
-    }
-    std::vector<int> embeddingGeneIndices2(fullEmbeddingDataset2->getNumDimensions());
-    for (int i = 0; i < fullEmbeddingDataset2->getNumDimensions(); ++i) {
-        embeddingGeneIndices2[i] = i;
-    }
-    */
+
 
     if(_selectedClusterIndices1 .empty() || _selectedClusterIndices2.empty())
     {
@@ -2204,8 +2189,7 @@ bool Computation::setupAndTriggerPCA()
     try {
         _normalizedFullDataset2->populateDataForDimensions(cellByGeneMatrix2, geneDataset2, _selectedClusterIndices2);
         _normalizedFullDataset1->populateDataForDimensions(cellByGeneMatrix1, geneDataset1, _selectedClusterIndices1);
-        //fullEmbeddingDataset1->populateDataForDimensions(embeddingMatrix1, embeddingGeneIndices1, _selectedClusterIndices1);
-        //fullEmbeddingDataset2->populateDataForDimensions(embeddingMatrix2, embeddingGeneIndices2, _selectedClusterIndices2);
+
 
     }
     catch (const std::exception& ex) {
@@ -2213,12 +2197,7 @@ bool Computation::setupAndTriggerPCA()
         setStatusMessage("E", "Error occurred during populating filtered data", "");
         return false;
     }
-    /*auto [minVal2, maxVal2] = std::minmax_element(cellByGeneMatrix2.begin(), cellByGeneMatrix2.end());
-    auto [minVal1, maxVal1] = std::minmax_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end());
-    qInfo() << "PCA cellByGeneMatrix2 min:" << *minVal2 << "max:" << *maxVal2
-        << "PCA cellByGeneMatrix1 min:" << *minVal1 << "max:" << *maxVal1;
-    _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().setValue(maxVal2 > maxVal1 ? *maxVal2 : *maxVal1);
-    _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().setValue(minVal2 < minVal1 ? *minVal2 : *minVal1);*/
+
 
 
     _selectedGenePointDataset2->setData(cellByGeneMatrix2.data(), numAllFilteredCells2, numDimsOfInterest);
@@ -2228,33 +2207,6 @@ bool Computation::setupAndTriggerPCA()
     _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numAllFilteredCells1, numDimsOfInterest);
     _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
-    //TODO TEST START
-    /*float currentLowVal = _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().getValue();
-    float currentHighVal = _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().getValue();
-    float minValue1 = *std::min_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end());
-    float maxValue1 = *std::max_element(cellByGeneMatrix1.begin(), cellByGeneMatrix1.end());
-    float minValue2 = *std::min_element(cellByGeneMatrix2.begin(), cellByGeneMatrix2.end());
-    float maxValue2 = *std::max_element(cellByGeneMatrix2.begin(), cellByGeneMatrix2.end());
-
-    float minValue = std::min(minValue1, minValue2);
-    float maxValue = std::max(maxValue1, maxValue2);
-
-    if (minValue < currentLowVal) {
-        _settingsAction.getCommonOptionsHolder().getExpressionLowerColoringRangeAction().setValue((minValue));
-    }
-    if (maxValue > currentHighVal) {
-        _settingsAction.getCommonOptionsHolder().getExpressionUpperColoringRangeAction().setValue((maxValue));
-    }*/
-    //TODO TEST END
-    //_selectedEmbeddingPointDataset1->setData(embeddingMatrix1.data(), numAllFilteredCells1, fullEmbeddingDataset1->getNumDimensions());
-    //_selectedEmbeddingPointDataset1->setDimensionNames(fullEmbeddingDataset1->getDimensionNames());
-    //mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset1);
-
-    //_selectedEmbeddingPointDataset2->setData(embeddingMatrix2.data(), numAllFilteredCells2, fullEmbeddingDataset2->getNumDimensions());
-    //_selectedEmbeddingPointDataset2->setDimensionNames(fullEmbeddingDataset2->getDimensionNames());
-    //mv::events().notifyDatasetDataChanged(_selectedEmbeddingPointDataset2);
-
-
 
 
     if (_lineChartPointDataset1.isValid() &&
@@ -2300,7 +2252,11 @@ bool Computation::setupAndTriggerPCA()
     }
 
     setStatusMessage("R", "PCA Started", "");
+
     _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
+    
+    
+    
     return true;
 }
 
