@@ -66,10 +66,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
 
     const auto updateStatus = [this]() -> void {
-        auto stringFull = _settingsAction.getStatusHolder().getStatusMessageAction().getString();
+        auto stringFull = _settingsAction.getCommonOptionsHolder().getStatusMessageAction().getString();
         StatusInfo info = parseStatusMessage(stringFull);
 
-        auto [font,iconSize]=getStatusLabelFontAndIconSize(info.message);
+        auto [font, iconSize] = getStatusLabelFontAndIconSize(info.message);
 
         QColor iconColor(info.textColor);
         mv::util::StyledIcon icon(info.iconName);
@@ -78,17 +78,21 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         QPixmap iconPixmap = QIcon(icon).pixmap(iconSize, iconSize);
 
         QLabel* statusLabel = createStatusLabel(info.message, info.backgroundColor, info.textColor, iconPixmap, font);
-        QStatusBar* statusBar = _settingsAction.getStatusHolder().getStatusBarAction();
-        if (statusBar) {
-            QList<QWidget*> children = statusBar->findChildren<QWidget*>();
-            for (QWidget* child : children) {
-                statusBar->removeWidget(child);
-                child->deleteLater();
+
+        StatusBarAction* statusBarAction = _settingsAction.getCommonOptionsHolder().getStatusBarAction();
+        if (statusBarAction) {
+            QStatusBar* statusBar = statusBarAction->statusBar();
+            if (statusBar) {
+                QList<QWidget*> children = statusBar->findChildren<QWidget*>();
+                for (QWidget* child : children) {
+                    statusBar->removeWidget(child);
+                    child->deleteLater();
+                }
+                statusBar->addWidget(statusLabel, 1);
             }
-            statusBar->addWidget(statusLabel, 1);
         }
         };
-    connect(&_settingsAction.getStatusHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
+    connect(&_settingsAction.getCommonOptionsHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
     const auto plotSelectionOptions = [this]() -> void
         {
             QStringList scatterplotNames = {};
@@ -1396,7 +1400,7 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     obj["color"] = resolvedColor;
 
 
-    auto* statusHolder = &_settingsAction.getStatusHolder();
+    auto* statusHolder = &_settingsAction.getCommonOptionsHolder();
     if (!statusHolder) {
         qWarning() << "StatusHolder is null in setStatusMessage";
         return;

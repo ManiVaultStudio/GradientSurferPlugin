@@ -57,7 +57,34 @@ namespace mv
 {
     class CoreInterface;
 }
+class StatusBarAction : public mv::gui::WidgetAction {
+public:
+    StatusBarAction(QObject* parent, const QString& title)
+        : WidgetAction(parent, title), _statusBar(nullptr) {
+    }
 
+    QStatusBar* statusBar() {
+        if (!_statusBar)
+            getWidget(nullptr, 0);
+        return _statusBar;
+    }
+
+protected:
+    QWidget* getWidget(QWidget* parent, const std::int32_t&) override {
+        if (!_statusBar) {
+            _statusBar = new QStatusBar(parent);
+            _statusBar->setStatusTip("Status");
+            _statusBar->setMaximumHeight(22);
+            _statusBar->setMaximumWidth(800);
+            _statusBar->setAutoFillBackground(true);
+            _statusBar->setSizeGripEnabled(false);
+            _statusBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        }
+        return _statusBar;
+    }
+private:
+    QStatusBar* _statusBar;
+};
 
 class SettingsAction : public WidgetAction
 {
@@ -251,7 +278,10 @@ public:
         const OptionAction& getComputationTypeAction() const { return _computationTypeAction; }
         OptionAction& getComputationTypeAction() { return _computationTypeAction; }
 
-
+        const StatusBarAction& getStatusBarAction() const { return *_statusBarActionWidget; }
+        StatusBarAction* getStatusBarAction() { return _statusBarActionWidget; }
+        const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
+        StringAction& getStatusMessageAction() { return _statusMessageAction; }
 
     protected:
         SettingsAction& _settingsOptions;
@@ -278,34 +308,16 @@ public:
         IntegralAction              _topNRowsAction;
         OptionAction               _computationTypeAction;
 
-    };
-
-
-
-
-    class StatusHolder : public HorizontalGroupAction
-    {
-    public:
-        StatusHolder(SettingsAction& settingsAction);
-
-        const QStatusBar& getStatusBarAction() const { return *_statusBarAction; }
-        QStatusBar* getStatusBarAction() { return _statusBarAction; }
-        const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
-        StringAction& getStatusMessageAction() { return _statusMessageAction; }
-
-
-    protected:
-        SettingsAction& _settingsOptions;
-        
- 
-        QStatusBar*                 _statusBarAction;
+        StatusBarAction* _statusBarActionWidget;
         StringAction                        _statusMessageAction;
+
     };
+
+
 
 public:
     SettingsAction(LayerSurferPlugin& LayerSurferPlugin);
 
-    StatusHolder& getStatusHolder() { return _statusHolder; }
     Dataset1OptionsHolder& getDataset1OptionsHolder() { return _dataset1OptionsHolder; }
     Dataset2OptionsHolder& getDataset2OptionsHolder() { return _dataset2OptionsHolder; }
     CommonOptionsHolder& getCommonOptionsHolder() { return _commonOptionsHolder; }
@@ -325,7 +337,6 @@ protected:
     Dataset1OptionsHolder              _dataset1OptionsHolder;
     Dataset2OptionsHolder              _dataset2OptionsHolder;
     CommonOptionsHolder              _commonOptionsHolder;
-    StatusHolder                   _statusHolder;
     QTableView*                 _tableView1Action = nullptr;
     QTableView*                 _tableView2Action = nullptr;
     QTableView*                 _tableView3Action = nullptr;

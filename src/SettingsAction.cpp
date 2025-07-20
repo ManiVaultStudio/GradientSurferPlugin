@@ -23,8 +23,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _viewerPlugin(LayerSurferPlugin),
     _dataset1OptionsHolder(*this),
     _dataset2OptionsHolder(*this),
-    _commonOptionsHolder(*this),
-    _statusHolder(*this)
+    _commonOptionsHolder(*this)
 {
     setSerializationName("LayerSurfer:Settings");
     _dataset1OptionsHolder.getClusterDatasetAction().setSerializationName("LayerSurfer:Clusterdataset");
@@ -52,10 +51,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getClusterSelectionAction().setToolTip("Cluster Selection");
     _dataset1OptionsHolder.getGeneSelectionAction().setToolTip("Gene Selection");
     _dataset2OptionsHolder.getGeneSelectionAction().setToolTip("Gene Selection2");
-    _statusHolder.getStatusMessageAction().setToolTip("Status Message");
+    _commonOptionsHolder.getStatusMessageAction().setToolTip("Status Message");
     _commonOptionsHolder.getComputeAction().setToolTip("Compute Action");
     _commonOptionsHolder.getComputePCAAction().setToolTip("Compute PCA Action");
-    _statusHolder.getStatusBarAction()->setToolTip("Status Bar Action");
+    _commonOptionsHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
     _commonOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
@@ -141,7 +140,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset2OptionsHolder.getGeneSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _statusHolder.getStatusMessageAction().setDefaultWidgetFlags(StringAction::Label);
+    _commonOptionsHolder.getStatusMessageAction().setDefaultWidgetFlags(StringAction::Label);
     _commonOptionsHolder.getComputeAction().setDefaultWidgetFlags(TriggerAction::IconText);
     _commonOptionsHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
     _commonOptionsHolder.getComputeAction().setText("Compute");
@@ -414,7 +413,9 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _coloringMapSelectionAction(this, "Coloring Map Selection"),
     _topNRowsAction(this, "Top N Rows Selection"),
     _bottomNRowsAction(this, "Bottom N Rows Selection"),
-    _computationTypeAction(this, "Computation Type")
+    _computationTypeAction(this, "Computation Type"),
+    _statusMessageAction(this, "Status Message"),
+    _statusBarActionWidget(new StatusBarAction(this, "Status"))
 
 {
     setText("Shared Options");
@@ -439,29 +440,10 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_computePCAAction);
     addAction(&_computeAction);
 
+    addAction(_statusBarActionWidget);
+
 }
 
-
-
-
-inline SettingsAction::StatusHolder::StatusHolder(SettingsAction& settingsAction) :
-    HorizontalGroupAction(&settingsAction, "Compute Options"),
-    _settingsOptions(settingsAction),
-
-    _statusMessageAction(this, "Status message")
-{
-    setText("Compute Options");
-    setIcon(mv::util::StyledIcon("braille"));
-    setPopupSizeHint(QSize(300, 0));
-    setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
-    _statusBarAction = new QStatusBar();
-    _statusBarAction->setStatusTip("Status");
-    _statusBarAction->setMaximumHeight(22);
-    _statusBarAction->setMaximumWidth(800);
-    _statusBarAction->setAutoFillBackground(true);
-    _statusBarAction->setSizeGripEnabled(false);
-    
-}
 
 void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
 {
