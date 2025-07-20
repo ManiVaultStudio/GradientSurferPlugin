@@ -178,7 +178,7 @@ bool CorrelationBarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* vie
         }
 
         if (isUndefined) {
-            QToolTip::showText(event->globalPos(), QStringLiteral("not available in dataset"), view);
+            QToolTip::showText(event->globalPos(), QStringLiteral("undefined"), view);
             return true;
         }
         else {

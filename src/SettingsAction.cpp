@@ -62,10 +62,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
 
     _commonOptionsHolder.getTopNRowsAction().setToolTip("Top N Rows Action");
-    _dataset1OptionsHolder.getExpressionUpperColoringRangeAction().setToolTip("Expression Upper Coloring Range");
-    _dataset1OptionsHolder.getExpressionLowerColoringRangeAction().setToolTip("Expression Lower Coloring Range");
-    _dataset2OptionsHolder.getExpressionUpperColoringRangeAction().setToolTip("Expression Upper Coloring Range2");
-    _dataset2OptionsHolder.getExpressionLowerColoringRangeAction().setToolTip("Expression Lower Coloring Range2");
+    _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setToolTip("Scatterplot Upper Coloring Range");
+    _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setToolTip("Scatterplot Lower Coloring Range");
+    _dataset2OptionsHolder.getScatterplotUpperColoringRangeAction().setToolTip("Scatterplot Upper Coloring Range2");
+    _dataset2OptionsHolder.getScatterplotLowerColoringRangeAction().setToolTip("Scatterplot Lower Coloring Range2");
     _commonOptionsHolder.getBottomNRowsAction().setToolTip("Bottom N Rows Action");
     _dataset2OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset 2");
     _dataset2OptionsHolder.getPointDatasetAction().setToolTip("Point Dataset 2");
@@ -103,24 +103,24 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getTopNRowsAction().setValue(20);
 
 
-    _dataset1OptionsHolder.getExpressionUpperColoringRangeAction().setMaximum(1.00);
-    _dataset1OptionsHolder.getExpressionUpperColoringRangeAction().setMinimum(-1.00);
-    _dataset1OptionsHolder.getExpressionLowerColoringRangeAction().setMaximum(1.00);
-    _dataset1OptionsHolder.getExpressionLowerColoringRangeAction().setMinimum(-1.00);
-    _dataset1OptionsHolder.getExpressionUpperColoringRangeAction().setSingleStep(0.01);
-    _dataset1OptionsHolder.getExpressionLowerColoringRangeAction().setSingleStep(0.01);
-    _dataset1OptionsHolder.getExpressionUpperColoringRangeAction().setNumberOfDecimals(6);
-    _dataset1OptionsHolder.getExpressionLowerColoringRangeAction().setNumberOfDecimals(6);
+    _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setMaximum(1.00);
+    _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setMinimum(-1.00);
+    _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setMaximum(1.00);
+    _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setMinimum(-1.00);
+    _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setSingleStep(0.01);
+    _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setSingleStep(0.01);
+    _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setNumberOfDecimals(6);
+    _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setNumberOfDecimals(6);
 
 
-    _dataset2OptionsHolder.getExpressionUpperColoringRangeAction().setMaximum(1.00);
-    _dataset2OptionsHolder.getExpressionUpperColoringRangeAction().setMinimum(-1.00);
-    _dataset2OptionsHolder.getExpressionLowerColoringRangeAction().setMaximum(1.00);
-    _dataset2OptionsHolder.getExpressionLowerColoringRangeAction().setMinimum(-1.00);
-    _dataset2OptionsHolder.getExpressionUpperColoringRangeAction().setSingleStep(0.01);
-    _dataset2OptionsHolder.getExpressionLowerColoringRangeAction().setSingleStep(0.01);
-    _dataset2OptionsHolder.getExpressionUpperColoringRangeAction().setNumberOfDecimals(6);
-    _dataset2OptionsHolder.getExpressionLowerColoringRangeAction().setNumberOfDecimals(6);
+    _dataset2OptionsHolder.getScatterplotUpperColoringRangeAction().setMaximum(1.00);
+    _dataset2OptionsHolder.getScatterplotUpperColoringRangeAction().setMinimum(-1.00);
+    _dataset2OptionsHolder.getScatterplotLowerColoringRangeAction().setMaximum(1.00);
+    _dataset2OptionsHolder.getScatterplotLowerColoringRangeAction().setMinimum(-1.00);
+    _dataset2OptionsHolder.getScatterplotUpperColoringRangeAction().setSingleStep(0.01);
+    _dataset2OptionsHolder.getScatterplotLowerColoringRangeAction().setSingleStep(0.01);
+    _dataset2OptionsHolder.getScatterplotUpperColoringRangeAction().setNumberOfDecimals(6);
+    _dataset2OptionsHolder.getScatterplotLowerColoringRangeAction().setNumberOfDecimals(6);
 
     _dataset1OptionsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -174,11 +174,11 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
 
-    _dataset1OptionsHolder.getExpressionUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
-    _dataset1OptionsHolder.getExpressionLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
 
-    _dataset2OptionsHolder.getExpressionUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
-    _dataset2OptionsHolder.getExpressionLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _dataset2OptionsHolder.getScatterplotUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _dataset2OptionsHolder.getScatterplotLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
 
 
     _dataset2OptionsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -320,8 +320,8 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _embeddingDimensionYAction(this, "Embedding Dimension Y"),
     _geneSelectionAction(this, "Gene Selection"),
     _lineplotViewSelectionAction(this, "Lineplot view selection"),
-    _expressionUpperColoringRangeAction(this, "Expression UpperColoring Range"),
-    _expressionLowerColoringRangeAction(this, "Expression Lower Coloring Range")
+    _scatterplotUpperColoringRangeAction(this, "Scatterplot UpperColoring Range"),
+    _scatterplotLowerColoringRangeAction(this, "Scatterplot Lower Coloring Range")
 {
     setText("Dataset1 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -333,8 +333,8 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_lineplotViewSelectionAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
-    addAction(&_expressionUpperColoringRangeAction);
-    addAction(&_expressionLowerColoringRangeAction);
+    addAction(&_scatterplotUpperColoringRangeAction);
+    addAction(&_scatterplotLowerColoringRangeAction);
 
 
 
@@ -352,8 +352,8 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     _embeddingDimensionXAction(this, "Embedding Dimension X"),
     _embeddingDimensionYAction(this, "Embedding Dimension Y"),
     _geneSelectionAction(this, "Gene Selection"),
-    _expressionUpperColoringRangeAction(this, "Expression UpperColoring Range"),
-    _expressionLowerColoringRangeAction(this, "Expression Lower Coloring Range")
+    _scatterplotUpperColoringRangeAction(this, "Scatterplot UpperColoring Range"),
+    _scatterplotLowerColoringRangeAction(this, "Scatterplot Lower Coloring Range")
 {
     setText("Dataset2 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -364,8 +364,8 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     addAction(&_scatterplotViewSelectionAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
-    addAction(&_expressionUpperColoringRangeAction);
-    addAction(&_expressionLowerColoringRangeAction);
+    addAction(&_scatterplotUpperColoringRangeAction);
+    addAction(&_scatterplotLowerColoringRangeAction);
 
 
 

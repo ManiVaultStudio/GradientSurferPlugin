@@ -695,25 +695,25 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         });
 
-    connect(&_settingsAction.getDataset1OptionsHolder().getExpressionLowerColoringRangeAction(),
+    connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
         [this]() {
             _expressionColoringRangeDebounceTimer.start(300);
         });
-    connect(&_settingsAction.getDataset1OptionsHolder().getExpressionUpperColoringRangeAction(),
+    connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
         [this]() {
             _expressionColoringRangeDebounceTimer.start(300);
         });
-    connect(&_settingsAction.getDataset2OptionsHolder().getExpressionLowerColoringRangeAction(),
+    connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
         [this]() {
             _expressionColoringRangeDebounceTimer.start(300);
         });
-    connect(&_settingsAction.getDataset2OptionsHolder().getExpressionUpperColoringRangeAction(),
+    connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
         [this]() {
@@ -726,15 +726,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
 
-        if (_settingsAction.getDataset1OptionsHolder().getExpressionLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getExpressionUpperColoringRangeAction().getValue() || _settingsAction.getDataset2OptionsHolder().getExpressionLowerColoringRangeAction().getValue() > _settingsAction.getDataset2OptionsHolder().getExpressionUpperColoringRangeAction().getValue())
+        if (_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue() || _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue())
         {
-            if (_settingsAction.getDataset1OptionsHolder().getExpressionLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getExpressionUpperColoringRangeAction().getValue())
+            if (_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue())
             {
-                _settingsAction.getDataset1OptionsHolder().getExpressionLowerColoringRangeAction().setValue(_settingsAction.getDataset1OptionsHolder().getExpressionUpperColoringRangeAction().getValue());
+                _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(_settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue());
             }
-            else if (_settingsAction.getDataset2OptionsHolder().getExpressionLowerColoringRangeAction().getValue() > _settingsAction.getDataset2OptionsHolder().getExpressionUpperColoringRangeAction().getValue())
+            else if (_settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue())
             {
-                _settingsAction.getDataset2OptionsHolder().getExpressionLowerColoringRangeAction().setValue(_settingsAction.getDataset2OptionsHolder().getExpressionUpperColoringRangeAction().getValue());
+                _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(_settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue());
             }
 
 
@@ -1148,8 +1148,8 @@ void Computation::clearLinePlots()
         QString colorMapStringValue = "";
 
         linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-        float minVal = _settingsAction.getDataset1OptionsHolder().getExpressionLowerColoringRangeAction().getValue();
-        float maxVal = _settingsAction.getDataset1OptionsHolder().getExpressionUpperColoringRangeAction().getValue();
+        float minVal = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+        float maxVal = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
         lineplotModeChange(linePlotName, positionDatasetID, colorDatasetID, colordatasetType, colorDatasetDimensionIndx, xPositionString, yPositionString, titleText, smoothingType, smoothingWindow, colorMapStringValue, minVal, maxVal);
 
         events().notifyDatasetDataChanged(_lineChartPointDataset1);
@@ -2395,10 +2395,10 @@ void Computation::normalizeData()
     _normalizedFullDataset2->setDimensionNames(fullPointDataset2->getDimensionNames());
     mv::events().notifyDatasetDataChanged(_normalizedFullDataset2);
 
-    auto& exprRangeUpper1 = _settingsAction.getDataset1OptionsHolder().getExpressionUpperColoringRangeAction();
-    auto& exprRangeLower1 = _settingsAction.getDataset1OptionsHolder().getExpressionLowerColoringRangeAction();
-    auto& exprRangeUpper2 = _settingsAction.getDataset2OptionsHolder().getExpressionUpperColoringRangeAction();
-    auto& exprRangeLower2 = _settingsAction.getDataset2OptionsHolder().getExpressionLowerColoringRangeAction();
+    auto& exprRangeUpper1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction();
+    auto& exprRangeLower1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction();
+    auto& exprRangeUpper2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction();
+    auto& exprRangeLower2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction();
     exprRangeUpper1.setMaximum(maxValue);
     exprRangeUpper1.setMinimum(minValue);
     exprRangeLower1.setMaximum(maxValue);
@@ -2507,8 +2507,8 @@ void Computation::coloringLinePlots()
         }
         else
         {
-            float minVal = _settingsAction.getDataset1OptionsHolder().getExpressionLowerColoringRangeAction().getValue();
-            float maxVal = _settingsAction.getDataset1OptionsHolder().getExpressionUpperColoringRangeAction().getValue();
+            float minVal = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+            float maxVal = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
 
             if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
             {
@@ -2660,11 +2660,11 @@ void Computation::coloringScatterPlots()
             return;
         }
         
-        float minVal1 = _settingsAction.getDataset1OptionsHolder().getExpressionLowerColoringRangeAction().getValue();
-        float maxVal1 = _settingsAction.getDataset1OptionsHolder().getExpressionUpperColoringRangeAction().getValue();
+        float minVal1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+        float maxVal1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
 
-        float minVal2 = _settingsAction.getDataset2OptionsHolder().getExpressionLowerColoringRangeAction().getValue();
-        float maxVal2 = _settingsAction.getDataset2OptionsHolder().getExpressionUpperColoringRangeAction().getValue();
+        float minVal2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+        float maxVal2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
 
         if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
         {

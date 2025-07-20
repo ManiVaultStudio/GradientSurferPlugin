@@ -100,10 +100,10 @@ public:
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
 
-        const DecimalAction& getExpressionUpperColoringRangeAction() const { return _expressionUpperColoringRangeAction; }
-        DecimalAction& getExpressionUpperColoringRangeAction() { return _expressionUpperColoringRangeAction; }
-        const DecimalAction& getExpressionLowerColoringRangeAction() const { return _expressionLowerColoringRangeAction; }
-        DecimalAction& getExpressionLowerColoringRangeAction() { return _expressionLowerColoringRangeAction; }
+        const DecimalAction& getScatterplotUpperColoringRangeAction() const { return _scatterplotUpperColoringRangeAction; }
+        DecimalAction& getScatterplotUpperColoringRangeAction() { return _scatterplotUpperColoringRangeAction; }
+        const DecimalAction& getScatterplotLowerColoringRangeAction() const { return _scatterplotLowerColoringRangeAction; }
+        DecimalAction& getScatterplotLowerColoringRangeAction() { return _scatterplotLowerColoringRangeAction; }
  
 
 
@@ -122,8 +122,8 @@ public:
         DimensionPickerAction               _geneSelectionAction;
 
 
-        DecimalAction          _expressionUpperColoringRangeAction;
-        DecimalAction          _expressionLowerColoringRangeAction;
+        DecimalAction          _scatterplotUpperColoringRangeAction;
+        DecimalAction          _scatterplotLowerColoringRangeAction;
 
   
     };
@@ -157,10 +157,10 @@ public:
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
  
-        const DecimalAction& getExpressionUpperColoringRangeAction() const { return _expressionUpperColoringRangeAction; }
-        DecimalAction& getExpressionUpperColoringRangeAction() { return _expressionUpperColoringRangeAction; }
-        const DecimalAction& getExpressionLowerColoringRangeAction() const { return _expressionLowerColoringRangeAction; }
-        DecimalAction& getExpressionLowerColoringRangeAction() { return _expressionLowerColoringRangeAction; }
+        const DecimalAction& getScatterplotUpperColoringRangeAction() const { return _scatterplotUpperColoringRangeAction; }
+        DecimalAction& getScatterplotUpperColoringRangeAction() { return _scatterplotUpperColoringRangeAction; }
+        const DecimalAction& getScatterplotLowerColoringRangeAction() const { return _scatterplotLowerColoringRangeAction; }
+        DecimalAction& getScatterplotLowerColoringRangeAction() { return _scatterplotLowerColoringRangeAction; }
 
 
 
@@ -176,8 +176,8 @@ public:
         DimensionPickerAction               _embeddingDimensionXAction;
         DimensionPickerAction               _embeddingDimensionYAction;
         DimensionPickerAction               _geneSelectionAction;
-        DecimalAction                       _expressionUpperColoringRangeAction;
-        DecimalAction                       _expressionLowerColoringRangeAction;
+        DecimalAction                       _scatterplotUpperColoringRangeAction;
+        DecimalAction                       _scatterplotLowerColoringRangeAction;
     };
 
     class CommonOptionsHolder : public VerticalGroupAction
