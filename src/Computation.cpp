@@ -685,6 +685,18 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         [this]() {
             _expressionColoringRangeDebounceTimer.start(300);
         });
+    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() {
+            _expressionColoringRangeDebounceTimer.start(300);
+        });
+    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() {
+            _expressionColoringRangeDebounceTimer.start(300);
+        });
     connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
@@ -704,7 +716,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
 
-        if (_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue() || _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue())
+        if (_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue() || _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue() || _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue())
         {
             if (_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue())
             {
@@ -713,6 +725,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             else if (_settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue())
             {
                 _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(_settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue());
+            }
+            else if (_settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue())
+            {
+                _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().setValue(_settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue());
             }
 
 
@@ -1132,8 +1148,8 @@ void Computation::clearLinePlots()
         QString colorMapStringValue = "";
 
         linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-        float minVal = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
-        float maxVal = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+        float minVal = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue();
+        float maxVal = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue();
         lineplotModeChange(linePlotName, positionDatasetID, colorDatasetID, colordatasetType, colorDatasetDimensionIndx, xPositionString, yPositionString, titleText, smoothingType, smoothingWindow, colorMapStringValue, minVal, maxVal);
 
         events().notifyDatasetDataChanged(_lineChartPointDataset1);
@@ -2349,19 +2365,28 @@ void Computation::normalizeData()
     _normalizedFullDataset2->setDimensionNames(fullPointDataset2->getDimensionNames());
     mv::events().notifyDatasetDataChanged(_normalizedFullDataset2);
 
-    auto& exprRangeUpper1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction();
-    auto& exprRangeLower1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction();
-    auto& exprRangeUpper2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction();
-    auto& exprRangeLower2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction();
-    exprRangeUpper1.setMaximum(maxValue);
-    exprRangeUpper1.setMinimum(minValue);
-    exprRangeLower1.setMaximum(maxValue);
-    exprRangeLower1.setMinimum(minValue);
+    auto& scatterplotRangeUpper1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction();
+    auto& scatterplotRangeLower1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction();
+    auto& scatterplotRangeUpper2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction();
+    auto& scatterplotRangeLower2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction();
 
-    exprRangeUpper2.setMaximum(maxValue);
-    exprRangeUpper2.setMinimum(minValue);
-    exprRangeLower2.setMaximum(maxValue);
-    exprRangeLower2.setMinimum(minValue);
+    auto& lineplotRangeUpper1 = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction();
+    auto& lineplotRangeLower1 = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction();
+
+    scatterplotRangeUpper1.setMaximum(maxValue);
+    scatterplotRangeUpper1.setMinimum(minValue);
+    scatterplotRangeLower1.setMaximum(maxValue);
+    scatterplotRangeLower1.setMinimum(minValue);
+
+    scatterplotRangeUpper2.setMaximum(maxValue);
+    scatterplotRangeUpper2.setMinimum(minValue);
+    scatterplotRangeLower2.setMaximum(maxValue);
+    scatterplotRangeLower2.setMinimum(minValue);
+
+    lineplotRangeUpper1.setMaximum(maxValue);
+    lineplotRangeUpper1.setMinimum(minValue);
+    lineplotRangeLower1.setMaximum(maxValue);
+    lineplotRangeLower1.setMinimum(minValue);
 
     int maxRankLimit = 0;
     int minRankLimit = 0;
@@ -2461,8 +2486,14 @@ void Computation::coloringLinePlots()
         }
         else
         {
-            float minVal = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
-            float maxVal = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+            float minValLine = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue();
+            float maxValLine = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue();
+
+            //float minValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+            //float maxValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+
+            //float minValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+            //float maxValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
 
             if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
             {
@@ -2480,7 +2511,7 @@ void Computation::coloringLinePlots()
                 
                 QString selectedPCADimensionName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
                 int selectedPCADimensionIndx = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
-                createLineChartClusterColors(colorDatasetID, colorMapStringValue, _filteredSelectionIndices, pcaDataset1ID, totalSelectedPoints, selectedPCADimensionName, minVal, maxVal,true);
+                createLineChartClusterColors(colorDatasetID, colorMapStringValue, _filteredSelectionIndices, pcaDataset1ID, totalSelectedPoints, selectedPCADimensionName, minValLine, maxValLine,true);
                 yPositionString = "Mean Expr All Genes";
                 titleText = QString("%1 vs %2 expression of selected cells (%3)")
                     .arg(xPositionString)
@@ -2507,7 +2538,7 @@ void Computation::coloringLinePlots()
                     yPositionString = selectedGene;
                     QString selectedGeneName = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
                     int selectedGeneIndx = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
-                    createLineChartClusterColors(colorDatasetID, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalSelectedPoints, selectedGeneName, minVal, maxVal,false);
+                    createLineChartClusterColors(colorDatasetID, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalSelectedPoints, selectedGeneName, minValLine, maxValLine,false);
                 }
                 else
                 {
@@ -2614,11 +2645,14 @@ void Computation::coloringScatterPlots()
             return;
         }
         
-        float minVal1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
-        float maxVal1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+        //float minValLine = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue();
+        //float maxValLine = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue();
 
-        float minVal2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
-        float maxVal2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+        float minValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+        float maxValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+
+        float minValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+        float maxValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
 
         if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
         {
@@ -2638,8 +2672,8 @@ void Computation::coloringScatterPlots()
             
             QString selectedPCADimensionName = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionName();
             int selectedPCADimensionIndx = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getCurrentDimensionIndex();
-            createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, pcaDataset1ID, totalPoints1, selectedPCADimensionName, minVal1, maxVal1);
-            createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, pcaDataset2ID, totalPoints2, selectedPCADimensionName, minVal2, maxVal2);
+            createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, pcaDataset1ID, totalPoints1, selectedPCADimensionName, minValScatter1, maxValScatter1);
+            createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, pcaDataset2ID, totalPoints2, selectedPCADimensionName, minValScatter2, maxValScatter2);
 
         }
         else
@@ -2661,8 +2695,8 @@ void Computation::coloringScatterPlots()
             
             QString selectedGeneName = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
             int selectedGeneIndx = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
-            createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalPoints1, selectedGeneName, minVal1, maxVal1);
-            createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, geneDataset2ID, totalPoints2, selectedGeneName, minVal2, maxVal2);
+            createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalPoints1, selectedGeneName, minValScatter1, maxValScatter1);
+            createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, geneDataset2ID, totalPoints2, selectedGeneName, minValScatter2, maxValScatter2);
         }
         scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, scatterplotColorDataset1Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
         scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, scatterplotColorDataset2Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);

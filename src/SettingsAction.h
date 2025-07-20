@@ -104,6 +104,12 @@ public:
         DecimalAction& getScatterplotUpperColoringRangeAction() { return _scatterplotUpperColoringRangeAction; }
         const DecimalAction& getScatterplotLowerColoringRangeAction() const { return _scatterplotLowerColoringRangeAction; }
         DecimalAction& getScatterplotLowerColoringRangeAction() { return _scatterplotLowerColoringRangeAction; }
+
+        const DecimalAction& getLineplotUpperColoringRangeAction() const { return _lineplotUpperColoringRangeAction; }
+        DecimalAction& getLineplotUpperColoringRangeAction() { return _lineplotUpperColoringRangeAction; }
+        const DecimalAction& getLineplotLowerColoringRangeAction() const { return _lineplotLowerColoringRangeAction; }
+        DecimalAction& getLineplotLowerColoringRangeAction() { return _lineplotLowerColoringRangeAction; }
+
  
 
 
@@ -124,7 +130,8 @@ public:
 
         DecimalAction          _scatterplotUpperColoringRangeAction;
         DecimalAction          _scatterplotLowerColoringRangeAction;
-
+        DecimalAction          _lineplotUpperColoringRangeAction;
+        DecimalAction          _lineplotLowerColoringRangeAction;
   
     };
 

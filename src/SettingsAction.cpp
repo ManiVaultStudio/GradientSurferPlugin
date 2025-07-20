@@ -66,6 +66,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setToolTip("Scatterplot Lower Coloring Range");
     _dataset2OptionsHolder.getScatterplotUpperColoringRangeAction().setToolTip("Scatterplot Upper Coloring Range2");
     _dataset2OptionsHolder.getScatterplotLowerColoringRangeAction().setToolTip("Scatterplot Lower Coloring Range2");
+    _dataset1OptionsHolder.getLineplotUpperColoringRangeAction().setToolTip("Lineplot Upper Coloring Range");
+    _dataset1OptionsHolder.getLineplotLowerColoringRangeAction().setToolTip("Lineplot Lower Coloring Range");
     _commonOptionsHolder.getBottomNRowsAction().setToolTip("Bottom N Rows Action");
     _dataset2OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset 2");
     _dataset2OptionsHolder.getPointDatasetAction().setToolTip("Point Dataset 2");
@@ -111,6 +113,15 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setSingleStep(0.01);
     _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setNumberOfDecimals(6);
     _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setNumberOfDecimals(6);
+
+    _dataset1OptionsHolder.getLineplotUpperColoringRangeAction().setMaximum(1.00);
+    _dataset1OptionsHolder.getLineplotUpperColoringRangeAction().setMinimum(-1.00);
+    _dataset1OptionsHolder.getLineplotLowerColoringRangeAction().setMaximum(1.00);
+    _dataset1OptionsHolder.getLineplotLowerColoringRangeAction().setMinimum(-1.00);
+    _dataset1OptionsHolder.getLineplotUpperColoringRangeAction().setSingleStep(0.01);
+    _dataset1OptionsHolder.getLineplotLowerColoringRangeAction().setSingleStep(0.01);
+    _dataset1OptionsHolder.getLineplotUpperColoringRangeAction().setNumberOfDecimals(6);
+    _dataset1OptionsHolder.getLineplotLowerColoringRangeAction().setNumberOfDecimals(6);
 
 
     _dataset2OptionsHolder.getScatterplotUpperColoringRangeAction().setMaximum(1.00);
@@ -183,6 +194,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
     _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _dataset1OptionsHolder.getLineplotUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _dataset1OptionsHolder.getLineplotLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
 
     _dataset2OptionsHolder.getScatterplotUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
     _dataset2OptionsHolder.getScatterplotLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
@@ -328,7 +341,9 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _geneSelectionAction(this, "Gene Selection"),
     _lineplotViewSelectionAction(this, "Lineplot view selection"),
     _scatterplotUpperColoringRangeAction(this, "Scatterplot UpperColoring Range"),
-    _scatterplotLowerColoringRangeAction(this, "Scatterplot Lower Coloring Range")
+    _scatterplotLowerColoringRangeAction(this, "Scatterplot Lower Coloring Range"),
+    _lineplotUpperColoringRangeAction(this, "Lineplot Upper Coloring Range"),
+    _lineplotLowerColoringRangeAction(this, "Lineplot Lower Coloring Range")
 {
     setText("Dataset1 Options");
     setIcon(mv::util::StyledIcon("database"));
@@ -342,6 +357,8 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_embeddingDimensionYAction);
     addAction(&_scatterplotUpperColoringRangeAction);
     addAction(&_scatterplotLowerColoringRangeAction);
+    addAction(&_lineplotUpperColoringRangeAction);
+    addAction(&_lineplotLowerColoringRangeAction);
 
 
 
