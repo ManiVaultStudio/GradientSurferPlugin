@@ -1714,11 +1714,16 @@ void Computation::processAfterPCAComplete()
             geneOfInterestIndices2.push_back(static_cast<int>(std::distance(genedims2.begin(), it)));
             commonGeneNames.push_back(geneName);
         }
-        else {
-            qWarning() << "Gene name not found in dataset 2:" << geneName;
-            setStatusMessage("E", "Gene name not found in dataset 2", "");
-            return;
-        }
+        //else {
+        //    qWarning() << "Gene name not found in dataset 2:" << geneName;
+        //    setStatusMessage("E", "Gene name not found in dataset 2", "");
+        //    return;
+        //}
+    }
+    if (commonGeneNames.size()< 1) {
+        qWarning() << "No common genes found between datasets";
+        setStatusMessage("E", "No common genes found between datasets", "");
+        return;
     }
 
 
@@ -2138,6 +2143,12 @@ bool Computation::setupAndTriggerPCA()
             geneDataset1.push_back(idx);
             geneDataset2.push_back(geneId2);
         }
+    }
+
+    if (dimensionNamesOfInterest.empty()) {
+        qWarning() << "No common genes found between datasets";
+        setStatusMessage("E", "No common genes found between datasets", "");
+        return false;
     }
 
     const int numDimsOfInterest = static_cast<int>(dimensionNamesOfInterest.size());
