@@ -1876,7 +1876,7 @@ void Computation::processAfterPCAComplete()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
-    //populateLineChartColorPointData();
+
 }
 
 
@@ -2291,6 +2291,10 @@ bool Computation::setupAndTriggerPCA()
         }
     }
 
+
+    disconnect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, nullptr);
+    disconnect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, nullptr);
+
     setStatusMessage("R", "PCA Started", "");
     if (isPartialPCA) {
         _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
@@ -2314,7 +2318,26 @@ bool Computation::setupAndTriggerPCA()
             setStatusMessage("E", "PCA plugin not found", "");
             return false;
         }
-
+        connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
+            _pcaDataset1Complete = true;
+            qDebug() << "PCA Dataset 1 data changed";
+            if (_pcaDataset1Complete && _pcaDataset2Complete) {
+                processAfterPCAComplete();
+            }
+            else {
+                qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
+            }
+            });
+        connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
+            _pcaDataset2Complete = true;
+            qDebug() << "PCA Dataset 2 data changed";
+            if (_pcaDataset1Complete && _pcaDataset2Complete) {
+                processAfterPCAComplete();
+            }
+            else {
+                qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";
+            }
+            });
         auto componentsAction1 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction1) {
             qDebug() << "Number of PCA components action not found";
