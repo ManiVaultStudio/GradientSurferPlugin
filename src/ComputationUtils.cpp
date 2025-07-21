@@ -1433,6 +1433,8 @@ void createLineChartClusterColors(QString coloringDataset, QString colorMapValue
     events().notifyDatasetDataChanged(coloringDatasetFull);
 }
 
+
+
 void createClusterLineChartClusterColors(QString coloringChangeDataset, QString coloringReferenceDataset, std::vector<int>& selectedIndices)
 {
 
@@ -1554,4 +1556,102 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
 
     coloringDatasetFull->getClusters() = newClusters;
     events().notifyDatasetDataChanged(coloringDatasetFull);
+}
+
+
+std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData)
+{
+    FunctionTimer timer(Q_FUNC_INFO);
+
+    // Early parameter validation
+    if (coloringDataset.isEmpty() || colorMapValue.isEmpty() ||
+        selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty())
+    {
+        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        return { 0.0f, 0.0f };
+    }
+    if (numOfTotalPoints <= 0) {
+        qWarning() << "Invalid number of total points for PCA cluster colors creation.";
+        return { 0.0f, 0.0f };
+    }
+
+    auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
+    auto pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
+    if (!coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid()) {
+        qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
+        return { 0.0f, 0.0f };
+    }
+
+    // Output data, initialized with a sentinel value
+    std::vector<float> finalData(static_cast<size_t>(numOfTotalPoints), -666.666f);
+
+    // Find the dimension index
+    const auto& dimensionNames = pointValuesDatasetFull->getDimensionNames();
+    auto it = std::find(dimensionNames.begin(), dimensionNames.end(), dimensionVal);
+    int dimensionIndex = (it != dimensionNames.end()) ? static_cast<int>(std::distance(dimensionNames.begin(), it)) : -1;
+    if (dimensionIndex < 0) {
+        qWarning() << "Dimension" << dimensionVal << "not found in dataset" << pointValuesDataset;
+        return { 0.0f, 0.0f };
+    }
+
+    std::vector<float> geneExpValues(selectedIndices.size());
+
+    if (isFullData) {
+        // Check for out-of-bounds indices
+        if (!selectedIndices.empty() && *std::max_element(selectedIndices.begin(), selectedIndices.end()) >= pointValuesDatasetFull->getNumPoints()) {
+            qWarning() << "Data mismatch: selected index out of range.";
+            return { 0.0f, 0.0f };
+        }
+        std::vector<int> dimIdx = { dimensionIndex };
+        pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimIdx, selectedIndices);
+    }
+    else {
+        if (pointValuesDatasetFull->getNumPoints() != static_cast<int>(selectedIndices.size())) {
+            qWarning() << "Data mismatch: number of points does not match selected indices.";
+            return { 0.0f, 0.0f };
+        }
+        pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
+    }
+
+    if (geneExpValues.size() != selectedIndices.size()) {
+        qWarning() << "Data mismatch: geneExpValues and selectedIndices size differ.";
+        return { 0.0f, 0.0f };
+    }
+
+    // Map gene expression values to their corresponding indices
+    for (size_t i = 0; i < selectedIndices.size(); ++i) {
+        int idx = selectedIndices[i];
+        if (idx >= 0 && idx < numOfTotalPoints) {
+            finalData[static_cast<size_t>(idx)] = geneExpValues[i];
+        }
+        else {
+            qWarning() << "Index out of bounds in selectedIndices:" << idx;
+        }
+    }
+
+    coloringDatasetFull->setData(finalData.data(), numOfTotalPoints, 1);
+    coloringDatasetFull->setDimensionNames({ "ColorDim" });
+
+    events().notifyDatasetDataChanged(coloringDatasetFull);
+
+    // Only consider valid (non-sentinel) values for min/max
+    auto validBegin = std::remove(geneExpValues.begin(), geneExpValues.end(), -666.666f);
+    if (validBegin == geneExpValues.begin()) {
+        // No valid data
+        return { 0.0f, 0.0f };
+    }
+    auto [minIt, maxIt] = std::minmax_element(geneExpValues.begin(), validBegin);
+    return { *minIt, *maxIt };
+}
+
+void colormapChangedAllPlots()
+{
+}
+
+void rangeChangeLinePlot()
+{
+}
+
+void rangeChangeScatterPlot()
+{
 }
