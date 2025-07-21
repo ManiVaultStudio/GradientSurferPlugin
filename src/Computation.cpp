@@ -3151,6 +3151,8 @@ void Computation::colorScatterPlots()
         _isColoringScatterplots = false;
         return;
     }
+    std::pair<float, float> sentinelValMinMax1{ minValScatter1.getMinimum(), maxValScatter1.getMaximum() };
+    std::pair<float, float> sentinelValMinMax2{ minValScatter2.getMinimum(), maxValScatter2.getMaximum() };
 
     // Determine coloring source: PCA or gene
     if (commonOpts.getPcaColoringAction().isChecked()) {
@@ -3170,10 +3172,10 @@ void Computation::colorScatterPlots()
 
        auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             pcaDataset1ID, embeddingDataset1->getNumPoints(),
-            selectedPCADimensionName, minVal1, maxVal1, false);
+            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1);
        auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             pcaDataset2ID, embeddingDataset2->getNumPoints(),
-            selectedPCADimensionName, minVal2, maxVal2, false);
+            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2);
        minVal1 = value1.first;
        maxVal1 = value1.second;
        minVal2 = value2.first;
@@ -3196,10 +3198,10 @@ void Computation::colorScatterPlots()
 
         auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             geneDataset1ID, embeddingDataset1->getNumPoints(),
-            selectedGeneName, minVal1, maxVal1, true);
+            selectedGeneName, minVal1, maxVal1, true, sentinelValMinMax1);
         auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             geneDataset2ID, embeddingDataset2->getNumPoints(),
-            selectedGeneName, minVal2, maxVal2, true);
+            selectedGeneName, minVal2, maxVal2, true, sentinelValMinMax2);
         minVal1 = value1.first;
         maxVal1 = value1.second;
         minVal2 = value2.first;

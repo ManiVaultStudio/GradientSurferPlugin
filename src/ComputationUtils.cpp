@@ -480,6 +480,17 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                         if (colorMapValueAction)
                         {
                             colorMapValueAction->setCurrentText(colormapValue);
+                            auto maxRangeAction = findActionByPath<DecimalAction>(plugin, "Settings/Coloring/1D Color map/Range/Maximum");
+                            auto minRangeAction = findActionByPath<DecimalAction>(plugin, "Settings/Coloring/1D Color map/Range/Minimum");
+                            if (maxRangeAction && minRangeAction)
+                            {
+                                maxRangeAction->setValue(maxValue);
+                                minRangeAction->setValue(minValue);
+                            }
+                            else
+                            {
+                                qCritical() << "Color map range actions not found in plugin:" << plugin->getGuiName();
+                            }
                         }
                     }
 
@@ -1559,7 +1570,7 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
 }
 
 
-std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData)
+std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax)
 {
     FunctionTimer timer(Q_FUNC_INFO);
 
@@ -1582,9 +1593,6 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
         return { 0.0f, 0.0f };
     }
 
-    // Output data, initialized with a sentinel value
-    std::vector<float> finalData(static_cast<size_t>(numOfTotalPoints), -666.666f);
-
     // Find the dimension index
     const auto& dimensionNames = pointValuesDatasetFull->getDimensionNames();
     auto it = std::find(dimensionNames.begin(), dimensionNames.end(), dimensionVal);
@@ -1596,8 +1604,16 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
 
     std::vector<float> geneExpValues(selectedIndices.size());
 
-    if (isFullData) {
-        // Check for out-of-bounds indices
+    if (!isFullData) {
+        // If not full data, extract all points for the dimension
+        if (pointValuesDatasetFull->getNumPoints() != static_cast<int>(selectedIndices.size())) {
+            qWarning() << "Data mismatch: number of points does not match selected indices.";
+            return { 0.0f, 0.0f };
+        }
+        pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
+    }
+    else {
+        // If full data, populate only for selected indices
         if (!selectedIndices.empty() && *std::max_element(selectedIndices.begin(), selectedIndices.end()) >= pointValuesDatasetFull->getNumPoints()) {
             qWarning() << "Data mismatch: selected index out of range.";
             return { 0.0f, 0.0f };
@@ -1605,18 +1621,27 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
         std::vector<int> dimIdx = { dimensionIndex };
         pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimIdx, selectedIndices);
     }
-    else {
-        if (pointValuesDatasetFull->getNumPoints() != static_cast<int>(selectedIndices.size())) {
-            qWarning() << "Data mismatch: number of points does not match selected indices.";
-            return { 0.0f, 0.0f };
-        }
-        pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
-    }
 
     if (geneExpValues.size() != selectedIndices.size()) {
         qWarning() << "Data mismatch: geneExpValues and selectedIndices size differ.";
         return { 0.0f, 0.0f };
     }
+
+    // Compute min/max from geneExpValues
+    auto [minIt, maxIt] = std::minmax_element(geneExpValues.begin(), geneExpValues.end());
+    float computedMin = *minIt;
+    float computedMax = *maxIt;
+    float fulldatasetMin = sentinelMinMax.first;
+    float fulldatasetMax = sentinelMinMax.second;
+
+    // Find the global min and max
+    float globalMin = std::min({ fulldatasetMin, fulldatasetMax, computedMin, computedMax });
+    float globalMax = std::max({ fulldatasetMin, fulldatasetMax, computedMin, computedMax });
+
+    // Choose a sentinel value outside the global range
+    float sentinelValue = globalMin - 100.0f; // or globalMax + 100.0f, depending on convention
+
+    std::vector<float> finalData(static_cast<size_t>(numOfTotalPoints), sentinelValue);
 
     // Map gene expression values to their corresponding indices
     for (size_t i = 0; i < selectedIndices.size(); ++i) {
@@ -1634,14 +1659,7 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
 
     events().notifyDatasetDataChanged(coloringDatasetFull);
 
-    // Only consider valid (non-sentinel) values for min/max
-    auto validBegin = std::remove(geneExpValues.begin(), geneExpValues.end(), -666.666f);
-    if (validBegin == geneExpValues.begin()) {
-        // No valid data
-        return { 0.0f, 0.0f };
-    }
-    auto [minIt, maxIt] = std::minmax_element(geneExpValues.begin(), validBegin);
-    return { *minIt, *maxIt };
+    return { computedMin, computedMax };
 }
 
 void colormapChangedAllPlots()
