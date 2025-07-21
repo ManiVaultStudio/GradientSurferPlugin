@@ -1851,14 +1851,18 @@ void Computation::processAfterPCAComplete()
         }
         i++;
     }
-    //qDebug() << "\n\n""**********************************""\n\n";
-
 
     _pcaCommonGenesDataset1->setData(finalGenePCSimVector1.data(), numPointsReduced1, _selectedPCData1.numberOfDimensions);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
     _pcaCommonGenesDataset2->setData(finalGenePCSimVector2.data(), numPointsReduced2, _selectedPCData1.numberOfDimensions);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
 
+    processAfterPCADatasetsPopulated();
+
+}
+
+void Computation::processAfterPCADatasetsPopulated()
+{
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
 
     int numDimsForColoring = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions();
@@ -1876,7 +1880,6 @@ void Computation::processAfterPCAComplete()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
-
 }
 
 
@@ -2322,7 +2325,7 @@ bool Computation::setupAndTriggerPCA()
             _pcaDataset1Complete = true;
             qDebug() << "PCA Dataset 1 data changed";
             if (_pcaDataset1Complete && _pcaDataset2Complete) {
-                processAfterPCAComplete();
+                processAfterPCADatasetsPopulated();
             }
             else {
                 qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
@@ -2332,7 +2335,7 @@ bool Computation::setupAndTriggerPCA()
             _pcaDataset2Complete = true;
             qDebug() << "PCA Dataset 2 data changed";
             if (_pcaDataset1Complete && _pcaDataset2Complete) {
-                processAfterPCAComplete();
+                processAfterPCADatasetsPopulated();
             }
             else {
                 qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";

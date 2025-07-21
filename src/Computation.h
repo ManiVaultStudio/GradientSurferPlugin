@@ -92,6 +92,7 @@ private:
     void coloringScatterPlots();
     void coloringLinePlots();
     void clearLinePlots();
+    void processAfterPCADatasetsPopulated();
     void clearTables();
     void  normalizeData();
 protected:
