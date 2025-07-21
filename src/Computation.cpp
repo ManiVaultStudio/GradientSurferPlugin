@@ -45,11 +45,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _projectOpened = false;
         connect(&mv::projects(), &AbstractProjectManager::projectOpened, this,
             [this]() {
+                disableOptions();
                 _projectOpened = true;
                 normalizeData();
                 coloringScatterPlots(); //TODO Check
                 clearTables();
                 clearLinePlots();
+                enableOptions();
             });
     }
 
@@ -165,13 +167,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setFilterFunction(
         [this](mv::Dataset<DatasetImpl> dataset) -> bool {
-            return isValidPointDataset(dataset);
+            return isValidPointChildDataset(dataset);
         }
     );
 
     _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setFilterFunction(
         [this](mv::Dataset<DatasetImpl> dataset) -> bool {
-            return isValidPointDataset(dataset);
+            return isValidPointChildDataset(dataset);
         }
     );
 
@@ -299,16 +301,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             //qDebug() << "Project opening";
             return;
         }
-
+        disableOptions();
+        
         normalizeData();
         
         setStatusMessage("M", "Selected indices changed", "");
         setStatusMessage("R", "Computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-        QApplication::processEvents();
+        
+        
+        
         setSelectionAndAutoCompute();
-
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        enableOptions();
         };
     connect(&_settingsAction.getCommonOptionsHolder().getNormalizeCombinedDatasetsAction(), &ToggleAction::toggled, this, normalizationModified);
     connect(&_settingsAction.getCommonOptionsHolder().getNormalizationTypeAction(), &OptionAction::currentIndexChanged, this, normalizationModified);
@@ -400,11 +403,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
   
                     setStatusMessage("M", "Selected indices changed", "");
                     setStatusMessage("R", "Computation in progress", "");
-                    _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-                    QApplication::processEvents();
-                    setSelectionAndAutoCompute();
+                    disableOptions();
 
-                    _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+  
+                    setSelectionAndAutoCompute();
+                    enableOptions();
+
                     };
 
 
@@ -522,17 +526,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
         setStatusMessage("R", "Correlation computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
+
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
         {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         }
-        QApplication::processEvents();
+        disableOptions();
 
         correlationAfterPCA(); 
-
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        enableOptions();
+        
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
@@ -544,12 +548,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
         setStatusMessage("R", "Computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-        QApplication::processEvents();
+        disableOptions();
 
+        
         setSelectionAndAutoCompute();
 
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        enableOptions();
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction(), &OptionAction::currentIndexChanged, this, correlationCalculationTypeActionChanged);
@@ -562,18 +566,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
         setStatusMessage("R", "PCA Computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputePCAAction().setDisabled(true);
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
         {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
 
         }
-        QApplication::processEvents();
-  
-        ManualCompute();
+        disableOptions();
 
-        _settingsAction.getCommonOptionsHolder().getComputePCAAction().setDisabled(false);
+        
+        ManualCompute();
+        enableOptions();
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getComputePCAAction(), &TriggerAction::triggered, this, computePCATrigger);
@@ -668,13 +671,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
         setStatusMessage("R", "Computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-        QApplication::processEvents();
+        disableOptions();
+
 
         
         setSelectionAndAutoCompute();
+        enableOptions();
 
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         });
 
     connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction(),
@@ -770,12 +773,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
             setStatusMessage("R", "Computation in progress", "");
-            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-            QApplication::processEvents();
+            disableOptions();
 
+            
             ManualCompute();
+            enableOptions();
 
-            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         }
         });
 
@@ -1179,8 +1182,12 @@ void Computation::AutoCompute()
         clearTables();
         clearLinePlots();
         _numOfPointsInLine1 = 0;
-        QApplication::processEvents();
 
+        if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
+            normalizeData();
+            setSelectionAndAutoCompute();
+            return;
+        }
         //mv::Dataset<Points> fullPointDataset1;
         mv::Dataset<Clusters> fullClusterDataset1;
         mv::Dataset<Clusters> fullClusterDataset2;
@@ -1343,13 +1350,9 @@ void Computation::AutoCompute()
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
             setStatusMessage("R", "Computation in progress", "");
-            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-            QApplication::processEvents();
 
             ManualCompute();
-            
 
-            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         }
 
     }
@@ -1364,6 +1367,7 @@ void Computation::AutoCompute()
         setStatusMessage("E", "Unknown error occurred during computation", "");
     }
     _isAutoComputeComputing = false;
+
 }
 
 void Computation::ManualCompute()
@@ -1372,7 +1376,11 @@ void Computation::ManualCompute()
     _isManualComputeComputing = true;
     auto guard = qScopeGuard([&] { _isManualComputeComputing = false; });
 
-    
+    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
+        normalizeData();
+        setSelectionAndAutoCompute();
+        return;
+    }
     bool complete = setupAndTriggerPCA();
     if (!complete)
     {
@@ -1380,7 +1388,6 @@ void Computation::ManualCompute()
         clearTable(_settingsAction.getTableView2Action());
         return;
     }
-
     _isManualComputeComputing = false;
     
 }
@@ -1398,6 +1405,11 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     obj["status"] = status;
     obj["message"] = message;
     obj["color"] = resolvedColor;
+
+    if (status == "E")
+    {
+        enableOptions();
+    }
 
 
     auto* statusHolder = &_settingsAction.getCommonOptionsHolder();
@@ -1556,11 +1568,33 @@ bool Computation::createDatasetsIfNeeded()
         _pcaCommonGenesDataset1 = mv::data().createDerivedDataset("PCA Dataset 1", _selectedGenePointDataset1);
         _pcaCommonGenesDataset1->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset1);
+        if (_selectedGenePointDataset1.isValid() && _pcaCommonGenesDataset1.isValid()) {
+            _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
+        }
+        else
+        {
+            qWarning() << "Selected gene point dataset 1 or PCA common genes dataset 1 is invalid";
+            setStatusMessage("E", "Selected gene point dataset 1 or PCA common genes dataset 1 is invalid", "");
+            return false;
+        }
+
+
     }
     if (!_pcaCommonGenesDataset2.isValid()) {
         _pcaCommonGenesDataset2 = mv::data().createDerivedDataset("PCA Dataset 2", _selectedGenePointDataset2);
         _pcaCommonGenesDataset2->setGroupIndex(668);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
+        if (_selectedGenePointDataset2.isValid() && _pcaCommonGenesDataset2.isValid()) {
+            _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
+        }
+        else
+        {
+            qWarning() << "Selected gene point dataset 2 or PCA common genes dataset 2 is invalid";
+            setStatusMessage("E", "Selected gene point dataset 2 or PCA common genes dataset 2 is invalid", "");
+            return false;
+        }
+
+
     }
 
     if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColoringDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedCellPointDataset.isValid() || !_scatterplotColoringDataset1.isValid() || !_scatterplotColoringDataset2.isValid() || !_pcaSelectedEmbeddingDataset.isValid() || !_pcaCommonGenesDataset1.isValid() || !_pcaCommonGenesDataset2.isValid()) {
@@ -1612,24 +1646,25 @@ void Computation::processAfterPCAComplete()
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     qDebug() << "PCA analysis completed successfully";
-    
-    _selectedPCData1.coordinates.clear();
-    _selectedPCData1.numberOfPoints = 0;
-    _selectedPCData1.numberOfDimensions = 0;
+
+    // Early exit if normalized datasets are invalid
+    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
+        normalizeData();
+        setSelectionAndAutoCompute();
+        return;
+    }
+
+    // Prepare PCA data
     _selectedPCData1.coordinates = _pca1.scores();
-    auto& loadings1 = _pca1.loadings();
     _selectedPCData1.numberOfPoints = _pca1.numRows();
     _selectedPCData1.numberOfDimensions = _pca1.numDims();
     const int nComps = _pca1.numComponents();
+    const auto& loadings1 = _pca1.loadings();
 
+    // Validate all required datasets
     if (!_selectedGenePointDataset1.isValid() || !_selectedGenePointDataset2.isValid()) {
         qWarning() << "Selected gene point datasets are invalid";
         setStatusMessage("E", "Selected gene point datasets are invalid", "");
-        return;
-    }
-    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
-        qWarning() << "Normalized full datasets are invalid";
-        setStatusMessage("E", "Normalized full datasets are invalid", "");
         return;
     }
     if (!_selectedCellPointDataset.isValid()) {
@@ -1637,13 +1672,7 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "selected embedding dataset is invalid", "");
         return;
     }
-
-    
-
-
-    setStatusMessage("R", "Computation after PCA", "");
-    if (!_pcaSelectedEmbeddingDataset.isValid())
-    {
+    if (!_pcaSelectedEmbeddingDataset.isValid()) {
         qWarning() << "PCA selected embedding dataset is invalid";
         setStatusMessage("E", "PCA selected embedding dataset is invalid", "");
         return;
@@ -1658,18 +1687,11 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "PCA common genes dataset 2 is invalid", "");
         return;
     }
-
-    if (!_selectedGenePointDataset2.isValid()) {
-        qWarning() << "Selected gene point dataset 2 is invalid";
-        setStatusMessage("E", "Selected gene point dataset 2 is invalid", "");
-        return;
-    }
     if (_selectedGenePointDataset2->getNumDimensions() != _selectedPCData1.numberOfDimensions) {
         qWarning() << "Selected gene point dataset 2 dimensions do not match PCA dimensions";
         setStatusMessage("E", "Selected gene point dataset 2 dimensions do not match PCA dimensions", "");
         return;
     }
-    
     if (loadings1.empty()) {
         qWarning() << "PCA loadings are empty";
         setStatusMessage("E", "PCA loadings are empty", "");
@@ -1685,16 +1707,23 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "Loadings size mismatch", "");
         return;
     }
-
     if (_geneOfInterestIndices1.empty()) {
         qWarning() << "Gene of interest indices 1 are empty";
         setStatusMessage("E", "Gene of interest indices 1 are empty", "");
         return;
     }
 
-    _pcaSelectedEmbeddingDataset->setData(_selectedPCData1.coordinates.data(), _selectedPCData1.numberOfPoints, _selectedPCData1.numberOfDimensions);
+    setStatusMessage("R", "Computation after PCA", "");
+
+    // Set PCA embedding dataset
+    _pcaSelectedEmbeddingDataset->setData(
+        _selectedPCData1.coordinates.data(),
+        _selectedPCData1.numberOfPoints,
+        _selectedPCData1.numberOfDimensions
+    );
     mv::events().notifyDatasetDataChanged(_pcaSelectedEmbeddingDataset);
 
+    // Find common gene indices and names
     std::vector<int> geneOfInterestIndices2;
     QStringList commonGeneNames;
     const auto& genedims1 = _normalizedFullDataset1->getDimensionNames();
@@ -1714,18 +1743,12 @@ void Computation::processAfterPCAComplete()
             geneOfInterestIndices2.push_back(static_cast<int>(std::distance(genedims2.begin(), it)));
             commonGeneNames.push_back(geneName);
         }
-        //else {
-        //    qWarning() << "Gene name not found in dataset 2:" << geneName;
-        //    setStatusMessage("E", "Gene name not found in dataset 2", "");
-        //    return;
-        //}
     }
-    if (commonGeneNames.size()< 1) {
+    if (commonGeneNames.empty()) {
         qWarning() << "No common genes found between datasets";
         setStatusMessage("E", "No common genes found between datasets", "");
         return;
     }
-
 
     const int nCommon = static_cast<int>(_geneOfInterestIndices1.size());
     if (geneOfInterestIndices2.size() != nCommon || commonGeneNames.size() != nCommon) {
@@ -1739,91 +1762,78 @@ void Computation::processAfterPCAComplete()
         return;
     }
 
- 
-
+    // Prepare loading values
     LoadingValuesContainer loadingValues;
     loadingValues.numberOfComponents = nComps;
     loadingValues.numberOfDimensions = _selectedPCData1.numberOfDimensions;
 
     for (int id = 0; id < _selectedPCData1.numberOfDimensions; ++id) {
-        LoadingValues tempValus;
-        tempValus.geneId1 = _geneOfInterestIndices1[id];
-        tempValus.geneId2 = geneOfInterestIndices2[id];
-        tempValus.loadings.resize(nComps);
+        LoadingValues tempValues;
+        tempValues.geneId1 = _geneOfInterestIndices1[id];
+        tempValues.geneId2 = geneOfInterestIndices2[id];
+        tempValues.loadings.resize(nComps);
         for (int j = 0; j < nComps; ++j) {
-            tempValus.loadings[j] = loadings1[id * nComps + j];
+            tempValues.loadings[j] = loadings1[id * nComps + j];
         }
-        loadingValues.loadingValuesMap[commonGeneNames[id]]=tempValus;
+        loadingValues.loadingValuesMap[commonGeneNames[id]] = tempValues;
     }
 
-
-    const int numPointsReduced1 = _selectedClusterIndices1.size();
-    const int numPointsReduced2 = _selectedClusterIndices2.size();
+    // Validate cluster indices
+    const int numPointsReduced1 = static_cast<int>(_selectedClusterIndices1.size());
+    const int numPointsReduced2 = static_cast<int>(_selectedClusterIndices2.size());
     if (numPointsReduced1 <= 0 || numPointsReduced2 <= 0) {
         qWarning() << "No points selected for PCA computation";
         setStatusMessage("E", "No points selected for PCA computation", "");
         return;
     }
 
+    // Compute final gene-PC similarity vectors
+    std::vector<float> finalGenePCSimVector1(numPointsReduced1 * nComps, 0.0f);
+    std::vector<float> finalGenePCSimVector2(numPointsReduced2 * nComps, 0.0f);
 
-
-    //loadingValues qdebug
-   // qDebug() << "\n\n""**********************************""\n\n";
-    //qDebug() << "Loading values for PCA:";
-    std::vector<float> finalGenePCSimVector1(numPointsReduced1 * loadingValues.numberOfComponents, 0.0f);
-    std::vector<float> finalGenePCSimVector2(numPointsReduced2 * loadingValues.numberOfComponents, 0.0f);
-    int i = 0;
-    for (const auto& [key, value] : loadingValues.loadingValuesMap) {
-        //get the key and values from loadingValues.loadingValuesMap
-        const QString& geneName = key;
-        const int& geneId1 = value.geneId1;
-        const int& geneId2 = value.geneId2;
+    for (const auto& [geneName, value] : loadingValues.loadingValuesMap) {
+        const int geneId1 = value.geneId1;
+        const int geneId2 = value.geneId2;
         const QVector<float>& loadings = value.loadings;
 
-        //qDebug() << i<<")"<< "Gene Index:" << geneId1<< "Gene Index:" << geneId2<< "Gene Name:" << geneName<< "Number of Components:" << loadings.size();
-        std::vector<float> genePointVector1(numPointsReduced1, 0.0f);
-        std::vector<float> genePointVector2(numPointsReduced2, 0.0f);
-        std::vector<int> geneIDVector1(1, geneId1);
-        std::vector<int> geneIDVector2(1, geneId2);
-        if (geneId1 < 0 || geneId1 >= _normalizedFullDataset1->getNumDimensions() || geneId2 < 0 || geneId2 >= _normalizedFullDataset2->getNumDimensions()) {
+        if (geneId1 < 0 || geneId1 >= _normalizedFullDataset1->getNumDimensions() ||
+            geneId2 < 0 || geneId2 >= _normalizedFullDataset2->getNumDimensions()) {
             qWarning() << "Invalid gene indices for PCA computation: geneId1 =" << geneId1 << ", geneId2 =" << geneId2;
             setStatusMessage("E", "Invalid gene indices for PCA computation", "");
             return;
         }
-        //qDebug() << "Gene ID Vector 1:" << geneIDVector1 << "Gene ID Vector 2:" << geneIDVector2;
 
-        _normalizedFullDataset1->populateDataForDimensions(genePointVector1, geneIDVector1,_selectedClusterIndices1);
-        _normalizedFullDataset2->populateDataForDimensions(genePointVector2, geneIDVector2,_selectedClusterIndices2);
+        std::vector<float> genePointVector1(numPointsReduced1, 0.0f);
+        std::vector<float> genePointVector2(numPointsReduced2, 0.0f);
+        std::vector<int> geneIDVector1{ geneId1 };
+        std::vector<int> geneIDVector2{ geneId2 };
 
-        for (int j = 0; j < loadings.size(); j++)
-        {
+        _normalizedFullDataset1->populateDataForDimensions(genePointVector1, geneIDVector1, _selectedClusterIndices1);
+        _normalizedFullDataset2->populateDataForDimensions(genePointVector2, geneIDVector2, _selectedClusterIndices2);
+
+        for (int j = 0; j < nComps; ++j) {
             float loadingVal = loadings[j];
-
-
             for (int k = 0; k < numPointsReduced1; ++k) {
-
-
-                finalGenePCSimVector1[k * loadingValues.numberOfComponents + j] += genePointVector1[k] * loadingVal;
-                
-
+                finalGenePCSimVector1[k * nComps + j] += genePointVector1[k] * loadingVal;
             }
-
-
-
             for (int k = 0; k < numPointsReduced2; ++k) {
-                finalGenePCSimVector2[k * loadingValues.numberOfComponents + j] += genePointVector2[k] * loadingVal;
+                finalGenePCSimVector2[k * nComps + j] += genePointVector2[k] * loadingVal;
             }
-
         }
-        i++;
     }
-    //qDebug() << "\n\n""**********************************""\n\n";
 
-
-    _pcaCommonGenesDataset1->setData(finalGenePCSimVector1.data(), numPointsReduced1, _selectedPCData1.numberOfDimensions);
+    // Set PCA common genes datasets
+    _pcaCommonGenesDataset1->setData(finalGenePCSimVector1.data(), numPointsReduced1, nComps);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
-    _pcaCommonGenesDataset2->setData(finalGenePCSimVector2.data(), numPointsReduced2, _selectedPCData1.numberOfDimensions);
+    _pcaCommonGenesDataset2->setData(finalGenePCSimVector2.data(), numPointsReduced2, nComps);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
+
+    processAfterPCADatasetsPopulated();
+
+}
+
+void Computation::processAfterPCADatasetsPopulated()
+{
 
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
 
@@ -1842,7 +1852,7 @@ void Computation::processAfterPCAComplete()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
-    //populateLineChartColorPointData();
+
 }
 
 
@@ -1850,7 +1860,6 @@ void Computation::correlationAfterPCA()
 {
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
-
     if (!_normalizedFullDataset1.isValid()) {
         setStatusMessage("E", "Point dataset 2 is invalid", "");
         return;
@@ -1912,6 +1921,7 @@ void Computation::correlationAfterPCA()
     setupTableModelAndSelection(_settingsAction.getTableView3Action(), _geneCorrValues3, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction());
     selectFirstRow(_settingsAction.getTableView3Action());
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
+
 }
 bool Computation::getRotationAngle(const QString& scatterplotViewName, float& rotationAngle)
 {
@@ -1939,6 +1949,7 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
 
     qWarning() << "Scatterplot plugin not found";
     setStatusMessage("E", "Scatterplot plugin not found", "");
+
     return false;
 }
 
@@ -2088,7 +2099,11 @@ bool Computation::setupAndTriggerPCA()
     auto guard = qScopeGuard([this]() { _isPCATriggerComputing = false; });
 
     FunctionTimer timer(Q_FUNC_INFO);
-
+    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
+        normalizeData();
+        setSelectionAndAutoCompute();
+        return false;
+    }
     // Early exit for invalid datasets
     if (!_selectedGenePointDataset1.isValid() || !_normalizedFullDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() || !_normalizedFullDataset2.isValid()) {
@@ -2253,14 +2268,103 @@ bool Computation::setupAndTriggerPCA()
         }
     }
 
+
+    disconnect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, nullptr);
+    disconnect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, nullptr);
+
     setStatusMessage("R", "PCA Started", "");
     if (isPartialPCA) {
         _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
     }
     else {
-        setStatusMessage("E", "Only Partial PCA is implemented", "");
-        qCritical() << "Only Partial PCA is implemented!";
-        return false;
+
+        if (!_pcaAnalysisCommonGenesDataset1Plugin) {
+            _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
+        }
+        if (!_pcaAnalysisCommonGenesDataset2Plugin) {
+            _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
+        }
+
+        if (!_pcaAnalysisCommonGenesDataset1Plugin) {
+            qDebug() << "PCA Analysis Plugin not found";
+            setStatusMessage("E", "PCA plugin not found", "");
+            return false;
+        }
+        if (!_pcaAnalysisCommonGenesDataset2Plugin) {
+            qDebug() << "PCA Analysis Plugin not found";
+            setStatusMessage("E", "PCA plugin not found", "");
+            return false;
+        }
+        connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
+            _pcaDataset1Complete = true;
+            qDebug() << "PCA Dataset 1 data changed";
+            if (_pcaDataset1Complete && _pcaDataset2Complete) {
+                processAfterPCADatasetsPopulated();
+            }
+            else {
+                qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
+            }
+            });
+        connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
+            _pcaDataset2Complete = true;
+            qDebug() << "PCA Dataset 2 data changed";
+            if (_pcaDataset1Complete && _pcaDataset2Complete) {
+                processAfterPCADatasetsPopulated();
+            }
+            else {
+                qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";
+            }
+            });
+        auto componentsAction1 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Number of PCA components"));
+        if (!componentsAction1) {
+            qDebug() << "Number of PCA components action not found";
+            setStatusMessage("E", "PCA components action not found", "");
+            return false;
+        }
+        auto numofIntGenes = _commonGeneNames.size();
+        componentsAction1->setMaximum(numofIntGenes);
+        componentsAction1->setValue(numofIntGenes);
+
+        auto componentsAction2 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Number of PCA components"));
+        if (!componentsAction2) {
+            qDebug() << "Number of PCA components action not found";
+            setStatusMessage("E", "PCA components action not found", "");
+            return false;
+        }
+        componentsAction2->setMaximum(numofIntGenes);
+        componentsAction2->setValue(numofIntGenes);
+
+
+        auto startAction1 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Start analysis"));
+        auto startAction2 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Start analysis"));
+        if (startAction1) {
+            startAction1->trigger();
+            qDebug() << "PCA analysis 1 started";
+            QEventLoop loop;
+            loop.processEvents();
+            _pcaCommonGenesDataset1->setSelectionIndices({});
+            mv::events().notifyDatasetDataSelectionChanged(_pcaCommonGenesDataset1);
+
+        }
+        else {
+            qDebug() << "Start analysis action not found in PCA dataset";
+            setStatusMessage("E", "PCA start action not found", "");
+            return false;
+        }
+        if (startAction2) {
+            startAction2->trigger();
+            qDebug() << "PCA analysis 2 started";
+            QEventLoop loop;
+            loop.processEvents();
+            _pcaCommonGenesDataset2->setSelectionIndices({});
+            mv::events().notifyDatasetDataSelectionChanged(_pcaCommonGenesDataset2);
+
+        }
+        else {
+            qDebug() << "Start analysis action not found in PCA dataset";
+            setStatusMessage("E", "PCA start action not found", "");
+            return false;
+        }
     }
 
     return true;
@@ -2418,7 +2522,9 @@ void Computation::setSelectionAndAutoCompute()
     //qDebug() << "Project opening";
     return;
 }
+    disableOptions();
     AutoCompute();
+    enableOptions();
     _blockSelectionTrigger = false;
 }
 
@@ -2709,9 +2815,53 @@ void Computation::coloringScatterPlots()
     }
 }
 
+void Computation::enableOptions()
+{
+    if (!_projectOpened || !_optionsDisabled)
+        return;
+    if (0)
+    {
+        if (_foregroundTask) {
 
+            if (_foregroundTask->isRunning()) {
+                _foregroundTask->setFinished();
+                if (_foregroundTask->isKillable()) {
+                    _foregroundTask->kill();
+                }
+            }
+            disconnect(_foregroundTask, nullptr, this, nullptr);
+            _foregroundTask->deleteLater();
+            _foregroundTask = nullptr;
+        }
+    }
+    _settingsAction.getCommonOptionsHolder().setDisabled(false);
+    _settingsAction.getDataset1OptionsHolder().setDisabled(false);
+    _settingsAction.getDataset2OptionsHolder().setDisabled(false);
+    QApplication::processEvents();
+    _optionsDisabled = false;
+}
 
+void Computation::disableOptions()
+{
+    if (!_projectOpened || _optionsDisabled)
+        return;
+    if (0)
+    {
+        if (!_foregroundTask) {
+            _foregroundTask = new mv::ForegroundTask(this, "Computing", mv::Task::Status::Running, true);
 
+            connect(_foregroundTask, &QObject::destroyed, this, [this](QObject*) {
+                _foregroundTask = nullptr;
+                });
 
-
-
+            _foregroundTask->setName("Computing");
+            _foregroundTask->setDescription("Computation in progress. Please wait.");
+            _foregroundTask->setRunning();
+        }
+    }
+    _settingsAction.getCommonOptionsHolder().setDisabled(true);
+    _settingsAction.getDataset1OptionsHolder().setDisabled(true);
+    _settingsAction.getDataset2OptionsHolder().setDisabled(true);
+    QApplication::processEvents();
+    _optionsDisabled = true;
+}

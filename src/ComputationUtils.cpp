@@ -1316,6 +1316,16 @@ bool isValidPointDataset(const mv::Dataset<DatasetImpl>& dataset) {
     return dataset->getDataType() == PointType;
 }
 
+bool isValidPointChildDataset(const mv::Dataset<DatasetImpl>& dataset) {
+    const auto parentData = dataset->getParent();
+    if (!parentData.isValid() || dataset->getDataType() != PointType)
+        return false;
+
+    static const QList<int> groupIndexList = { 667, 668, 666, 555, 556 };
+    const int groupIndex = parentData->getGroupIndex();
+    return !groupIndexList.contains(groupIndex);
+}
+
 bool isValidEmbeddingDataset(const mv::Dataset<DatasetImpl>& dataset) {
     auto parent = dataset->getParent();
     bool checkGroup = (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667);
