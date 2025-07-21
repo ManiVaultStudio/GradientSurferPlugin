@@ -57,7 +57,34 @@ namespace mv
 {
     class CoreInterface;
 }
+class StatusBarAction : public mv::gui::WidgetAction {
+public:
+    StatusBarAction(QObject* parent, const QString& title)
+        : WidgetAction(parent, title), _statusBar(nullptr) {
+    }
 
+    QStatusBar* statusBar() {
+        if (!_statusBar)
+            getWidget(nullptr, 0);
+        return _statusBar;
+    }
+
+protected:
+    QWidget* getWidget(QWidget* parent, const std::int32_t&) override {
+        if (!_statusBar) {
+            _statusBar = new QStatusBar(parent);
+            _statusBar->setStatusTip("Status");
+            _statusBar->setMaximumHeight(22);
+            _statusBar->setMaximumWidth(800);
+            _statusBar->setAutoFillBackground(true);
+            _statusBar->setSizeGripEnabled(false);
+            _statusBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        }
+        return _statusBar;
+    }
+private:
+    QStatusBar* _statusBar;
+};
 
 class SettingsAction : public WidgetAction
 {
@@ -100,6 +127,15 @@ public:
         DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
 
+        const DecimalAction& getScatterplotUpperColoringRangeAction() const { return _scatterplotUpperColoringRangeAction; }
+        DecimalAction& getScatterplotUpperColoringRangeAction() { return _scatterplotUpperColoringRangeAction; }
+        const DecimalAction& getScatterplotLowerColoringRangeAction() const { return _scatterplotLowerColoringRangeAction; }
+        DecimalAction& getScatterplotLowerColoringRangeAction() { return _scatterplotLowerColoringRangeAction; }
+
+        const DecimalAction& getLineplotUpperColoringRangeAction() const { return _lineplotUpperColoringRangeAction; }
+        DecimalAction& getLineplotUpperColoringRangeAction() { return _lineplotUpperColoringRangeAction; }
+        const DecimalAction& getLineplotLowerColoringRangeAction() const { return _lineplotLowerColoringRangeAction; }
+        DecimalAction& getLineplotLowerColoringRangeAction() { return _lineplotLowerColoringRangeAction; }
 
  
 
@@ -119,8 +155,10 @@ public:
         DimensionPickerAction               _geneSelectionAction;
 
 
-
-
+        DecimalAction          _scatterplotUpperColoringRangeAction;
+        DecimalAction          _scatterplotLowerColoringRangeAction;
+        DecimalAction          _lineplotUpperColoringRangeAction;
+        DecimalAction          _lineplotLowerColoringRangeAction;
   
     };
 
@@ -131,43 +169,49 @@ public:
 
 
     
-        const DatasetPickerAction& getClusterDataset2Action() const { return _clusterDataset2Action; }
-        DatasetPickerAction& getClusterDataset2Action() { return _clusterDataset2Action; }
+        const DatasetPickerAction& getClusterDatasetAction() const { return _clusterDatasetAction; }
+        DatasetPickerAction& getClusterDatasetAction() { return _clusterDatasetAction; }
 
-        const DatasetPickerAction& getPointDataset2Action() const { return _pointDataset2Action; }
-        DatasetPickerAction& getPointDataset2Action() { return _pointDataset2Action; }
+        const DatasetPickerAction& getPointDatasetAction() const { return _pointDatasetAction; }
+        DatasetPickerAction& getPointDatasetAction() { return _pointDatasetAction; }
 
-        const DatasetPickerAction& getEmbeddingDataset2Action() const { return _embeddingDataset2Action; }
-        DatasetPickerAction& getEmbeddingDataset2Action() { return _embeddingDataset2Action; }
+        const DatasetPickerAction& getEmbeddingDatasetAction() const { return _embeddingDatasetAction; }
+        DatasetPickerAction& getEmbeddingDatasetAction() { return _embeddingDatasetAction; }
 
-        const OptionAction& getScatterplotViewSelection2Action() const { return _scatterplotViewSelection2Action; }
-        OptionAction& getScatterplotViewSelection2Action() { return _scatterplotViewSelection2Action; }
+        const OptionAction& getScatterplotViewSelectionAction() const { return _scatterplotViewSelectionAction; }
+        OptionAction& getScatterplotViewSelectionAction() { return _scatterplotViewSelectionAction; }
 
-        const DimensionPickerAction& getEmbeddingDimension2XAction() const { return _embeddingDimension2XAction; }
-        DimensionPickerAction& getEmbeddingDimension2XAction() { return _embeddingDimension2XAction; }
+        const DimensionPickerAction& getEmbeddingDimensionXAction() const { return _embeddingDimensionXAction; }
+        DimensionPickerAction& getEmbeddingDimensionXAction() { return _embeddingDimensionXAction; }
 
-        const DimensionPickerAction& getEmbeddingDimension2YAction() const { return _embeddingDimension2YAction; }
-        DimensionPickerAction& getEmbeddingDimension2YAction() { return _embeddingDimension2YAction; }
+        const DimensionPickerAction& getEmbeddingDimensionYAction() const { return _embeddingDimensionYAction; }
+        DimensionPickerAction& getEmbeddingDimensionYAction() { return _embeddingDimensionYAction; }
 
-        const DimensionPickerAction& getGeneSelection2Action() const { return _geneSelection2Action; }
-        DimensionPickerAction& getGeneSelection2Action() { return _geneSelection2Action; }
+        const DimensionPickerAction& getGeneSelection2Action() const { return _geneSelectionAction; }
+        DimensionPickerAction& getGeneSelectionAction() { return _geneSelectionAction; }
 
  
+        const DecimalAction& getScatterplotUpperColoringRangeAction() const { return _scatterplotUpperColoringRangeAction; }
+        DecimalAction& getScatterplotUpperColoringRangeAction() { return _scatterplotUpperColoringRangeAction; }
+        const DecimalAction& getScatterplotLowerColoringRangeAction() const { return _scatterplotLowerColoringRangeAction; }
+        DecimalAction& getScatterplotLowerColoringRangeAction() { return _scatterplotLowerColoringRangeAction; }
+
+
 
     protected:
         SettingsAction& _settingsOptions;
 
 
 
-        DatasetPickerAction                 _clusterDataset2Action;
-        DatasetPickerAction                 _pointDataset2Action;
-        DatasetPickerAction                 _embeddingDataset2Action;
-        OptionAction                        _scatterplotViewSelection2Action;
-        DimensionPickerAction               _embeddingDimension2XAction;
-        DimensionPickerAction               _embeddingDimension2YAction;
-        DimensionPickerAction               _geneSelection2Action;
-
-
+        DatasetPickerAction                 _clusterDatasetAction;
+        DatasetPickerAction                 _pointDatasetAction;
+        DatasetPickerAction                 _embeddingDatasetAction;
+        OptionAction                        _scatterplotViewSelectionAction;
+        DimensionPickerAction               _embeddingDimensionXAction;
+        DimensionPickerAction               _embeddingDimensionYAction;
+        DimensionPickerAction               _geneSelectionAction;
+        DecimalAction                       _scatterplotUpperColoringRangeAction;
+        DecimalAction                       _scatterplotLowerColoringRangeAction;
     };
 
     class CommonOptionsHolder : public VerticalGroupAction
@@ -231,10 +275,13 @@ public:
         const IntegralAction& getTopNRowsAction() const { return _topNRowsAction; }
         IntegralAction& getTopNRowsAction() { return _topNRowsAction; }
 
-        const DecimalAction& getExpressionUpperColoringRangeAction() const { return _expressionUpperColoringRangeAction; }
-        DecimalAction& getExpressionUpperColoringRangeAction() { return _expressionUpperColoringRangeAction; }
-        const DecimalAction& getExpressionLowerColoringRangeAction() const { return _expressionLowerColoringRangeAction; }
-        DecimalAction& getExpressionLowerColoringRangeAction() { return _expressionLowerColoringRangeAction; }
+        const OptionAction& getComputationTypeAction() const { return _computationTypeAction; }
+        OptionAction& getComputationTypeAction() { return _computationTypeAction; }
+
+        const StatusBarAction& getStatusBarAction() const { return *_statusBarActionWidget; }
+        StatusBarAction* getStatusBarAction() { return _statusBarActionWidget; }
+        const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
+        StringAction& getStatusMessageAction() { return _statusMessageAction; }
 
     protected:
         SettingsAction& _settingsOptions;
@@ -259,36 +306,18 @@ public:
 
         IntegralAction              _bottomNRowsAction;
         IntegralAction              _topNRowsAction;
-        DecimalAction          _expressionUpperColoringRangeAction;
-        DecimalAction          _expressionLowerColoringRangeAction;
-    };
+        OptionAction               _computationTypeAction;
 
-
-
-
-    class StatusHolder : public HorizontalGroupAction
-    {
-    public:
-        StatusHolder(SettingsAction& settingsAction);
-
-        const QStatusBar& getStatusBarAction() const { return *_statusBarAction; }
-        QStatusBar* getStatusBarAction() { return _statusBarAction; }
-        const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
-        StringAction& getStatusMessageAction() { return _statusMessageAction; }
-
-
-    protected:
-        SettingsAction& _settingsOptions;
-        
- 
-        QStatusBar*                 _statusBarAction;
+        StatusBarAction* _statusBarActionWidget;
         StringAction                        _statusMessageAction;
+
     };
+
+
 
 public:
     SettingsAction(LayerSurferPlugin& LayerSurferPlugin);
 
-    StatusHolder& getStatusHolder() { return _statusHolder; }
     Dataset1OptionsHolder& getDataset1OptionsHolder() { return _dataset1OptionsHolder; }
     Dataset2OptionsHolder& getDataset2OptionsHolder() { return _dataset2OptionsHolder; }
     CommonOptionsHolder& getCommonOptionsHolder() { return _commonOptionsHolder; }
@@ -308,7 +337,6 @@ protected:
     Dataset1OptionsHolder              _dataset1OptionsHolder;
     Dataset2OptionsHolder              _dataset2OptionsHolder;
     CommonOptionsHolder              _commonOptionsHolder;
-    StatusHolder                   _statusHolder;
     QTableView*                 _tableView1Action = nullptr;
     QTableView*                 _tableView2Action = nullptr;
     QTableView*                 _tableView3Action = nullptr;

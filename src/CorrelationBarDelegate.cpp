@@ -26,7 +26,57 @@ void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem
     const QModelIndex& index) const
 {
     if (index.column() == 1) {
-        float value = index.data(Qt::UserRole + 1).toFloat();
+        QVariant valueVar = index.data(Qt::UserRole + 1);
+        bool isUndefined = false;
+        float value = 0.0f;
+
+        if (!valueVar.isValid() || valueVar.isNull()) {
+            isUndefined = true;
+        }
+        else if (valueVar.canConvert<float>()) {
+            value = valueVar.toFloat();
+            QString valueStr = valueVar.toString();
+            isUndefined = std::isnan(value) || valueStr.contains('e', Qt::CaseInsensitive);
+        }
+        else {
+            isUndefined = true;
+        }
+
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing, true);
+
+        QColor bgColor = (option.state & QStyle::State_Selected)
+            ? option.palette.color(QPalette::Highlight)
+            : option.palette.color(QPalette::Base);
+        painter->fillRect(option.rect, bgColor);
+
+        if (isUndefined) {
+            QColor crossColor = Qt::red;
+            QPen crossPen(crossColor, 3, Qt::SolidLine, Qt::RoundCap);
+            painter->setPen(crossPen);
+
+            int crossSize = std::min(option.rect.width(), option.rect.height()) * 2 / 3;
+            QPoint center = option.rect.center();
+            QPoint p1(center.x() - crossSize / 2, center.y() - crossSize / 2);
+            QPoint p2(center.x() + crossSize / 2, center.y() + crossSize / 2);
+            QPoint p3(center.x() + crossSize / 2, center.y() - crossSize / 2);
+            QPoint p4(center.x() - crossSize / 2, center.y() + crossSize / 2);
+
+            painter->drawLine(p1, p2);
+            painter->drawLine(p3, p4);
+
+            if (option.state & QStyle::State_HasFocus) {
+                QStyleOptionFocusRect focusOption;
+                focusOption.QStyleOption::operator=(option);
+                focusOption.rect = option.rect;
+                focusOption.state |= QStyle::State_KeyboardFocusChange;
+                focusOption.backgroundColor = bgColor;
+                QApplication::style()->drawPrimitive(QStyle::PE_FrameFocusRect, &focusOption, painter);
+            }
+
+            painter->restore();
+            return;
+        }
 
         float maxAbs = std::max(std::abs(minValue), std::abs(maxValue));
         if (maxAbs < 1e-6f) maxAbs = 1.0f;
@@ -42,14 +92,6 @@ void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem
         QRect filledRect = barRect;
         filledRect.setLeft(barStartX);
         filledRect.setRight(barEndX);
-
-        painter->save();
-        painter->setRenderHint(QPainter::Antialiasing, true);
-
-        QColor bgColor = (option.state & QStyle::State_Selected)
-            ? option.palette.color(QPalette::Highlight)
-            : option.palette.color(QPalette::Base);
-        painter->fillRect(option.rect, bgColor);
 
         QColor axisColor;
         auto isColorClose = [](const QColor& c1, const QColor& c2, int threshold = 16) {
@@ -119,9 +161,30 @@ bool CorrelationBarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* vie
     const QStyleOptionViewItem& option, const QModelIndex& index)
 {
     if (index.column() == 1) {
-        float value = index.data(Qt::UserRole + 1).toFloat();
-        QToolTip::showText(event->globalPos(), QString::number(value, 'g', 4), view);
-        return true;
+        QVariant valueVar = index.data(Qt::UserRole + 1);
+        bool isUndefined = !valueVar.isValid() || valueVar.isNull();
+
+        float value = 0.0f;
+        QString valueStr;
+        if (!isUndefined) {
+            value = valueVar.toFloat();
+            valueStr = valueVar.toString();
+            if (valueStr.contains('e', Qt::CaseInsensitive)) {
+                isUndefined = true;
+            }
+            else {
+                isUndefined = std::isnan(value);
+            }
+        }
+
+        if (isUndefined) {
+            QToolTip::showText(event->globalPos(), QStringLiteral("undefined"), view);
+            return true;
+        }
+        else {
+            QToolTip::showText(event->globalPos(), QString::number(value, 'g', 4), view);
+            return true;
+        }
     }
     return QStyledItemDelegate::helpEvent(event, view, option, index);
 }

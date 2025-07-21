@@ -81,7 +81,7 @@ private:
     bool populateAndUpdateDatasets(
         mv::Dataset<Points>& fullPointDataset,
         const std::vector<float>& rotatedXYCordinates,
-        const std::vector<float>& XYCordinates,
+        /*const std::vector<float>& XYCordinates,*/
         int noOfDimensions,
         const std::vector<int>& columnIndices,
         const std::vector<QString>& dimensionNames);
@@ -99,12 +99,13 @@ protected:
     SettingsAction&             _settingsAction;
     mv::Dataset<Points>         _selectedCellPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
+    mv::Dataset<Points>         _pcaSelectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _embeddingDataset = nullptr;
-    mv::Dataset<Points>         _selectedEmbeddingDataset = nullptr;
+    //mv::Dataset<Points>         _selectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset1 = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset2 = nullptr;
-    mv::Dataset<Points>         _selectedEmbeddingPointDataset1 = nullptr;
-    mv::Dataset<Points>         _selectedEmbeddingPointDataset2 = nullptr;
+    //mv::Dataset<Points>         _selectedEmbeddingPointDataset1 = nullptr;
+    //mv::Dataset<Points>         _selectedEmbeddingPointDataset2 = nullptr;
     std::vector<int>            _filteredSelectionIndices;
     mv::Dataset<Points>         _pcaCommonGenesDataset1 = nullptr;
     mv::Dataset<Points>         _pcaCommonGenesDataset2 = nullptr;
