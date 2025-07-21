@@ -1180,7 +1180,11 @@ void Computation::AutoCompute()
         clearLinePlots();
         _numOfPointsInLine1 = 0;
         QApplication::processEvents();
-
+        if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
+            normalizeData();
+            setSelectionAndAutoCompute();
+            return;
+        }
         //mv::Dataset<Points> fullPointDataset1;
         mv::Dataset<Clusters> fullClusterDataset1;
         mv::Dataset<Clusters> fullClusterDataset2;
@@ -1372,7 +1376,11 @@ void Computation::ManualCompute()
     _isManualComputeComputing = true;
     auto guard = qScopeGuard([&] { _isManualComputeComputing = false; });
 
-    
+    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
+        normalizeData();
+        setSelectionAndAutoCompute();
+        return;
+    }
     bool complete = setupAndTriggerPCA();
     if (!complete)
     {
@@ -1556,11 +1564,33 @@ bool Computation::createDatasetsIfNeeded()
         _pcaCommonGenesDataset1 = mv::data().createDerivedDataset("PCA Dataset 1", _selectedGenePointDataset1);
         _pcaCommonGenesDataset1->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset1);
+        if (_selectedGenePointDataset1.isValid() && _pcaCommonGenesDataset1.isValid()) {
+            _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
+        }
+        else
+        {
+            qWarning() << "Selected gene point dataset 1 or PCA common genes dataset 1 is invalid";
+            setStatusMessage("E", "Selected gene point dataset 1 or PCA common genes dataset 1 is invalid", "");
+            return false;
+        }
+
+
     }
     if (!_pcaCommonGenesDataset2.isValid()) {
         _pcaCommonGenesDataset2 = mv::data().createDerivedDataset("PCA Dataset 2", _selectedGenePointDataset2);
         _pcaCommonGenesDataset2->setGroupIndex(668);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
+        if (_selectedGenePointDataset2.isValid() && _pcaCommonGenesDataset2.isValid()) {
+            _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
+        }
+        else
+        {
+            qWarning() << "Selected gene point dataset 2 or PCA common genes dataset 2 is invalid";
+            setStatusMessage("E", "Selected gene point dataset 2 or PCA common genes dataset 2 is invalid", "");
+            return false;
+        }
+
+
     }
 
     if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartColoringDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedCellPointDataset.isValid() || !_scatterplotColoringDataset1.isValid() || !_scatterplotColoringDataset2.isValid() || !_pcaSelectedEmbeddingDataset.isValid() || !_pcaCommonGenesDataset1.isValid() || !_pcaCommonGenesDataset2.isValid()) {
@@ -1612,7 +1642,11 @@ void Computation::processAfterPCAComplete()
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     qDebug() << "PCA analysis completed successfully";
-    
+    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
+        normalizeData();
+        setSelectionAndAutoCompute();
+        return;
+    }
     _selectedPCData1.coordinates.clear();
     _selectedPCData1.numberOfPoints = 0;
     _selectedPCData1.numberOfDimensions = 0;
@@ -2088,7 +2122,11 @@ bool Computation::setupAndTriggerPCA()
     auto guard = qScopeGuard([this]() { _isPCATriggerComputing = false; });
 
     FunctionTimer timer(Q_FUNC_INFO);
-
+    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
+        normalizeData();
+        setSelectionAndAutoCompute();
+        return false;
+    }
     // Early exit for invalid datasets
     if (!_selectedGenePointDataset1.isValid() || !_normalizedFullDataset1.isValid() ||
         !_selectedGenePointDataset2.isValid() || !_normalizedFullDataset2.isValid()) {
