@@ -2296,9 +2296,76 @@ bool Computation::setupAndTriggerPCA()
         _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
     }
     else {
-        setStatusMessage("E", "Only Partial PCA is implemented", "");
-        qCritical() << "Only Partial PCA is implemented!";
-        return false;
+
+        if (!_pcaAnalysisCommonGenesDataset1Plugin) {
+            _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
+        }
+        if (!_pcaAnalysisCommonGenesDataset2Plugin) {
+            _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
+        }
+
+        if (!_pcaAnalysisCommonGenesDataset1Plugin) {
+            qDebug() << "PCA Analysis Plugin not found";
+            setStatusMessage("E", "PCA plugin not found", "");
+            return false;
+        }
+        if (!_pcaAnalysisCommonGenesDataset2Plugin) {
+            qDebug() << "PCA Analysis Plugin not found";
+            setStatusMessage("E", "PCA plugin not found", "");
+            return false;
+        }
+
+        auto componentsAction1 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Number of PCA components"));
+        if (!componentsAction1) {
+            qDebug() << "Number of PCA components action not found";
+            setStatusMessage("E", "PCA components action not found", "");
+            return false;
+        }
+        auto numofIntGenes = _commonGeneNames.size();
+        componentsAction1->setMaximum(numofIntGenes);
+        componentsAction1->setValue(numofIntGenes);
+
+        auto componentsAction2 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Number of PCA components"));
+        if (!componentsAction2) {
+            qDebug() << "Number of PCA components action not found";
+            setStatusMessage("E", "PCA components action not found", "");
+            return false;
+        }
+        componentsAction2->setMaximum(numofIntGenes);
+        componentsAction2->setValue(numofIntGenes);
+
+        QApplication::processEvents();
+
+        auto startAction1 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Start analysis"));
+        auto startAction2 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Start analysis"));
+        if (startAction1) {
+            startAction1->trigger();
+            qDebug() << "PCA analysis 1 started";
+            QEventLoop loop;
+            loop.processEvents();
+            _pcaCommonGenesDataset1->setSelectionIndices({});
+            mv::events().notifyDatasetDataSelectionChanged(_pcaCommonGenesDataset1);
+
+        }
+        else {
+            qDebug() << "Start analysis action not found in PCA dataset";
+            setStatusMessage("E", "PCA start action not found", "");
+            return false;
+        }
+        if (startAction2) {
+            startAction2->trigger();
+            qDebug() << "PCA analysis 2 started";
+            QEventLoop loop;
+            loop.processEvents();
+            _pcaCommonGenesDataset2->setSelectionIndices({});
+            mv::events().notifyDatasetDataSelectionChanged(_pcaCommonGenesDataset2);
+
+        }
+        else {
+            qDebug() << "Start analysis action not found in PCA dataset";
+            setStatusMessage("E", "PCA start action not found", "");
+            return false;
+        }
     }
 
     return true;
