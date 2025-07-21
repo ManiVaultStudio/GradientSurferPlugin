@@ -45,11 +45,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         _projectOpened = false;
         connect(&mv::projects(), &AbstractProjectManager::projectOpened, this,
             [this]() {
+                disableOptions();
                 _projectOpened = true;
                 normalizeData();
                 coloringScatterPlots(); //TODO Check
                 clearTables();
                 clearLinePlots();
+                enableOptions();
             });
     }
 
@@ -299,16 +301,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             //qDebug() << "Project opening";
             return;
         }
-
+        disableOptions();
+        
         normalizeData();
         
         setStatusMessage("M", "Selected indices changed", "");
         setStatusMessage("R", "Computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-        QApplication::processEvents();
+        
+        
+        
         setSelectionAndAutoCompute();
-
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        enableOptions();
         };
     connect(&_settingsAction.getCommonOptionsHolder().getNormalizeCombinedDatasetsAction(), &ToggleAction::toggled, this, normalizationModified);
     connect(&_settingsAction.getCommonOptionsHolder().getNormalizationTypeAction(), &OptionAction::currentIndexChanged, this, normalizationModified);
@@ -400,11 +403,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
   
                     setStatusMessage("M", "Selected indices changed", "");
                     setStatusMessage("R", "Computation in progress", "");
-                    _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-                    QApplication::processEvents();
-                    setSelectionAndAutoCompute();
+                    disableOptions();
 
-                    _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+  
+                    setSelectionAndAutoCompute();
+                    enableOptions();
+
                     };
 
 
@@ -522,17 +526,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
         setStatusMessage("R", "Correlation computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
+
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
         {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         }
-        QApplication::processEvents();
+        disableOptions();
 
         correlationAfterPCA(); 
-
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        enableOptions();
+        
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
@@ -544,12 +548,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
         setStatusMessage("R", "Computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-        QApplication::processEvents();
+        disableOptions();
 
+        
         setSelectionAndAutoCompute();
 
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
+        enableOptions();
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction(), &OptionAction::currentIndexChanged, this, correlationCalculationTypeActionChanged);
@@ -562,18 +566,17 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
         setStatusMessage("R", "PCA Computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputePCAAction().setDisabled(true);
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
         {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
 
         }
-        QApplication::processEvents();
-  
-        ManualCompute();
+        disableOptions();
 
-        _settingsAction.getCommonOptionsHolder().getComputePCAAction().setDisabled(false);
+        
+        ManualCompute();
+        enableOptions();
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getComputePCAAction(), &TriggerAction::triggered, this, computePCATrigger);
@@ -668,13 +671,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             return;
         }
         setStatusMessage("R", "Computation in progress", "");
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-        QApplication::processEvents();
+        disableOptions();
+
 
         
         setSelectionAndAutoCompute();
+        enableOptions();
 
-        _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         });
 
     connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction(),
@@ -770,12 +773,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
             setStatusMessage("R", "Computation in progress", "");
-            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-            QApplication::processEvents();
+            disableOptions();
 
+            
             ManualCompute();
+            enableOptions();
 
-            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         }
         });
 
@@ -1179,7 +1182,7 @@ void Computation::AutoCompute()
         clearTables();
         clearLinePlots();
         _numOfPointsInLine1 = 0;
-        QApplication::processEvents();
+
         if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
             normalizeData();
             setSelectionAndAutoCompute();
@@ -1347,13 +1350,9 @@ void Computation::AutoCompute()
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
             setStatusMessage("R", "Computation in progress", "");
-            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(true);
-            QApplication::processEvents();
 
             ManualCompute();
-            
 
-            _settingsAction.getCommonOptionsHolder().getComputeAction().setDisabled(false);
         }
 
     }
@@ -1368,6 +1367,7 @@ void Computation::AutoCompute()
         setStatusMessage("E", "Unknown error occurred during computation", "");
     }
     _isAutoComputeComputing = false;
+
 }
 
 void Computation::ManualCompute()
@@ -1388,7 +1388,6 @@ void Computation::ManualCompute()
         clearTable(_settingsAction.getTableView2Action());
         return;
     }
-
     _isManualComputeComputing = false;
     
 }
@@ -1406,6 +1405,11 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     obj["status"] = status;
     obj["message"] = message;
     obj["color"] = resolvedColor;
+
+    if (status == "E")
+    {
+        enableOptions();
+    }
 
 
     auto* statusHolder = &_settingsAction.getCommonOptionsHolder();
@@ -1825,10 +1829,12 @@ void Computation::processAfterPCAComplete()
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
 
     processAfterPCADatasetsPopulated();
+
 }
 
 void Computation::processAfterPCADatasetsPopulated()
 {
+
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
 
     int numDimsForColoring = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions();
@@ -1846,6 +1852,7 @@ void Computation::processAfterPCADatasetsPopulated()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
+
 }
 
 
@@ -1853,7 +1860,6 @@ void Computation::correlationAfterPCA()
 {
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
-
     if (!_normalizedFullDataset1.isValid()) {
         setStatusMessage("E", "Point dataset 2 is invalid", "");
         return;
@@ -1915,6 +1921,7 @@ void Computation::correlationAfterPCA()
     setupTableModelAndSelection(_settingsAction.getTableView3Action(), _geneCorrValues3, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction());
     selectFirstRow(_settingsAction.getTableView3Action());
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
+
 }
 bool Computation::getRotationAngle(const QString& scatterplotViewName, float& rotationAngle)
 {
@@ -1942,6 +1949,7 @@ bool Computation::getRotationAngle(const QString& scatterplotViewName, float& ro
 
     qWarning() << "Scatterplot plugin not found";
     setStatusMessage("E", "Scatterplot plugin not found", "");
+
     return false;
 }
 
@@ -2326,7 +2334,6 @@ bool Computation::setupAndTriggerPCA()
         componentsAction2->setMaximum(numofIntGenes);
         componentsAction2->setValue(numofIntGenes);
 
-        QApplication::processEvents();
 
         auto startAction1 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Start analysis"));
         auto startAction2 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Start analysis"));
@@ -2515,7 +2522,9 @@ void Computation::setSelectionAndAutoCompute()
     //qDebug() << "Project opening";
     return;
 }
+    disableOptions();
     AutoCompute();
+    enableOptions();
     _blockSelectionTrigger = false;
 }
 
@@ -2806,7 +2815,23 @@ void Computation::coloringScatterPlots()
     }
 }
 
+void Computation::enableOptions()
+{
 
+    _settingsAction.getCommonOptionsHolder().setDisabled(false);
+    _settingsAction.getDataset1OptionsHolder().setDisabled(false);
+    _settingsAction.getDataset2OptionsHolder().setDisabled(false);
+    QApplication::processEvents();
+}
+
+void Computation::disableOptions()
+{
+
+    _settingsAction.getCommonOptionsHolder().setDisabled(true);
+    _settingsAction.getDataset1OptionsHolder().setDisabled(true);
+    _settingsAction.getDataset2OptionsHolder().setDisabled(true);
+    QApplication::processEvents();
+}
 
 
 

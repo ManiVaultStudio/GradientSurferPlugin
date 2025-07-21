@@ -95,6 +95,8 @@ private:
     void processAfterPCADatasetsPopulated();
     void clearTables();
     void  normalizeData();
+    void enableOptions();
+    void disableOptions();
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
@@ -140,7 +142,7 @@ protected:
     bool _blockSelectionTrigger=false;
     std::vector<int>   _selectedClusterIndices1;
     std::vector<int>   _selectedClusterIndices2;
-    
+
     //bool    _pacColoringPaused = false;
     //bool _geneSelectionPaused = false;
     //bool _blockSelectionMode = false;
