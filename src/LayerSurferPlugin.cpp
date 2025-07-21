@@ -23,9 +23,9 @@ LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
 
 void LayerSurferPlugin::init()
 {
-
     qApp->setStyleSheet("QToolTip { color: black; background: #ffffe1; border: 1px solid black; }");
 
+    // Settings panel on the left
     GroupsAction* groupForAction = new GroupsAction(this, "Settings");
     _settingsAction.getDataset1OptionsHolder().setExpanded(false);
     groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
@@ -33,95 +33,101 @@ void LayerSurferPlugin::init()
     groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
     _settingsAction.getCommonOptionsHolder().setExpanded(true);
     groupForAction->addGroupAction(&_settingsAction.getCommonOptionsHolder());
- 
-    addDockingAction(groupForAction, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(500, 500));
+    addDockingAction(groupForAction, nullptr, gui::DockAreaFlag::Left, true, gui::AutoHideLocation::Left);
 
-    auto* mainLayout = new QVBoxLayout(&getWidget());
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->setSpacing(0);
-    
+    // Set a dummy model if none is set, so the table expands
+    auto ensureTableModel = [](QTableView* table) {
+        if (table && !table->model()) {
+            table->setModel(new QStandardItemModel(5, 3, table));
+        }
+        };
+    ensureTableModel(_settingsAction.getTableView1Action());
+    ensureTableModel(_settingsAction.getTableView2Action());
+    ensureTableModel(_settingsAction.getTableView3Action());
 
-    auto* topLayout = new QHBoxLayout();
-    topLayout->setContentsMargins(0, 0, 0, 0);
-    topLayout->setSpacing(0);
+    // Helper: create a vertical widget with a label and a table view
+    auto createTableWidget = [](const QString& labelText, QTableView* tableView, QWidget* parent = nullptr) {
+        QWidget* contentWidget = new QWidget();
+        QVBoxLayout* layout = new QVBoxLayout(contentWidget);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(0);
 
+        QLabel* label = new QLabel(labelText, contentWidget);
+        label->setAlignment(Qt::AlignCenter);
+        label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
+        label->setWordWrap(true);
+        label->setMinimumHeight(32);
+        label->setMaximumHeight(32);
+        label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        layout->addWidget(label, 0);
 
-    auto* table1Layout = new QVBoxLayout();
-    table1Layout->setContentsMargins(0, 0, 0, 0);
-    table1Layout->setSpacing(2);
-    auto* table1Label = new QLabel("Gene Table: Dataset 1 Selected Cells");
-    table1Label->setAlignment(Qt::AlignCenter);
-    table1Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
-    table1Label->setWordWrap(true);
-    table1Label->setMaximumHeight(32);
-    table1Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    table1Layout->addWidget(table1Label);
-    table1Layout->addWidget(_settingsAction.getTableView1Action());
-    topLayout->addLayout(table1Layout, 1);
+        tableView->setParent(contentWidget);
+        tableView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        layout->addWidget(tableView, 1);
 
+        contentWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    auto* separator1 = new QFrame();
-    separator1->setFrameShape(QFrame::VLine);
-    separator1->setFrameShadow(QFrame::Plain);
-    separator1->setLineWidth(1);
-    separator1->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
-    topLayout->addWidget(separator1);
+        QScrollArea* scrollArea = new QScrollArea(parent);
+        scrollArea->setWidgetResizable(true);
+        scrollArea->setWidget(contentWidget);
+        scrollArea->setFrameShape(QFrame::NoFrame);
 
-    auto* table3Layout = new QVBoxLayout();
-    table3Layout->setContentsMargins(0, 0, 0, 0);
-    table3Layout->setSpacing(2);
-    auto* table3Label = new QLabel("Gene Table: Dataset 1 All Cells");
-    table3Label->setAlignment(Qt::AlignCenter);
-    table3Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
-    table3Label->setWordWrap(true);
-    table3Label->setMaximumHeight(32); 
-    table3Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    table3Layout->addWidget(table3Label);
-    table3Layout->addWidget(_settingsAction.getTableView3Action());
-    topLayout->addLayout(table3Layout, 1);
+        // Helper to update min height based on screen
+        auto updateMinHeight = [scrollArea]() {
+            QScreen* screen = scrollArea->screen();
+            if (!screen) screen = QGuiApplication::primaryScreen();
+            if (screen) {
+                int minHeight = screen->availableGeometry().height();
+                scrollArea->setMinimumHeight(minHeight);
+            }
+            };
 
+        updateMinHeight();
 
-    auto* separator2 = new QFrame();
-    separator2->setFrameShape(QFrame::VLine);
-    separator2->setFrameShadow(QFrame::Plain);
-    separator2->setLineWidth(1);
-    separator2->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
-    topLayout->addWidget(separator2);
+        // Connect to screen geometry changes for dynamic updates
+        QScreen* screen = scrollArea->screen();
+        if (!screen) screen = QGuiApplication::primaryScreen();
+        if (screen) {
+            QObject::connect(screen, &QScreen::geometryChanged, scrollArea, [updateMinHeight]() {
+                updateMinHeight();
+                });
+        }
 
-    auto* table2Layout = new QVBoxLayout();
-    table2Layout->setContentsMargins(0, 0, 0, 0);
-    table2Layout->setSpacing(2);
-    auto* table2Label = new QLabel("Gene Table: Dataset 2 All Cells");
-    table2Label->setAlignment(Qt::AlignCenter);
-    table2Label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
-    table2Label->setWordWrap(true);
-    table2Label->setMaximumHeight(32); 
-    table2Label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    table2Layout->addWidget(table2Label);
-    table2Layout->addWidget(_settingsAction.getTableView2Action());
-    topLayout->addLayout(table2Layout, 1);
+        return scrollArea;
+        };
+    // 1. Add the first table to the main layout (plugin's main widget)
+    {
+        QWidget& mainWidget = getWidget(); // Use reference, not pointer
+        QVBoxLayout* mainLayout = new QVBoxLayout();
+        mainLayout->setContentsMargins(0, 0, 0, 0);
+        mainLayout->setSpacing(0);
+        mainLayout->addWidget(
+            createTableWidget("Gene Table: Dataset 1 Selected Cells", _settingsAction.getTableView1Action(), &mainWidget)
+        );
+        mainWidget.setLayout(mainLayout);
+    }
 
+    // 2. Dock the second table ("Dataset 1 All Cells") on the right
+    auto* table2Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 1 All Cells");
+    table2Action->setWidgetConfigurationFunction(
+        [createTableWidget, this](mv::gui::WidgetAction*, QWidget* parent) {
+            QWidget* tableWidget = createTableWidget("Gene Table: Dataset 1 All Cells", _settingsAction.getTableView3Action(), parent);
+            tableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+            return tableWidget;
+        }
+    );
+    addDockingAction(table2Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(256, QWIDGETSIZE_MAX));
 
-    auto* combinedLayout = new QVBoxLayout();
-    
-
-    combinedLayout->addLayout(topLayout,1);
-
-
-
-    auto* separator = new QFrame();
-    separator->setFrameShape(QFrame::HLine);
-    separator->setFrameShadow(QFrame::Plain); 
-    separator->setLineWidth(1);
-    separator->setFixedHeight(1);
-    separator->setStyleSheet("color: #e0e0e0; background-color: #e0e0e0;");
-    combinedLayout->addWidget(separator);
-
-    mainLayout->addLayout(combinedLayout,90);
-
-  
-
-    getWidget().setLayout(mainLayout);
+    // 3. Dock the third table ("Dataset 2 All Cells") on the right
+    auto* table3Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 2 All Cells");
+    table3Action->setWidgetConfigurationFunction(
+        [createTableWidget, this](mv::gui::WidgetAction*, QWidget* parent) {
+            QWidget* tableWidget = createTableWidget("Gene Table: Dataset 2 All Cells", _settingsAction.getTableView2Action(), parent);
+            tableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+            return tableWidget;
+        }
+    );
+    addDockingAction(table3Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(256, QWIDGETSIZE_MAX));
 
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
