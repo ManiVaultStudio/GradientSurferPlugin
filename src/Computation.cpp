@@ -2817,23 +2817,51 @@ void Computation::coloringScatterPlots()
 
 void Computation::enableOptions()
 {
+    if (!_projectOpened || !_optionsDisabled)
+        return;
+    if (0)
+    {
+        if (_foregroundTask) {
 
+            if (_foregroundTask->isRunning()) {
+                _foregroundTask->setFinished();
+                if (_foregroundTask->isKillable()) {
+                    _foregroundTask->kill();
+                }
+            }
+            disconnect(_foregroundTask, nullptr, this, nullptr);
+            _foregroundTask->deleteLater();
+            _foregroundTask = nullptr;
+        }
+    }
     _settingsAction.getCommonOptionsHolder().setDisabled(false);
     _settingsAction.getDataset1OptionsHolder().setDisabled(false);
     _settingsAction.getDataset2OptionsHolder().setDisabled(false);
     QApplication::processEvents();
+    _optionsDisabled = false;
 }
 
 void Computation::disableOptions()
 {
+    if (!_projectOpened || _optionsDisabled)
+        return;
+    if (0)
+    {
+        if (!_foregroundTask) {
+            _foregroundTask = new mv::ForegroundTask(this, "Computing", mv::Task::Status::Running, true);
 
+            connect(_foregroundTask, &QObject::destroyed, this, [this](QObject*) {
+                _foregroundTask = nullptr;
+                });
+
+            _foregroundTask->setName("Computing");
+            _foregroundTask->setDescription("Computation in progress. Please wait.");
+            _foregroundTask->setRunning();
+        }
+    }
     _settingsAction.getCommonOptionsHolder().setDisabled(true);
     _settingsAction.getDataset1OptionsHolder().setDisabled(true);
     _settingsAction.getDataset2OptionsHolder().setDisabled(true);
     QApplication::processEvents();
+    _optionsDisabled = true;
 }
-
-
-
-
-
