@@ -137,7 +137,7 @@ bool isValidClusterDataset(const mv::Dataset<DatasetImpl>& dataset, const mv::Da
 
 // Checks if a dataset is a valid point dataset.
 bool isValidPointDataset(const mv::Dataset<DatasetImpl>& dataset);
-
+bool isValidPointChildDataset(const mv::Dataset<DatasetImpl>& dataset);
 // Checks if a dataset is a valid embedding dataset.
 bool isValidEmbeddingDataset(const mv::Dataset<DatasetImpl>& dataset);
 std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue);

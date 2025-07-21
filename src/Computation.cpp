@@ -167,13 +167,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
     _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setFilterFunction(
         [this](mv::Dataset<DatasetImpl> dataset) -> bool {
-            return isValidPointDataset(dataset);
+            return isValidPointChildDataset(dataset);
         }
     );
 
     _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setFilterFunction(
         [this](mv::Dataset<DatasetImpl> dataset) -> bool {
-            return isValidPointDataset(dataset);
+            return isValidPointChildDataset(dataset);
         }
     );
 
