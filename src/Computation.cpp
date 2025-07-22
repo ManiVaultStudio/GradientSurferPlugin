@@ -697,7 +697,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         &OptionsAction::selectedOptionsChanged,
         this,
         [this]() {
-            _clusterSelectionDebounceTimer.start(300);
+            _clusterSelectionDebounceTimer.start(500);
         });
     connect(&_clusterSelectionDebounceTimer, &QTimer::timeout, this, [this]() {
         if (!_projectOpened)
