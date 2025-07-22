@@ -697,7 +697,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         &OptionsAction::selectedOptionsChanged,
         this,
         [this]() {
-            _clusterSelectionDebounceTimer.start(800);
+            _clusterSelectionDebounceTimer.start(500);
         });
     connect(&_clusterSelectionDebounceTimer, &QTimer::timeout, this, [this]() {
         if (!_projectOpened)
@@ -719,37 +719,37 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         &DecimalAction::valueChanged,
         this,
         [this]() {
-            _scatterplot1ExpressionColoringRangeDebounceTimer.start(300);
+            _scatterplot1ExpressionColoringRangeDebounceTimer.start(50);
         });
     connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
         [this]() {
-            _scatterplot1ExpressionColoringRangeDebounceTimer.start(300);
+            _scatterplot1ExpressionColoringRangeDebounceTimer.start(50);
         });
     connect(&_settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
         [this]() {
-            _lineExpressionColoringRangeDebounceTimer.start(300);
+            _lineExpressionColoringRangeDebounceTimer.start(50);
         });
     connect(&_settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
         [this]() {
-            _lineExpressionColoringRangeDebounceTimer.start(300);
+            _lineExpressionColoringRangeDebounceTimer.start(50);
         });
     connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
         [this]() {
-            _scatterplot2ExpressionColoringRangeDebounceTimer.start(300);
+            _scatterplot2ExpressionColoringRangeDebounceTimer.start(50);
         });
     connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction(),
         &DecimalAction::valueChanged,
         this,
         [this]() {
-            _scatterplot2ExpressionColoringRangeDebounceTimer.start(300);
+            _scatterplot2ExpressionColoringRangeDebounceTimer.start(50);
         });
     connect(&_lineExpressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
 
@@ -849,13 +849,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         &IntegralAction::valueChanged,
         this,
         [this]() {
-            _NRangeDebounceTimer.start(1000);
+            _NRangeDebounceTimer.start(500);
         });
     connect(&_settingsAction.getCommonOptionsHolder().getBottomNRowsAction(),
         &IntegralAction::valueChanged,
         this,
         [this]() {
-            _NRangeDebounceTimer.start(1000);
+            _NRangeDebounceTimer.start(500);
         });
     connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
         if (!_projectOpened)
