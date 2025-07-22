@@ -171,6 +171,7 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
 void createClusterLineChartClusterColors(QString coloringChangeDataset, QString coloringReferenceDataset, std::vector<int>& selectedIndices);
 void createLineChartClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints, QString pcaDimensionVal, float minValue, float maxValue, bool useFulldata);
 
-void colormapChangedAllPlots();
+void colormapChangeScatterplot(QString scatterplotName, QString colormapValue);
 void rangeChangeLinePlot();
-void rangeChangeScatterPlot();
+void colormapChangeLinePlot();
+void rangeChangeScatterPlot(QString scatterplotName, float minValue, float maxValue);

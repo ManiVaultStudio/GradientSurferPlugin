@@ -1662,7 +1662,51 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     return { computedMin, computedMax };
 }
 
-void colormapChangedAllPlots()
+void colormapChangeScatterplot(QString scatterplotName, QString colormapValue)
+{
+    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+
+    if (scatterplotName == "") {
+        qWarning() << "Invalid parameters for scatterplot range change:"
+            << ", scatterplotName:" << scatterplotName;
+        return;
+    }
+
+    if (scatterplotViewFactory)
+    {
+        bool pluginfound = false;
+        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+        {
+            if (plugin->getGuiName() == scatterplotName)
+            {
+                pluginfound = true;
+                if (colormapValue != "")
+                {
+                    auto colorMapValueAction = findActionByPath<OptionAction>(plugin, "Settings/Coloring/1D Color map/Current color map");
+                    if (colorMapValueAction)
+                    {
+                        colorMapValueAction->setCurrentText(colormapValue);
+                    }
+                    else
+                    {
+                        qCritical() << "Color map value action not found in plugin:" << plugin->getGuiName();
+                    }
+                }
+
+                break;
+            }
+
+        }
+        if (!pluginfound)
+        {
+            qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
+        }
+    }
+
+
+
+}
+void colormapChangeLinePlot()
 {
 }
 
@@ -1670,6 +1714,50 @@ void rangeChangeLinePlot()
 {
 }
 
-void rangeChangeScatterPlot()
+void rangeChangeScatterPlot(QString scatterplotName, float minValue, float maxValue)
 {
+    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+
+    if (scatterplotName == "") {
+        qWarning() << "Invalid parameters for scatterplot range change:"
+            << ", scatterplotName:" << scatterplotName;
+        return;
+    }
+    
+        if (scatterplotViewFactory)
+        {
+            bool pluginfound = false;
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName)
+                {
+                    pluginfound = true;
+
+    
+                    auto maxRangeAction = findActionByPath<DecimalAction>(plugin, "Settings/Coloring/1D Color map/Range/Maximum");
+                    auto minRangeAction = findActionByPath<DecimalAction>(plugin, "Settings/Coloring/1D Color map/Range/Minimum");
+                    if (maxRangeAction && minRangeAction)
+                    {
+                        maxRangeAction->setValue(maxValue);
+                        minRangeAction->setValue(minValue);
+                    }
+                    else
+                    {
+                        qCritical() << "Color map range actions not found in plugin:" << plugin->getGuiName();
+                    }
+                        
+
+
+                    break;
+                }
+
+            }
+            if (!pluginfound)
+            {
+                qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
+            }
+        }
+    
+
+
 }

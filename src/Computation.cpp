@@ -620,7 +620,15 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToPlots);
 
     const auto changeColormap = [this]() -> void {
-        colormapChangedAllPlots();
+
+
+        QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+
+        colormapChangeScatterplot(scatterplot1Name, colorMapStringValue);
+        colormapChangeScatterplot(scatterplot2Name, colorMapStringValue);
+        colormapChangeLinePlot();
         };
     connect(&_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, changeColormap);
 
@@ -750,7 +758,24 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             return;
         }
-        rangeChangeScatterPlot(); //TODO Check
+
+        QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        
+        float minValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+        float maxValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+
+        if (scatterplot1Name.isEmpty())
+        {
+            qWarning() << "No scatterplot view 1 selected";
+            return;
+        }
+        if (minValScatter1 > maxValScatter1)
+        {
+            _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(maxValScatter1);
+            return;
+        }
+
+        rangeChangeScatterPlot(scatterplot1Name, minValScatter1, maxValScatter1);
         });
 
     connect(&_scatterplot2ExpressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
@@ -767,7 +792,21 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
 
             return;
         }
-        rangeChangeScatterPlot(); //TODO Check
+        QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        float minValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+        float maxValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+        if (scatterplot2Name.isEmpty())
+        {
+            qWarning() << "No scatterplot view 2 selected";
+            return;
+        }
+        if (minValScatter2 > maxValScatter2)
+        {
+            _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(maxValScatter2);
+            return;
+        }
+
+        rangeChangeScatterPlot(scatterplot2Name, minValScatter2, maxValScatter2); 
         });
 
     connect(&_settingsAction.getCommonOptionsHolder().getTopNRowsAction(),
