@@ -172,6 +172,6 @@ void createClusterLineChartClusterColors(QString coloringChangeDataset, QString 
 void createLineChartClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints, QString pcaDimensionVal, float minValue, float maxValue, bool useFulldata);
 
 void colormapChangeScatterplot(QString scatterplotName, QString colormapValue);
-void rangeChangeLinePlot();
-void colormapChangeLinePlot();
+void rangeChangeLinePlot(QString linePlotName, float minValue, float maxValue);
+void colormapChangeLinePlot(QString linePlotName, QString colorMapStringValue);
 void rangeChangeScatterPlot(QString scatterplotName, float minValue, float maxValue);

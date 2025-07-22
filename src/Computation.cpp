@@ -625,10 +625,32 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        auto linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+        if (colorMapStringValue.isEmpty())
+        {
+            qWarning() << "No colormap selected";
+            return;
+        }
 
+        if (scatterplot1Name.isEmpty())
+        {
+            qWarning() << "No scatterplot view 1 selected";
+            return;
+        }
         colormapChangeScatterplot(scatterplot1Name, colorMapStringValue);
+        if (scatterplot2Name.isEmpty())
+        {
+            qWarning() << "No scatterplot view 2 selected";
+            return;
+        }
         colormapChangeScatterplot(scatterplot2Name, colorMapStringValue);
-        colormapChangeLinePlot();
+        if (linePlotName.isEmpty())
+        {
+            qWarning() << "No line plot view selected";
+            return;
+        }
+        
+        colormapChangeLinePlot(linePlotName, colorMapStringValue);
         };
     connect(&_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, changeColormap);
 
@@ -741,7 +763,21 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
           _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().setValue(_settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue());
             return;
         }
-        rangeChangeLinePlot(); //TODO Check
+        auto linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+        float minVal = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue();
+        float maxVal = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue();
+        if (linePlotName.isEmpty())
+        {
+            qWarning() << "No line plot view selected";
+            return;
+        }
+        if (minVal > maxVal)
+        {
+            _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().setValue(maxVal);
+            return;
+        }
+
+        rangeChangeLinePlot(linePlotName, minVal, maxVal); 
         });
 
     connect(&_scatterplot1ExpressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {

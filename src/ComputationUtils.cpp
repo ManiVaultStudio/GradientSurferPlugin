@@ -1706,12 +1706,105 @@ void colormapChangeScatterplot(QString scatterplotName, QString colormapValue)
 
 
 }
-void colormapChangeLinePlot()
+void colormapChangeLinePlot(QString linePlotName, QString colorMapStringValue)
 {
+
+    auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+    if (lineplotViewFactory)
+    {
+        if (linePlotName.isEmpty())
+        {
+            qWarning() << "LinePlot name or position dataset ID is empty";
+            return;
+        }
+        else
+        {
+            bool pluginfound = false;
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            {
+
+                if (plugin->getGuiName() == linePlotName)
+                {
+                    pluginfound = true;
+
+                    if (!colorMapStringValue.isEmpty())
+                    {
+                        auto colormapValAction = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point Dataset Dimension Color Map/Current color map");
+                        if (colormapValAction)
+                        {
+                            colormapValAction->setCurrentText(colorMapStringValue);
+
+                        }
+                        else
+                        {
+                            qWarning() << "LinePlot color map action not found";
+                        }
+                    }
+                    else
+                    {
+                        qWarning() << "LinePlot color map string value is empty";
+                    }
+                }
+            }
+            if (!pluginfound)
+            {
+                qWarning() << "LinePlot View plugin not found with name:" << linePlotName;
+            }
+        }
+    }
+    else
+    {
+        qWarning() << "LinePlot View plugin not found";
+    }
 }
 
-void rangeChangeLinePlot()
+void rangeChangeLinePlot(QString linePlotName, float minValue, float maxValue)
 {
+
+    auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+    if (lineplotViewFactory)
+    {
+        if (linePlotName.isEmpty() )
+        {
+            qWarning() << "LinePlot name or position dataset ID is empty";
+            return;
+        }
+        else
+        {
+            bool pluginfound = false;
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            {
+
+                if (plugin->getGuiName() == linePlotName)
+                {
+                    pluginfound = true;
+
+                    DecimalAction* minValAction = findActionByPath<DecimalAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Lower Color Limit");
+                    DecimalAction* maxValAction = findActionByPath<DecimalAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Upper Color Limit");
+                    if (minValAction && maxValAction)
+                    {
+                        minValAction->setValue(minValue);
+                        maxValAction->setValue(maxValue);
+                    }
+                    else
+                    {
+                        qWarning() << "LinePlot color map min/max value actions not found";
+                        minValAction->setValue(0);
+                        maxValAction->setValue(0);
+                    }
+                       
+                }
+            }
+            if (!pluginfound)
+            {
+                qWarning() << "LinePlot View plugin not found with name:" << linePlotName;
+            }
+        }
+    }
+    else
+    {
+        qWarning() << "LinePlot View plugin not found";
+    }
 }
 
 void rangeChangeScatterPlot(QString scatterplotName, float minValue, float maxValue)
