@@ -480,6 +480,17 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                         if (colorMapValueAction)
                         {
                             colorMapValueAction->setCurrentText(colormapValue);
+                            auto maxRangeAction = findActionByPath<DecimalAction>(plugin, "Settings/Coloring/1D Color map/Range/Maximum");
+                            auto minRangeAction = findActionByPath<DecimalAction>(plugin, "Settings/Coloring/1D Color map/Range/Minimum");
+                            if (maxRangeAction && minRangeAction)
+                            {
+                                maxRangeAction->setValue(maxValue);
+                                minRangeAction->setValue(minValue);
+                            }
+                            else
+                            {
+                                qCritical() << "Color map range actions not found in plugin:" << plugin->getGuiName();
+                            }
                         }
                     }
 
@@ -1433,6 +1444,8 @@ void createLineChartClusterColors(QString coloringDataset, QString colorMapValue
     events().notifyDatasetDataChanged(coloringDatasetFull);
 }
 
+
+
 void createClusterLineChartClusterColors(QString coloringChangeDataset, QString coloringReferenceDataset, std::vector<int>& selectedIndices)
 {
 
@@ -1554,4 +1567,290 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
 
     coloringDatasetFull->getClusters() = newClusters;
     events().notifyDatasetDataChanged(coloringDatasetFull);
+}
+
+
+std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax)
+{
+    FunctionTimer timer(Q_FUNC_INFO);
+
+    // Early parameter validation
+    if (coloringDataset.isEmpty() || colorMapValue.isEmpty() ||
+        selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty())
+    {
+        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        return { 0.0f, 0.0f };
+    }
+    if (numOfTotalPoints <= 0) {
+        qWarning() << "Invalid number of total points for PCA cluster colors creation.";
+        return { 0.0f, 0.0f };
+    }
+
+    auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
+    auto pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
+    if (!coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid()) {
+        qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
+        return { 0.0f, 0.0f };
+    }
+
+    // Find the dimension index
+    const auto& dimensionNames = pointValuesDatasetFull->getDimensionNames();
+    auto it = std::find(dimensionNames.begin(), dimensionNames.end(), dimensionVal);
+    int dimensionIndex = (it != dimensionNames.end()) ? static_cast<int>(std::distance(dimensionNames.begin(), it)) : -1;
+    if (dimensionIndex < 0) {
+        qWarning() << "Dimension" << dimensionVal << "not found in dataset" << pointValuesDataset;
+        return { 0.0f, 0.0f };
+    }
+
+    std::vector<float> geneExpValues(selectedIndices.size());
+
+    if (!isFullData) {
+        // If not full data, extract all points for the dimension
+        if (pointValuesDatasetFull->getNumPoints() != static_cast<int>(selectedIndices.size())) {
+            qWarning() << "Data mismatch: number of points does not match selected indices.";
+            return { 0.0f, 0.0f };
+        }
+        pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
+    }
+    else {
+        // If full data, populate only for selected indices
+        if (!selectedIndices.empty() && *std::max_element(selectedIndices.begin(), selectedIndices.end()) >= pointValuesDatasetFull->getNumPoints()) {
+            qWarning() << "Data mismatch: selected index out of range.";
+            return { 0.0f, 0.0f };
+        }
+        std::vector<int> dimIdx = { dimensionIndex };
+        pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimIdx, selectedIndices);
+    }
+
+    if (geneExpValues.size() != selectedIndices.size()) {
+        qWarning() << "Data mismatch: geneExpValues and selectedIndices size differ.";
+        return { 0.0f, 0.0f };
+    }
+
+    // Compute min/max from geneExpValues
+    auto [minIt, maxIt] = std::minmax_element(geneExpValues.begin(), geneExpValues.end());
+    float computedMin = *minIt;
+    float computedMax = *maxIt;
+    float fulldatasetMin = sentinelMinMax.first;
+    float fulldatasetMax = sentinelMinMax.second;
+
+    // Find the global min and max
+    float globalMin = std::min({ fulldatasetMin, fulldatasetMax, computedMin, computedMax });
+    float globalMax = std::max({ fulldatasetMin, fulldatasetMax, computedMin, computedMax });
+
+    // Choose a sentinel value outside the global range
+    float sentinelValue = globalMin - 100.0f; // or globalMax + 100.0f, depending on convention
+
+    std::vector<float> finalData(static_cast<size_t>(numOfTotalPoints), sentinelValue);
+
+    // Map gene expression values to their corresponding indices
+    for (size_t i = 0; i < selectedIndices.size(); ++i) {
+        int idx = selectedIndices[i];
+        if (idx >= 0 && idx < numOfTotalPoints) {
+            finalData[static_cast<size_t>(idx)] = geneExpValues[i];
+        }
+        else {
+            qWarning() << "Index out of bounds in selectedIndices:" << idx;
+        }
+    }
+
+    coloringDatasetFull->setData(finalData.data(), numOfTotalPoints, 1);
+    coloringDatasetFull->setDimensionNames({ "ColorDim" });
+
+    events().notifyDatasetDataChanged(coloringDatasetFull);
+
+    return { computedMin, computedMax };
+}
+
+void colormapChangeScatterplot(QString scatterplotName, QString colormapValue)
+{
+    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+
+    if (scatterplotName == "") {
+        qWarning() << "Invalid parameters for scatterplot range change:"
+            << ", scatterplotName:" << scatterplotName;
+        return;
+    }
+
+    if (scatterplotViewFactory)
+    {
+        bool pluginfound = false;
+        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+        {
+            if (plugin->getGuiName() == scatterplotName)
+            {
+                pluginfound = true;
+                if (colormapValue != "")
+                {
+                    auto colorMapValueAction = findActionByPath<OptionAction>(plugin, "Settings/Coloring/1D Color map/Current color map");
+                    if (colorMapValueAction)
+                    {
+                        colorMapValueAction->setCurrentText(colormapValue);
+                    }
+                    else
+                    {
+                        qCritical() << "Color map value action not found in plugin:" << plugin->getGuiName();
+                    }
+                }
+
+                break;
+            }
+
+        }
+        if (!pluginfound)
+        {
+            qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
+        }
+    }
+
+
+
+}
+void colormapChangeLinePlot(QString linePlotName, QString colorMapStringValue)
+{
+
+    auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+    if (lineplotViewFactory)
+    {
+        if (linePlotName.isEmpty())
+        {
+            qWarning() << "LinePlot name or position dataset ID is empty";
+            return;
+        }
+        else
+        {
+            bool pluginfound = false;
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            {
+
+                if (plugin->getGuiName() == linePlotName)
+                {
+                    pluginfound = true;
+
+                    if (!colorMapStringValue.isEmpty())
+                    {
+                        auto colormapValAction = findActionByPath<OptionAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point Dataset Dimension Color Map/Current color map");
+                        if (colormapValAction)
+                        {
+                            colormapValAction->setCurrentText(colorMapStringValue);
+
+                        }
+                        else
+                        {
+                            qWarning() << "LinePlot color map action not found";
+                        }
+                    }
+                    else
+                    {
+                        qWarning() << "LinePlot color map string value is empty";
+                    }
+                }
+            }
+            if (!pluginfound)
+            {
+                qWarning() << "LinePlot View plugin not found with name:" << linePlotName;
+            }
+        }
+    }
+    else
+    {
+        qWarning() << "LinePlot View plugin not found";
+    }
+}
+
+void rangeChangeLinePlot(QString linePlotName, float minValue, float maxValue)
+{
+
+    auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+    if (lineplotViewFactory)
+    {
+        if (linePlotName.isEmpty() )
+        {
+            qWarning() << "LinePlot name or position dataset ID is empty";
+            return;
+        }
+        else
+        {
+            bool pluginfound = false;
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
+            {
+
+                if (plugin->getGuiName() == linePlotName)
+                {
+                    pluginfound = true;
+
+                    DecimalAction* minValAction = findActionByPath<DecimalAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Lower Color Limit");
+                    DecimalAction* maxValAction = findActionByPath<DecimalAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Upper Color Limit");
+                    if (minValAction && maxValAction)
+                    {
+                        minValAction->setValue(minValue);
+                        maxValAction->setValue(maxValue);
+                    }
+                    else
+                    {
+                        qWarning() << "LinePlot color map min/max value actions not found";
+                        minValAction->setValue(0);
+                        maxValAction->setValue(0);
+                    }
+                       
+                }
+            }
+            if (!pluginfound)
+            {
+                qWarning() << "LinePlot View plugin not found with name:" << linePlotName;
+            }
+        }
+    }
+    else
+    {
+        qWarning() << "LinePlot View plugin not found";
+    }
+}
+
+void rangeChangeScatterPlot(QString scatterplotName, float minValue, float maxValue)
+{
+    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+
+    if (scatterplotName == "") {
+        qWarning() << "Invalid parameters for scatterplot range change:"
+            << ", scatterplotName:" << scatterplotName;
+        return;
+    }
+    
+        if (scatterplotViewFactory)
+        {
+            bool pluginfound = false;
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+            {
+                if (plugin->getGuiName() == scatterplotName)
+                {
+                    pluginfound = true;
+
+    
+                    auto maxRangeAction = findActionByPath<DecimalAction>(plugin, "Settings/Coloring/1D Color map/Range/Maximum");
+                    auto minRangeAction = findActionByPath<DecimalAction>(plugin, "Settings/Coloring/1D Color map/Range/Minimum");
+                    if (maxRangeAction && minRangeAction)
+                    {
+                        maxRangeAction->setValue(maxValue);
+                        minRangeAction->setValue(minValue);
+                    }
+                    else
+                    {
+                        qCritical() << "Color map range actions not found in plugin:" << plugin->getGuiName();
+                    }
+                        
+
+
+                    break;
+                }
+
+            }
+            if (!pluginfound)
+            {
+                qCritical() << "Scatterplot plugin not found with name:" << scatterplotName;
+            }
+        }
+    
+
+
 }
