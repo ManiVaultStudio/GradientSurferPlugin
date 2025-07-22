@@ -697,7 +697,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         &OptionsAction::selectedOptionsChanged,
         this,
         [this]() {
-            _clusterSelectionDebounceTimer.start(500);
+            _clusterSelectionDebounceTimer.start(300);
         });
     connect(&_clusterSelectionDebounceTimer, &QTimer::timeout, this, [this]() {
         if (!_projectOpened)
@@ -849,13 +849,13 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         &IntegralAction::valueChanged,
         this,
         [this]() {
-            _NRangeDebounceTimer.start(500);
+            _NRangeDebounceTimer.start(300);
         });
     connect(&_settingsAction.getCommonOptionsHolder().getBottomNRowsAction(),
         &IntegralAction::valueChanged,
         this,
         [this]() {
-            _NRangeDebounceTimer.start(500);
+            _NRangeDebounceTimer.start(300);
         });
     connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
         if (!_projectOpened)
