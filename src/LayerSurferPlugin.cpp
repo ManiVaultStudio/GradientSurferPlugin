@@ -56,9 +56,7 @@ void LayerSurferPlugin::init()
         label->setAlignment(Qt::AlignCenter);
         label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
         label->setWordWrap(true);
-        label->setMinimumHeight(32);
-        label->setMaximumHeight(32);
-        label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+        label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         layout->addWidget(label, 0);
 
         tableView->setParent(contentWidget);
@@ -71,20 +69,21 @@ void LayerSurferPlugin::init()
         scrollArea->setWidgetResizable(true);
         scrollArea->setWidget(contentWidget);
         scrollArea->setFrameShape(QFrame::NoFrame);
+        scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-        // Helper to update min height based on screen
+        // Only set a reasonable minimum height, do not set maximum height
         auto updateMinHeight = [scrollArea]() {
             QScreen* screen = scrollArea->screen();
             if (!screen) screen = QGuiApplication::primaryScreen();
             if (screen) {
-                int minHeight = screen->availableGeometry().height();
+                int minHeight = screen->availableGeometry().height()/1.13;
                 scrollArea->setMinimumHeight(minHeight);
             }
             };
 
         updateMinHeight();
 
-        // Connect to screen geometry changes for dynamic updates
+        // Update min height on screen geometry change
         QScreen* screen = scrollArea->screen();
         if (!screen) screen = QGuiApplication::primaryScreen();
         if (screen) {
@@ -116,7 +115,8 @@ void LayerSurferPlugin::init()
             return tableWidget;
         }
     );
-    addDockingAction(table2Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(256, QWIDGETSIZE_MAX));
+    // Remove fixed height from QSize
+    addDockingAction(table2Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(256, 0));
 
     // 3. Dock the third table ("Dataset 2 All Cells") on the right
     auto* table3Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 2 All Cells");
@@ -127,7 +127,7 @@ void LayerSurferPlugin::init()
             return tableWidget;
         }
     );
-    addDockingAction(table3Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(256, QWIDGETSIZE_MAX));
+    addDockingAction(table3Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(256, 0));
 
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
