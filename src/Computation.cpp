@@ -47,14 +47,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         connect(&mv::projects(), &AbstractProjectManager::projectOpened, this,
             [this]() {
                 _projectOpened = true;
-                _taskDisable = true;
-                disableOptions();
+                //_taskDisable = true;
+                //disableOptions();
                 normalizeData();
                 colorScatterPlots();
                 clearTables();
                 clearLinePlots();
-                enableOptions();
-                _taskDisable = false;
+                //enableOptions();
+                //_taskDisable = false;
                 setStatusMessage("C", "Project opened", "");
             });
     }
@@ -604,6 +604,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
@@ -673,6 +674,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 ScopedBlocker blocker(_blockToggle);
                 _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
+                _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression().setChecked(false);
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
                 deselectAllRows(_settingsAction.getTableView1Action());
                 deselectAllRows(_settingsAction.getTableView2Action());
@@ -690,6 +692,18 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         };
 
     connect(&_settingsAction.getCommonOptionsHolder().getSelectionModeAction(), &ToggleAction::toggled, this, selectionModeToggled);
+
+    const auto colorallcellsWithExpressionChanged = [this]()
+        {
+            if (_blockToggle)
+            {
+                //qDebug() << "Selection mode change blocked, returning early";
+                return;
+            }
+            _colorUpdateDebounceTimer.start(100);
+        };
+
+    connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression(), &ToggleAction::toggled, this, colorallcellsWithExpressionChanged);
 
 
     connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToPlots);
@@ -2906,6 +2920,9 @@ void Computation::coloringScatterPlotsOld()
             createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, pcaDataset1ID, totalPoints1, selectedPCADimensionName, minValScatter1, maxValScatter1);
             createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, pcaDataset2ID, totalPoints2, selectedPCADimensionName, minValScatter2, maxValScatter2);
 
+            scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, scatterplotColorDataset1Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
+            scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, scatterplotColorDataset2Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
+
         }
         else
         {
@@ -2926,11 +2943,22 @@ void Computation::coloringScatterPlotsOld()
             
             QString selectedGeneName = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
             int selectedGeneIndx = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
-            createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalPoints1, selectedGeneName, minValScatter1, maxValScatter1);
-            createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, geneDataset2ID, totalPoints2, selectedGeneName, minValScatter2, maxValScatter2);
+            if (!_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression().isChecked())
+            {
+                createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalPoints1, selectedGeneName, minValScatter1, maxValScatter1);
+                createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, geneDataset2ID, totalPoints2, selectedGeneName, minValScatter2, maxValScatter2);
+
+                scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, scatterplotColorDataset1Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
+                scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, scatterplotColorDataset2Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
+            }
+            else
+            {
+                scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, geneDataset1ID, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
+                scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, geneDataset2ID, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
+            }
+
         }
-        scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, scatterplotColorDataset1Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
-        scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, scatterplotColorDataset2Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
+
 
 
     }

@@ -283,6 +283,9 @@ public:
         const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
         StringAction& getStatusMessageAction() { return _statusMessageAction; }
 
+        const ToggleAction& getColorAllCellsWithExpression() const { return _colorAllCellsWithExpression; }
+        ToggleAction& getColorAllCellsWithExpression() { return _colorAllCellsWithExpression; }
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -310,6 +313,7 @@ public:
 
         StatusBarAction* _statusBarActionWidget;
         StringAction                        _statusMessageAction;
+        ToggleAction         _colorAllCellsWithExpression;
 
     };
 

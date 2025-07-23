@@ -152,6 +152,7 @@ protected:
     bool _optionsDisabled = false;
     mv::ForegroundTask  _foregroundTask;
     bool _taskDisable = false;
+    bool _blockColorAllCellswithExpression=false;
     //bool    _pacColoringPaused = false;
     //bool _geneSelectionPaused = false;
     //bool _blockSelectionMode = false;
