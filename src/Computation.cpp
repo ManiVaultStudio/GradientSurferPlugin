@@ -39,7 +39,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     : WidgetAction(&LayerSurferPlugin, "Computation"),
     _viewerPlugin(LayerSurferPlugin),
     _settingsAction(SettingsAction),
-    _foregroundTask(this, "Computing", mv::Task::Status::Undefined, true)
+    _foregroundTask(this, "Computing", mv::Task::Status::Undefined)
 {
     if (mv::projects().isOpeningProject())
     {
@@ -49,7 +49,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 _projectOpened = true;
                 disableOptions();
                 normalizeData();
-                colorScatterPlots(); //TODO Check
+                colorScatterPlots();
                 clearTables();
                 clearLinePlots();
                 enableOptions();
@@ -2963,8 +2963,8 @@ void Computation::disableOptions()
             _foregroundTask.setUndefined();
         }
         _foregroundTask.setProgressDescription("Computation in progress. Please wait.");
-        _foregroundTask.setRunning();
-        //_foregroundTask.setRunningIndeterminate();
+        //_foregroundTask.setRunning();
+        _foregroundTask.setRunningIndeterminate();
 
     _settingsAction.getCommonOptionsHolder().setDisabled(true);
     _settingsAction.getDataset1OptionsHolder().setDisabled(true);
