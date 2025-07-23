@@ -45,7 +45,8 @@ void LayerSurferPlugin::init()
     ensureTableModel(_settingsAction.getTableView2Action());
     ensureTableModel(_settingsAction.getTableView3Action());
 
-    // Helper: create a vertical widget with a label and a table view
+
+
     auto createTableWidget = [](const QString& labelText, QTableView* tableView, QWidget* parent = nullptr) {
         QWidget* contentWidget = new QWidget();
         QVBoxLayout* layout = new QVBoxLayout(contentWidget);
@@ -74,9 +75,11 @@ void LayerSurferPlugin::init()
         // Only set a reasonable minimum height, do not set maximum height
         auto updateMinHeight = [scrollArea]() {
             QScreen* screen = scrollArea->screen();
-            if (!screen) screen = QGuiApplication::primaryScreen();
+            if (!screen) {
+                screen = QGuiApplication::primaryScreen();
+            }
             if (screen) {
-                int minHeight = screen->availableGeometry().height()/1.13;
+                int minHeight = static_cast<int>(screen->availableGeometry().height() / 1.13);
                 scrollArea->setMinimumHeight(minHeight);
             }
             };
@@ -91,6 +94,15 @@ void LayerSurferPlugin::init()
                 updateMinHeight();
                 });
         }
+
+        // Update min height on top-level window geometry change (deferred)
+        QTimer::singleShot(0, scrollArea, [scrollArea, updateMinHeight]() {
+            QWidget* topLevel = scrollArea->window();
+            if (topLevel) {
+                auto* filter = new MinHeightEventFilter(updateMinHeight, scrollArea);
+                topLevel->installEventFilter(filter);
+            }
+            });
 
         return scrollArea;
         };

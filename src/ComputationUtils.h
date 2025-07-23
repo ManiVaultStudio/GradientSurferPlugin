@@ -72,6 +72,8 @@ struct LoadingValuesContainer
 };
 
 using namespace mv::gui;
+
+
 struct StatusInfo {
     QString status;
     QString message;
