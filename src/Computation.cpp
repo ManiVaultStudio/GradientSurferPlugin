@@ -38,7 +38,8 @@ using namespace mv::gui;
 Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& SettingsAction)
     : WidgetAction(&LayerSurferPlugin, "Computation"),
     _viewerPlugin(LayerSurferPlugin),
-    _settingsAction(SettingsAction)
+    _settingsAction(SettingsAction),
+    _foregroundTask(this, "Computing", mv::Task::Status::Undefined, true)
 {
     if (mv::projects().isOpeningProject())
     {
@@ -1277,6 +1278,8 @@ void Computation::AutoCompute()
         clearTables();
         clearLinePlots();
         _numOfPointsInLine1 = 0;
+        //_foregroundTask.setRunning();
+
 
         if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
             normalizeData();
@@ -1295,6 +1298,8 @@ void Computation::AutoCompute()
   
         if (!createDatasetsIfNeeded())
             return;
+
+        //_foregroundTask.setProgress(0.2f, "This is a test!");
 
         auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
         auto selectIndices = _embeddingDataset->getSelectionIndices();
@@ -1326,6 +1331,9 @@ void Computation::AutoCompute()
         _selectedClusterIndices2.clear();
         _selectedClusterIndices1= getIndicesBySelectedClusters(clusters1, selectedClusters);
         _selectedClusterIndices2= getIndicesBySelectedClusters(clusters2, selectedClusters);
+
+        //_foregroundTask.setProgress(0.6f, "This is a test!");
+
 
         std::sort(_selectedClusterIndices1.begin(), _selectedClusterIndices1.end());
         std::sort(_selectedClusterIndices2.begin(), _selectedClusterIndices2.end());
@@ -1448,6 +1456,9 @@ void Computation::AutoCompute()
             ManualCompute();
 
         }
+
+        _foregroundTask.setProgress(1.0f, "This is a test!");
+        _foregroundTask.setFinished();
 
     }
     catch (const std::exception& ex)
@@ -2927,21 +2938,13 @@ void Computation::enableOptions()
 {
     if (!_projectOpened || !_optionsDisabled)
         return;
-    if (0)
-    {
-        if (_foregroundTask) {
 
-            if (_foregroundTask->isRunning()) {
-                _foregroundTask->setFinished();
-                if (_foregroundTask->isKillable()) {
-                    _foregroundTask->kill();
-                }
-            }
-            disconnect(_foregroundTask, nullptr, this, nullptr);
-            _foregroundTask->deleteLater();
-            _foregroundTask = nullptr;
+        if (_foregroundTask.isRunning()) {
+            _foregroundTask.setFinished();
+            //_foregroundTask.setStatus(mv::Task::Status::Undefined);
+            _foregroundTask.setUndefined();
         }
-    }
+
     _settingsAction.getCommonOptionsHolder().setDisabled(false);
     _settingsAction.getDataset1OptionsHolder().setDisabled(false);
     _settingsAction.getDataset2OptionsHolder().setDisabled(false);
@@ -2953,20 +2956,16 @@ void Computation::disableOptions()
 {
     if (!_projectOpened || _optionsDisabled)
         return;
-    if (0)
-    {
-        if (!_foregroundTask) {
-            _foregroundTask = new mv::ForegroundTask(this, "Computing", mv::Task::Status::Running, true);
 
-            connect(_foregroundTask, &QObject::destroyed, this, [this](QObject*) {
-                _foregroundTask = nullptr;
-                });
-
-            _foregroundTask->setName("Computing");
-            _foregroundTask->setDescription("Computation in progress. Please wait.");
-            _foregroundTask->setRunning();
+        if (_foregroundTask.isRunning()) {
+            _foregroundTask.setFinished();
+            //_foregroundTask.setStatus(mv::Task::Status::Undefined);
+            _foregroundTask.setUndefined();
         }
-    }
+        _foregroundTask.setProgressDescription("Computation in progress. Please wait.");
+        _foregroundTask.setRunning();
+        //_foregroundTask.setRunningIndeterminate();
+
     _settingsAction.getCommonOptionsHolder().setDisabled(true);
     _settingsAction.getDataset1OptionsHolder().setDisabled(true);
     _settingsAction.getDataset2OptionsHolder().setDisabled(true);

@@ -150,7 +150,7 @@ protected:
     std::vector<int>   _selectedClusterIndices1;
     std::vector<int>   _selectedClusterIndices2;
     bool _optionsDisabled = false;
-    mv::ForegroundTask* _foregroundTask = nullptr;
+    mv::ForegroundTask  _foregroundTask;
     //bool    _pacColoringPaused = false;
     //bool _geneSelectionPaused = false;
     //bool _blockSelectionMode = false;
