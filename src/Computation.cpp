@@ -47,14 +47,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         connect(&mv::projects(), &AbstractProjectManager::projectOpened, this,
             [this]() {
                 _projectOpened = true;
-                //_taskDisable = true;
+                _taskDisable = true;
                 //disableOptions();
                 normalizeData();
                 colorScatterPlots();
                 clearTables();
                 clearLinePlots();
                 //enableOptions();
-                //_taskDisable = false;
+                _taskDisable = false;
                 setStatusMessage("C", "Project opened", "");
             });
     }
