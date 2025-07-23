@@ -1237,6 +1237,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
     connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged2);
     _pca1.setCompletionCallback(nullptr);
     _pca1.setCompletionCallback([this](bool success, const std::string& message) {
+        _isManualComputeComputing = false;
         _isPCATriggerComputing = false;
         if (success) {
             //qDebug() << "PCA 1 finished successfully:" << message.c_str();
@@ -1495,11 +1496,13 @@ void Computation::ManualCompute()
 {
     if (_isManualComputeComputing) return;
     _isManualComputeComputing = true;
-    auto guard = qScopeGuard([&] { _isManualComputeComputing = false; });
+    _pcaDataset1Complete = false;
+    _pcaDataset2Complete = false;
 
     if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
         normalizeData();
         setSelectionAndAutoCompute();
+        _isManualComputeComputing = false;
         return;
     }
     bool complete = setupAndTriggerPCA();
@@ -1507,9 +1510,9 @@ void Computation::ManualCompute()
     {
         clearTable(_settingsAction.getTableView3Action());
         clearTable(_settingsAction.getTableView2Action());
+        _isManualComputeComputing = false;
         return;
     }
-    _isManualComputeComputing = false;
     
 }
 
@@ -2433,22 +2436,16 @@ bool Computation::setupAndTriggerPCA()
         }
         connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
             _pcaDataset1Complete = true;
-            qDebug() << "PCA Dataset 1 data changed";
             if (_pcaDataset1Complete && _pcaDataset2Complete) {
+                _isManualComputeComputing = false;
                 processAfterPCADatasetsPopulated();
-            }
-            else {
-                qDebug() << "PCA Dataset 1 data changed, but PCA Dataset 2 is not complete yet.";
             }
             });
         connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
             _pcaDataset2Complete = true;
-            qDebug() << "PCA Dataset 2 data changed";
             if (_pcaDataset1Complete && _pcaDataset2Complete) {
+                _isManualComputeComputing = false;
                 processAfterPCADatasetsPopulated();
-            }
-            else {
-                qDebug() << "PCA Dataset 2 data changed, but PCA Dataset 1 is not complete yet.";
             }
             });
         auto componentsAction1 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Number of PCA components"));
@@ -2966,13 +2963,13 @@ void Computation::coloringScatterPlotsOld()
 
 void Computation::enableOptions()
 {
-    if (!_projectOpened || !_optionsDisabled || _taskDisable)
+    if (!_projectOpened || !_optionsDisabled)
         return;
     if (!_taskDisable)
     {
-        if (_foregroundTask.isRunning()) {
+        if (_foregroundTask.isRunning()) 
+        {
             _foregroundTask.setFinished();
-            //_foregroundTask.setStatus(mv::Task::Status::Undefined);
             _foregroundTask.setUndefined();
         }
     }
@@ -2994,7 +2991,6 @@ void Computation::disableOptions()
     {
         if (_foregroundTask.isRunning()) {
             _foregroundTask.setFinished();
-            //_foregroundTask.setStatus(mv::Task::Status::Undefined);
             _foregroundTask.setUndefined();
         }
         _foregroundTask.setProgressDescription("Computation in progress. Please wait.");
