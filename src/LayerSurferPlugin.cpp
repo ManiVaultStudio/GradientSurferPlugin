@@ -65,7 +65,7 @@ void LayerSurferPlugin::init()
         layout->addWidget(tableView, 1);
 
         contentWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
+        
         QScrollArea* scrollArea = new QScrollArea(parent);
         scrollArea->setWidgetResizable(true);
         scrollArea->setWidget(contentWidget);

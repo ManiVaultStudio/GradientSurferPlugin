@@ -47,12 +47,14 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         connect(&mv::projects(), &AbstractProjectManager::projectOpened, this,
             [this]() {
                 _projectOpened = true;
+                _taskDisable = true;
                 disableOptions();
                 normalizeData();
                 colorScatterPlots();
                 clearTables();
                 clearLinePlots();
                 enableOptions();
+                _taskDisable = false;
                 setStatusMessage("C", "Project opened", "");
             });
     }
@@ -2936,14 +2938,17 @@ void Computation::coloringScatterPlotsOld()
 
 void Computation::enableOptions()
 {
-    if (!_projectOpened || !_optionsDisabled)
+    if (!_projectOpened || !_optionsDisabled || _taskDisable)
         return;
-
+    if (!_taskDisable)
+    {
         if (_foregroundTask.isRunning()) {
             _foregroundTask.setFinished();
             //_foregroundTask.setStatus(mv::Task::Status::Undefined);
             _foregroundTask.setUndefined();
         }
+    }
+
 
     _settingsAction.getCommonOptionsHolder().setDisabled(false);
     _settingsAction.getDataset1OptionsHolder().setDisabled(false);
@@ -2957,6 +2962,8 @@ void Computation::disableOptions()
     if (!_projectOpened || _optionsDisabled)
         return;
 
+    if (!_taskDisable)
+    {
         if (_foregroundTask.isRunning()) {
             _foregroundTask.setFinished();
             //_foregroundTask.setStatus(mv::Task::Status::Undefined);
@@ -2965,6 +2972,8 @@ void Computation::disableOptions()
         _foregroundTask.setProgressDescription("Computation in progress. Please wait.");
         //_foregroundTask.setRunning();
         _foregroundTask.setRunningIndeterminate();
+    }
+
 
     _settingsAction.getCommonOptionsHolder().setDisabled(true);
     _settingsAction.getDataset1OptionsHolder().setDisabled(true);
