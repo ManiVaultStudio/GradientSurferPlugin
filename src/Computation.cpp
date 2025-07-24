@@ -2965,7 +2965,7 @@ void Computation::enableOptions()
 {
     if (!_projectOpened || !_optionsDisabled)
         return;
-    if (!_taskDisable)
+    if (!_taskDisable && 0)
     {
         if (_foregroundTask.isRunning()) 
         {
@@ -2987,7 +2987,7 @@ void Computation::disableOptions()
     if (!_projectOpened || _optionsDisabled)
         return;
 
-    if (!_taskDisable)
+    if (!_taskDisable && 0)
     {
         if (_foregroundTask.isRunning()) {
             _foregroundTask.setFinished();
