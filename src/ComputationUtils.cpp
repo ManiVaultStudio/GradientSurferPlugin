@@ -1568,7 +1568,18 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
     coloringDatasetFull->getClusters() = newClusters;
     events().notifyDatasetDataChanged(coloringDatasetFull);
 }
-
+// Helper: Compute the value at a given percentile in a vector
+float percentile(const std::vector<float>& data, float pct) {
+    if (data.empty()) return 0.0f;
+    std::vector<float> sorted = data;
+    std::sort(sorted.begin(), sorted.end());
+    float pos = pct * (sorted.size() - 1);
+    size_t idx_below = static_cast<size_t>(std::floor(pos));
+    size_t idx_above = static_cast<size_t>(std::ceil(pos));
+    if (idx_below == idx_above) return sorted[idx_below];
+    float weight_above = pos - idx_below;
+    return sorted[idx_below] * (1.0f - weight_above) + sorted[idx_above] * weight_above;
+}
 
 std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax)
 {
@@ -1627,16 +1638,15 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
         return { 0.0f, 0.0f };
     }
 
-    // Compute min/max from geneExpValues
-    auto [minIt, maxIt] = std::minmax_element(geneExpValues.begin(), geneExpValues.end());
-    float computedMin = *minIt;
-    float computedMax = *maxIt;
+    // Compute robust min/max from geneExpValues (e.g., 1st and 99th percentiles)
+    float computedMin = percentile(geneExpValues, 0.01f);
+    float computedMax = percentile(geneExpValues, 0.99f);
     float fulldatasetMin = sentinelMinMax.first;
     float fulldatasetMax = sentinelMinMax.second;
 
-    // Find the global min and max
-    float globalMin = std::min({ fulldatasetMin, fulldatasetMax, computedMin, computedMax });
-    float globalMax = std::max({ fulldatasetMin, fulldatasetMax, computedMin, computedMax });
+    // Robust min/max logic
+    float globalMin = std::min(fulldatasetMin, computedMin);
+    float globalMax = std::max(fulldatasetMax, computedMax);
 
     // Choose a sentinel value outside the global range
     float sentinelValue = globalMin - 100.0f; // or globalMax + 100.0f, depending on convention

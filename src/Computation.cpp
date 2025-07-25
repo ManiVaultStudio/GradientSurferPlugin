@@ -3164,9 +3164,8 @@ void Computation::colorLinePlots()
                     std::vector<float> selectedData(numbpts);
                     _lineChartPointDataset1->extractDataForDimension(selectedData, colordimensionIndx);
                     if (!selectedData.empty()) {
-                        auto [minIt, maxIt] = std::minmax_element(selectedData.begin(), selectedData.end());
-                        minValue = *minIt;
-                        maxValue = *maxIt;
+                        minValue = percentile(selectedData, 0.01f); // 1st percentile
+                        maxValue = percentile(selectedData, 0.99f); // 99th percentile
                     }
                 }
             }
