@@ -59,6 +59,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
     _commonOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
+    _commonOptionsHolder.getColorAllCellsWithExpression().setToolTip("Color All Cells With Expression Action");
 
     _commonOptionsHolder.getTopNRowsAction().setToolTip("Top N Rows Action");
     _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setToolTip("Scatterplot Upper Coloring Range");
@@ -91,6 +92,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
+    _commonOptionsHolder.getColorAllCellsWithExpression().setChecked(false);
 
 
 
@@ -185,6 +187,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getColorAllCellsWithExpression().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
 
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
@@ -414,8 +417,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _bottomNRowsAction(this, "Bottom N Rows Selection"),
     _computationTypeAction(this, "Computation Type"),
     _statusMessageAction(this, "Status Message"),
-    _statusBarActionWidget(new StatusBarAction(this, "Status"))
-
+    _statusBarActionWidget(new StatusBarAction(this, "Status")),
+    _colorAllCellsWithExpression(this, "Color All Cells With Expression")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -433,6 +436,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizationTypeAction);
+    addAction(&_colorAllCellsWithExpression);
     addAction(&_normalizeCombinedDatasetsAction);
     addAction(&_selectionModeAction);
     addAction(&_computationTypeAction);

@@ -22,7 +22,20 @@ using namespace mv::gui;
 using namespace mv::util;
 
 class QLabel;
-
+class MinHeightEventFilter : public QObject {
+    std::function<void()> _callback;
+public:
+    MinHeightEventFilter(std::function<void()> callback, QObject* parent = nullptr)
+        : QObject(parent), _callback(std::move(callback)) {
+    }
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override {
+        if (event->type() == QEvent::Resize || event->type() == QEvent::Move) {
+            if (_callback) _callback();
+        }
+        return QObject::eventFilter(obj, event);
+    }
+};
 /**
  * Layer surfer plugin class
  *
