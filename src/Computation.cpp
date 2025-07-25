@@ -2508,6 +2508,7 @@ void Computation::normalizeData()
     if (!_projectOpened)
         return;
 
+    constexpr int CHUNK_SIZE = 10000; // Tune as needed for memory constraints
 
     if (!_normalizedFullDataset1.isValid()) {
         _normalizedFullDataset1 = mv::data().createDataset("Points", "Normalized Full Dataset 1");
@@ -2520,8 +2521,7 @@ void Computation::normalizeData()
         mv::events().notifyDatasetAdded(_normalizedFullDataset2);
     }
 
-    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid())
-    {
+    if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
         setStatusMessage("E", "No valid datasets for normalization", "");
         return;
     }
@@ -2532,8 +2532,7 @@ void Computation::normalizeData()
     auto fullPointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
     auto fullPointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
 
-    if (!fullPointDataset1.isValid() || !fullPointDataset2.isValid())
-    {
+    if (!fullPointDataset1.isValid() || !fullPointDataset2.isValid()) {
         setStatusMessage("E", "Invalid point datasets for normalization", "");
         return;
     }
@@ -2543,66 +2542,112 @@ void Computation::normalizeData()
     const int numPoints2 = fullPointDataset2->getNumPoints();
     const int numDims2 = fullPointDataset2->getNumDimensions();
 
-    std::vector<float> data1(numPoints1 * numDims1);
-    std::vector<float> data2(numPoints2 * numDims2);
-
     std::vector<int> columns1(numDims1);
     std::vector<int> columns2(numDims2);
     std::iota(columns1.begin(), columns1.end(), 0);
     std::iota(columns2.begin(), columns2.end(), 0);
 
-    try {
-        fullPointDataset1->populateDataForDimensions(data1, columns1);
-        fullPointDataset2->populateDataForDimensions(data2, columns2);
-    }
-    catch (const std::exception& ex) {
-        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
-        setStatusMessage("E", "Error occurred during populating data for normalization", "");
-        return;
-    }
-
     QString normTypeStr = _settingsAction.getCommonOptionsHolder().getNormalizationTypeAction().getCurrentText();
     NormalizationType normType = normalizationTypeFromString(normTypeStr);
-    float minValue = std::numeric_limits<float>::infinity();
-    float maxValue = -std::numeric_limits<float>::infinity();
-    if (_settingsAction.getCommonOptionsHolder().getNormalizeCombinedDatasetsAction().isChecked())
-    {
-        // Normalize data1 and data2 together for consistent scaling
-        std::vector<float> combinedData(data1.size() + data2.size());
-        std::copy(data1.begin(), data1.end(), combinedData.begin());
-        std::copy(data2.begin(), data2.end(), combinedData.begin() + data1.size());
 
-        // Run normalization in a separate thread
-        QFuture<void> future = QtConcurrent::run([&combinedData, normType]() {
-            normalizeVector(combinedData, normType);
-            });
-        future.waitForFinished();
-        minValue = *std::min_element(combinedData.begin(), combinedData.end());
-        maxValue = *std::max_element(combinedData.begin(), combinedData.end());
+    bool combined = _settingsAction.getCommonOptionsHolder().getNormalizeCombinedDatasetsAction().isChecked();
 
-        std::copy(combinedData.begin(), combinedData.begin() + data1.size(), data1.begin());
-        std::copy(combinedData.begin() + data1.size(), combinedData.end(), data2.begin());
+    float globalMin = std::numeric_limits<float>::infinity();
+    float globalMax = -std::numeric_limits<float>::infinity();
+
+    // First pass: find global min/max if combined normalization
+    if (combined) {
+        for (int offset = 0; offset < numPoints1; offset += CHUNK_SIZE) {
+            int chunkSize = std::min(CHUNK_SIZE, numPoints1 - offset);
+            std::vector<float> chunk(chunkSize * numDims1);
+            std::vector<int> rowIndices(chunkSize);
+            std::iota(rowIndices.begin(), rowIndices.end(), offset);
+            fullPointDataset1->populateDataForDimensions(chunk, columns1, rowIndices);
+            auto [minIt, maxIt] = std::minmax_element(chunk.begin(), chunk.end());
+            if (minIt != chunk.end() && maxIt != chunk.end()) {
+                globalMin = std::min(globalMin, *minIt);
+                globalMax = std::max(globalMax, *maxIt);
+            }
+        }
+        for (int offset = 0; offset < numPoints2; offset += CHUNK_SIZE) {
+            int chunkSize = std::min(CHUNK_SIZE, numPoints2 - offset);
+            std::vector<float> chunk(chunkSize * numDims2);
+            std::vector<int> rowIndices(chunkSize);
+            std::iota(rowIndices.begin(), rowIndices.end(), offset);
+            fullPointDataset2->populateDataForDimensions(chunk, columns2, rowIndices);
+            auto [minIt, maxIt] = std::minmax_element(chunk.begin(), chunk.end());
+            if (minIt != chunk.end() && maxIt != chunk.end()) {
+                globalMin = std::min(globalMin, *minIt);
+                globalMax = std::max(globalMax, *maxIt);
+            }
+        }
     }
-    else
-    {
-        // Normalize data1 and data2 in parallel
-        QFuture<void> future1 = QtConcurrent::run([&data1, normType]() {
-            normalizeVector(data1, normType);
-            });
-        QFuture<void> future2 = QtConcurrent::run([&data2, normType]() {
-            normalizeVector(data2, normType);
-            });
-        future1.waitForFinished();
-        future2.waitForFinished();
-        minValue = std::min(*std::min_element(data1.begin(), data1.end()), *std::min_element(data2.begin(), data2.end()));
-        maxValue = std::max(*std::max_element(data1.begin(), data1.end()), *std::max_element(data2.begin(), data2.end()));
+
+    // Second pass: normalize and write out in chunks (parallelized)
+    std::vector<float> normalized1(numPoints1 * numDims1, 0.0f);
+    std::vector<float> normalized2(numPoints2 * numDims2, 0.0f);
+
+    // Helper struct for chunk info
+    struct ChunkTask {
+        int offset;
+        int chunkSize;
+        int numDims;
+        std::vector<int> columns;
+        mv::Dataset<Points> dataset;
+        float globalMin;
+        float globalMax;
+        bool combined;
+        NormalizationType normType;
+        float* outPtr;
+    };
+
+    auto processChunk = [](ChunkTask& task) {
+        std::vector<float> chunk(task.chunkSize * task.numDims);
+        std::vector<int> rowIndices(task.chunkSize);
+        std::iota(rowIndices.begin(), rowIndices.end(), task.offset);
+        task.dataset->populateDataForDimensions(chunk, task.columns, rowIndices);
+
+        if (task.combined) {
+            for (auto& v : chunk) {
+                v = (task.globalMax > task.globalMin) ? (v - task.globalMin) / (task.globalMax - task.globalMin) : 0.0f;
+            }
+        }
+        else {
+            normalizeVector(chunk, task.normType);
+        }
+        std::copy(chunk.begin(), chunk.end(), task.outPtr + task.offset * task.numDims);
+        };
+
+    // Prepare chunk tasks for dataset 1
+    QList<ChunkTask> tasks1;
+    for (int offset = 0; offset < numPoints1; offset += CHUNK_SIZE) {
+        int chunkSize = std::min(CHUNK_SIZE, numPoints1 - offset);
+        tasks1.append(ChunkTask{ offset, chunkSize, numDims1, columns1, fullPointDataset1, globalMin, globalMax, combined, normType, normalized1.data() });
+    }
+    // Prepare chunk tasks for dataset 2
+    QList<ChunkTask> tasks2;
+    for (int offset = 0; offset < numPoints2; offset += CHUNK_SIZE) {
+        int chunkSize = std::min(CHUNK_SIZE, numPoints2 - offset);
+        tasks2.append(ChunkTask{ offset, chunkSize, numDims2, columns2, fullPointDataset2, globalMin, globalMax, combined, normType, normalized2.data() });
     }
 
-    _normalizedFullDataset1->setData(data1.data(), numPoints1, numDims1);
+    // Run normalization in parallel
+    QtConcurrent::blockingMap(tasks1, processChunk);
+    QtConcurrent::blockingMap(tasks2, processChunk);
+
+    // Compute min/max for UI
+    float minValue = *std::min_element(normalized1.begin(), normalized1.end());
+    float maxValue = *std::max_element(normalized1.begin(), normalized1.end());
+    if (!normalized2.empty()) {
+        minValue = std::min(minValue, *std::min_element(normalized2.begin(), normalized2.end()));
+        maxValue = std::max(maxValue, *std::max_element(normalized2.begin(), normalized2.end()));
+    }
+
+    _normalizedFullDataset1->setData(normalized1.data(), numPoints1, numDims1);
     _normalizedFullDataset1->setDimensionNames(fullPointDataset1->getDimensionNames());
     mv::events().notifyDatasetDataChanged(_normalizedFullDataset1);
 
-    _normalizedFullDataset2->setData(data2.data(), numPoints2, numDims2);
+    _normalizedFullDataset2->setData(normalized2.data(), numPoints2, numDims2);
     _normalizedFullDataset2->setDimensionNames(fullPointDataset2->getDimensionNames());
     mv::events().notifyDatasetDataChanged(_normalizedFullDataset2);
 
@@ -2629,11 +2674,11 @@ void Computation::normalizeData()
     lineplotRangeLower1.setMaximum(maxValue);
     lineplotRangeLower1.setMinimum(minValue);
 
-    int maxRankLimit = 0;
+    int maxRankLimit = std::min(
+        _normalizedFullDataset2->getNumDimensions(),
+        _normalizedFullDataset1->getNumDimensions()
+    );
     int minRankLimit = 0;
-
-    maxRankLimit = _normalizedFullDataset2->getNumDimensions();
-    maxRankLimit = std::min(maxRankLimit, static_cast<int>(_normalizedFullDataset1->getNumDimensions()));
 
     auto& topNRowsAction = _settingsAction.getCommonOptionsHolder().getTopNRowsAction();
     auto& bottomNRowsAction = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction();
@@ -2646,7 +2691,6 @@ void Computation::normalizeData()
     topNRowsAction.setValue(std::min(10, maxRankLimit));
     bottomNRowsAction.setValue(std::min(minRankLimit, maxRankLimit));
     setStatusMessage("C", "Data normalization completed", "#28a745");
-
 }
 
 void Computation::setSelectionAndAutoCompute()
