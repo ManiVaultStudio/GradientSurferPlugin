@@ -88,7 +88,7 @@ std::vector<std::seed_seq::result_type> filterSelectionIndicesByClusters(
     std::vector<std::seed_seq::result_type> filtered;
     filtered.reserve(selectionIndices.size());
     for (const auto& index : selectionIndices) {
-        filtered.push_back(static_cast<int>(index));
+        filtered.push_back(index);
     }
     for (const auto& cluster : clusters) {
         if (!selectedClusters.contains(cluster.getName())) {
@@ -992,7 +992,7 @@ void setScatterplotDimensions(mv::plugin::Plugin* plugin, const QString& xName, 
 }
 bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float epsilon)
 {
-    return (corr <= minCorr - epsilon) || (corr >= maxCorr + epsilon);
+    return (corr >= minCorr - epsilon) && (corr <= maxCorr + epsilon);
 }
 std::pair<float, float> minMax(const std::vector<float>& vec)
 {
@@ -1360,6 +1360,41 @@ std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates) {
     return indices;
 }
 
+// Function to extract the first part before a comma
+QString extractFirstHalf(const QString& input,QString sep) {
+    return input.split(sep).value(0).trimmed();
+}
+
+// Custom search function
+int findMatchingDimensionIndex(const QVector<QString>& dimensionValues, const QString& targetValue) {
+    QString targetFirstHalf = extractFirstHalf(targetValue, " ||| ");
+
+    for (int i = 0; i < dimensionValues.size(); ++i) {
+        if (extractFirstHalf(dimensionValues[i], " ||| ") == targetFirstHalf) {
+            return i;
+        }
+    }
+
+    return -1; // Not found
+}
+
+int findDimensionIndexWithFallback(const std::vector<QString>& dimensionValues, const QString& targetValue) {
+    // First pass: direct match
+    auto it = std::find(dimensionValues.begin(), dimensionValues.end(), targetValue);
+    if (it != dimensionValues.end()) {
+        return std::distance(dimensionValues.begin(), it);
+    }
+
+    // Second pass: compare only first half before comma
+    QString targetFirstHalf = extractFirstHalf(targetValue, " ||| ");
+    for (int i = 0; i < dimensionValues.size(); ++i) {
+        if (extractFirstHalf(dimensionValues[i]," ||| ") == targetFirstHalf) {
+            return i;
+        }
+    }
+
+    return -1; // Not found
+}
 
 
 void createLineChartClusterColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool useFulldata)
@@ -1396,13 +1431,11 @@ void createLineChartClusterColors(QString coloringDataset, QString colorMapValue
     std::map<float, std::vector<std::seed_seq::result_type>> valueToIndices;
     
     ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
-
-
+    
     std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
 
 
-    auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
-    int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
+    int dimensionIndex = findDimensionIndexWithFallback(getdimensionValues, dimensionVal);
 
     if (dimensionIndex < 0) {
         qWarning() << "Dimension" << dimensionVal << "not found in dataset" << pointValuesDataset;
@@ -1428,6 +1461,7 @@ void createLineChartClusterColors(QString coloringDataset, QString colorMapValue
     for (size_t i = 0; i < geneExpValues.size(); ++i) {
         valueToIndices[geneExpValues[i]].push_back(static_cast<std::seed_seq::result_type>(selectedIndices.at(i)));
     }
+
 
 
     int clusterIdx = 0;
@@ -1542,8 +1576,12 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
 
     ColormapTypeValue colormap = getColorMapFromString(colorMapValue);
     std::vector<QString> getdimensionValues = pointValuesDatasetFull->getDimensionNames();
-    auto it = std::find(getdimensionValues.begin(), getdimensionValues.end(), dimensionVal);
-    int dimensionIndex = (it != getdimensionValues.end()) ? std::distance(getdimensionValues.begin(), it) : -1;
+    int dimensionIndex = findDimensionIndexWithFallback(getdimensionValues, dimensionVal);
+    if (dimensionIndex < 0) {
+        qWarning() << "Dimension" << dimensionVal << "not found in dataset" << pointValuesDataset;
+        return;
+    }
+
     std::vector<int> dimensionIndxContainer = { dimensionIndex };
     std::vector<float> geneExpValues(selectedIndices.size() * dimensionIndxContainer.size());
     pointValuesDatasetFull->populateDataForDimensions(geneExpValues, dimensionIndxContainer, selectedIndices);
@@ -1605,9 +1643,8 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     }
 
     // Find the dimension index
-    const auto& dimensionNames = pointValuesDatasetFull->getDimensionNames();
-    auto it = std::find(dimensionNames.begin(), dimensionNames.end(), dimensionVal);
-    int dimensionIndex = (it != dimensionNames.end()) ? static_cast<int>(std::distance(dimensionNames.begin(), it)) : -1;
+    auto getdimensionValues = pointValuesDatasetFull->getDimensionNames();
+    int dimensionIndex = findDimensionIndexWithFallback(getdimensionValues, dimensionVal);
     if (dimensionIndex < 0) {
         qWarning() << "Dimension" << dimensionVal << "not found in dataset" << pointValuesDataset;
         return { 0.0f, 0.0f };
@@ -1665,6 +1702,7 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     }
 
     coloringDatasetFull->setData(finalData.data(), numOfTotalPoints, 1);
+
     coloringDatasetFull->setDimensionNames({ "ColorDim" });
 
     events().notifyDatasetDataChanged(coloringDatasetFull);

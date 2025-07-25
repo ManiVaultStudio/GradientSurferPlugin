@@ -99,6 +99,7 @@ private:
     void  normalizeData();
     void enableOptions();
     void disableOptions();
+    void coorelationScoresForPCs();
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;

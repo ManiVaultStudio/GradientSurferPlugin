@@ -1290,106 +1290,92 @@ void Computation::AutoCompute()
     if (_isAutoComputeComputing) return;
     _isAutoComputeComputing = true;
     auto guard = qScopeGuard([&] { _isAutoComputeComputing = false; });
+
     try
     {
+        // Reset state
         clearTables();
         clearLinePlots();
         _numOfPointsInLine1 = 0;
-        //_foregroundTask.setRunning();
 
-
+        // Ensure normalized datasets are available
         if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
             normalizeData();
             setSelectionAndAutoCompute();
             return;
         }
-        //mv::Dataset<Points> fullPointDataset1;
-        mv::Dataset<Clusters> fullClusterDataset1;
-        mv::Dataset<Clusters> fullClusterDataset2;
+
+        // Retrieve and validate required datasets and parameters
+        mv::Dataset<Clusters> fullClusterDataset1, fullClusterDataset2;
         int xEmbeddingIndex = -1, yEmbeddingIndex = -1, topNRows = -1, bottomNRows = -1;
         std::vector<int> selectedIndices;
         QString scatterplotViewName;
-        if (!validateAndRetrieveDatasets(fullClusterDataset1, fullClusterDataset2,xEmbeddingIndex, yEmbeddingIndex, selectedIndices, scatterplotViewName, topNRows, bottomNRows))
+        if (!validateAndRetrieveDatasets(fullClusterDataset1, fullClusterDataset2,
+            xEmbeddingIndex, yEmbeddingIndex,
+            selectedIndices, scatterplotViewName,
+            topNRows, bottomNRows))
             return;
 
-  
+        // Ensure all required datasets exist
         if (!createDatasetsIfNeeded())
             return;
 
-        //_foregroundTask.setProgress(0.2f, "This is a test!");
+        // Gather cluster and selection information
+        const auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
+        const auto selectIndices = _embeddingDataset->getSelectionIndices();
+        const auto clusters1 = fullClusterDataset1->getClusters();
+        const auto clusters2 = fullClusterDataset2->getClusters();
 
-        auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
-        auto selectIndices = _embeddingDataset->getSelectionIndices();
-        auto clusters1 = fullClusterDataset1->getClusters();
-        auto clusters2 = fullClusterDataset2->getClusters();
-        if (selectedClusters.isEmpty() || clusters1.isEmpty() || clusters2.isEmpty())
-        {
+        if (selectedClusters.isEmpty() || clusters1.isEmpty() || clusters2.isEmpty()) {
             setStatusMessage("E", "No clusters selected for correlation computation", "");
             return;
         }
 
-
-        if (selectedIndices.empty())
-        {
-            return setStatusMessage("E", "No points selected for correlation computation", "");
+        if (selectIndices.empty()) {
+            setStatusMessage("E", "No points selected for correlation computation", "");
+            return;
         }
-        auto filtIndxs = filterSelectionIndicesByClusters(selectIndices, clusters1, selectedClusters);
-        if (filtIndxs.empty())
-        {
+
+        // Filter selection indices by clusters
+        const auto filtIndxs = filterSelectionIndicesByClusters(selectIndices, clusters1, selectedClusters);
+        if (filtIndxs.empty()) {
             setStatusMessage("E", "No points selected for correlation computation after filtering by clusters", "");
             return;
         }
-        if (filtIndxs.size() < 2)
-        {
+        if (filtIndxs.size() < 2) {
             setStatusMessage("E", "Not enough points selected for correlation computation after filtering by clusters", "");
             return;
         }
-        _selectedClusterIndices1.clear();
-        _selectedClusterIndices2.clear();
-        _selectedClusterIndices1= getIndicesBySelectedClusters(clusters1, selectedClusters);
-        _selectedClusterIndices2= getIndicesBySelectedClusters(clusters2, selectedClusters);
 
-        //_foregroundTask.setProgress(0.6f, "This is a test!");
-
-
+        // Update selected cluster indices
+        _selectedClusterIndices1 = getIndicesBySelectedClusters(clusters1, selectedClusters);
+        _selectedClusterIndices2 = getIndicesBySelectedClusters(clusters2, selectedClusters);
         std::sort(_selectedClusterIndices1.begin(), _selectedClusterIndices1.end());
         std::sort(_selectedClusterIndices2.begin(), _selectedClusterIndices2.end());
 
-        _filteredSelectionIndices.clear();
-        _filteredSelectionIndices.reserve(filtIndxs.size());
-        for (auto idx : filtIndxs)
-        {
-            _filteredSelectionIndices.push_back(idx);
-        }
+        // Update filtered selection indices and notify
+        _filteredSelectionIndices.assign(filtIndxs.begin(), filtIndxs.end());
         _embeddingDataset->setSelectionIndices(filtIndxs);
         _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         _blockSelectionTrigger = true;
         mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
 
-        if (_filteredSelectionIndices.empty())
-        {
-            setStatusMessage("E", "No points selected for correlation computation after filtering by clusters", "");
-            return;
-        }
-        if (_filteredSelectionIndices.size() < 2)
-        {
+        if (_filteredSelectionIndices.size() < 2) {
             setStatusMessage("E", "Not enough points selected for correlation computation", "");
             return;
         }
-        
+
+        // Get rotation angle for embedding
         float rotationAngle = 0.0f;
         if (!getRotationAngle(scatterplotViewName, rotationAngle))
             return;
 
-
+        // Populate embedding coordinates and rotate
         std::vector<float> XYCoordinates;
-        if (!populateEmbeddingCoordinates(xEmbeddingIndex, yEmbeddingIndex, XYCoordinates))
-        {
+        if (!populateEmbeddingCoordinates(xEmbeddingIndex, yEmbeddingIndex, XYCoordinates)) {
             setStatusMessage("E", "Error occurred during embedding coordinates population", "");
             return;
-         
         }
-
 
         std::vector<float> rotatedXYCordinates;
         try {
@@ -1401,6 +1387,7 @@ void Computation::AutoCompute()
             return;
         }
 
+        // Extract Y coordinates and sort cell indices
         std::vector<float> yCoordinates;
         try {
             yCoordinates = getCoordinatesOfCells(rotatedXYCordinates, "Y");
@@ -1410,7 +1397,7 @@ void Computation::AutoCompute()
             setStatusMessage("E", "Error occurred during fetching coordinates", "");
             return;
         }
-
+        /*
         std::vector<int> sortedCellIndices;
         try {
             sortedCellIndices = getSortedCellIndices(yCoordinates);
@@ -1420,32 +1407,25 @@ void Computation::AutoCompute()
             setStatusMessage("E", "Error occurred during sorting indices", "");
             return;
         }
-
+        */
+        // Prepare for dataset population
         int noOfDimensions = _normalizedFullDataset1->getNumDimensions();
         const auto& dimensionNames = _normalizedFullDataset1->getDimensionNames();
         std::vector<int> columnIndices(noOfDimensions);
         std::iota(columnIndices.begin(), columnIndices.end(), 0);
 
-
-        if (!populateAndUpdateDatasets(_normalizedFullDataset1, rotatedXYCordinates, /*XYCoordinates,*/ noOfDimensions, columnIndices, dimensionNames))
-        {
-            return setStatusMessage("E", "Error occurred during dataset population", "");
+        if (!populateAndUpdateDatasets(_normalizedFullDataset1, rotatedXYCordinates, noOfDimensions, columnIndices, dimensionNames)) {
+            setStatusMessage("E", "Error occurred during dataset population", "");
+            return;
         }
 
-
-        const auto xCoordinates = getCoordinatesOfCells(rotatedXYCordinates, "X");
-        float minX = *std::min_element(xCoordinates.begin(), xCoordinates.end());
-        float maxX = *std::max_element(xCoordinates.begin(), xCoordinates.end());
-        float minY = *std::min_element(yCoordinates.begin(), yCoordinates.end());
-        float maxY = *std::max_element(yCoordinates.begin(), yCoordinates.end());
-
+        // Compute correlation gene coordinates
         std::vector<float> corrGeneCoords;
-        QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
-        computeCorrelationGeneCoords(_filteredSelectionIndices, _normalizedFullDataset1, yCoordinates, corrGeneCoords,corrType);
+        const QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
+        computeCorrelationGeneCoords(_filteredSelectionIndices, _normalizedFullDataset1, yCoordinates, corrGeneCoords, corrType);
 
-        
         try {
-            populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames, _geneCorrValues1, _geneOfInterestIndices1,true);
+            populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames, _geneCorrValues1, _geneOfInterestIndices1, true);
         }
         catch (const std::exception& ex) {
             qWarning() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -1453,30 +1433,34 @@ void Computation::AutoCompute()
             return;
         }
 
-
-        setupTableModelAndSelection(_settingsAction.getTableView1Action(), _geneCorrValues1, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction());
-
+        // Setup table and trigger UI updates
+        setupTableModelAndSelection(
+            _settingsAction.getTableView1Action(),
+            _geneCorrValues1,
+            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),
+            _settingsAction.getTableView2Action(),
+            _settingsAction.getTableView3Action(),
+            _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction()
+        );
 
         selectFirstRow(_settingsAction.getTableView1Action());
         _colorUpdateDebounceTimer.start(100);
 
         setStatusMessage("C", "Computation completed", "#28a745");
 
-        ScopedBlocker blocker(_blockToggle);
-        _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-        _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-
-        if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
         {
+            ScopedBlocker blocker(_blockToggle);
+            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
+        }
+
+        if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
             setStatusMessage("R", "Computation in progress", "");
-
             ManualCompute();
-
         }
 
         _foregroundTask.setProgress(1.0f, "This is a test!");
         _foregroundTask.setFinished();
-
     }
     catch (const std::exception& ex)
     {
@@ -1489,7 +1473,6 @@ void Computation::AutoCompute()
         setStatusMessage("E", "Unknown error occurred during computation", "");
     }
     _isAutoComputeComputing = false;
-
 }
 
 void Computation::ManualCompute()
@@ -1860,6 +1843,9 @@ void Computation::processAfterPCAComplete()
         _selectedPCData1.numberOfPoints,
         _selectedPCData1.numberOfDimensions
     );
+
+    coorelationScoresForPCs();
+
     mv::events().notifyDatasetDataChanged(_pcaSelectedEmbeddingDataset);
 
     // Find common gene indices and names
@@ -1960,7 +1946,6 @@ void Computation::processAfterPCAComplete()
             }
         }
     }
-
     // Set PCA common genes datasets
     _pcaCommonGenesDataset1->setData(finalGenePCSimVector1.data(), numPointsReduced1, nComps);
     mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
@@ -1971,14 +1956,172 @@ void Computation::processAfterPCAComplete()
 
 }
 
+
+void Computation::coorelationScoresForPCs()
+{
+    FunctionTimer timer(Q_FUNC_INFO);
+    setStatusMessage("R", "Running correlation between genes and PCs", "#007bff");
+
+    // Validate datasets
+    if (!_pcaSelectedEmbeddingDataset.isValid() || !_rotatedSelectedEmbeddingDataset.isValid()) {
+        setStatusMessage("E", "PCA selected embedding dataset or rotated selected embedding dataset is invalid", "");
+        return;
+    }
+
+    const int numDims = _pcaSelectedEmbeddingDataset->getNumDimensions();
+    const int numPoints = _pcaSelectedEmbeddingDataset->getNumPoints();
+    if (numDims <= 0 || numPoints <= 0) {
+        setStatusMessage("E", "PCA selected embedding dataset is empty", "");
+        return;
+    }
+
+    // Prepare cell indices
+    std::vector<int> cellIndices(numPoints);
+    std::iota(cellIndices.begin(), cellIndices.end(), 0);
+
+    const int numRotatedPoints = _rotatedSelectedEmbeddingDataset->getNumPoints();
+    if (numPoints != numRotatedPoints) {
+        qWarning() << "Number of points mismatch: PCA selected embedding dataset has" << numPoints
+            << "but rotated selected embedding dataset has" << numRotatedPoints;
+        setStatusMessage("E", "Number of points mismatch between PCA selected and rotated selected embedding datasets", "");
+        return;
+    }
+    if (static_cast<int>(cellIndices.size()) != numRotatedPoints) {
+        qWarning() << "Cell indices size mismatch: expected" << numRotatedPoints
+            << "but got" << cellIndices.size();
+        setStatusMessage("E", "Cell indices size mismatch in PCA selected embedding dataset", "");
+        return;
+    }
+
+    // Find Y dimension index
+    const auto dimensionNames = _rotatedSelectedEmbeddingDataset->getDimensionNames();
+    if (dimensionNames.empty()) {
+        qWarning() << "Dimension names are empty in PCA selected embedding dataset";
+        setStatusMessage("E", "Dimension names are empty in PCA selected embedding dataset", "");
+        return;
+    }
+    const auto itY = std::find(dimensionNames.begin(), dimensionNames.end(), "Y");
+    const int colorDimIdx = (itY != dimensionNames.end()) ? static_cast<int>(std::distance(dimensionNames.begin(), itY)) : -1;
+    if (colorDimIdx == -1) {
+        qWarning() << "No Y dimension found in PCA selected embedding dataset";
+        setStatusMessage("E", "No Y dimension found in PCA selected embedding dataset", "");
+        return;
+    }
+    if (numDims <= colorDimIdx) {
+        qWarning() << "Y dimension index out of bounds in PCA selected embedding dataset";
+        setStatusMessage("E", "Y dimension index out of bounds in PCA selected embedding dataset", "");
+        return;
+    }
+
+    // Extract Y coordinates
+    std::vector<float> yCoordinates(numRotatedPoints);
+    _rotatedSelectedEmbeddingDataset->extractDataForDimension(yCoordinates, colorDimIdx);
+    if (yCoordinates.empty() || static_cast<int>(yCoordinates.size()) != numRotatedPoints) {
+        qWarning() << "Y coordinates size mismatch: expected" << numRotatedPoints
+            << "but got" << yCoordinates.size();
+        setStatusMessage("E", "Y coordinates size mismatch in PCA selected embedding dataset", "");
+        return;
+    }
+
+    // Compute correlation scores
+    std::vector<float> corrGeneCoords;
+    const QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
+    computeCorrelationGeneCoords(cellIndices, _pcaSelectedEmbeddingDataset, yCoordinates, corrGeneCoords, corrType);
+
+    // Find index of highest absolute value
+    float maxAbsValue = 0.0f;
+    int maxIndex = -1;
+    for (int i = 0; i < static_cast<int>(corrGeneCoords.size()); ++i) {
+        float absValue = std::abs(corrGeneCoords[i]);
+        if (absValue > maxAbsValue) {
+            maxAbsValue = absValue;
+            maxIndex = i;
+        }
+    }
+    if (maxIndex == -1) {
+        qWarning() << "No maximum absolute value found in correlation scores";
+        setStatusMessage("E", "No maximum absolute value found in correlation scores", "");
+        return;
+    }
+    if (static_cast<int>(corrGeneCoords.size()) != numDims) {
+        qWarning() << "Correlation scores size mismatch: expected" << numDims
+            << "but got" << corrGeneCoords.size();
+        setStatusMessage("E", "Correlation scores size mismatch in PCA selected embedding dataset", "");
+        return;
+    }
+
+    // Set dimension names with correlation scores
+    std::vector<QString> PCCoordNames;
+    PCCoordNames.reserve(numDims);
+    for (int i = 0; i < numDims; ++i) {
+        PCCoordNames.push_back(QString("PC %1 ||| Score: %2").arg(i).arg(corrGeneCoords[i], 0, 'g', 6));
+    }
+    if (numDims != static_cast<int>(PCCoordNames.size())) {
+        qWarning() << "Number of dimensions mismatch: PCA selected embedding dataset has" << numDims
+            << "but PCCoordNames has" << PCCoordNames.size();
+        setStatusMessage("E", "Number of dimensions mismatch in PCA selected embedding dataset", "");
+        return;
+    }
+    _pcaSelectedEmbeddingDataset->setDimensionNames(PCCoordNames);
+
+    // Update coloring action
+    _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaSelectedEmbeddingDataset);
+    _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(maxIndex);
+}
 void Computation::processAfterPCADatasetsPopulated()
 {
 
-    _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
+   // _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
 
     int numDimsForColoring = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions();
+
+
+    if(_pcaCommonGenesDataset1.isValid() && _pcaCommonGenesDataset2.isValid() && numDimsForColoring > 0) {
+
+        if (_pcaCommonGenesDataset1->getNumDimensions() != numDimsForColoring || _pcaCommonGenesDataset2->getNumDimensions() != numDimsForColoring) {
+            qWarning() << "PCA common genes datasets dimensions do not match number of dimensions for coloring";
+            setStatusMessage("E", "PCA common genes datasets dimensions do not match number of dimensions for coloring", "");
+            return;
+        }
+
+        
+        std::vector<QString> dimensionNamesPC;
+        dimensionNamesPC.reserve(numDimsForColoring);
+        for (int i = 0; i < numDimsForColoring; ++i) {
+            dimensionNamesPC.push_back(QString("PC %1 ||| Score: %2").arg(i).arg(0.000000, 0, 'g', 6));
+        }
+
+        if (dimensionNamesPC.size() != static_cast<size_t>(numDimsForColoring)) {
+            qWarning() << "Dimension names size mismatch: expected" << numDimsForColoring
+                << "but got" << dimensionNamesPC.size();
+            setStatusMessage("E", "Dimension names size mismatch in PCA common genes datasets", "");
+            return;
+        }
+
+        //qInfo() << "_commonGeneNames.size():" << _commonGeneNames.size();
+        //qInfo() << "_geneOfInterestIndices1.size():" << _geneOfInterestIndices1.size();
+        //qInfo() << "_geneOfInterestIndices2.size():" << _geneOfInterestIndices2.size();
+        //qInfo() << "numDimsForColoring:" << numDimsForColoring;
+        //qInfo() << "_pcaCommonGenesDataset1.getNumDimensions():" << _pcaCommonGenesDataset1->getNumDimensions();
+        //qInfo() << "_pcaCommonGenesDataset2.getNumDimensions():" << _pcaCommonGenesDataset2->getNumDimensions();
+        //qInfo() << "dimensionNamesPC.size():" << dimensionNamesPC.size();
+        //qInfo() << "dimensionNamesPC:" << dimensionNamesPC;
+
+
+
+        // Set PCA common genes datasets
+        //qCritical() << "Error Identified here:";
+        _pcaCommonGenesDataset1->setDimensionNames(dimensionNamesPC);
+        mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
+        //qCritical() << "Error Identified here:";
+        _pcaCommonGenesDataset2->setDimensionNames(dimensionNamesPC);
+        mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
+    }
+
+
+
     if (numDimsForColoring > 0) {
-        _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(0);
+        //_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(0);
     }
     else if (numDimsForColoring < 0) {
         qWarning() << "No PCA dimensions available for coloring";
@@ -2179,11 +2322,6 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
     mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
 
 
-    /*_selectedEmbeddingDataset->setData(XYCordinates.data(), static_cast<int>(numCells), 2);
-    _selectedEmbeddingDataset->setDimensionNames({ QStringLiteral("X"), QStringLiteral("Y") });
-    mv::events().notifyDatasetDataChanged(_selectedEmbeddingDataset);*/
-
-
     std::vector<QString> dimensionNamesWithYCoords = { QStringLiteral("Rotated Y Coordinates") };
     dimensionNamesWithYCoords.push_back("Mean Expr All Genes");
     dimensionNamesWithYCoords.push_back("Mean Expr Selected Genes");
@@ -2225,6 +2363,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
 
 
     _lineChartPointDataset1->setData(linechartdata.data(), static_cast<int>(numCells), noOfDimensions + 3);
+
     _lineChartPointDataset1->setDimensionNames(dimensionNamesWithYCoords);
     mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
 
@@ -2371,10 +2510,12 @@ bool Computation::setupAndTriggerPCA()
 
     // Set data and dimension names for selected gene point datasets
     _selectedGenePointDataset2->setData(cellByGeneMatrix2.data(), numAllFilteredCells2, numDimsOfInterest);
+
     _selectedGenePointDataset2->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset2);
 
     _selectedGenePointDataset1->setData(cellByGeneMatrix1.data(), numAllFilteredCells1, numDimsOfInterest);
+
     _selectedGenePointDataset1->setDimensionNames(dimensionNamesOfInterest);
     mv::events().notifyDatasetDataChanged(_selectedGenePointDataset1);
 
@@ -2644,11 +2785,15 @@ void Computation::normalizeData()
     }
 
     _normalizedFullDataset1->setData(normalized1.data(), numPoints1, numDims1);
+
     _normalizedFullDataset1->setDimensionNames(fullPointDataset1->getDimensionNames());
+
     mv::events().notifyDatasetDataChanged(_normalizedFullDataset1);
 
     _normalizedFullDataset2->setData(normalized2.data(), numPoints2, numDims2);
+
     _normalizedFullDataset2->setDimensionNames(fullPointDataset2->getDimensionNames());
+
     mv::events().notifyDatasetDataChanged(_normalizedFullDataset2);
 
     auto& scatterplotRangeUpper1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction();
