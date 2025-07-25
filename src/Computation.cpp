@@ -1599,8 +1599,7 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Clusters>& fullCluster
         setStatusMessage("E", "Both bottom and top N rows are set to 0", "");
         return false;
     }
-    qWarning() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex
-        << "scatterplotViewName:" << scatterplotViewName << "bottomNRows:" << bottomNRows << "topNRows:" << topNRows;
+    //qWarning() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex << "scatterplotViewName:" << scatterplotViewName << "bottomNRows:" << bottomNRows << "topNRows:" << topNRows;
 
 
     return true;
@@ -2477,10 +2476,10 @@ bool Computation::setupAndTriggerPCA()
             setStatusMessage("E", "Error occurred during populating filtered data", "");
             return false;
         }
-        if (!cellByGeneMatrix0.empty()) {
+        /*if (!cellByGeneMatrix0.empty()) {
             auto [minVal, maxVal] = minMax(cellByGeneMatrix0);
             qInfo() << "PCA cellByGeneMatrix0 min:" << minVal << "max:" << maxVal;
-        }
+        }*/
     }
 
     std::vector<float> cellByGeneMatrix2(numAllFilteredCells2 * numDimsOfInterest, 0.0f);
