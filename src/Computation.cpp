@@ -222,6 +222,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             if (dataset.isValid())
             {
                 normalizeData();
+                findCommonGenes();
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
                 
@@ -250,6 +251,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             if (dataset.isValid())
             {
                 normalizeData();
+                findCommonGenes();
                 _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();
 
@@ -346,11 +348,11 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 _geneOfInterestIndices1.clear();
                 _geneOfInterestIndices2.clear();
                 _geneOfInterestIndices3.clear();
-                _commonGeneNames.clear();
-                _commonGeneListSelectedInTables.clear();
+                //_commonGeneNames.clear();
+                //_commonGeneListSelectedInTables.clear();
                 clearTables();
                 clearLinePlots();
-
+                
                 auto parent = _embeddingDataset->getParent();
                 if (parent.isValid())
                 {
@@ -461,11 +463,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 _geneOfInterestIndices1.clear();
                 _geneOfInterestIndices2.clear();
                 _geneOfInterestIndices3.clear();
-                _commonGeneNames.clear();
-                _commonGeneListSelectedInTables.clear();
+                //_commonGeneNames.clear();
+                //_commonGeneListSelectedInTables.clear();
                 clearTables();
                 clearLinePlots();
-
                 auto parent = embeddingDataset2->getParent();
                 if (parent.isValid())
                 {
@@ -1879,6 +1880,7 @@ void Computation::processAfterPCAComplete()
     const int nCommon = static_cast<int>(_geneOfInterestIndices1.size());
     if (geneOfInterestIndices2.size() != nCommon || commonGeneNames.size() != nCommon) {
         qWarning() << "Gene indices or common gene names size mismatch";
+        qInfo() << "geneOfInterestIndices2 size:" << geneOfInterestIndices2.size() << ", commonGeneNames size:" << commonGeneNames.size() << ", _geneOfInterestIndices1 size:" << nCommon;
         setStatusMessage("E", "Gene indices or common gene names size mismatch", "");
         return;
     }
@@ -2596,7 +2598,7 @@ bool Computation::setupAndTriggerPCA()
             setStatusMessage("E", "PCA components action not found", "");
             return false;
         }
-        auto numofIntGenes = _commonGeneNames.size();
+        auto numofIntGenes = _commonGenesAcrossDatasets.size();
         componentsAction1->setMaximum(numofIntGenes);
         componentsAction1->setValue(numofIntGenes);
 
@@ -3242,6 +3244,24 @@ void Computation::selectionModeAltToggleLogic(QString scatterplotName)
     {
         qWarning() << "Scatterplot View factory not found.";
     }
+}
+
+void Computation::findCommonGenes()
+{
+    if (!_settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset
+    ().isValid() || !_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset
+    ().isValid())
+    {
+        setStatusMessage("E", "No valid point datasets for finding common genes", "");
+        return;
+    }
+
+    QStringList datasetNames;
+    datasetNames.append(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+    datasetNames.append(_settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
+
+    updateCommonGeneNames(datasetNames);
+
 }
 
 void Computation::colorLinePlots()

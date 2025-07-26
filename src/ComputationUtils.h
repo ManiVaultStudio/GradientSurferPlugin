@@ -153,8 +153,11 @@ extern std::vector<CorrelationGeneCoords> _geneCorrValues3;
 extern std::vector<int> _geneOfInterestIndices1;
 extern std::vector<int> _geneOfInterestIndices2;
 extern std::vector<int> _geneOfInterestIndices3;
-extern QStringList _commonGeneNames;
-extern QStringList   _commonGeneListSelectedInTables;
+//extern QStringList _commonGeneNames;
+//extern QStringList   _commonGeneListSelectedInTables;
+extern QStringList _commonSelectedGenesAcrossDatasetsInTables;
+extern QStringList _commonGenesAcrossDatasets;
+extern QStringList _allGeneNamesAcrossDatasets;
 
 class QTableView;
 class DimensionPickerAction;
@@ -177,3 +180,5 @@ void colormapChangeScatterplot(QString scatterplotName, QString colormapValue);
 void rangeChangeLinePlot(QString linePlotName, float minValue, float maxValue);
 void colormapChangeLinePlot(QString linePlotName, QString colorMapStringValue);
 void rangeChangeScatterPlot(QString scatterplotName, float minValue, float maxValue);
+
+void updateCommonGeneNames(const QStringList& datasetIDs);

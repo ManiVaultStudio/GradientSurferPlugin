@@ -101,6 +101,7 @@ private:
     void disableOptions();
     void coorelationScoresForPCs();
     void selectionModeAltToggleLogic(QString scatterplotName);
+    void findCommonGenes();
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;

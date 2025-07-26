@@ -26,9 +26,11 @@ std::vector<CorrelationGeneCoords> _geneCorrValues3;
 std::vector<int> _geneOfInterestIndices1;
 std::vector<int> _geneOfInterestIndices2;
 std::vector<int> _geneOfInterestIndices3;
-QList<QString> _commonGeneNames;
-QStringList _commonGeneListSelectedInTables;
-
+//QList<QString> _commonGeneNames;
+//QStringList _commonGeneListSelectedInTables;
+QStringList _commonSelectedGenesAcrossDatasetsInTables;
+QStringList _commonGenesAcrossDatasets;
+QStringList _allGeneNamesAcrossDatasets;
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
@@ -124,10 +126,27 @@ std::vector<int> getIndicesBySelectedClusters(
 
 void clearTable(QTableView* tableView)
 {
-    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(tableView->model());
-    if (model) {
-        model->clear();
+    if (!tableView) return;
+
+    // If the model is a QSortFilterProxyModel, clear its source model
+    QSortFilterProxyModel* proxyModel = qobject_cast<QSortFilterProxyModel*>(tableView->model());
+    if (proxyModel) {
+        QStandardItemModel* sourceModel = qobject_cast<QStandardItemModel*>(proxyModel->sourceModel());
+        if (sourceModel) {
+            sourceModel->clear();
+        }
+        proxyModel->setFilterFixedString(""); // Remove any filter
     }
+    else {
+        QStandardItemModel* model = qobject_cast<QStandardItemModel*>(tableView->model());
+        if (model) {
+            model->clear();
+        }
+    }
+
+    // Optionally, remove the model entirely to force a full reset
+    tableView->setModel(nullptr);
+    tableView->update();
 }
 
 void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allTables, const QList<DimensionPickerAction*>& allActions)
@@ -520,9 +539,22 @@ void setupTableModelAndSelection(
 )
 {
     FunctionTimer timer(Q_FUNC_INFO);
-    auto rowCount = static_cast<int>(geneCorrValues.size());
-    QStandardItemModel* model = new QStandardItemModel(rowCount, 3, tableViewMain);
+    int totalRowCount = _allGeneNamesAcrossDatasets.size();
+    QStandardItemModel* model = new QStandardItemModel(totalRowCount, 3, tableViewMain);
     model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
+
+    // Sanitize correlation values: set NaN to 0
+    for (auto& entry : geneCorrValues) {
+        if (std::isnan(entry.correlationValue) || std::isinf(entry.correlationValue) || entry.correlationValue > 1e10f) {
+            entry.correlationValue = 0.0f;
+        }
+        /*else if (entry.correlationValue < -1.0f) {
+            entry.correlationValue = -1.0f;
+        }
+        else if (entry.correlationValue > 1.0f) {
+            entry.correlationValue = 1.0f;
+        }*/
+    }
 
     float minCorr = std::numeric_limits<float>::max();
     float maxCorr = std::numeric_limits<float>::lowest();
@@ -530,13 +562,11 @@ void setupTableModelAndSelection(
         minCorr = std::min(minCorr, entry.correlationValue);
         maxCorr = std::max(maxCorr, entry.correlationValue);
     }
-    _commonGeneNames.clear();
-
 
     QVector<QStandardItem*> rowItems(3);
-    for (int i = 0; i < rowCount; ++i) {
-        const auto& entry = geneCorrValues[i];
-
+    int row = 0;
+    // Fill rows for genes with correlation data
+    for (const auto& entry : geneCorrValues) {
         QStandardItem* geneItem = new QStandardItem(entry.geneName);
         QStandardItem* corrItem = new QStandardItem;
         QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
@@ -556,8 +586,6 @@ void setupTableModelAndSelection(
             rankItem->setFont(fontR);
             rankItem->setBackground(QColor("#FFB6C1"));
             rankItem->setForeground(QColor("#000000"));
-
-            _commonGeneNames.append(entry.geneName);
         }
 
         corrItem->setForeground(QColor("#000000"));
@@ -566,33 +594,64 @@ void setupTableModelAndSelection(
         rowItems[1] = corrItem;
         rowItems[2] = rankItem;
         for (int col = 0; col < 3; ++col)
-            model->setItem(i, col, rowItems[col]);
+            model->setItem(row, col, rowItems[col]);
+        ++row;
     }
+
+    // Fill rows for genes present in _allGeneNamesAcrossDatasets but not in geneCorrValues
+    for (const auto& geneName : _allGeneNamesAcrossDatasets) {
+        auto it = std::find_if(geneCorrValues.begin(), geneCorrValues.end(),
+            [&geneName](const CorrelationGeneCoords& entry) {
+                return entry.geneName == geneName;
+            });
+        if (it == geneCorrValues.end()) {
+            QStandardItem* geneItem = new QStandardItem(geneName);
+            QStandardItem* corrItem = new QStandardItem;
+            QStandardItem* rankItem = new QStandardItem("Undefined");
+
+            corrItem->setData(QVariant::fromValue(std::numeric_limits<float>::quiet_NaN()), Qt::UserRole + 1);
+            corrItem->setData(QVariant::fromValue(std::numeric_limits<float>::quiet_NaN()), Qt::DisplayRole);
+
+            QFont fontG = geneItem->font();
+            fontG.setItalic(true);
+            geneItem->setFont(fontG);
+            geneItem->setBackground(QColor("#FFCCCB"));
+            geneItem->setForeground(QColor("#000000"));
+            QFont fontR = rankItem->font();
+            fontR.setItalic(true);
+            rankItem->setFont(fontR);
+            rankItem->setBackground(QColor("#FFCCCB"));
+            rankItem->setForeground(QColor("#000000"));
+
+            rowItems[0] = geneItem;
+            rowItems[1] = corrItem;
+            rowItems[2] = rankItem;
+            for (int col = 0; col < 3; ++col) {
+                model->setItem(row, col, rowItems[col]);
+            }
+            ++row;
+        }
+    }
+
+    // Set up the model and proxy
     QSortFilterProxyModel* proxyModel = qobject_cast<QSortFilterProxyModel*>(tableViewMain->model());
-    // After setting the model or source model:
     if (proxyModel) {
         proxyModel->setSourceModel(model);
         proxyModel->setFilterFixedString("");
-        // Re-apply row height settings
         tableViewMain->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
         tableViewMain->verticalHeader()->setDefaultSectionSize(18);
     }
     else {
         tableViewMain->setModel(model);
-        // Re-apply row height settings
         tableViewMain->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
         tableViewMain->verticalHeader()->setDefaultSectionSize(18);
     }
-    //tableViewMain->setModel(model);
     tableViewMain->setColumnHidden(2, true);
-    //deselectAllRows(tableViewMain);
-    // Ensure only one row can be selected at a time and the full row gets selected
     tableViewMain->setSelectionMode(QAbstractItemView::SingleSelection);
     tableViewMain->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     tableViewMain->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
     tableViewMain->resizeColumnsToContents();
-    //tableViewMain->resizeRowsToContents();
     tableViewMain->setSortingEnabled(true);
     tableViewMain->sortByColumn(1, Qt::DescendingOrder);
 
@@ -600,7 +659,7 @@ void setupTableModelAndSelection(
     auto disconnectSelection = [](QTableView* table) {
         if (table && table->selectionModel())
             QObject::disconnect(table->selectionModel(), nullptr, nullptr, nullptr);
-    };
+        };
     disconnectSelection(tableViewMain);
     disconnectSelection(tableViewOther1);
     disconnectSelection(tableViewOther2);
@@ -621,7 +680,6 @@ void setupTableModelAndSelection(
             }
         );
     }
-
 }
 
 void makeSelection(QString value, QTableView* tableView)
@@ -729,7 +787,7 @@ void populateGenesByCorrelationRange(
     geneOfInterestIndices.reserve(count);
 
     if (isMainTable) {
-        _commonGeneListSelectedInTables.clear();
+        _commonSelectedGenesAcrossDatasetsInTables.clear();
     }
 
     int rank = 1;
@@ -749,11 +807,15 @@ void populateGenesByCorrelationRange(
         if (isMainTable) {
             if ((topNRows > 0 && rank <= topNRows) ||
                 (bottomNRows > 0 && rank > (count - bottomNRows))) {
-                isWithinRange = true;
-                _commonGeneListSelectedInTables.push_back(geneNameOrdered[idx]);
+                if (_commonGenesAcrossDatasets.contains(geneNameOrdered[idx]))
+                {
+                    isWithinRange = true;
+                    _commonSelectedGenesAcrossDatasetsInTables.push_back(geneNameOrdered[idx]);
+                }
+
             }
         } else {
-            isWithinRange = _commonGeneListSelectedInTables.contains(geneNameOrdered[idx]);
+            isWithinRange = _commonSelectedGenesAcrossDatasetsInTables.contains(geneNameOrdered[idx]);
         }
 
         geneCorrValues.emplace_back(CorrelationGeneCoords{
@@ -779,7 +841,7 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
 
     if (isMainTable)
     {
-        _commonGeneListSelectedInTables.clear();
+        _commonSelectedGenesAcrossDatasetsInTables.clear();
     }
     for (auto& gene : geneCorrValues) {
 
@@ -788,12 +850,15 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
         if (isMainTable) {
             if ((topNRows > 0 && gene.rank <= topNRows) ||
                 (bottomNRows > 0 && gene.rank > (count - bottomNRows))) {
-                isWithinRange = true;
-                _commonGeneListSelectedInTables.push_back(gene.geneName);
+                if (_commonGenesAcrossDatasets.contains(gene.geneName))
+                {
+                    isWithinRange = true;
+                    _commonSelectedGenesAcrossDatasetsInTables.push_back(gene.geneName);
+                }
             }
         }
         else {
-            isWithinRange = _commonGeneListSelectedInTables.contains(gene.geneName);
+            isWithinRange = _commonSelectedGenesAcrossDatasetsInTables.contains(gene.geneName);
         }
 
         gene.isWithinRange = isWithinRange;
@@ -1916,4 +1981,44 @@ void rangeChangeScatterPlot(QString scatterplotName, float minValue, float maxVa
     
 
 
+}
+
+void updateCommonGeneNames(const QStringList& datasetIDs)
+{
+    if (datasetIDs.isEmpty()) {
+        qWarning() << "No dataset IDs provided for common gene names update.";
+        return;
+    }
+    FunctionTimer timer(Q_FUNC_INFO);
+    _commonGenesAcrossDatasets.clear();
+    _allGeneNamesAcrossDatasets.clear();
+    QHash<QString, int> geneCountMap;
+    const int numDatasets = datasetIDs.size();
+
+    for (const QString& datasetID : datasetIDs) {
+        auto dataset = mv::data().getDataset<Points>(datasetID);
+        if (!dataset.isValid()) {
+            qWarning() << "Invalid dataset ID:" << datasetID;
+            continue;
+        }
+        // Use std::vector<QString> for dimensionNames
+        const std::vector<QString>& dimensionNames = dataset->getDimensionNames();
+        QSet<QString> uniqueGenes;
+        uniqueGenes.reserve(static_cast<int>(dimensionNames.size()));
+        for (const auto& geneName : dimensionNames) {
+            uniqueGenes.insert(geneName);
+        }
+        for (const auto& geneName : uniqueGenes) {
+            geneCountMap[geneName]++;
+        }
+    }
+
+    _commonGenesAcrossDatasets.reserve(geneCountMap.size());
+    _allGeneNamesAcrossDatasets.reserve(geneCountMap.size());
+    for (auto it = geneCountMap.constBegin(); it != geneCountMap.constEnd(); ++it) {
+        if (it.value() == numDatasets) {
+            _commonGenesAcrossDatasets.append(it.key());
+        }
+        _allGeneNamesAcrossDatasets.append(it.key());
+    }
 }
