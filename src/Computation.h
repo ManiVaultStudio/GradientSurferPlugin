@@ -100,6 +100,7 @@ private:
     void enableOptions();
     void disableOptions();
     void coorelationScoresForPCs();
+    void selectionModeAltToggleLogic(QString scatterplotName);
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
@@ -162,5 +163,6 @@ protected:
     bool _projectOpened = true;
     bool _isColoringScatterplots = false;
     bool _isColoringLineplots = false;
+    QMetaObject::Connection _pixelSelectionStartedConnection;
     friend class ChannelAction;
 };

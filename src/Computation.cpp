@@ -55,6 +55,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 clearLinePlots();
                 //enableOptions();
                 _taskDisable = false;
+                selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
                 setStatusMessage("C", "Project opened", "");
             });
     }
@@ -1178,6 +1179,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             qWarning() << "No scatterplot view 2 selected";
             return;
         }
+        selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
@@ -3194,6 +3196,53 @@ void Computation::disableOptions()
     _optionsDisabled = true;
 }
 
+void Computation::selectionModeAltToggleLogic(QString scatterplotName)
+{
+    //QString scatterplotName = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+    if (_pixelSelectionStartedConnection != QMetaObject::Connection{}) {
+        disconnect(_pixelSelectionStartedConnection);
+    }
+    if (scatterplotName.isEmpty())
+    {
+        qWarning() << "No scatterplot view selected";
+        return;
+    }
+    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+    if (scatterplotViewFactory)
+    {
+        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+        {
+            if (plugin->getGuiName() == scatterplotName)
+            {
+
+                mv::gui::PixelSelectionAction* pixelSelectionAction = findActionByPath<mv::gui::PixelSelectionAction>(plugin, "Settings/Selection/Point Selection");
+                if (pixelSelectionAction) {
+                    PixelSelectionTool* pixelSelectionTool = pixelSelectionAction->getPixelSelectionTool();
+                    if (pixelSelectionTool) {
+                        _pixelSelectionStartedConnection = connect(pixelSelectionTool, &PixelSelectionTool::started, this, [this]() {
+                            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+                            });
+                        //bool ok2 = connect(pixelSelectionTool, &PixelSelectionTool::ended, this, [this]() {
+                            //qInfo() << "Pixel selection ended";
+                            //});
+                        //qDebug() << "Connect started:" << ok1 << "ended:" << ok2;
+                    }
+                    else {
+                        qWarning() << "PixelSelectionTool is null!";
+                    }
+                }
+                else
+                {
+                    qWarning() << "Pixel selection tool not found.";
+                }
+            }
+        }
+    }
+    else
+    {
+        qWarning() << "Scatterplot View factory not found.";
+    }
+}
 
 void Computation::colorLinePlots()
 {
