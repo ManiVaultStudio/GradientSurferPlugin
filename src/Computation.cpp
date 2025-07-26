@@ -604,7 +604,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression().setChecked(false);
+            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
@@ -674,7 +674,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 ScopedBlocker blocker(_blockToggle);
                 _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-                _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression().setChecked(false);
+                _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
                 deselectAllRows(_settingsAction.getTableView1Action());
                 deselectAllRows(_settingsAction.getTableView2Action());
@@ -703,7 +703,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _colorUpdateDebounceTimer.start(100);
         };
 
-    connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression(), &ToggleAction::toggled, this, colorallcellsWithExpressionChanged);
+    connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, colorallcellsWithExpressionChanged);
 
 
     //connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToPlots);
@@ -3128,7 +3128,7 @@ void Computation::coloringScatterPlotsOld()
             
             QString selectedGeneName = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
             int selectedGeneIndx = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
-            if (!_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression().isChecked())
+            if (!_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().isChecked())
             {
                 createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalPoints1, selectedGeneName, minValScatter1, maxValScatter1);
                 createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, geneDataset2ID, totalPoints2, selectedGeneName, minValScatter2, maxValScatter2);

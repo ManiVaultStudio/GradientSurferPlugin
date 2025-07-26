@@ -3,7 +3,7 @@
 #include <event/Event.h>
 #include <QApplication>
 #include <DatasetsMimeData.h>
-
+#include <QHeaderView>
 #include <QDebug>
 #include <QMimeData>
 #include <QLabel> 
@@ -47,7 +47,7 @@ void LayerSurferPlugin::init()
 
 
 
-    auto createTableWidget = [](const QString& labelText, QTableView* tableView, QWidget* parent = nullptr) {
+    auto createTableWidget = [this](const QString& labelText, QTableView* tableView, QWidget* parent = nullptr) {
         QWidget* contentWidget = new QWidget();
         QVBoxLayout* layout = new QVBoxLayout(contentWidget);
         layout->setContentsMargins(0, 0, 0, 0);
@@ -60,17 +60,54 @@ void LayerSurferPlugin::init()
         label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         layout->addWidget(label, 0);
 
+
+        // --- Set up filter proxy model ---
+        QSortFilterProxyModel* proxyModel = new QSortFilterProxyModel(tableView);
+        proxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
+        proxyModel->setSourceModel(tableView->model());
+        tableView->setModel(proxyModel);
+        // --- Enforce fixed row height on model/layout changes ---
+        auto enforceRowHeight = [tableView]() {
+            tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+            tableView->verticalHeader()->setDefaultSectionSize(18);
+            };
+        QObject::connect(proxyModel, &QAbstractItemModel::modelReset, tableView, enforceRowHeight);
+        QObject::connect(proxyModel, &QAbstractItemModel::layoutChanged, tableView, enforceRowHeight);
+        enforceRowHeight();
+        tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+        tableView->verticalHeader()->setDefaultSectionSize(18); 
+
+        // --- Connect search box to filter ---
+        QTimer* filterDelayTimer = new QTimer(tableView);
+        filterDelayTimer->setSingleShot(true);
+        filterDelayTimer->setInterval(300); // 300 ms delay
+
+        QObject::connect(
+            &_settingsAction.getCommonOptionsHolder().getTableSearchBoxAction(),
+            &StringAction::stringChanged,
+            proxyModel,
+            [proxyModel, filterDelayTimer](const QString& text) {
+                filterDelayTimer->stop();
+                QObject::disconnect(filterDelayTimer, nullptr, nullptr, nullptr); // Remove previous connections
+                QObject::connect(filterDelayTimer, &QTimer::timeout, proxyModel, [proxyModel, text]() {
+                    proxyModel->setFilterFixedString(text);
+                    });
+                filterDelayTimer->start();
+            }
+        );
+
         tableView->setParent(contentWidget);
         tableView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         layout->addWidget(tableView, 1);
 
         contentWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        
+
         QScrollArea* scrollArea = new QScrollArea(parent);
         scrollArea->setWidgetResizable(true);
         scrollArea->setWidget(contentWidget);
         scrollArea->setFrameShape(QFrame::NoFrame);
         scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
 
         // Only set a reasonable minimum height, do not set maximum height
         auto updateMinHeight = [scrollArea]() {

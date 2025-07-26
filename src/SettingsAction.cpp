@@ -59,7 +59,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
     _commonOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
-    _commonOptionsHolder.getColorAllCellsWithExpression().setToolTip("Color All Cells With Expression Action");
+    _commonOptionsHolder.getColorAllCellsWithExpressionAction().setToolTip("Color All Cells With Expression Action");
+    _commonOptionsHolder.getTableSearchBoxAction().setToolTip("Table Search Box Action");
 
     _commonOptionsHolder.getTopNRowsAction().setToolTip("Top N Rows Action");
     _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setToolTip("Scatterplot Upper Coloring Range");
@@ -92,7 +93,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
-    _commonOptionsHolder.getColorAllCellsWithExpression().setChecked(false);
+    _commonOptionsHolder.getColorAllCellsWithExpressionAction().setChecked(false);
 
 
 
@@ -187,8 +188,11 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getColorAllCellsWithExpression().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getColorAllCellsWithExpressionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
+    _commonOptionsHolder.getTableSearchBoxAction().setDefaultWidgetFlags(StringAction::LineEdit);
+    _commonOptionsHolder.getTableSearchBoxAction().setIconText("Search Tables");
+    _commonOptionsHolder.getTableSearchBoxAction().setText("Search Tables");
 
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
@@ -418,7 +422,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _computationTypeAction(this, "Computation Type"),
     _statusMessageAction(this, "Status Message"),
     _statusBarActionWidget(new StatusBarAction(this, "Status")),
-    _colorAllCellsWithExpression(this, "Color All Cells With Expression")
+    _colorAllCellsWithExpressionAction(this, "Color All Cells With Expression"),
+    _tableSearchBoxAction(this, "Search Table")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -436,7 +441,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizationTypeAction);
-    addAction(&_colorAllCellsWithExpression);
+    addAction(&_colorAllCellsWithExpressionAction);
+    addAction(&_tableSearchBoxAction);
     addAction(&_normalizeCombinedDatasetsAction);
     addAction(&_selectionModeAction);
     addAction(&_computationTypeAction);

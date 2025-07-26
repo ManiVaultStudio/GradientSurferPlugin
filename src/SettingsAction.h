@@ -283,8 +283,11 @@ public:
         const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
         StringAction& getStatusMessageAction() { return _statusMessageAction; }
 
-        const ToggleAction& getColorAllCellsWithExpression() const { return _colorAllCellsWithExpression; }
-        ToggleAction& getColorAllCellsWithExpression() { return _colorAllCellsWithExpression; }
+        const ToggleAction& getColorAllCellsWithExpressionAction() const { return _colorAllCellsWithExpressionAction; }
+        ToggleAction& getColorAllCellsWithExpressionAction() { return _colorAllCellsWithExpressionAction; }
+
+        const StringAction& getTableSearchBoxAction() const { return _tableSearchBoxAction; }
+        StringAction& getTableSearchBoxAction() { return _tableSearchBoxAction; }
 
     protected:
         SettingsAction& _settingsOptions;
@@ -313,8 +316,8 @@ public:
 
         StatusBarAction* _statusBarActionWidget;
         StringAction                        _statusMessageAction;
-        ToggleAction         _colorAllCellsWithExpression;
-
+        ToggleAction         _colorAllCellsWithExpressionAction;
+        StringAction         _tableSearchBoxAction;
     };
 
 

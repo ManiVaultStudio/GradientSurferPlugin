@@ -18,6 +18,8 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <iostream>
+#include <QHeaderView>
+
 std::vector<CorrelationGeneCoords> _geneCorrValues1;
 std::vector<CorrelationGeneCoords> _geneCorrValues2;
 std::vector<CorrelationGeneCoords> _geneCorrValues3;
@@ -566,8 +568,22 @@ void setupTableModelAndSelection(
         for (int col = 0; col < 3; ++col)
             model->setItem(i, col, rowItems[col]);
     }
-
-    tableViewMain->setModel(model);
+    QSortFilterProxyModel* proxyModel = qobject_cast<QSortFilterProxyModel*>(tableViewMain->model());
+    // After setting the model or source model:
+    if (proxyModel) {
+        proxyModel->setSourceModel(model);
+        proxyModel->setFilterFixedString("");
+        // Re-apply row height settings
+        tableViewMain->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+        tableViewMain->verticalHeader()->setDefaultSectionSize(18);
+    }
+    else {
+        tableViewMain->setModel(model);
+        // Re-apply row height settings
+        tableViewMain->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+        tableViewMain->verticalHeader()->setDefaultSectionSize(18);
+    }
+    //tableViewMain->setModel(model);
     tableViewMain->setColumnHidden(2, true);
     //deselectAllRows(tableViewMain);
     // Ensure only one row can be selected at a time and the full row gets selected
@@ -576,7 +592,7 @@ void setupTableModelAndSelection(
 
     tableViewMain->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
     tableViewMain->resizeColumnsToContents();
-    tableViewMain->resizeRowsToContents();
+    //tableViewMain->resizeRowsToContents();
     tableViewMain->setSortingEnabled(true);
     tableViewMain->sortByColumn(1, Qt::DescendingOrder);
 
@@ -612,7 +628,7 @@ void makeSelection(QString value, QTableView* tableView)
 {
     if (!tableView || !tableView->selectionModel()) return;
 
-    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(tableView->model());
+    QAbstractItemModel* model = tableView->model();
     if (!model) return;
 
     tableView->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -637,7 +653,6 @@ void makeSelection(QString value, QTableView* tableView)
 
             tableView->scrollTo(startIndex, QAbstractItemView::EnsureVisible);
 
-            // Defer the update to avoid crash
             QTimer::singleShot(0, tableView, [tableView]() { tableView->viewport()->update(); tableView->repaint(); });
 
             break;
