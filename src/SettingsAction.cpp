@@ -193,6 +193,12 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getTableSearchBoxAction().setDefaultWidgetFlags(StringAction::LineEdit);
     _commonOptionsHolder.getTableSearchBoxAction().setIconText("Search Tables");
     _commonOptionsHolder.getTableSearchBoxAction().setText("Search Tables");
+    //_commonOptionsHolder.getTableSearchBoxAction().setClearable(true);
+    //QCompleter* completer = new QCompleter(_tableView1Action->model(), this);
+    //completer->setCompletionColumn(0);
+    //_commonOptionsHolder.getTableSearchBoxAction().setCompleter(completer);
+    _commonOptionsHolder.getTableSearchBoxAction().setIconByName("search");
+    _commonOptionsHolder.getTableSearchBoxAction().setSearchMode(true);
 
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
