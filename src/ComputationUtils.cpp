@@ -1677,7 +1677,7 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
 
     // Compute robust min/max from geneExpValues (e.g., 1st and 99th percentiles)
     float computedMin = percentile(geneExpValues, 0.01f);
-    float computedMax = percentile(geneExpValues, 0.99f);
+    float computedMax = percentile(geneExpValues, 0.90f);
     float fulldatasetMin = sentinelMinMax.first;
     float fulldatasetMax = sentinelMinMax.second;
 

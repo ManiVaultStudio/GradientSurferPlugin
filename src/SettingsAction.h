@@ -235,8 +235,8 @@ public:
         const ToggleAction& getPcaColoringAction() const { return _pcaColoringAction; }
         ToggleAction& getPcaColoringAction() { return _pcaColoringAction; }
 
-        const OptionsAction& getDualPCAColoringAction() const { return _dualPCAColoringAction; }
-        OptionsAction& getDualPCAColoringAction() { return _dualPCAColoringAction; }
+        //const OptionsAction& getDualPCAColoringAction() const { return _dualPCAColoringAction; }
+        //OptionsAction& getDualPCAColoringAction() { return _dualPCAColoringAction; }
 
         const DimensionPickerAction& getPcaDimensionForColoringAction() const { return _pcaDimensionForColoringAction; }
         DimensionPickerAction& getPcaDimensionForColoringAction() { return _pcaDimensionForColoringAction; }
@@ -296,7 +296,7 @@ public:
 
         ToggleAction                _autoComputeAction;
         ToggleAction                 _pcaColoringAction;
-        OptionsAction                 _dualPCAColoringAction;
+        //OptionsAction                 _dualPCAColoringAction;
         DimensionPickerAction        _pcaDimensionForColoringAction;
         OptionAction                 _correlationCalculationTypeAction;
         ToggleAction                 _normalizeCombinedDatasetsAction;
