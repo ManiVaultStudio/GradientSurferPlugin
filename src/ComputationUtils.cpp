@@ -535,11 +535,21 @@ void setupTableModelAndSelection(
     DimensionPickerAction& geneSelectionAction,
     QTableView* tableViewOther1,
     QTableView* tableViewOther2,
-    DimensionPickerAction& geneSelectionAction2
+    DimensionPickerAction& geneSelectionAction2,
+    bool isMainSelectionTable
 )
 {
     FunctionTimer timer(Q_FUNC_INFO);
-    int totalRowCount = _allGeneNamesAcrossDatasets.size();
+    int totalRowCount = 0;
+    if (isMainSelectionTable)
+    {
+        totalRowCount = geneCorrValues.size();
+    }
+    else
+    {
+        totalRowCount = _allGeneNamesAcrossDatasets.size();
+    }
+    
     QStandardItemModel* model = new QStandardItemModel(totalRowCount, 3, tableViewMain);
     model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
 
@@ -578,13 +588,13 @@ void setupTableModelAndSelection(
             QFont fontG = geneItem->font();
             fontG.setBold(true);
             geneItem->setFont(fontG);
-            geneItem->setBackground(QColor("#FFB6C1"));
+            geneItem->setBackground(QColor("#cab2d6"));
             geneItem->setForeground(QColor("#000000"));
 
             QFont fontR = rankItem->font();
             fontR.setBold(true);
             rankItem->setFont(fontR);
-            rankItem->setBackground(QColor("#FFB6C1"));
+            rankItem->setBackground(QColor("#cab2d6"));
             rankItem->setForeground(QColor("#000000"));
         }
 
@@ -597,7 +607,8 @@ void setupTableModelAndSelection(
             model->setItem(row, col, rowItems[col]);
         ++row;
     }
-
+    if(!isMainSelectionTable)
+    {
     // Fill rows for genes present in _allGeneNamesAcrossDatasets but not in geneCorrValues
     for (const auto& geneName : _allGeneNamesAcrossDatasets) {
         auto it = std::find_if(geneCorrValues.begin(), geneCorrValues.end(),
@@ -615,12 +626,12 @@ void setupTableModelAndSelection(
             QFont fontG = geneItem->font();
             fontG.setItalic(true);
             geneItem->setFont(fontG);
-            geneItem->setBackground(QColor("#FFCCCB"));
+            geneItem->setBackground(QColor("#fb9a99"));
             geneItem->setForeground(QColor("#000000"));
             QFont fontR = rankItem->font();
             fontR.setItalic(true);
             rankItem->setFont(fontR);
-            rankItem->setBackground(QColor("#FFCCCB"));
+            rankItem->setBackground(QColor("#fb9a99"));
             rankItem->setForeground(QColor("#000000"));
 
             rowItems[0] = geneItem;
@@ -632,7 +643,7 @@ void setupTableModelAndSelection(
             ++row;
         }
     }
-
+}
     // Set up the model and proxy
     QSortFilterProxyModel* proxyModel = qobject_cast<QSortFilterProxyModel*>(tableViewMain->model());
     if (proxyModel) {
@@ -867,7 +878,7 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
 
         }
     }
-    setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, tableViewOther1, tableViewOther2, geneSelectionAction2);
+    setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, tableViewOther1, tableViewOther2, geneSelectionAction2, isMainTable);
 
 }
 
@@ -1483,7 +1494,7 @@ void createLineChartClusterColors(QString coloringDataset, QString colorMapValue
     FunctionTimer timer(Q_FUNC_INFO);
 
     if (coloringDataset.isEmpty() || colorMapValue.isEmpty() || selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty()) {
-        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        qWarning() << "createLineChartClusterColors: Invalid parameters for PCA cluster colors creation.";
         return;
     }
     if (numOfTotalPoints <= 0) {
@@ -1566,7 +1577,7 @@ void createClusterLineChartClusterColors(QString coloringChangeDataset, QString 
     FunctionTimer timer(Q_FUNC_INFO);
 
     if (coloringChangeDataset.isEmpty() || coloringReferenceDataset.isEmpty() || selectedIndices.empty() ) {
-        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        qWarning() << "createClusterLineChartClusterColors: Invalid parameters for PCA cluster colors creation.";
         return;
     }
 
@@ -1616,7 +1627,7 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
     FunctionTimer timer(Q_FUNC_INFO);
 
     if (coloringDataset.isEmpty() || colorMapValue.isEmpty() || selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty()) {
-        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        qWarning() << "createScatterplotClusterColors: Invalid parameters for PCA cluster colors creation.";
         return;
     }
     if (numOfTotalPoints <= 0) {
@@ -1707,7 +1718,7 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     if (coloringDataset.isEmpty() || colorMapValue.isEmpty() ||
         selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty())
     {
-        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        qWarning() << "createScatterplotPointColors: Invalid parameters for PCA cluster colors creation. ";
         return { 0.0f, 0.0f };
     }
     if (numOfTotalPoints <= 0) {
@@ -2021,4 +2032,5 @@ void updateCommonGeneNames(const QStringList& datasetIDs)
         }
         _allGeneNamesAcrossDatasets.append(it.key());
     }
+    //qInfo () << "Common genes across datasets:" << _commonGenesAcrossDatasets.size() << ", All genes across datasets:" << _allGeneNamesAcrossDatasets.size();
 }

@@ -54,6 +54,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 clearTables();
                 clearLinePlots();
                 //enableOptions();
+                findCommonGenes();
                 _taskDisable = false;
                 selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
                 setStatusMessage("C", "Project opened", "");
@@ -1426,7 +1427,6 @@ void Computation::AutoCompute()
         std::vector<float> corrGeneCoords;
         const QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
         computeCorrelationGeneCoords(_filteredSelectionIndices, _normalizedFullDataset1, yCoordinates, corrGeneCoords, corrType);
-
         try {
             populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames, _geneCorrValues1, _geneOfInterestIndices1, true);
         }
@@ -1436,6 +1436,18 @@ void Computation::AutoCompute()
             return;
         }
 
+        _geneCorrValues1.erase(
+            std::remove_if(
+                _geneCorrValues1.begin(),
+                _geneCorrValues1.end(),
+                [this](const auto& entry) {
+                    // Remove if NOT in _commonGenesAcrossDatasets
+                    return !_commonGenesAcrossDatasets.contains(entry.geneName);
+                }
+            ),
+            _geneCorrValues1.end()
+        );
+
         // Setup table and trigger UI updates
         setupTableModelAndSelection(
             _settingsAction.getTableView1Action(),
@@ -1443,7 +1455,8 @@ void Computation::AutoCompute()
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),
             _settingsAction.getTableView2Action(),
             _settingsAction.getTableView3Action(),
-            _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction()
+            _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),
+            true
         );
 
         selectFirstRow(_settingsAction.getTableView1Action());
@@ -2202,8 +2215,8 @@ void Computation::correlationAfterPCA()
         return;
     }
 
-    setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction());
-    setupTableModelAndSelection(_settingsAction.getTableView3Action(), _geneCorrValues3, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction());
+    setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),false);
+    setupTableModelAndSelection(_settingsAction.getTableView3Action(), _geneCorrValues3, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),false);
     selectFirstRow(_settingsAction.getTableView3Action());
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
 
@@ -3261,6 +3274,19 @@ void Computation::findCommonGenes()
     datasetNames.append(_settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
 
     updateCommonGeneNames(datasetNames);
+    int maxRankLimit = _commonGenesAcrossDatasets.size();
+
+    auto& topNRowsAction = _settingsAction.getCommonOptionsHolder().getTopNRowsAction();
+    auto& bottomNRowsAction = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction();
+
+    topNRowsAction.setMaximum(maxRankLimit);
+    bottomNRowsAction.setMaximum(maxRankLimit);
+
+    int topValue = topNRowsAction.getValue();
+    int bottomValue = bottomNRowsAction.getValue();
+
+    topNRowsAction.setValue(std::min(topValue, maxRankLimit));
+    bottomNRowsAction.setValue(std::min(bottomValue, maxRankLimit));
 
 }
 
