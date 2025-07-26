@@ -55,6 +55,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 clearLinePlots();
                 //enableOptions();
                 _taskDisable = false;
+                selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
                 setStatusMessage("C", "Project opened", "");
             });
     }
@@ -604,7 +605,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
         {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression().setChecked(false);
+            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
@@ -674,7 +675,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             {
                 ScopedBlocker blocker(_blockToggle);
                 _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-                _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression().setChecked(false);
+                _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
                 deselectAllRows(_settingsAction.getTableView1Action());
                 deselectAllRows(_settingsAction.getTableView2Action());
@@ -703,10 +704,10 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             _colorUpdateDebounceTimer.start(100);
         };
 
-    connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression(), &ToggleAction::toggled, this, colorallcellsWithExpressionChanged);
+    connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, colorallcellsWithExpressionChanged);
 
 
-    connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToPlots);
+    //connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToPlots);
 
     connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToPlots);
 
@@ -1178,6 +1179,7 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
             qWarning() << "No scatterplot view 2 selected";
             return;
         }
+        selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory)
         {
@@ -1599,8 +1601,7 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Clusters>& fullCluster
         setStatusMessage("E", "Both bottom and top N rows are set to 0", "");
         return false;
     }
-    qWarning() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex
-        << "scatterplotViewName:" << scatterplotViewName << "bottomNRows:" << bottomNRows << "topNRows:" << topNRows;
+    //qWarning() << "Selected indices size:" << selectedIndices.size() << "xEmbeddingIndex:" << xEmbeddingIndex << "yEmbeddingIndex:" << yEmbeddingIndex << "scatterplotViewName:" << scatterplotViewName << "bottomNRows:" << bottomNRows << "topNRows:" << topNRows;
 
 
     return true;
@@ -2477,10 +2478,10 @@ bool Computation::setupAndTriggerPCA()
             setStatusMessage("E", "Error occurred during populating filtered data", "");
             return false;
         }
-        if (!cellByGeneMatrix0.empty()) {
+        /*if (!cellByGeneMatrix0.empty()) {
             auto [minVal, maxVal] = minMax(cellByGeneMatrix0);
             qInfo() << "PCA cellByGeneMatrix0 min:" << minVal << "max:" << maxVal;
-        }
+        }*/
     }
 
     std::vector<float> cellByGeneMatrix2(numAllFilteredCells2 * numDimsOfInterest, 0.0f);
@@ -3129,7 +3130,7 @@ void Computation::coloringScatterPlotsOld()
             
             QString selectedGeneName = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
             int selectedGeneIndx = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
-            if (!_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpression().isChecked())
+            if (!_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().isChecked())
             {
                 createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalPoints1, selectedGeneName, minValScatter1, maxValScatter1);
                 createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, geneDataset2ID, totalPoints2, selectedGeneName, minValScatter2, maxValScatter2);
@@ -3195,6 +3196,53 @@ void Computation::disableOptions()
     _optionsDisabled = true;
 }
 
+void Computation::selectionModeAltToggleLogic(QString scatterplotName)
+{
+    //QString scatterplotName = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+    if (_pixelSelectionStartedConnection != QMetaObject::Connection{}) {
+        disconnect(_pixelSelectionStartedConnection);
+    }
+    if (scatterplotName.isEmpty())
+    {
+        qWarning() << "No scatterplot view selected";
+        return;
+    }
+    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+    if (scatterplotViewFactory)
+    {
+        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
+        {
+            if (plugin->getGuiName() == scatterplotName)
+            {
+
+                mv::gui::PixelSelectionAction* pixelSelectionAction = findActionByPath<mv::gui::PixelSelectionAction>(plugin, "Settings/Selection/Point Selection");
+                if (pixelSelectionAction) {
+                    PixelSelectionTool* pixelSelectionTool = pixelSelectionAction->getPixelSelectionTool();
+                    if (pixelSelectionTool) {
+                        _pixelSelectionStartedConnection = connect(pixelSelectionTool, &PixelSelectionTool::started, this, [this]() {
+                            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+                            });
+                        //bool ok2 = connect(pixelSelectionTool, &PixelSelectionTool::ended, this, [this]() {
+                            //qInfo() << "Pixel selection ended";
+                            //});
+                        //qDebug() << "Connect started:" << ok1 << "ended:" << ok2;
+                    }
+                    else {
+                        qWarning() << "PixelSelectionTool is null!";
+                    }
+                }
+                else
+                {
+                    qWarning() << "Pixel selection tool not found.";
+                }
+            }
+        }
+    }
+    else
+    {
+        qWarning() << "Scatterplot View factory not found.";
+    }
+}
 
 void Computation::colorLinePlots()
 {
@@ -3310,7 +3358,7 @@ void Computation::colorLinePlots()
                     _lineChartPointDataset1->extractDataForDimension(selectedData, colordimensionIndx);
                     if (!selectedData.empty()) {
                         minValue = percentile(selectedData, 0.01f); // 1st percentile
-                        maxValue = percentile(selectedData, 0.99f); // 99th percentile
+                        maxValue = percentile(selectedData, 0.90f); // 99th percentile
                     }
                 }
             }

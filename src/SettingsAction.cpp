@@ -59,7 +59,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
     _commonOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
-    _commonOptionsHolder.getColorAllCellsWithExpression().setToolTip("Color All Cells With Expression Action");
+    _commonOptionsHolder.getColorAllCellsWithExpressionAction().setToolTip("Color All Cells With Expression Action");
+    _commonOptionsHolder.getTableSearchBoxAction().setToolTip("Table Search Box Action");
 
     _commonOptionsHolder.getTopNRowsAction().setToolTip("Top N Rows Action");
     _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setToolTip("Scatterplot Upper Coloring Range");
@@ -81,7 +82,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _commonOptionsHolder.getPcaColoringAction().setToolTip("PCA Coloring Action");
     _commonOptionsHolder.getSelectionModeAction().setToolTip("Selection Mode Action");
-    _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
+  //  _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
     _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension Selection Action");
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
 
@@ -92,7 +93,7 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
-    _commonOptionsHolder.getColorAllCellsWithExpression().setChecked(false);
+    _commonOptionsHolder.getColorAllCellsWithExpressionAction().setChecked(false);
 
 
 
@@ -154,8 +155,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
     _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getSelectionModeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
-    _commonOptionsHolder.getDualPCAColoringAction().initialize({ "Dataset1", "Dataset2" }, { "Dataset1", "Dataset2" });
+    //_commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
+    //_commonOptionsHolder.getDualPCAColoringAction().initialize({ "Dataset1", "Dataset2" }, { "Dataset1", "Dataset2" });
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getCorrelationCalculationTypeAction().initialize({ "Absolute","NonAbsolute","Positive","Negative"}, "NonAbsolute");
@@ -187,8 +188,17 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
 
 
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getColorAllCellsWithExpression().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _commonOptionsHolder.getColorAllCellsWithExpressionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
+    _commonOptionsHolder.getTableSearchBoxAction().setDefaultWidgetFlags(StringAction::LineEdit);
+    _commonOptionsHolder.getTableSearchBoxAction().setIconText("Search Tables");
+    _commonOptionsHolder.getTableSearchBoxAction().setText("Search Tables");
+    //_commonOptionsHolder.getTableSearchBoxAction().setClearable(true);
+    //QCompleter* completer = new QCompleter(_tableView1Action->model(), this);
+    //completer->setCompletionColumn(0);
+    //_commonOptionsHolder.getTableSearchBoxAction().setCompleter(completer);
+    _commonOptionsHolder.getTableSearchBoxAction().setIconByName("search");
+    _commonOptionsHolder.getTableSearchBoxAction().setSearchMode(true);
 
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
@@ -402,7 +412,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _computeAction(this, "Compute: Expand PC's across datasets"),
     _clusterSelectionAction(this, "Cluster selection"),
     _pcaDimensionForColoringAction(this, "PC Selection"),
-    _dualPCAColoringAction(this, "PCA Coloring"),
+    //_dualPCAColoringAction(this, "PCA Coloring"),
     _pcaColoringAction(this, "PCA Coloring"),
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
@@ -418,14 +428,15 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _computationTypeAction(this, "Computation Type"),
     _statusMessageAction(this, "Status Message"),
     _statusBarActionWidget(new StatusBarAction(this, "Status")),
-    _colorAllCellsWithExpression(this, "Color All Cells With Expression")
+    _colorAllCellsWithExpressionAction(this, "Color All Cells With Expression"),
+    _tableSearchBoxAction(this, "Search Table")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterSelectionAction);
-    addAction(&_dualPCAColoringAction);
+    //addAction(&_dualPCAColoringAction);
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
     addAction(&_topNRowsAction);
@@ -436,7 +447,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
     addAction(&_normalizationTypeAction);
-    addAction(&_colorAllCellsWithExpression);
+    addAction(&_colorAllCellsWithExpressionAction);
+    addAction(&_tableSearchBoxAction);
     addAction(&_normalizeCombinedDatasetsAction);
     addAction(&_selectionModeAction);
     addAction(&_computationTypeAction);
