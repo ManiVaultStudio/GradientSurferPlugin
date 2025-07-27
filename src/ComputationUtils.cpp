@@ -1056,6 +1056,21 @@ std::pair<float, float> findDatasetLimits(QString datasetID)
         qWarning() << "Dataset is empty or has no dimensions:" << datasetID;
         return { 0.0f, 0.0f };
     }
+    int GBValue = 10;
+
+    constexpr uint64_t bytesPerGB = 1024ULL * 1024ULL * 1024ULL;
+    constexpr uint64_t bytesPerFloat = 4ULL;
+    uint64_t maxFloats = (static_cast<uint64_t>(GBValue) * bytesPerGB) / bytesPerFloat;
+    uint64_t requiredBytes = static_cast<uint64_t>(numRows) * static_cast<uint64_t>(numCols) * bytesPerFloat;
+    double requiredGB = static_cast<double>(requiredBytes) / static_cast<double>(bytesPerGB);
+    if (static_cast<uint64_t>(numRows) * static_cast<uint64_t>(numCols) > maxFloats) {
+        qWarning() << "Dataset too large to process compute data ranges:"
+            << "numRows:" << numRows
+            << "numCols:" << numCols
+            << "Applying default range."
+            << "Dataset requires at least" << QString::number(requiredGB, 'f', 2) << "GB memory.";
+        return { -1000.0f, +1000.0f };
+    }
 
     int numThreads = std::thread::hardware_concurrency();
     if (numThreads <= 0) numThreads = 4; // fallback
