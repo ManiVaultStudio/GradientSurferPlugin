@@ -229,7 +229,12 @@ Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& S
                 scatterplotRangeLower.setMaximum(limits.second);
                 scatterplotRangeUpper.setMinimum(limits.first);
                 scatterplotRangeLower.setMinimum(limits.first);
-
+                auto& lineplotRangeUpper1 = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction();
+                auto& lineplotRangeLower1 = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction();
+                lineplotRangeUpper1.setMaximum(limits.second);
+                lineplotRangeUpper1.setMinimum(limits.second);
+                lineplotRangeLower1.setMaximum(limits.first);
+                lineplotRangeLower1.setMinimum(limits.first);
                 findCommonGenes();
                 _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
                 auto dimensions = dataset->getNumDimensions();

@@ -1035,61 +1035,88 @@ std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText) {
     int iconSize = std::max(12, textHeight - 2);
     return { font, iconSize };
 }
+
 std::pair<float, float> findDatasetLimits(QString datasetID)
 {
     if (datasetID.isEmpty()) {
+        qWarning() << "Empty dataset ID";
         return { 0.0f, 0.0f };
     }
+
     auto dataset = mv::data().getDataset<Points>(datasetID);
     if (!dataset.isValid()) {
         qWarning() << "Invalid dataset ID:" << datasetID;
         return { 0.0f, 0.0f };
     }
-    int numOfRows = dataset->getNumPoints();
-    if (numOfRows == 0) {
-        qWarning() << "Dataset is empty:" << datasetID;
+
+    const int numRows = dataset->getNumPoints();
+    const int numCols = dataset->getNumDimensions();
+
+    if (numRows <= 0 || numCols <= 0) {
+        qWarning() << "Dataset is empty or has no dimensions:" << datasetID;
         return { 0.0f, 0.0f };
     }
-    int numOfCols = dataset->getNumDimensions();
-    if (numOfCols == 0) {
-        qWarning() << "Dataset has no dimensions:" << datasetID;
-        return { 0.0f, 0.0f };
+
+    int numThreads = std::thread::hardware_concurrency();
+    if (numThreads <= 0) numThreads = 4; // fallback
+
+    const int chunkSize = (numRows + numThreads - 1) / numThreads;
+
+    std::vector<std::thread> threads;
+    std::vector<float> threadMins(numThreads, std::numeric_limits<float>::max());
+    std::vector<float> threadMaxs(numThreads, std::numeric_limits<float>::lowest());
+
+    auto worker = [&](int tid, int rowStart, int rowEnd) {
+        float localMin = std::numeric_limits<float>::max();
+        float localMax = std::numeric_limits<float>::lowest();
+
+        for (int i = rowStart; i < rowEnd; ++i) {
+            for (int j = 0; j < numCols; ++j) {
+                int index = i * numCols + j;
+                float value = dataset->getValueAt(index);
+
+                if (!std::isnan(value) && !std::isinf(value)) {
+                    localMin = std::min(localMin, value);
+                    localMax = std::max(localMax, value);
+                }
+            }
+        }
+
+        threadMins[tid] = localMin;
+        threadMaxs[tid] = localMax;
+        };
+
+    // Start threads safely
+    for (int t = 0; t < numThreads; ++t) {
+        int rowStart = t * chunkSize;
+        int rowEnd = std::min(rowStart + chunkSize, numRows);
+        if (rowStart >= rowEnd) continue; // skip empty work
+        threads.emplace_back(worker, t, rowStart, rowEnd);
     }
+
+    for (auto& thread : threads) {
+        if (thread.joinable())
+            thread.join();
+    }
+
     float minVal = std::numeric_limits<float>::max();
     float maxVal = std::numeric_limits<float>::lowest();
 
-    std::vector<int> dimensionIndices;
-    for (int i = 0; i < numOfCols; ++i) {
-        dimensionIndices.push_back(i);
+    for (int t = 0; t < numThreads; ++t) {
+        minVal = std::min(minVal, threadMins[t]);
+        maxVal = std::max(maxVal, threadMaxs[t]);
     }
-    std::vector<int> rowIndices;
-    for (int i = 0; i < numOfRows; ++i) {
-        rowIndices.push_back(i);
-    }
-    std::vector<float> values(numOfRows * numOfCols);
-    dataset->populateDataForDimensions(values, dimensionIndices, rowIndices);
-    for (int i = 0; i < numOfRows; ++i) {
-        for (int j = 0; j < numOfCols; ++j) {
-            float value = values[i * numOfCols + j];
-            if (!std::isnan(value) && !std::isinf(value)) {
-                minVal = std::min(minVal, value);
-                maxVal = std::max(maxVal, value);
-            }
-        }
-    }
-    if (minVal == std::numeric_limits<float>::max() || maxVal == std::numeric_limits<float>::lowest()) {
-        qWarning() << "No valid values found in dataset:" << datasetID;
+
+    if (minVal == std::numeric_limits<float>::max() ||
+        maxVal == std::numeric_limits<float>::lowest()) {
+        qWarning() << "No valid data found in dataset:" << datasetID;
         return { 0.0f, 0.0f };
     }
-    if (minVal > maxVal) {
-        qWarning() << "Invalid dataset limits for dataset:" << datasetID;
-        return { 0.0f, 0.0f };
-    }
+
     return { minVal, maxVal };
-
-
-
 }
+
+
 float computeMean(const std::vector<float>& values) {
     if (values.empty()) return 0.0f;
     float sum = std::accumulate(values.begin(), values.end(), 0.0f);
