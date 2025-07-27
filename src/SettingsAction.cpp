@@ -163,10 +163,10 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
-    _commonOptionsHolder.getNormalizationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getNormalizationTypeAction().initialize({ "None", "ZScore", "MinMax", "Log2","MaxAbs","L2","L1","Mean","Softmax","Robust","UnitRange","Binarize","CPM","Log1p","CPM_Log1p","CPM_Log1p_ZScore"}, "ZScore");
+    //_commonOptionsHolder.getNormalizationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    //_commonOptionsHolder.getNormalizationTypeAction().initialize({ "None", "ZScore", "MinMax", "Log2","MaxAbs","L2","L1","Mean","Softmax","Robust","UnitRange","Binarize","CPM","Log1p","CPM_Log1p","CPM_Log1p_ZScore"}, "ZScore");
 
-    _commonOptionsHolder.getNormalizationTypeAction().setToolTip("Normalization Type Action");
+    //_commonOptionsHolder.getNormalizationTypeAction().setToolTip("Normalization Type Action");
 
     _commonOptionsHolder.getComputationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getComputationTypeAction().initialize({ "Full PCA", "Partial PCA" }, "Partial PCA");
@@ -179,8 +179,8 @@ SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
     _commonOptionsHolder.getColoringMapSelectionAction().getSettings1DAction().setVisible(false);
     _commonOptionsHolder.getColoringMapSelectionAction().getSettings2DAction().setVisible(false);
 
-    _commonOptionsHolder.getNormalizeCombinedDatasetsAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getNormalizeCombinedDatasetsAction().setChecked(true);
+    //_commonOptionsHolder.getNormalizeCombinedDatasetsAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    //_commonOptionsHolder.getNormalizeCombinedDatasetsAction().setChecked(true);
 
 
 
@@ -417,8 +417,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _autoComputeAction(this, "Auto Compute"),
     _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
     _computePCAAction(this, "Compute: Selection PCs"),
-    _normalizeCombinedDatasetsAction(this, "Normalize Combined Datasets"),
-    _normalizationTypeAction(this, "Normalization Type"),
+    //_normalizeCombinedDatasetsAction(this, "Normalize Combined Datasets"),
+    //_normalizationTypeAction(this, "Normalization Type"),
     _selectionModeAction(this, "Selection Mode"),
     _focusSelectionAction(this, "Focus Selection"),
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
@@ -446,10 +446,10 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_coloringMapSelectionAction);
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
-    addAction(&_normalizationTypeAction);
+    //addAction(&_normalizationTypeAction);
     addAction(&_colorAllCellsWithExpressionAction);
     addAction(&_tableSearchBoxAction);
-    addAction(&_normalizeCombinedDatasetsAction);
+    //addAction(&_normalizeCombinedDatasetsAction);
     addAction(&_selectionModeAction);
     addAction(&_computationTypeAction);
     addAction(&_computePCAAction);

@@ -96,12 +96,13 @@ private:
     void clearLinePlots();
     void processAfterPCADatasetsPopulated();
     void clearTables();
-    void  normalizeData();
+    //void  normalizeData();
     void enableOptions();
     void disableOptions();
     void coorelationScoresForPCs();
     void selectionModeAltToggleLogic(QString scatterplotName);
     void findCommonGenes();
+
 protected:
     LayerSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
@@ -126,8 +127,8 @@ protected:
     mv::Dataset<Clusters>       _scatterplotClusterColoringDataset2 = nullptr;
     mv::Dataset<Points>       _scatterplotPointColoringDataset1 = nullptr;
     mv::Dataset<Points>       _scatterplotPointColoringDataset2 = nullptr;
-    mv::Dataset<Points>         _normalizedFullDataset1 = nullptr;
-    mv::Dataset<Points>         _normalizedFullDataset2 = nullptr;
+    //mv::Dataset<Points>         _normalizedFullDataset1 = nullptr;
+    //mv::Dataset<Points>         _normalizedFullDataset2 = nullptr;
     QString                    _currentNormalizationMethod = "";
     //mv::Dataset<Points>       _lineChartColorPCAPointDataset1 = nullptr;
     mv::plugin::AnalysisPlugin* _pcaAnalysisCommonGenesDataset1Plugin = nullptr;

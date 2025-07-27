@@ -102,7 +102,7 @@ std::vector<int> getIndicesBySelectedClusters(
     const QStringList& selectedClusters);
 StatusInfo parseStatusMessage(const QString& statusString);
 std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText);
-
+std::pair<float,float> findDatasetLimits(QString datasetID);
 void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices);
 void clearTable(QTableView* tableView);
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray);
