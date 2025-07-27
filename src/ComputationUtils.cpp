@@ -1,6 +1,7 @@
 #include "ComputationUtils.h"
 #include "ColorUtils.h"
 
+#define NOMINMAX
 #include <QString>
 #include <QElapsedTimer>
 #include <QDebug>
@@ -19,6 +20,88 @@
 #include <QJsonArray>
 #include <iostream>
 #include <QHeaderView>
+
+#include <cstdint>
+
+#if defined(_WIN32)
+#include <windows.h>
+#undef min
+#undef max
+#elif defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
+#elif defined(__linux__)
+#include <sys/sysinfo.h>
+#endif
+
+
+struct RamInfo {
+    std::uint64_t total;
+    std::uint64_t available;
+};
+
+RamInfo getSystemRamInfo()
+{
+    RamInfo info{ 0, 0 };
+#if defined(_WIN32)
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    if (GlobalMemoryStatusEx(&status)) {
+        info.total = status.ullTotalPhys;
+        info.available = status.ullAvailPhys;
+    }
+#elif defined(__APPLE__)
+    int mib[2] = { CTL_HW, HW_MEMSIZE };
+    int64_t memsize = 0;
+    size_t len = sizeof(memsize);
+    if (sysctl(mib, 2, &memsize, &len, NULL, 0) == 0) {
+        info.total = static_cast<std::uint64_t>(memsize);
+    }
+    mach_port_t host_port = mach_host_self();
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    vm_statistics64_data_t vm_stats;
+    if (host_statistics64(host_port, HOST_VM_INFO64, reinterpret_cast<host_info64_t>(&vm_stats), &count) == KERN_SUCCESS) {
+        int64_t free_memory = static_cast<int64_t>(vm_stats.free_count + vm_stats.inactive_count) * sysconf(_SC_PAGESIZE);
+        info.available = static_cast<std::uint64_t>(free_memory);
+    }
+#elif defined(__linux__)
+    struct sysinfo s_info;
+    if (sysinfo(&s_info) == 0) {
+        info.total = static_cast<std::uint64_t>(s_info.totalram) * s_info.mem_unit;
+        info.available = static_cast<std::uint64_t>(s_info.freeram) * s_info.mem_unit;
+    }
+#endif
+    return info;
+}
+
+std::uint64_t getAvailableRAM()
+{
+    std::uint64_t available = 0;
+
+#if defined(_WIN32)
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    if (GlobalMemoryStatusEx(&status)) {
+        available = status.ullAvailPhys;
+    }
+#elif defined(__APPLE__)
+    mach_port_t host_port = mach_host_self();
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    vm_statistics64_data_t vm_stats;
+    if (host_statistics64(host_port, HOST_VM_INFO64, reinterpret_cast<host_info64_t>(&vm_stats), &count) == KERN_SUCCESS) {
+        int64_t free_memory = static_cast<int64_t>(vm_stats.free_count + vm_stats.inactive_count) * sysconf(_SC_PAGESIZE);
+        available = static_cast<std::uint64_t>(free_memory);
+    }
+#elif defined(__linux__)
+    struct sysinfo info;
+    if (sysinfo(&info) == 0) {
+        available = static_cast<std::uint64_t>(info.freeram) * info.mem_unit;
+    }
+#endif
+
+    return available;
+}
 
 std::vector<CorrelationGeneCoords> _geneCorrValues1;
 std::vector<CorrelationGeneCoords> _geneCorrValues2;
@@ -1056,18 +1139,28 @@ std::pair<float, float> findDatasetLimits(QString datasetID)
         qWarning() << "Dataset is empty or has no dimensions:" << datasetID;
         return { 0.0f, 0.0f };
     }
-    int GBValue = 10;
-
-    constexpr uint64_t bytesPerGB = 1024ULL * 1024ULL * 1024ULL;
+    int x = 2; // Fraction denominator for RAM usage threshold
+    RamInfo ram = getSystemRamInfo();
+    std::uint64_t freeRam = ram.available;
+    std::uint64_t totalRam = ram.total;
+    std::uint64_t occupiedRam = (ram.total > ram.available) ? (ram.total - ram.available) : 0;
+    constexpr double bytesPerGB = 1024.0 * 1024.0 * 1024.0;
+    double freeRamGB = static_cast<double>(freeRam) / bytesPerGB;
+    double totalRamGB = static_cast<double>(totalRam) / bytesPerGB;
+    double occupiedRamGB = static_cast<double>(occupiedRam) / bytesPerGB;
+    qInfo() << "Available RAM:" << QString::number(freeRamGB, 'f', 2) << "GB,"
+        << "Total RAM:" << QString::number(totalRamGB, 'f', 2) << "GB,"
+        << "Occupied RAM:" << QString::number(occupiedRamGB, 'f', 2) << "GB";
     constexpr uint64_t bytesPerFloat = 4ULL;
-    uint64_t maxFloats = (static_cast<uint64_t>(GBValue) * bytesPerGB) / bytesPerFloat;
     uint64_t requiredBytes = static_cast<uint64_t>(numRows) * static_cast<uint64_t>(numCols) * bytesPerFloat;
-    double requiredGB = static_cast<double>(requiredBytes) / static_cast<double>(bytesPerGB);
-    if (static_cast<uint64_t>(numRows) * static_cast<uint64_t>(numCols) > maxFloats) {
+    double requiredGB = static_cast<double>(requiredBytes) / bytesPerGB;
+
+    // New condition: if requiredBytes > available RAM / x, return default values
+    if (freeRam > 0 && requiredBytes > (freeRam / x)) {
         qWarning() << "Dataset too large to process compute data ranges:"
             << "numRows:" << numRows
             << "numCols:" << numCols
-            << "Applying default range."
+            << "Applying default range due to RAM threshold."
             << "Dataset requires at least" << QString::number(requiredGB, 'f', 2) << "GB memory.";
         return { -1000.0f, +1000.0f };
     }
