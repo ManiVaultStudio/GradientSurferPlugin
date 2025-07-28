@@ -1,6 +1,7 @@
 #include "ComputationUtils.h"
 #include "ColorUtils.h"
 
+#define NOMINMAX
 #include <QString>
 #include <QElapsedTimer>
 #include <QDebug>
@@ -20,15 +21,99 @@
 #include <iostream>
 #include <QHeaderView>
 
+#include <cstdint>
+
+#if defined(_WIN32)
+#include <windows.h>
+#undef min
+#undef max
+#elif defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
+#elif defined(__linux__)
+#include <sys/sysinfo.h>
+#endif
+
+
+struct RamInfo {
+    std::uint64_t total;
+    std::uint64_t available;
+};
+
+RamInfo getSystemRamInfo()
+{
+    RamInfo info{ 0, 0 };
+#if defined(_WIN32)
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    if (GlobalMemoryStatusEx(&status)) {
+        info.total = status.ullTotalPhys;
+        info.available = status.ullAvailPhys;
+    }
+#elif defined(__APPLE__)
+    int mib[2] = { CTL_HW, HW_MEMSIZE };
+    int64_t memsize = 0;
+    size_t len = sizeof(memsize);
+    if (sysctl(mib, 2, &memsize, &len, NULL, 0) == 0) {
+        info.total = static_cast<std::uint64_t>(memsize);
+    }
+    mach_port_t host_port = mach_host_self();
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    vm_statistics64_data_t vm_stats;
+    if (host_statistics64(host_port, HOST_VM_INFO64, reinterpret_cast<host_info64_t>(&vm_stats), &count) == KERN_SUCCESS) {
+        int64_t free_memory = static_cast<int64_t>(vm_stats.free_count + vm_stats.inactive_count) * sysconf(_SC_PAGESIZE);
+        info.available = static_cast<std::uint64_t>(free_memory);
+    }
+#elif defined(__linux__)
+    struct sysinfo s_info;
+    if (sysinfo(&s_info) == 0) {
+        info.total = static_cast<std::uint64_t>(s_info.totalram) * s_info.mem_unit;
+        info.available = static_cast<std::uint64_t>(s_info.freeram) * s_info.mem_unit;
+    }
+#endif
+    return info;
+}
+
+std::uint64_t getAvailableRAM()
+{
+    std::uint64_t available = 0;
+
+#if defined(_WIN32)
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    if (GlobalMemoryStatusEx(&status)) {
+        available = status.ullAvailPhys;
+    }
+#elif defined(__APPLE__)
+    mach_port_t host_port = mach_host_self();
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    vm_statistics64_data_t vm_stats;
+    if (host_statistics64(host_port, HOST_VM_INFO64, reinterpret_cast<host_info64_t>(&vm_stats), &count) == KERN_SUCCESS) {
+        int64_t free_memory = static_cast<int64_t>(vm_stats.free_count + vm_stats.inactive_count) * sysconf(_SC_PAGESIZE);
+        available = static_cast<std::uint64_t>(free_memory);
+    }
+#elif defined(__linux__)
+    struct sysinfo info;
+    if (sysinfo(&info) == 0) {
+        available = static_cast<std::uint64_t>(info.freeram) * info.mem_unit;
+    }
+#endif
+
+    return available;
+}
+
 std::vector<CorrelationGeneCoords> _geneCorrValues1;
 std::vector<CorrelationGeneCoords> _geneCorrValues2;
 std::vector<CorrelationGeneCoords> _geneCorrValues3;
 std::vector<int> _geneOfInterestIndices1;
 std::vector<int> _geneOfInterestIndices2;
 std::vector<int> _geneOfInterestIndices3;
-QList<QString> _commonGeneNames;
-QStringList _commonGeneListSelectedInTables;
-
+//QList<QString> _commonGeneNames;
+//QStringList _commonGeneListSelectedInTables;
+QStringList _commonSelectedGenesAcrossDatasetsInTables;
+QStringList _commonGenesAcrossDatasets;
+QStringList _allGeneNamesAcrossDatasets;
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
@@ -124,10 +209,27 @@ std::vector<int> getIndicesBySelectedClusters(
 
 void clearTable(QTableView* tableView)
 {
-    QStandardItemModel* model = qobject_cast<QStandardItemModel*>(tableView->model());
-    if (model) {
-        model->clear();
+    if (!tableView) return;
+
+    // If the model is a QSortFilterProxyModel, clear its source model
+    QSortFilterProxyModel* proxyModel = qobject_cast<QSortFilterProxyModel*>(tableView->model());
+    if (proxyModel) {
+        QStandardItemModel* sourceModel = qobject_cast<QStandardItemModel*>(proxyModel->sourceModel());
+        if (sourceModel) {
+            sourceModel->clear();
+        }
+        proxyModel->setFilterFixedString(""); // Remove any filter
     }
+    else {
+        QStandardItemModel* model = qobject_cast<QStandardItemModel*>(tableView->model());
+        if (model) {
+            model->clear();
+        }
+    }
+
+    // Optionally, remove the model entirely to force a full reset
+    tableView->setModel(nullptr);
+    tableView->update();
 }
 
 void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allTables, const QList<DimensionPickerAction*>& allActions)
@@ -516,13 +618,36 @@ void setupTableModelAndSelection(
     DimensionPickerAction& geneSelectionAction,
     QTableView* tableViewOther1,
     QTableView* tableViewOther2,
-    DimensionPickerAction& geneSelectionAction2
+    DimensionPickerAction& geneSelectionAction2,
+    bool isMainSelectionTable
 )
 {
     FunctionTimer timer(Q_FUNC_INFO);
-    auto rowCount = static_cast<int>(geneCorrValues.size());
-    QStandardItemModel* model = new QStandardItemModel(rowCount, 3, tableViewMain);
+    int totalRowCount = 0;
+    if (isMainSelectionTable)
+    {
+        totalRowCount = geneCorrValues.size();
+    }
+    else
+    {
+        totalRowCount = _allGeneNamesAcrossDatasets.size();
+    }
+    
+    QStandardItemModel* model = new QStandardItemModel(totalRowCount, 3, tableViewMain);
     model->setHorizontalHeaderLabels(QStringList() << "Gene" << "Correlation" << "Rank");
+
+    // Sanitize correlation values: set NaN to 0
+    for (auto& entry : geneCorrValues) {
+        if (std::isnan(entry.correlationValue) || std::isinf(entry.correlationValue) || entry.correlationValue > 1e10f) {
+            entry.correlationValue = 0.0f;
+        }
+        /*else if (entry.correlationValue < -1.0f) {
+            entry.correlationValue = -1.0f;
+        }
+        else if (entry.correlationValue > 1.0f) {
+            entry.correlationValue = 1.0f;
+        }*/
+    }
 
     float minCorr = std::numeric_limits<float>::max();
     float maxCorr = std::numeric_limits<float>::lowest();
@@ -530,13 +655,11 @@ void setupTableModelAndSelection(
         minCorr = std::min(minCorr, entry.correlationValue);
         maxCorr = std::max(maxCorr, entry.correlationValue);
     }
-    _commonGeneNames.clear();
-
 
     QVector<QStandardItem*> rowItems(3);
-    for (int i = 0; i < rowCount; ++i) {
-        const auto& entry = geneCorrValues[i];
-
+    int row = 0;
+    // Fill rows for genes with correlation data
+    for (const auto& entry : geneCorrValues) {
         QStandardItem* geneItem = new QStandardItem(entry.geneName);
         QStandardItem* corrItem = new QStandardItem;
         QStandardItem* rankItem = new QStandardItem(QString::number(entry.rank));
@@ -548,16 +671,14 @@ void setupTableModelAndSelection(
             QFont fontG = geneItem->font();
             fontG.setBold(true);
             geneItem->setFont(fontG);
-            geneItem->setBackground(QColor("#FFB6C1"));
+            geneItem->setBackground(QColor("#cab2d6"));
             geneItem->setForeground(QColor("#000000"));
 
             QFont fontR = rankItem->font();
             fontR.setBold(true);
             rankItem->setFont(fontR);
-            rankItem->setBackground(QColor("#FFB6C1"));
+            rankItem->setBackground(QColor("#cab2d6"));
             rankItem->setForeground(QColor("#000000"));
-
-            _commonGeneNames.append(entry.geneName);
         }
 
         corrItem->setForeground(QColor("#000000"));
@@ -566,33 +687,65 @@ void setupTableModelAndSelection(
         rowItems[1] = corrItem;
         rowItems[2] = rankItem;
         for (int col = 0; col < 3; ++col)
-            model->setItem(i, col, rowItems[col]);
+            model->setItem(row, col, rowItems[col]);
+        ++row;
     }
+    if(!isMainSelectionTable)
+    {
+    // Fill rows for genes present in _allGeneNamesAcrossDatasets but not in geneCorrValues
+    for (const auto& geneName : _allGeneNamesAcrossDatasets) {
+        auto it = std::find_if(geneCorrValues.begin(), geneCorrValues.end(),
+            [&geneName](const CorrelationGeneCoords& entry) {
+                return entry.geneName == geneName;
+            });
+        if (it == geneCorrValues.end()) {
+            QStandardItem* geneItem = new QStandardItem(geneName);
+            QStandardItem* corrItem = new QStandardItem;
+            QStandardItem* rankItem = new QStandardItem("Undefined");
+
+            corrItem->setData(QVariant::fromValue(std::numeric_limits<float>::quiet_NaN()), Qt::UserRole + 1);
+            corrItem->setData(QVariant::fromValue(std::numeric_limits<float>::quiet_NaN()), Qt::DisplayRole);
+
+            QFont fontG = geneItem->font();
+            fontG.setItalic(true);
+            geneItem->setFont(fontG);
+            geneItem->setBackground(QColor("#fb9a99"));
+            geneItem->setForeground(QColor("#000000"));
+            QFont fontR = rankItem->font();
+            fontR.setItalic(true);
+            rankItem->setFont(fontR);
+            rankItem->setBackground(QColor("#fb9a99"));
+            rankItem->setForeground(QColor("#000000"));
+
+            rowItems[0] = geneItem;
+            rowItems[1] = corrItem;
+            rowItems[2] = rankItem;
+            for (int col = 0; col < 3; ++col) {
+                model->setItem(row, col, rowItems[col]);
+            }
+            ++row;
+        }
+    }
+}
+    // Set up the model and proxy
     QSortFilterProxyModel* proxyModel = qobject_cast<QSortFilterProxyModel*>(tableViewMain->model());
-    // After setting the model or source model:
     if (proxyModel) {
         proxyModel->setSourceModel(model);
         proxyModel->setFilterFixedString("");
-        // Re-apply row height settings
         tableViewMain->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
         tableViewMain->verticalHeader()->setDefaultSectionSize(18);
     }
     else {
         tableViewMain->setModel(model);
-        // Re-apply row height settings
         tableViewMain->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
         tableViewMain->verticalHeader()->setDefaultSectionSize(18);
     }
-    //tableViewMain->setModel(model);
     tableViewMain->setColumnHidden(2, true);
-    //deselectAllRows(tableViewMain);
-    // Ensure only one row can be selected at a time and the full row gets selected
     tableViewMain->setSelectionMode(QAbstractItemView::SingleSelection);
     tableViewMain->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     tableViewMain->setItemDelegateForColumn(1, new CorrelationBarDelegate(minCorr, maxCorr, model));
     tableViewMain->resizeColumnsToContents();
-    //tableViewMain->resizeRowsToContents();
     tableViewMain->setSortingEnabled(true);
     tableViewMain->sortByColumn(1, Qt::DescendingOrder);
 
@@ -600,7 +753,7 @@ void setupTableModelAndSelection(
     auto disconnectSelection = [](QTableView* table) {
         if (table && table->selectionModel())
             QObject::disconnect(table->selectionModel(), nullptr, nullptr, nullptr);
-    };
+        };
     disconnectSelection(tableViewMain);
     disconnectSelection(tableViewOther1);
     disconnectSelection(tableViewOther2);
@@ -621,7 +774,6 @@ void setupTableModelAndSelection(
             }
         );
     }
-
 }
 
 void makeSelection(QString value, QTableView* tableView)
@@ -729,7 +881,7 @@ void populateGenesByCorrelationRange(
     geneOfInterestIndices.reserve(count);
 
     if (isMainTable) {
-        _commonGeneListSelectedInTables.clear();
+        _commonSelectedGenesAcrossDatasetsInTables.clear();
     }
 
     int rank = 1;
@@ -749,11 +901,15 @@ void populateGenesByCorrelationRange(
         if (isMainTable) {
             if ((topNRows > 0 && rank <= topNRows) ||
                 (bottomNRows > 0 && rank > (count - bottomNRows))) {
-                isWithinRange = true;
-                _commonGeneListSelectedInTables.push_back(geneNameOrdered[idx]);
+                if (_commonGenesAcrossDatasets.contains(geneNameOrdered[idx]))
+                {
+                    isWithinRange = true;
+                    _commonSelectedGenesAcrossDatasetsInTables.push_back(geneNameOrdered[idx]);
+                }
+
             }
         } else {
-            isWithinRange = _commonGeneListSelectedInTables.contains(geneNameOrdered[idx]);
+            isWithinRange = _commonSelectedGenesAcrossDatasetsInTables.contains(geneNameOrdered[idx]);
         }
 
         geneCorrValues.emplace_back(CorrelationGeneCoords{
@@ -779,7 +935,7 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
 
     if (isMainTable)
     {
-        _commonGeneListSelectedInTables.clear();
+        _commonSelectedGenesAcrossDatasetsInTables.clear();
     }
     for (auto& gene : geneCorrValues) {
 
@@ -788,12 +944,15 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
         if (isMainTable) {
             if ((topNRows > 0 && gene.rank <= topNRows) ||
                 (bottomNRows > 0 && gene.rank > (count - bottomNRows))) {
-                isWithinRange = true;
-                _commonGeneListSelectedInTables.push_back(gene.geneName);
+                if (_commonGenesAcrossDatasets.contains(gene.geneName))
+                {
+                    isWithinRange = true;
+                    _commonSelectedGenesAcrossDatasetsInTables.push_back(gene.geneName);
+                }
             }
         }
         else {
-            isWithinRange = _commonGeneListSelectedInTables.contains(gene.geneName);
+            isWithinRange = _commonSelectedGenesAcrossDatasetsInTables.contains(gene.geneName);
         }
 
         gene.isWithinRange = isWithinRange;
@@ -802,7 +961,7 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
 
         }
     }
-    setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, tableViewOther1, tableViewOther2, geneSelectionAction2);
+    setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, tableViewOther1, tableViewOther2, geneSelectionAction2, isMainTable);
 
 }
 
@@ -959,6 +1118,113 @@ std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText) {
     int iconSize = std::max(12, textHeight - 2);
     return { font, iconSize };
 }
+
+std::pair<float, float> findDatasetLimits(QString datasetID)
+{
+    if (datasetID.isEmpty()) {
+        qWarning() << "Empty dataset ID";
+        return { 0.0f, 0.0f };
+    }
+
+    auto dataset = mv::data().getDataset<Points>(datasetID);
+    if (!dataset.isValid()) {
+        qWarning() << "Invalid dataset ID:" << datasetID;
+        return { 0.0f, 0.0f };
+    }
+
+    const int numRows = dataset->getNumPoints();
+    const int numCols = dataset->getNumDimensions();
+
+    if (numRows <= 0 || numCols <= 0) {
+        qWarning() << "Dataset is empty or has no dimensions:" << datasetID;
+        return { 0.0f, 0.0f };
+    }
+    int x = 2; // Fraction denominator for RAM usage threshold
+    RamInfo ram = getSystemRamInfo();
+    std::uint64_t freeRam = ram.available;
+    std::uint64_t totalRam = ram.total;
+    std::uint64_t occupiedRam = (ram.total > ram.available) ? (ram.total - ram.available) : 0;
+    constexpr double bytesPerGB = 1024.0 * 1024.0 * 1024.0;
+    double freeRamGB = static_cast<double>(freeRam) / bytesPerGB;
+    double totalRamGB = static_cast<double>(totalRam) / bytesPerGB;
+    double occupiedRamGB = static_cast<double>(occupiedRam) / bytesPerGB;
+    qInfo() << "Available RAM:" << QString::number(freeRamGB, 'f', 2) << "GB,"
+        << "Total RAM:" << QString::number(totalRamGB, 'f', 2) << "GB,"
+        << "Occupied RAM:" << QString::number(occupiedRamGB, 'f', 2) << "GB";
+    constexpr uint64_t bytesPerFloat = 4ULL;
+    uint64_t requiredBytes = static_cast<uint64_t>(numRows) * static_cast<uint64_t>(numCols) * bytesPerFloat;
+    double requiredGB = static_cast<double>(requiredBytes) / bytesPerGB;
+
+    // New condition: if requiredBytes > available RAM / x, return default values
+    if (freeRam > 0 && requiredBytes > (freeRam / x)) {
+        qWarning() << "Dataset too large to process compute data ranges:"
+            << "numRows:" << numRows
+            << "numCols:" << numCols
+            << "Applying default range due to RAM threshold."
+            << "Dataset requires at least" << QString::number(requiredGB, 'f', 2) << "GB memory.";
+        return { -1000.0f, +1000.0f };
+    }
+
+    int numThreads = std::thread::hardware_concurrency();
+    if (numThreads <= 0) numThreads = 4; // fallback
+
+    const int chunkSize = (numRows + numThreads - 1) / numThreads;
+
+    std::vector<std::thread> threads;
+    std::vector<float> threadMins(numThreads, std::numeric_limits<float>::max());
+    std::vector<float> threadMaxs(numThreads, std::numeric_limits<float>::lowest());
+
+    auto worker = [&](int tid, int rowStart, int rowEnd) {
+        float localMin = std::numeric_limits<float>::max();
+        float localMax = std::numeric_limits<float>::lowest();
+
+        for (int i = rowStart; i < rowEnd; ++i) {
+            for (int j = 0; j < numCols; ++j) {
+                int index = i * numCols + j;
+                float value = dataset->getValueAt(index);
+
+                if (!std::isnan(value) && !std::isinf(value)) {
+                    localMin = std::min(localMin, value);
+                    localMax = std::max(localMax, value);
+                }
+            }
+        }
+
+        threadMins[tid] = localMin;
+        threadMaxs[tid] = localMax;
+        };
+
+    // Start threads safely
+    for (int t = 0; t < numThreads; ++t) {
+        int rowStart = t * chunkSize;
+        int rowEnd = std::min(rowStart + chunkSize, numRows);
+        if (rowStart >= rowEnd) continue; // skip empty work
+        threads.emplace_back(worker, t, rowStart, rowEnd);
+    }
+
+    for (auto& thread : threads) {
+        if (thread.joinable())
+            thread.join();
+    }
+
+    float minVal = std::numeric_limits<float>::max();
+    float maxVal = std::numeric_limits<float>::lowest();
+
+    for (int t = 0; t < numThreads; ++t) {
+        minVal = std::min(minVal, threadMins[t]);
+        maxVal = std::max(maxVal, threadMaxs[t]);
+    }
+
+    if (minVal == std::numeric_limits<float>::max() ||
+        maxVal == std::numeric_limits<float>::lowest()) {
+        qWarning() << "No valid data found in dataset:" << datasetID;
+        return { 0.0f, 0.0f };
+    }
+
+    return { minVal, maxVal };
+}
+
+
 float computeMean(const std::vector<float>& values) {
     if (values.empty()) return 0.0f;
     float sum = std::accumulate(values.begin(), values.end(), 0.0f);
@@ -1418,7 +1684,7 @@ void createLineChartClusterColors(QString coloringDataset, QString colorMapValue
     FunctionTimer timer(Q_FUNC_INFO);
 
     if (coloringDataset.isEmpty() || colorMapValue.isEmpty() || selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty()) {
-        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        qWarning() << "createLineChartClusterColors: Invalid parameters for PCA cluster colors creation.";
         return;
     }
     if (numOfTotalPoints <= 0) {
@@ -1501,7 +1767,7 @@ void createClusterLineChartClusterColors(QString coloringChangeDataset, QString 
     FunctionTimer timer(Q_FUNC_INFO);
 
     if (coloringChangeDataset.isEmpty() || coloringReferenceDataset.isEmpty() || selectedIndices.empty() ) {
-        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        qWarning() << "createClusterLineChartClusterColors: Invalid parameters for PCA cluster colors creation.";
         return;
     }
 
@@ -1551,7 +1817,7 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
     FunctionTimer timer(Q_FUNC_INFO);
 
     if (coloringDataset.isEmpty() || colorMapValue.isEmpty() || selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty()) {
-        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        qWarning() << "createScatterplotClusterColors: Invalid parameters for PCA cluster colors creation.";
         return;
     }
     if (numOfTotalPoints <= 0) {
@@ -1642,7 +1908,7 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     if (coloringDataset.isEmpty() || colorMapValue.isEmpty() ||
         selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty())
     {
-        qWarning() << "Invalid parameters for PCA cluster colors creation.";
+        qWarning() << "createScatterplotPointColors: Invalid parameters for PCA cluster colors creation. ";
         return { 0.0f, 0.0f };
     }
     if (numOfTotalPoints <= 0) {
@@ -1917,3 +2183,45 @@ void rangeChangeScatterPlot(QString scatterplotName, float minValue, float maxVa
 
 
 }
+
+void updateCommonGeneNames(const QStringList& datasetIDs)
+{
+    if (datasetIDs.isEmpty()) {
+        qWarning() << "No dataset IDs provided for common gene names update.";
+        return;
+    }
+    FunctionTimer timer(Q_FUNC_INFO);
+    _commonGenesAcrossDatasets.clear();
+    _allGeneNamesAcrossDatasets.clear();
+    QHash<QString, int> geneCountMap;
+    const int numDatasets = datasetIDs.size();
+
+    for (const QString& datasetID : datasetIDs) {
+        auto dataset = mv::data().getDataset<Points>(datasetID);
+        if (!dataset.isValid()) {
+            qWarning() << "Invalid dataset ID:" << datasetID;
+            continue;
+        }
+        // Use std::vector<QString> for dimensionNames
+        const std::vector<QString>& dimensionNames = dataset->getDimensionNames();
+        QSet<QString> uniqueGenes;
+        uniqueGenes.reserve(static_cast<int>(dimensionNames.size()));
+        for (const auto& geneName : dimensionNames) {
+            uniqueGenes.insert(geneName);
+        }
+        for (const auto& geneName : uniqueGenes) {
+            geneCountMap[geneName]++;
+        }
+    }
+
+    _commonGenesAcrossDatasets.reserve(geneCountMap.size());
+    _allGeneNamesAcrossDatasets.reserve(geneCountMap.size());
+    for (auto it = geneCountMap.constBegin(); it != geneCountMap.constEnd(); ++it) {
+        if (it.value() == numDatasets) {
+            _commonGenesAcrossDatasets.append(it.key());
+        }
+        _allGeneNamesAcrossDatasets.append(it.key());
+    }
+    //qInfo () << "Common genes across datasets:" << _commonGenesAcrossDatasets.size() << ", All genes across datasets:" << _allGeneNamesAcrossDatasets.size();
+}
+

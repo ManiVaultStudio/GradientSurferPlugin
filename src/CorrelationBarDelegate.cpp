@@ -35,8 +35,7 @@ void CorrelationBarDelegate::paint(QPainter* painter, const QStyleOptionViewItem
         }
         else if (valueVar.canConvert<float>()) {
             value = valueVar.toFloat();
-            QString valueStr = valueVar.toString();
-            isUndefined = std::isnan(value) || valueStr.contains('e', Qt::CaseInsensitive);
+            isUndefined = std::isnan(value) || std::isinf(value) || value > 1e10f;
         }
         else {
             isUndefined = true;
@@ -165,16 +164,9 @@ bool CorrelationBarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* vie
         bool isUndefined = !valueVar.isValid() || valueVar.isNull();
 
         float value = 0.0f;
-        QString valueStr;
         if (!isUndefined) {
             value = valueVar.toFloat();
-            valueStr = valueVar.toString();
-            if (valueStr.contains('e', Qt::CaseInsensitive)) {
-                isUndefined = true;
-            }
-            else {
-                isUndefined = std::isnan(value);
-            }
+            isUndefined = std::isnan(value) || std::isinf(value) || value > 1e10f;
         }
 
         if (isUndefined) {
@@ -188,3 +180,4 @@ bool CorrelationBarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* vie
     }
     return QStyledItemDelegate::helpEvent(event, view, option, index);
 }
+

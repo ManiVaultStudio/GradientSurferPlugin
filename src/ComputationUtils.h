@@ -102,7 +102,7 @@ std::vector<int> getIndicesBySelectedClusters(
     const QStringList& selectedClusters);
 StatusInfo parseStatusMessage(const QString& statusString);
 std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText);
-
+std::pair<float,float> findDatasetLimits(QString datasetID);
 void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices);
 void clearTable(QTableView* tableView);
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray);
@@ -114,7 +114,7 @@ void selectFirstRow(QTableView* tableView);
 void deselectAllRows(QTableView* tableView);
 void makeSelection(QString value, QTableView* tableView);
 void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, int topNRows, int bottomNRows, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, bool isMainTable);
-void setupTableModelAndSelection(QTableView* tableViewMain, std::vector<CorrelationGeneCoords>& geneCorrValues,DimensionPickerAction& geneSelectionAction,  QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2);
+void setupTableModelAndSelection(QTableView* tableViewMain, std::vector<CorrelationGeneCoords>& geneCorrValues,DimensionPickerAction& geneSelectionAction,  QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2,bool isMainSelectionTable);
 void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices,QTableView* tableViewMain, int topNRows, int bottomNRows, DimensionPickerAction& geneSelectionAction,  QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2, bool mainTable);
 void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector, QString corrType);
 NormalizationType normalizationTypeFromString(const QString& normTypeStr);
@@ -153,8 +153,11 @@ extern std::vector<CorrelationGeneCoords> _geneCorrValues3;
 extern std::vector<int> _geneOfInterestIndices1;
 extern std::vector<int> _geneOfInterestIndices2;
 extern std::vector<int> _geneOfInterestIndices3;
-extern QStringList _commonGeneNames;
-extern QStringList   _commonGeneListSelectedInTables;
+//extern QStringList _commonGeneNames;
+//extern QStringList   _commonGeneListSelectedInTables;
+extern QStringList _commonSelectedGenesAcrossDatasetsInTables;
+extern QStringList _commonGenesAcrossDatasets;
+extern QStringList _allGeneNamesAcrossDatasets;
 
 class QTableView;
 class DimensionPickerAction;
@@ -177,3 +180,5 @@ void colormapChangeScatterplot(QString scatterplotName, QString colormapValue);
 void rangeChangeLinePlot(QString linePlotName, float minValue, float maxValue);
 void colormapChangeLinePlot(QString linePlotName, QString colorMapStringValue);
 void rangeChangeScatterPlot(QString scatterplotName, float minValue, float maxValue);
+
+void updateCommonGeneNames(const QStringList& datasetIDs);
