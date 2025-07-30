@@ -1,5 +1,5 @@
 {
-  "name": "LayerSurfer",
+  "name": "GradientSurferPlugin",
   "version": {
     "plugin": "1.4",
     "core": [ "1.3" ]

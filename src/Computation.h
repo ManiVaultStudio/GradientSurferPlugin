@@ -39,7 +39,7 @@
 
 using namespace mv::gui;
 class QMenu;
-class LayerSurferPlugin;
+class GradientSurferPlugin;
 class SettingsAction;
 
 
@@ -53,7 +53,7 @@ class Computation : public WidgetAction
 {
 
 public:
-    Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& SettingsAction);
+    Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAction& SettingsAction);
 
 private:
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
@@ -104,7 +104,7 @@ private:
     void findCommonGenes();
 
 protected:
-    LayerSurferPlugin&          _viewerPlugin;
+    GradientSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
     mv::Dataset<Points>         _selectedCellPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;

@@ -37,7 +37,7 @@ protected:
     }
 };
 /**
- * Layer surfer plugin class
+ * Gradient surfer plugin class
  *
  * This view plugin class provides skeleton code that shows how to develop
  * a view plugin in ManiVault. It shows how to use the built-in drag and drop
@@ -46,11 +46,10 @@ protected:
  * To see the plugin in action, please follow the steps below:
  *
  * 1. Go to the visualization menu in ManiVault
- * 2. Choose the Layer surfer menu item, the view will be added to the layout
+ * 2. Choose the gradient surfer menu item, the view will be added to the layout
  *
- * @authors J. Thijssen & T. Kroes
  */
-class LayerSurferPlugin : public ViewPlugin
+class GradientSurferPlugin : public ViewPlugin
 {
     Q_OBJECT
 
@@ -60,10 +59,10 @@ public:
      * Constructor
      * @param factory Pointer to the plugin factory
      */
-    LayerSurferPlugin(const PluginFactory* factory);
+    GradientSurferPlugin(const PluginFactory* factory);
 
     /** Destructor */
-    ~LayerSurferPlugin() override = default;
+    ~GradientSurferPlugin() override = default;
     
     /** This function is called by the core after the view plugin has been created */
     void init() override;
@@ -97,26 +96,26 @@ protected:
 };
 
 /**
- * Layer explorer plugin factory class
+ * Gradient explorer plugin factory class
  *
  * Note: Factory does not need to be altered (merely responsible for generating new plugins when requested)
  */
-class LayerSurferPluginFactory : public ViewPluginFactory
+class GradientSurferPluginFactory : public ViewPluginFactory
 {
     Q_INTERFACES(mv::plugin::ViewPluginFactory mv::plugin::PluginFactory)
     Q_OBJECT
-    Q_PLUGIN_METADATA(IID   "studio.manivault.LayerSurferPlugin"
+    Q_PLUGIN_METADATA(IID   "studio.manivault.GradientSurferPlugin"
                       FILE  "PluginInfo.json")
 
 public:
 
     /** Default constructor */
-    LayerSurferPluginFactory();
+    GradientSurferPluginFactory();
 
-    /** Creates an instance of the layer surfer plugin */
+    /** Creates an instance of the gradient surfer plugin */
     ViewPlugin* produce() override;
 
-    /** Returns the data types that are supported by the layer surfer plugin */
+    /** Returns the data types that are supported by the gradient surfer plugin */
     mv::DataTypes supportedDataTypes() const override;
 
     /**

@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.22)
 option(MV_UNITY_BUILD "Combine target source files into batches for faster compilation" OFF)
 
 # -----------------------------------------------------------------------------
-# LayerSurfer Plugin
+# GradientSurfer Plugin
 # -----------------------------------------------------------------------------
-PROJECT("LayerSurferPlugin" LANGUAGES CXX)
+PROJECT("GradientSurferPlugin" LANGUAGES CXX)
 
 # -----------------------------------------------------------------------------
 # CMake Options
@@ -35,8 +35,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/Spectra/include)
 # Source files
 # -----------------------------------------------------------------------------
 set(PLUGIN_SOURCES
-    src/LayerSurferPlugin.h
-    src/LayerSurferPlugin.cpp
+    src/GradientSurferPlugin.h
+    src/GradientSurferPlugin.cpp
     src/SettingsAction.h
     src/SettingsAction.cpp
     src/Computation.h
@@ -55,7 +55,7 @@ set(PLUGIN_SOURCES
 )
 
 set(PLUGIN_MOC_HEADERS
-    src/LayerSurferPlugin.h
+    src/GradientSurferPlugin.h
 )
 
 source_group(Plugin FILES ${PLUGIN_SOURCES})

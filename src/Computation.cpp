@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <set>
-#include "LayerSurferPlugin.h"
+#include "GradientSurferPlugin.h"
 #include "SettingsAction.h"
 #include<string>  
 #include <QFileDialog>
@@ -35,9 +35,9 @@
 using namespace mv;
 using namespace mv::gui;
 
-Computation::Computation(LayerSurferPlugin& LayerSurferPlugin, SettingsAction& SettingsAction)
-    : WidgetAction(&LayerSurferPlugin, "Computation"),
-    _viewerPlugin(LayerSurferPlugin),
+Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAction& SettingsAction)
+    : WidgetAction(&GradientSurferPlugin, "Computation"),
+    _viewerPlugin(GradientSurferPlugin),
     _settingsAction(SettingsAction),
     _foregroundTask(this, "Computing", mv::Task::Status::Undefined)
 {

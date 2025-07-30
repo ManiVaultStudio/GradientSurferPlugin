@@ -1,4 +1,4 @@
-#include "LayerSurferPlugin.h"
+#include "GradientSurferPlugin.h"
 
 #include <event/Event.h>
 #include <QApplication>
@@ -8,11 +8,11 @@
 #include <QMimeData>
 #include <QLabel> 
 
-Q_PLUGIN_METADATA(IID "studio.manivault.LayerSurferPlugin")
+Q_PLUGIN_METADATA(IID "studio.manivault.GradientSurferPlugin")
 
 using namespace mv;
 
-LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
+GradientSurferPlugin::GradientSurferPlugin(const PluginFactory* factory) :
     ViewPlugin(factory),
     _settingsAction(*this),
     _computation(*this, _settingsAction)
@@ -21,7 +21,7 @@ LayerSurferPlugin::LayerSurferPlugin(const PluginFactory* factory) :
     getLearningCenterAction().addVideos(QStringList({ "Practitioner", "Developer" }));
 }
 
-void LayerSurferPlugin::init()
+void GradientSurferPlugin::init()
 {
     qApp->setStyleSheet("QToolTip { color: black; background: #ffffe1; border: 1px solid black; }");
 
@@ -182,19 +182,19 @@ void LayerSurferPlugin::init()
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetRemoved));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
-    _eventListener.registerDataEventByType(PointType, std::bind(&LayerSurferPlugin::onDataEvent, this, std::placeholders::_1));
+    _eventListener.registerDataEventByType(PointType, std::bind(&GradientSurferPlugin::onDataEvent, this, std::placeholders::_1));
 }
 
-void LayerSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
+void GradientSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 {
 
 }
 
-LayerSurferPluginFactory::LayerSurferPluginFactory()
+GradientSurferPluginFactory::GradientSurferPluginFactory()
 {
     setIconByName("layer-group");
-    getPluginMetadata().setDescription("Layer surfer plugin");
-    getPluginMetadata().setSummary("This plugin shows layer surfer plugin in ManiVault Studio.");
+    getPluginMetadata().setDescription("Gradient surfer plugin");
+    getPluginMetadata().setSummary("This plugin shows gradient surfer plugin in ManiVault Studio.");
     getPluginMetadata().setCopyrightHolder({ "BioVault (Biomedical Visual Analytics Unit LUMC - TU Delft)" });
     getPluginMetadata().setAuthors({
 	});
@@ -205,35 +205,35 @@ LayerSurferPluginFactory::LayerSurferPluginFactory()
     getPluginMetadata().setLicenseText("This plugin is distributed under the [LGPL v3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html) license.");
 }
 
-ViewPlugin* LayerSurferPluginFactory::produce()
+ViewPlugin* GradientSurferPluginFactory::produce()
 {
-    return new LayerSurferPlugin(this);
+    return new GradientSurferPlugin(this);
 }
 
-mv::DataTypes LayerSurferPluginFactory::supportedDataTypes() const
+mv::DataTypes GradientSurferPluginFactory::supportedDataTypes() const
 {
     DataTypes supportedTypes;
 
-    // This layer surfer plugin is compatible with points datasets
+    // This gradient surfer plugin is compatible with points datasets
     supportedTypes.append(PointType);
 
     return supportedTypes;
 }
 
-mv::gui::PluginTriggerActions LayerSurferPluginFactory::getPluginTriggerActions(const mv::Datasets& datasets) const
+mv::gui::PluginTriggerActions GradientSurferPluginFactory::getPluginTriggerActions(const mv::Datasets& datasets) const
 {
     PluginTriggerActions pluginTriggerActions;
 
     return pluginTriggerActions;
 }
-void LayerSurferPlugin::fromVariantMap(const QVariantMap& variantMap)
+void GradientSurferPlugin::fromVariantMap(const QVariantMap& variantMap)
 {
     ViewPlugin::fromVariantMap(variantMap);
-    mv::util::variantMapMustContain(variantMap, "LayerSurfer:Settings");
-    _settingsAction.fromVariantMap(variantMap["LayerSurfer:Settings"].toMap());
+    mv::util::variantMapMustContain(variantMap, "GradientSurfer:Settings");
+    _settingsAction.fromVariantMap(variantMap["GradientSurfer:Settings"].toMap());
 }
 
-QVariantMap LayerSurferPlugin::toVariantMap() const
+QVariantMap GradientSurferPlugin::toVariantMap() const
 {
     QVariantMap variantMap = ViewPlugin::toVariantMap();
 
