@@ -2,6 +2,7 @@
 #include "ColorUtils.h"
 
 #define NOMINMAX
+
 #include <QString>
 #include <QElapsedTimer>
 #include <QDebug>
@@ -22,7 +23,9 @@
 #include <QHeaderView>
 
 #include <cstdint>
-
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif
 #if defined(_WIN32)
 #include <windows.h>
 #undef min
@@ -626,11 +629,11 @@ void setupTableModelAndSelection(
     int totalRowCount = 0;
     if (isMainSelectionTable)
     {
-        totalRowCount = geneCorrValues.size();
+        totalRowCount = static_cast<int>(geneCorrValues.size());
     }
     else
     {
-        totalRowCount = _allGeneNamesAcrossDatasets.size();
+        totalRowCount = static_cast<int>(_allGeneNamesAcrossDatasets.size());
     }
     
     QStandardItemModel* model = new QStandardItemModel(totalRowCount, 3, tableViewMain);
