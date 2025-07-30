@@ -229,9 +229,6 @@ void clearTable(QTableView* tableView)
             model->clear();
         }
     }
-
-    // Optionally, remove the model entirely to force a full reset
-    tableView->setModel(nullptr);
     tableView->update();
 }
 
