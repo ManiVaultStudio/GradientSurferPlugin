@@ -7,7 +7,7 @@ import subprocess
 from rules_support import PluginBranchInfo
 
 
-class LayerSurferPluginConan(ConanFile):
+class GradientSurferPluginConan(ConanFile):
     """Class to package ImageLoaderPlugin using conan
 
     Packages both RELEASE and DEBUG.
@@ -16,10 +16,10 @@ class LayerSurferPluginConan(ConanFile):
     as described in https://github.com/ManiVaultStudio/core/wiki/Branch-naming-rules
     """
 
-    name = "LayerSurferPlugin"
-    description = """Plugins for displaying LayerSurfer in ManiVaultStudio."""
+    name = "GradientSurferPlugin"
+    description = """Plugins for displaying GradientSurferPlugin in ManiVaultStudio."""
     topics = ("hdps", "plugin", "image data", "loading")
-    url = "https://github.com/ManiVaultStudio/LayerSurfer"
+    url = "https://github.com/ManiVaultStudio/GradientSurferPlugin"
     author = "B. van Lew b.van_lew@lumc.nl"  # conan recipe author
     license = "MIT"
 
@@ -35,7 +35,7 @@ class LayerSurferPluginConan(ConanFile):
 
     scm = {
         "type": "git",
-        "subfolder": "hdps/LayerSurfer",
+        "subfolder": "hdps/GradientSurferPlugin",
         "url": "auto",
         "revision": "auto",
     }
@@ -108,7 +108,7 @@ class LayerSurferPluginConan(ConanFile):
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        cmake.configure(build_script_folder="hdps/LayerSurfer")
+        cmake.configure(build_script_folder="hdps/GradientSurferPlugin")
         cmake.verbose = True
         return cmake
 
