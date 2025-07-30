@@ -2273,8 +2273,10 @@ void Computation::correlationAfterPCA()
     setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),false);
     setupTableModelAndSelection(_settingsAction.getTableView3Action(), _geneCorrValues3, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),false);
     selectFirstRow(_settingsAction.getTableView3Action());
-    setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
+    
 
+    setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
+    colorLinePlots();
 }
 bool Computation::getRotationAngle(const QString& scatterplotViewName, float& rotationAngle)
 {
