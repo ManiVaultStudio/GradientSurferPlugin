@@ -110,13 +110,15 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getTopNRowsAction().setMaximum(100);
     _commonOptionsHolder.getTopNRowsAction().setValue(20);
 
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setMinimum(0.0);
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setMaximum(1.0);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setNumberOfDecimals(2);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setMinimum(0.00);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setMaximum(1.00);
     _commonOptionsHolder.getLowRangeColoringPercentileAction().setSingleStep(0.01);
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setValue(0.0);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setValue(0.00);
 
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setMinimum(0.0);
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setMaximum(1.0);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setNumberOfDecimals(2);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setMinimum(0.00);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setMaximum(1.00);
     _commonOptionsHolder.getHighRangeColoringPercentileAction().setSingleStep(0.01);
     _commonOptionsHolder.getHighRangeColoringPercentileAction().setValue(0.95);
 
