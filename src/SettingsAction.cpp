@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <set>
-#include "LayerSurferPlugin.h"
+#include "GradientSurferPlugin.h"
 #include<string>  
 #include <QFileDialog>
 #include <QPageLayout>
@@ -18,31 +18,31 @@
 using namespace mv;
 using namespace mv::gui;
 
-SettingsAction::SettingsAction(LayerSurferPlugin& LayerSurferPlugin) :
-    WidgetAction(&LayerSurferPlugin, "LayerSurferPlugin"),
-    _viewerPlugin(LayerSurferPlugin),
+SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
+    WidgetAction(&GradientSurferPlugin, "GradientSurferPlugin"),
+    _viewerPlugin(GradientSurferPlugin),
     _dataset1OptionsHolder(*this),
     _dataset2OptionsHolder(*this),
     _commonOptionsHolder(*this)
 {
-    setSerializationName("LayerSurfer:Settings");
-    _dataset1OptionsHolder.getClusterDatasetAction().setSerializationName("LayerSurfer:Clusterdataset");
-    _dataset1OptionsHolder.getPointDatasetAction().setSerializationName("LayerSurfer:PointDataset");
-    _dataset1OptionsHolder.getEmbeddingDatasetAction().setSerializationName("LayerSurfer:EmbeddingDataset");
-    _commonOptionsHolder.getTopNRowsAction().setSerializationName("LayerSurfer:TopNRows");
-    _commonOptionsHolder.getBottomNRowsAction().setSerializationName("LayerSurfer:BottomNRows");
-    _dataset1OptionsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection");
-    _dataset2OptionsHolder.getGeneSelectionAction().setSerializationName("LayerSurfer:GeneSelection2");
-    _dataset1OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("LayerSurfer:ScatterplotViewSelection");
-    _dataset1OptionsHolder.getLineplotViewSelectionAction().setSerializationName("LayerSurfer:LineplotViewSelection");
-    _dataset1OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("LayerSurfer:EmbeddingDimensionX");
-    _dataset1OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("LayerSurfer:EmbeddingDimensionY");
-    _dataset2OptionsHolder.getClusterDatasetAction().setSerializationName("LayerSurfer:ClusterDataset2");
-    _dataset2OptionsHolder.getPointDatasetAction().setSerializationName("LayerSurfer:PointDataset2");
-    _dataset2OptionsHolder.getEmbeddingDatasetAction().setSerializationName("LayerSurfer:EmbeddingDataset2");
-    _dataset2OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("LayerSurfer:ScatterplotViewSelection2");
-    _dataset2OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("LayerSurfer:EmbeddingDimension2X");
-    _dataset2OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("LayerSurfer:EmbeddingDimension2Y");
+    setSerializationName("GradientSurfer:Settings");
+    _dataset1OptionsHolder.getClusterDatasetAction().setSerializationName("GradientSurfer:Clusterdataset");
+    _dataset1OptionsHolder.getPointDatasetAction().setSerializationName("GradientSurfer:PointDataset");
+    _dataset1OptionsHolder.getEmbeddingDatasetAction().setSerializationName("GradientSurfer:EmbeddingDataset");
+    _commonOptionsHolder.getTopNRowsAction().setSerializationName("GradientSurfer:TopNRows");
+    _commonOptionsHolder.getBottomNRowsAction().setSerializationName("GradientSurfer:BottomNRows");
+    _dataset1OptionsHolder.getGeneSelectionAction().setSerializationName("GradientSurfer:GeneSelection");
+    _dataset2OptionsHolder.getGeneSelectionAction().setSerializationName("GradientSurfer:GeneSelection2");
+    _dataset1OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("GradientSurfer:ScatterplotViewSelection");
+    _dataset1OptionsHolder.getLineplotViewSelectionAction().setSerializationName("GradientSurfer:LineplotViewSelection");
+    _dataset1OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("GradientSurfer:EmbeddingDimensionX");
+    _dataset1OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("GradientSurfer:EmbeddingDimensionY");
+    _dataset2OptionsHolder.getClusterDatasetAction().setSerializationName("GradientSurfer:ClusterDataset2");
+    _dataset2OptionsHolder.getPointDatasetAction().setSerializationName("GradientSurfer:PointDataset2");
+    _dataset2OptionsHolder.getEmbeddingDatasetAction().setSerializationName("GradientSurfer:EmbeddingDataset2");
+    _dataset2OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("GradientSurfer:ScatterplotViewSelection2");
+    _dataset2OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("GradientSurfer:EmbeddingDimension2X");
+    _dataset2OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("GradientSurfer:EmbeddingDimension2Y");
 
 
     _dataset1OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");

@@ -43,7 +43,7 @@
 
 using namespace mv::gui;
 class QMenu;
-class LayerSurferPlugin;
+class GradientSurferPlugin;
 
 struct ClusterDetails
 {
@@ -325,7 +325,7 @@ public:
 
 
 public:
-    SettingsAction(LayerSurferPlugin& LayerSurferPlugin);
+    SettingsAction(GradientSurferPlugin& GradientSurferPlugin);
 
     Dataset1OptionsHolder& getDataset1OptionsHolder() { return _dataset1OptionsHolder; }
     Dataset2OptionsHolder& getDataset2OptionsHolder() { return _dataset2OptionsHolder; }
@@ -341,7 +341,7 @@ public:
     QTableView* getTableView3Action() { return _tableView3Action; }
 
 protected:
-    LayerSurferPlugin& _viewerPlugin;
+    GradientSurferPlugin& _viewerPlugin;
     mv::CoreInterface* _core;
     Dataset1OptionsHolder              _dataset1OptionsHolder;
     Dataset2OptionsHolder              _dataset2OptionsHolder;
