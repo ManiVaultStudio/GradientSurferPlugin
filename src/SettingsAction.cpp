@@ -31,6 +31,8 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setSerializationName("GradientSurfer:EmbeddingDataset");
     _commonOptionsHolder.getTopNRowsAction().setSerializationName("GradientSurfer:TopNRows");
     _commonOptionsHolder.getBottomNRowsAction().setSerializationName("GradientSurfer:BottomNRows");
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setSerializationName("GradientSurfer:LowRangeColoringPercentile");
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setSerializationName("GradientSurfer:HighRangeColoringPercentile");
     _dataset1OptionsHolder.getGeneSelectionAction().setSerializationName("GradientSurfer:GeneSelection");
     _dataset2OptionsHolder.getGeneSelectionAction().setSerializationName("GradientSurfer:GeneSelection2");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("GradientSurfer:ScatterplotViewSelection");
@@ -70,6 +72,8 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder.getLineplotUpperColoringRangeAction().setToolTip("Lineplot Upper Coloring Range");
     _dataset1OptionsHolder.getLineplotLowerColoringRangeAction().setToolTip("Lineplot Lower Coloring Range");
     _commonOptionsHolder.getBottomNRowsAction().setToolTip("Bottom N Rows Action");
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setToolTip("Low Range Coloring Percentile Action");
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setToolTip("High Range Coloring Percentile Action");
     _dataset2OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset 2");
     _dataset2OptionsHolder.getPointDatasetAction().setToolTip("Point Dataset 2");
     _dataset2OptionsHolder.getEmbeddingDatasetAction().setToolTip("Embedding Dataset 2");
@@ -105,6 +109,19 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getTopNRowsAction().setMinimum(0);
     _commonOptionsHolder.getTopNRowsAction().setMaximum(100);
     _commonOptionsHolder.getTopNRowsAction().setValue(20);
+
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setNumberOfDecimals(2);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setMinimum(0.00);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setMaximum(1.00);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setSingleStep(0.01);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setValue(0.00);
+
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setNumberOfDecimals(2);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setMinimum(0.00);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setMaximum(1.00);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setSingleStep(0.01);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setValue(0.95);
+
 
 
     _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setMaximum(1.00);
@@ -202,6 +219,8 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
 
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
 
     _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
     _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
@@ -366,10 +385,10 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     addAction(&_lineplotViewSelectionAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
-    addAction(&_scatterplotUpperColoringRangeAction);
-    addAction(&_scatterplotLowerColoringRangeAction);
-    addAction(&_lineplotUpperColoringRangeAction);
-    addAction(&_lineplotLowerColoringRangeAction);
+    //addAction(&_scatterplotUpperColoringRangeAction);
+    //addAction(&_scatterplotLowerColoringRangeAction);
+    //addAction(&_lineplotUpperColoringRangeAction);
+    //addAction(&_lineplotLowerColoringRangeAction);
 
 
 
@@ -399,8 +418,8 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     addAction(&_scatterplotViewSelectionAction);
     addAction(&_embeddingDimensionXAction);
     addAction(&_embeddingDimensionYAction);
-    addAction(&_scatterplotUpperColoringRangeAction);
-    addAction(&_scatterplotLowerColoringRangeAction);
+    //addAction(&_scatterplotUpperColoringRangeAction);
+    //addAction(&_scatterplotLowerColoringRangeAction);
 
 
 
@@ -429,7 +448,9 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _statusMessageAction(this, "Status Message"),
     _statusBarActionWidget(new StatusBarAction(this, "Status")),
     _colorAllCellsWithExpressionAction(this, "Color All Cells With Expression"),
-    _tableSearchBoxAction(this, "Search Table")
+    _tableSearchBoxAction(this, "Search Table"),
+    _lowRangeColoringPercentileAction(this, "Low Range Coloring Percentile"),
+    _highRangeColoringPercentileAction(this, "High Range Coloring Percentile")
 {
     setText("Shared Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -444,6 +465,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_coloringMapSelectionAction);
+    addAction(&_lowRangeColoringPercentileAction);
+    addAction(&_highRangeColoringPercentileAction);
     addAction(&_autoComputeAction);
     addAction(&_correlationCalculationTypeAction);
     //addAction(&_normalizationTypeAction);
@@ -477,6 +500,8 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset2OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getBottomNRowsAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().fromParentVariantMap(variantMap);
 
     _dataset2OptionsHolder.getClusterDatasetAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getPointDatasetAction().fromParentVariantMap(variantMap);
@@ -506,6 +531,8 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset2OptionsHolder.getGeneSelection2Action().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getBottomNRowsAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getLowRangeColoringPercentileAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getHighRangeColoringPercentileAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getClusterDatasetAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getPointDatasetAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDatasetAction().insertIntoVariantMap(variantMap);

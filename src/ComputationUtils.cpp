@@ -229,9 +229,6 @@ void clearTable(QTableView* tableView)
             model->clear();
         }
     }
-
-    // Optionally, remove the model entirely to force a full reset
-    tableView->setModel(nullptr);
     tableView->update();
 }
 
@@ -1903,7 +1900,7 @@ float percentile(const std::vector<float>& data, float pct) {
     return sorted[idx_below] * (1.0f - weight_above) + sorted[idx_above] * weight_above;
 }
 
-std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax)
+std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax,float lowRangePercentileValue, float highRangePercentileValue)
 {
     FunctionTimer timer(Q_FUNC_INFO);
 
@@ -1960,8 +1957,8 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     }
 
     // Compute robust min/max from geneExpValues (e.g., 1st and 99th percentiles)
-    float computedMin = percentile(geneExpValues, 0.01f);
-    float computedMax = percentile(geneExpValues, 0.90f);
+    float computedMin = percentile(geneExpValues, lowRangePercentileValue);
+    float computedMax = percentile(geneExpValues, highRangePercentileValue);
     float fulldatasetMin = sentinelMinMax.first;
     float fulldatasetMax = sentinelMinMax.second;
 

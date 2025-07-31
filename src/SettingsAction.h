@@ -291,6 +291,12 @@ public:
         const StringAction& getTableSearchBoxAction() const { return _tableSearchBoxAction; }
         StringAction& getTableSearchBoxAction() { return _tableSearchBoxAction; }
 
+        const DecimalAction& getLowRangeColoringPercentileAction() const { return _lowRangeColoringPercentileAction; }
+        DecimalAction& getLowRangeColoringPercentileAction() { return _lowRangeColoringPercentileAction; }
+
+        const DecimalAction& getHighRangeColoringPercentileAction() const { return _highRangeColoringPercentileAction; }
+        DecimalAction& getHighRangeColoringPercentileAction() { return _highRangeColoringPercentileAction; }
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -320,6 +326,8 @@ public:
         StringAction                        _statusMessageAction;
         ToggleAction         _colorAllCellsWithExpressionAction;
         StringAction         _tableSearchBoxAction;
+        DecimalAction       _lowRangeColoringPercentileAction;
+        DecimalAction       _highRangeColoringPercentileAction;
     };
 
 

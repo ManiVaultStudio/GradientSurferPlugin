@@ -681,6 +681,13 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
         colormapChangeLinePlot(linePlotName, colorMapStringValue);
         };
     connect(&_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, changeColormap);
+    
+    const auto changePercentileValue = [this]() -> void {
+        _colorUpdateDebounceTimer.start(100);
+        };
+
+    connect(&_settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
+    connect(&_settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
 
     const auto selectionModeToggled = [this]()
         {
@@ -2266,8 +2273,10 @@ void Computation::correlationAfterPCA()
     setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),false);
     setupTableModelAndSelection(_settingsAction.getTableView3Action(), _geneCorrValues3, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),false);
     selectFirstRow(_settingsAction.getTableView3Action());
-    setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
+    
 
+    setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
+    colorLinePlots();
 }
 bool Computation::getRotationAngle(const QString& scatterplotViewName, float& rotationAngle)
 {
@@ -3459,8 +3468,8 @@ void Computation::colorLinePlots()
                     std::vector<float> selectedData(numbpts);
                     _lineChartPointDataset1->extractDataForDimension(selectedData, colordimensionIndx);
                     if (!selectedData.empty()) {
-                        minValue = percentile(selectedData, 0.01f); // 1st percentile
-                        maxValue = percentile(selectedData, 0.90f); // 99th percentile
+                        minValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction().getValue()); 
+                        maxValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction().getValue()); 
                     }
                 }
             }
@@ -3598,7 +3607,8 @@ void Computation::colorScatterPlots()
     }
     std::pair<float, float> sentinelValMinMax1{ minValScatter1.getMinimum(), maxValScatter1.getMaximum() };
     std::pair<float, float> sentinelValMinMax2{ minValScatter2.getMinimum(), maxValScatter2.getMaximum() };
-
+    float lowRangePercentile = commonOpts.getLowRangeColoringPercentileAction().getValue();
+    float highRangePercentile = commonOpts.getHighRangeColoringPercentileAction().getValue();
     // Determine coloring source: PCA or gene
     if (commonOpts.getPcaColoringAction().isChecked()) {
         if (!_pcaCommonGenesDataset1.isValid() || !_pcaCommonGenesDataset2.isValid()) {
@@ -3617,10 +3627,10 @@ void Computation::colorScatterPlots()
 
        auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             pcaDataset1ID, embeddingDataset1->getNumPoints(),
-            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1);
+            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile);
        auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             pcaDataset2ID, embeddingDataset2->getNumPoints(),
-            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2);
+            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
        minVal1 = value1.first;
        maxVal1 = value1.second;
        minVal2 = value2.first;
@@ -3644,10 +3654,10 @@ void Computation::colorScatterPlots()
 
         auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             geneDataset1ID, embeddingDataset1->getNumPoints(),
-            selectedGeneName, minVal1, maxVal1, true, sentinelValMinMax1);
+            selectedGeneName, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile);
         auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             geneDataset2ID, embeddingDataset2->getNumPoints(),
-            selectedGeneName, minVal2, maxVal2, true, sentinelValMinMax2);
+            selectedGeneName, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
         minVal1 = value1.first;
         maxVal1 = value1.second;
         minVal2 = value2.first;
