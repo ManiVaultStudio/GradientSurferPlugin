@@ -165,6 +165,7 @@ protected:
     bool _projectOpened = true;
     bool _isColoringScatterplots = false;
     bool _isColoringLineplots = false;
+    QMetaObject::Connection _mainSelectionChangedConnection;
     QMetaObject::Connection _pixelSelectionStartedConnection;
     friend class ChannelAction;
 };

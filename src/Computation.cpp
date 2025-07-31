@@ -443,9 +443,11 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
                     };
 
 
-                bool ok = connect(&_embeddingDataset, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged);
-                if (!ok)
-                {
+                if (_mainSelectionChangedConnection != QMetaObject::Connection{}) {
+                    disconnect(_mainSelectionChangedConnection);
+                }
+                _mainSelectionChangedConnection = connect(&_embeddingDataset, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged);
+                if (!_mainSelectionChangedConnection) {
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
                 //ScopedBlocker blocker(_blockToggle);
@@ -2670,9 +2672,8 @@ bool Computation::setupAndTriggerPCA()
             setStatusMessage("E", "PCA components action not found", "");
             return false;
         }
-        auto numofIntGenes = _commonGenesAcrossDatasets.size();
-        componentsAction1->setMaximum(numofIntGenes);
-        componentsAction1->setValue(numofIntGenes);
+        componentsAction1->setMaximum(numOfIntGenes);
+        componentsAction1->setValue(numOfIntGenes);
 
         auto componentsAction2 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction2) {
@@ -2680,8 +2681,8 @@ bool Computation::setupAndTriggerPCA()
             setStatusMessage("E", "PCA components action not found", "");
             return false;
         }
-        componentsAction2->setMaximum(numofIntGenes);
-        componentsAction2->setValue(numofIntGenes);
+        componentsAction2->setMaximum(numOfIntGenes);
+        componentsAction2->setValue(numOfIntGenes);
 
 
         auto startAction1 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Start analysis"));
@@ -3285,6 +3286,8 @@ void Computation::selectionModeAltToggleLogic(QString scatterplotName)
         qWarning() << "No scatterplot view selected";
         return;
     }
+
+
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
     if (scatterplotViewFactory)
     {
