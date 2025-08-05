@@ -35,31 +35,267 @@
 using namespace mv;
 using namespace mv::gui;
 
+
 Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAction& SettingsAction)
     : WidgetAction(&GradientSurferPlugin, "Computation"),
     _viewerPlugin(GradientSurferPlugin),
     _settingsAction(SettingsAction),
     _foregroundTask(this, "Computing", mv::Task::Status::Undefined)
 {
-    if (mv::projects().isOpeningProject())
-    {
+    initializeState();
+    setupDebounceTimers();
+    setupStatusMessageHandler();
+    setupPlotSelectionOptions();    
+    setupDatasetFilters();
+    setupClusterUpdateHandlers();
+    setupPointDatasetHandlers();
+    setupGeneSelectionHandlers();
+    setupEmbeddingDatasetHandlers();
+    setupEmbeddingDimensionHandlers();
+    setupComputeHandlers();
+    setupColoringHandlers();
+    setupRangeColoringHandlers();   
+    setupTableHandlers();           
+    setupScatterplotHandlers();
+
+    _pca1.setCompletionCallback([this](bool success, const std::string& message) {
+        _isManualComputeComputing = false;
+        _isPCATriggerComputing = false;
+        if (success) {
+            processAfterPCAComplete();
+        }
+        else {
+            setStatusMessage("E", "PCA Failed", message.c_str());
+        }
+        });
+}
+
+void Computation::setupPlotSelectionOptions()
+{
+    const auto plotSelectionOptions = [this]() {
+        QStringList scatterplotNames = {};
+        QStringList lineplotNames = {};
+        QString selectedCurrentText1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString selectedCurrentText2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+
+        auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+        if (scatterplotViewFactory) {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
+                scatterplotNames.append(plugin->getGuiName());
+            }
+        }
+
+        QString lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+        auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
+        if (lineplotViewFactory) {
+            for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory)) {
+                lineplotNames.append(plugin->getGuiName());
+            }
+        }
+
+        selectedCurrentText1 = selectValidOption(scatterplotNames, selectedCurrentText1, 0);
+        selectedCurrentText2 = selectValidOption(scatterplotNames, selectedCurrentText2, 1);
+        lineplotView = selectValidOption(lineplotNames, lineplotView, 0);
+
+        _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
+        _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText1);
+        _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
+        _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText2);
+        _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().setOptions(lineplotNames);
+        _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().setCurrentText(lineplotView);
+        };
+
+    connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, plotSelectionOptions);
+}
+
+void Computation::setupRangeColoringHandlers()
+{
+    // Expression coloring range handlers for scatterplot 1
+    connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() { _scatterplot1ExpressionColoringRangeDebounceTimer.start(50); });
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() { _scatterplot1ExpressionColoringRangeDebounceTimer.start(50); });
+
+    // Expression coloring range handlers for lineplot
+    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() { _lineExpressionColoringRangeDebounceTimer.start(50); });
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() { _lineExpressionColoringRangeDebounceTimer.start(50); });
+
+    // Expression coloring range handlers for scatterplot 2
+    connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() { _scatterplot2ExpressionColoringRangeDebounceTimer.start(50); });
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction(),
+        &DecimalAction::valueChanged,
+        this,
+        [this]() { _scatterplot2ExpressionColoringRangeDebounceTimer.start(50); });
+
+    // Lineplot expression coloring range debounce timer handler
+    connect(&_lineExpressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_projectOpened) return;
+
+        if (_settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue() >
+            _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue()) {
+            _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().setValue(
+                _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue());
+            return;
+        }
+
+        auto linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
+        float minVal = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue();
+        float maxVal = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue();
+
+        if (linePlotName.isEmpty()) {
+            qWarning() << "No line plot view selected";
+            return;
+        }
+        if (minVal > maxVal) {
+            _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().setValue(maxVal);
+            return;
+        }
+
+        rangeChangeLinePlot(linePlotName, minVal, maxVal);
+        });
+
+    // Scatterplot 1 expression coloring range debounce timer handler
+    connect(&_scatterplot1ExpressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_projectOpened) return;
+
+        if (_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() >
+            _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue()) {
+            _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(
+                _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue());
+            return;
+        }
+
+        QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        float minValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+        float maxValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+
+        if (scatterplot1Name.isEmpty()) {
+            qWarning() << "No scatterplot view 1 selected";
+            return;
+        }
+        if (minValScatter1 > maxValScatter1) {
+            _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(maxValScatter1);
+            return;
+        }
+
+        rangeChangeScatterPlot(scatterplot1Name, minValScatter1, maxValScatter1);
+        });
+
+    // Scatterplot 2 expression coloring range debounce timer handler
+    connect(&_scatterplot2ExpressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_projectOpened) return;
+
+        if (_settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() >
+            _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue()) {
+            _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(
+                _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue());
+            return;
+        }
+
+        QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        float minValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
+        float maxValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
+
+        if (scatterplot2Name.isEmpty()) {
+            qWarning() << "No scatterplot view 2 selected";
+            return;
+        }
+        if (minValScatter2 > maxValScatter2) {
+            _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(maxValScatter2);
+            return;
+        }
+
+        rangeChangeScatterPlot(scatterplot2Name, minValScatter2, maxValScatter2);
+        });
+}
+
+void Computation::setupTableHandlers()
+{
+    // N Range handlers for table updates
+    connect(&_settingsAction.getCommonOptionsHolder().getTopNRowsAction(),
+        &IntegralAction::valueChanged,
+        this,
+        [this]() { _NRangeDebounceTimer.start(300); });
+
+    connect(&_settingsAction.getCommonOptionsHolder().getBottomNRowsAction(),
+        &IntegralAction::valueChanged,
+        this,
+        [this]() { _NRangeDebounceTimer.start(300); });
+
+    connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_projectOpened) return;
+
+        setStatusMessage("R", "Updating table", "");
+        resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(),
+            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(),
+            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(),
+            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),
+            _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(),
+            _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), true);
+
+        resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(),
+            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(),
+            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(),
+            _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),
+            _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(),
+            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), false);
+
+        resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3, _settingsAction.getTableView3Action(),
+            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(),
+            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(),
+            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),
+            _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(),
+            _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), false);
+
+        selectFirstRow(_settingsAction.getTableView1Action());
+        setStatusMessage("C", "Table updated", "");
+
+        if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
+            setStatusMessage("R", "Computation in progress", "");
+            disableOptions();
+            ManualCompute();
+            enableOptions();
+        }
+        });
+}
+
+void Computation::initializeState()
+{
+    if (mv::projects().isOpeningProject()) {
         _projectOpened = false;
-        connect(&mv::projects(), &AbstractProjectManager::projectOpened, this,
-            [this]() {
-                _projectOpened = true;
-                _taskDisable = true;
-                //disableOptions();
-                colorScatterPlots();
-                clearTables();
-                clearLinePlots();
-                //enableOptions();
-                findCommonGenes();
-                _taskDisable = false;
-                selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
-                setStatusMessage("C", "Project opened", "");
+        connect(&mv::projects(), &AbstractProjectManager::projectOpened, this, [this]() {
+            _projectOpened = true;
+            _taskDisable = true;
+            colorScatterPlots();
+            clearTables();
+            clearLinePlots();
+            findCommonGenes();
+            _taskDisable = false;
+            selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
+            setStatusMessage("C", "Project opened", "");
             });
     }
+    qInstallMessageHandler(customMessageHandler);
+}
 
+void Computation::setupDebounceTimers()
+{
     _colorUpdateDebounceTimer.setSingleShot(true);
     connect(&_colorUpdateDebounceTimer, &QTimer::timeout, this, [this]() {
         colorLinePlots();
@@ -68,15 +304,14 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
 
     _NRangeDebounceTimer.setSingleShot(true);
     _clusterSelectionDebounceTimer.setSingleShot(true);
-     _lineExpressionColoringRangeDebounceTimer.setSingleShot(true);
-     _scatterplot1ExpressionColoringRangeDebounceTimer.setSingleShot(true);
-     _scatterplot2ExpressionColoringRangeDebounceTimer.setSingleShot(true);
-    qInstallMessageHandler(customMessageHandler);
+    _lineExpressionColoringRangeDebounceTimer.setSingleShot(true);
+    _scatterplot1ExpressionColoringRangeDebounceTimer.setSingleShot(true);
+    _scatterplot2ExpressionColoringRangeDebounceTimer.setSingleShot(true);
+}
 
-
-
-
-    const auto updateStatus = [this]() -> void {
+void Computation::setupStatusMessageHandler()
+{
+    const auto updateStatus = [this]() {
         auto stringFull = _settingsAction.getCommonOptionsHolder().getStatusMessageAction().getString();
         StatusInfo info = parseStatusMessage(stringFull);
 
@@ -87,280 +322,164 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
         icon.withColor(iconColor);
 
         QPixmap iconPixmap = QIcon(icon).pixmap(iconSize, iconSize);
-
         QLabel* statusLabel = createStatusLabel(info.message, info.backgroundColor, info.textColor, iconPixmap, font);
 
         StatusBarAction* statusBarAction = _settingsAction.getCommonOptionsHolder().getStatusBarAction();
-        if (statusBarAction) {
+        if (statusBarAction && statusBarAction->statusBar()) {
             QStatusBar* statusBar = statusBarAction->statusBar();
-            if (statusBar) {
-                QList<QWidget*> children = statusBar->findChildren<QWidget*>();
-                for (QWidget* child : children) {
-                    statusBar->removeWidget(child);
-                    child->deleteLater();
-                }
-                statusBar->addWidget(statusLabel, 1);
+            QList<QWidget*> children = statusBar->findChildren<QWidget*>();
+            for (QWidget* child : children) {
+                statusBar->removeWidget(child);
+                child->deleteLater();
             }
+            statusBar->addWidget(statusLabel, 1);
         }
         };
     connect(&_settingsAction.getCommonOptionsHolder().getStatusMessageAction(), &StringAction::stringChanged, this, updateStatus);
-    const auto plotSelectionOptions = [this]() -> void
-        {
-            QStringList scatterplotNames = {};
-            QStringList lineplotNames = {};
-            QString selectedCurrentText1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-            QString selectedCurrentText2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-            auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-            if (scatterplotViewFactory)
-            {
+}
 
-                for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-                {
-                    scatterplotNames.append(plugin->getGuiName());
-                }
-            }
-
-            QString lineplotView = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-            auto lineplotViewFactory = mv::plugins().getPluginFactory("LinePlot View");
-            if (lineplotViewFactory)
-            {
-                for (auto plugin : mv::plugins().getPluginsByFactory(lineplotViewFactory))
-                {
-                    lineplotNames.append(plugin->getGuiName());
-                }
-            }
-
-            selectedCurrentText1 = selectValidOption(scatterplotNames, selectedCurrentText1, 0);
-            selectedCurrentText2 = selectValidOption(scatterplotNames, selectedCurrentText2, 1);
-
-
-            lineplotView = selectValidOption(lineplotNames, lineplotView, 0);
-
-            _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
-            _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText1);
-            _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().setOptions(scatterplotNames);
-            _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().setCurrentText(selectedCurrentText2);
-
-
-            _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().setOptions(lineplotNames);
-            _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().setCurrentText(lineplotView);
-
-        };
-
-    connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, plotSelectionOptions);
-
-
+void Computation::setupDatasetFilters()
+{
+    // Dataset 1 filters
     _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setFilterFunction(
-        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        [this](mv::Dataset<DatasetImpl> dataset) {
             return isValidClusterDataset(dataset, _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset());
         }
     );
 
     _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setFilterFunction(
-        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        [this](mv::Dataset<DatasetImpl> dataset) {
             return isValidPointDataset(dataset);
         }
     );
 
+    // Dataset 2 filters
     _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setFilterFunction(
-        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        [this](mv::Dataset<DatasetImpl> dataset) {
             return isValidClusterDataset(dataset, _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset());
         }
     );
 
     _settingsAction.getDataset2OptionsHolder().getPointDatasetAction().setFilterFunction(
-        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        [this](mv::Dataset<DatasetImpl> dataset) {
             return isValidPointDataset(dataset);
         }
     );
 
+    // Embedding dataset filters
     _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setFilterFunction(
-        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        [this](mv::Dataset<DatasetImpl> dataset) {
             return isValidPointChildDataset(dataset);
         }
     );
 
     _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setFilterFunction(
-        [this](mv::Dataset<DatasetImpl> dataset) -> bool {
+        [this](mv::Dataset<DatasetImpl> dataset) {
             return isValidPointChildDataset(dataset);
         }
     );
+}
 
-    const auto updateClusterDataset1 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
+void Computation::setupClusterUpdateHandlers()
+{
+    const auto updateClusterDataset = [this](bool isDataset1) {
         updateClusterOptions();
-        setStatusMessage("M", "Cluster dataset updated", "");
+        setStatusMessage("M", QString("Cluster dataset %1 updated").arg(isDataset1 ? "1" : "2"), "");
         };
 
-    connect(&_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset1);
+    connect(&_settingsAction.getDataset1OptionsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged,
+        this, [updateClusterDataset]() { updateClusterDataset(true); });
 
-    const auto updateClusterDataset2 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        updateClusterOptions();
-        setStatusMessage("M", "Cluster dataset updated", "");
-        };
+    connect(&_settingsAction.getDataset2OptionsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged,
+        this, [updateClusterDataset]() { updateClusterDataset(false); });
+}
 
-    connect(&_settingsAction.getDataset2OptionsHolder().getClusterDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateClusterDataset2);
+void Computation::setupPointDatasetHandlers()
+{
+    const auto updatePointDataset = [this](bool isDataset1) {
+        auto& pointDatasetAction = isDataset1 ?
+            _settingsAction.getDataset1OptionsHolder().getPointDatasetAction() :
+            _settingsAction.getDataset2OptionsHolder().getPointDatasetAction();
 
-    const auto updatePointDataset1 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        if ( _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
-        {
-            auto datasetID = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId();
+        auto& geneSelectionAction = isDataset1 ?
+            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction() :
+            _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction();
+
+        auto& scatterplotRangeUpper = isDataset1 ?
+            _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction() :
+            _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction();
+
+        auto& scatterplotRangeLower = isDataset1 ?
+            _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction() :
+            _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction();
+
+        if (pointDatasetAction.getCurrentDataset().isValid()) {
+            auto datasetID = pointDatasetAction.getCurrentDataset().getDatasetId();
             auto dataset = mv::data().getDataset<Points>(datasetID);
-            if (dataset.isValid())
-            {
-                auto limits= findDatasetLimits(datasetID);
-                DecimalAction& scatterplotRangeUpper = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction();
-                DecimalAction& scatterplotRangeLower = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction();
-                scatterplotRangeUpper.setMaximum(limits.second);
-                scatterplotRangeLower.setMaximum(limits.second);
-                scatterplotRangeUpper.setMinimum(limits.first);
-                scatterplotRangeLower.setMinimum(limits.first);
-                auto& lineplotRangeUpper1 = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction();
-                auto& lineplotRangeLower1 = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction();
-                lineplotRangeUpper1.setMaximum(limits.second);
-                lineplotRangeUpper1.setMinimum(limits.second);
-                lineplotRangeLower1.setMaximum(limits.first);
-                lineplotRangeLower1.setMinimum(limits.first);
-                findCommonGenes();
-                _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
-                auto dimensions = dataset->getNumDimensions();
-                
-            }
-
-
-        }
-        else
-        {
-             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setPointsDataset({});
-        }
-        setStatusMessage("M", "Point dataset 1 updated", "");
-        };
-
-    connect(& _settingsAction.getDataset1OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset1);
-
-    const auto updatePointDataset2 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        if (_settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid())
-        {
-            auto datasetID = _settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId();
-            auto dataset = mv::data().getDataset<Points>(datasetID);
-            if (dataset.isValid())
-            {
+            if (dataset.isValid()) {
                 auto limits = findDatasetLimits(datasetID);
-
-                auto& scatterplotRangeUpper = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction();
-                auto& scatterplotRangeLower = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction();
                 scatterplotRangeUpper.setMaximum(limits.second);
                 scatterplotRangeLower.setMaximum(limits.second);
                 scatterplotRangeUpper.setMinimum(limits.first);
                 scatterplotRangeLower.setMinimum(limits.first);
-  
+
+                if (isDataset1) {
+                    auto& lineplotRangeUpper = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction();
+                    auto& lineplotRangeLower = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction();
+                    lineplotRangeUpper.setMaximum(limits.second);
+                    lineplotRangeUpper.setMinimum(limits.first);  // Fixed: was limits.second
+                    lineplotRangeLower.setMaximum(limits.second);  // Fixed: was limits.first
+                    lineplotRangeLower.setMinimum(limits.first);
+                }
+
                 findCommonGenes();
-                _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction().setPointsDataset(dataset);
-                auto dimensions = dataset->getNumDimensions();
-
+                geneSelectionAction.setPointsDataset(dataset);
+                auto dimensions = dataset->getNumDimensions(); 
             }
-
-
         }
-        else
-        {
-            _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction().setPointsDataset({});
+        else {
+            geneSelectionAction.setPointsDataset({});
         }
-        
-        setStatusMessage("M", "Point dataset 2 updated", "");
+        setStatusMessage("M", QString("Point dataset %1 updated").arg(isDataset1 ? "1" : "2"), "");
         };
 
-    connect(&_settingsAction.getDataset2OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updatePointDataset2);
+    connect(&_settingsAction.getDataset1OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged,
+        this, [updatePointDataset]() { updatePointDataset(true); });
 
-    const auto updateGeneSelection1 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        if (_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex() >= 0)
-        {
+    connect(&_settingsAction.getDataset2OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged,
+        this, [updatePointDataset]() { updatePointDataset(false); });
+}
+
+void Computation::setupGeneSelectionHandlers()
+{
+    const auto updateGeneSelection = [this](bool isDataset1) {
+        auto& geneSelectionAction = isDataset1 ?
+            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction() :
+            _settingsAction.getDataset2OptionsHolder().getGeneSelection2Action();
+
+        if (geneSelectionAction.getCurrentDimensionIndex() >= 0) {
             ScopedBlocker blocker(_blockToggle);
-            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false); _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-
+            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
+            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         }
         _colorUpdateDebounceTimer.start(100);
         };
 
-    connect(& _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection1);
+    connect(&_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged,
+        this, [updateGeneSelection]() { updateGeneSelection(true); });
+
+    connect(&_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), &DimensionPickerAction::currentDimensionIndexChanged,
+        this, [updateGeneSelection]() { updateGeneSelection(false); });
+}
 
 
-    const auto updateGeneSelection2 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        if (_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action().getCurrentDimensionIndex()>=0)
-        {
-            ScopedBlocker blocker(_blockToggle);
-            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false); _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+void Computation::setupEmbeddingDatasetHandlers()
+{
+    const auto updateEmbeddingDataset1 = [this]() {
+        if (_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid()) {
+            _embeddingDataset = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
 
-        }
-        _colorUpdateDebounceTimer.start(100);
-        };
-
-    connect(&_settingsAction.getDataset2OptionsHolder().getGeneSelection2Action(), &DimensionPickerAction::currentDimensionIndexChanged, this, updateGeneSelection2);
-    /*
-    const auto normalizationModified = [this]() -> void {
-        if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }
-        disableOptions();
-        
-        normalizeData();
-        
-        setStatusMessage("M", "Selected indices changed", "");
-        setStatusMessage("R", "Computation in progress", "");
-        
-        
-        
-        setSelectionAndAutoCompute();
-        enableOptions();
-        };
-    connect(&_settingsAction.getCommonOptionsHolder().getNormalizeCombinedDatasetsAction(), &ToggleAction::toggled, this, normalizationModified);
-    connect(&_settingsAction.getCommonOptionsHolder().getNormalizationTypeAction(), &OptionAction::currentIndexChanged, this, normalizationModified);
-    */
-    const auto updateEmbeddingDataset1 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        if ( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid())
-        {
-
-
-            _embeddingDataset = mv::data().getDataset<Points>( _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
-
-            if (_embeddingDataset.isValid())
-            {
+            if (_embeddingDataset.isValid()) {
                 _filteredSelectionIndices.clear();
                 _selectedClusterIndices1.clear();
                 _selectedClusterIndices2.clear();
@@ -370,114 +489,75 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
                 _geneOfInterestIndices1.clear();
                 _geneOfInterestIndices2.clear();
                 _geneOfInterestIndices3.clear();
-                //_commonGeneNames.clear();
-                //_commonGeneListSelectedInTables.clear();
                 clearTables();
                 clearLinePlots();
-                
+
                 auto parent = _embeddingDataset->getParent();
-                if (parent.isValid())
-                {
+                if (parent.isValid()) {
                     _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setCurrentDataset(parent);
                     auto children = parent->getChildren();
                     Datasets clusterDatasets;
                     for (const Dataset<Clusters>& child : children) {
                         if (child->getDataType() == ClusterType && (child->getGroupIndex() != 667 || child->getGroupIndex() != 666)) {
                             clusterDatasets.append(child);
-
                         }
                     }
                     auto selectedClusterDatasetName = _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset();
 
                     _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setDatasets(clusterDatasets);
-                    if (clusterDatasets.contains(selectedClusterDatasetName))
-                    {
+                    if (clusterDatasets.contains(selectedClusterDatasetName)) {
                         _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentDataset(selectedClusterDatasetName);
                     }
-                    else if (clusterDatasets.size() > 0)
-                    {
+                    else if (clusterDatasets.size() > 0) {
                         _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentDataset(clusterDatasets.first());
                     }
                 }
-                else
-                {
+                else {
                     _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setDatasets({});
                 }
-                
-                
-                
-                _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
-                 _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setPointsDataset(_embeddingDataset);
-                 if (_embeddingDataset->getNumDimensions() >= 2)
-                 {
-                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(0);
-                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(1);
-                    }
-                    else if (_embeddingDataset->getNumDimensions() == 1)
-                    {
-                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(0);
-                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(0);
-                    }
-                    else
-                 {
-                     _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(-1);
-                     _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(-1);
-                 }
-                const auto mainSelectionChanged = [this]() -> void {
 
-                    if (_blockSelectionTrigger)
-                    {
-                        //qDebug() << "Selection change blocked, returning early";
-                        //_blockSelectionTrigger = false;
-                        return;
-                    }
-  
+                _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setPointsDataset(_embeddingDataset);
+                _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setPointsDataset(_embeddingDataset);
+
+                if (_embeddingDataset->getNumDimensions() >= 2) {
+                    _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(0);
+                    _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(1);
+                }
+                else if (_embeddingDataset->getNumDimensions() == 1) {
+                    _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(0);
+                    _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(0);
+                }
+                else {
+                    _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(-1);
+                    _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(-1);
+                }
+
+                const auto mainSelectionChanged = [this]() {
+                    if (_blockSelectionTrigger) return;
                     setStatusMessage("M", "Selected indices changed", "");
                     setStatusMessage("R", "Computation in progress", "");
                     disableOptions();
-
-  
                     setSelectionAndAutoCompute();
                     enableOptions();
-
                     };
 
-
-                if (_mainSelectionChangedConnection != QMetaObject::Connection{}) {
-                    disconnect(_mainSelectionChangedConnection);
-                }
-                _mainSelectionChangedConnection = connect(&_embeddingDataset, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged);
-                if (!_mainSelectionChangedConnection) {
+                bool ok = connect(&_embeddingDataset, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged);
+                if (!ok) {
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
-                //ScopedBlocker blocker(_blockToggle);
-                //_settingsAction.getCommonOptionsHolder().getComputePCAAction().setChecked(false);
+
                 _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
-                colorScatterPlots(); //TODO Check
- 
+                colorScatterPlots();
             }
-
-
         }
-
         setStatusMessage("M", "Embedding dataset 1 updated", "");
         };
 
-    connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset1);
-
-    const auto updateEmbeddingDataset2 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        if (_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid())
-        {
-            
+    const auto updateEmbeddingDataset2 = [this]() {
+        if (_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid()) {
             auto embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
 
-            if (embeddingDataset2.isValid())
-            {
+            if (embeddingDataset2.isValid()) {
                 _filteredSelectionIndices.clear();
                 _selectedClusterIndices1.clear();
                 _selectedClusterIndices2.clear();
@@ -487,147 +567,154 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
                 _geneOfInterestIndices1.clear();
                 _geneOfInterestIndices2.clear();
                 _geneOfInterestIndices3.clear();
-                //_commonGeneNames.clear();
-                //_commonGeneListSelectedInTables.clear();
                 clearTables();
                 clearLinePlots();
+
                 auto parent = embeddingDataset2->getParent();
-                if (parent.isValid())
-                {
+                if (parent.isValid()) {
                     _settingsAction.getDataset2OptionsHolder().getPointDatasetAction().setCurrentDataset(parent);
                     auto children = parent->getChildren();
                     Datasets clusterDatasets;
                     for (const Dataset<Clusters>& child : children) {
-                        if (child->getDataType() == ClusterType && (child->getGroupIndex() != 667|| child->getGroupIndex() != 666)) {
+                        if (child->getDataType() == ClusterType && (child->getGroupIndex() != 667 || child->getGroupIndex() != 666)) {
                             clusterDatasets.append(child);
-                            
                         }
                     }
 
                     auto selectedClusterDatasetName = _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().getCurrentDataset();
                     _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setDatasets(clusterDatasets);
-                    if (clusterDatasets.contains(selectedClusterDatasetName))
-                    {
+                    if (clusterDatasets.contains(selectedClusterDatasetName)) {
                         _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setCurrentDataset(selectedClusterDatasetName);
                     }
-                    else if (clusterDatasets.size() > 0)
-                    {
+                    else if (clusterDatasets.size() > 0) {
                         _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setCurrentDataset(clusterDatasets.first());
                     }
                 }
-                else
-                {
+                else {
                     _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setDatasets({});
                 }
-                
+
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionXAction().setPointsDataset(embeddingDataset2);
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionYAction().setPointsDataset(embeddingDataset2);
-                if (embeddingDataset2->getNumDimensions() >= 2)
-                {
+
+                if (embeddingDataset2->getNumDimensions() >= 2) {
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(0);
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(1);
                 }
-                else if (embeddingDataset2->getNumDimensions() == 1)
-                {
+                else if (embeddingDataset2->getNumDimensions() == 1) {
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(0);
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(0);
                 }
-                else
-                {
+                else {
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionXAction().setCurrentDimensionIndex(-1);
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(-1);
                 }
-                //ScopedBlocker blocker(_blockToggle);
-                //_settingsAction.getCommonOptionsHolder().getComputePCAAction().setChecked(false);
+
                 _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
                 //coloringScatterPlots(); //TODO Check
             }
-
-
         }
-        
         setStatusMessage("M", "Embedding dataset 2 updated", "");
         };
 
+    connect(&_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset1);
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset2);
+}
 
-    const auto computeInfo = [this]() -> void {
-        if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }
+
+void Computation::setupEmbeddingDimensionHandlers()
+{
+    // These were already consolidated correctly, but the message strings need to match original
+    const auto embeddingDimensionYActionChanged1 = [this]() {
+        setStatusMessage("M", "Embedding 1 Y dimension changed", "");
+        _colorUpdateDebounceTimer.start(100);
+        };
+
+    const auto embeddingDimensionYActionChanged2 = [this]() {
+        setStatusMessage("M", "Embedding 2 Y dimension changed", "");
+        _colorUpdateDebounceTimer.start(100);
+        };
+
+    const auto embeddingDimensionXActionChanged1 = [this]() {
+        setStatusMessage("M", "Embedding 1 X dimension changed", "");
+        _colorUpdateDebounceTimer.start(100);
+        };
+
+    const auto embeddingDimensionXActionChanged2 = [this]() {
+        setStatusMessage("M", "Embedding 2 X dimension changed", "");
+        _colorUpdateDebounceTimer.start(100);
+        };
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged1);
+    connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionYAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged2);
+    connect(&_settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged1);
+    connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionXAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged2);
+}
+
+void Computation::setupComputeHandlers()
+{
+    // Compute Info handler
+    connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, [this]() {
+        if (!_projectOpened) return;
         setStatusMessage("R", "Correlation computation in progress", "");
-
-        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
-        {
+        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         }
         disableOptions();
-
-        correlationAfterPCA(); 
+        correlationAfterPCA();
         enableOptions();
-        
-        };
+        });
 
-    connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, computeInfo);
-
-    const auto correlationCalculationTypeActionChanged = [this]() -> void {
-        if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }
+    // Correlation calculation type handler
+    connect(&_settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction(), &OptionAction::currentIndexChanged, this, [this]() {
+        if (!_projectOpened) return;
         setStatusMessage("R", "Computation in progress", "");
         disableOptions();
-
-        
         setSelectionAndAutoCompute();
-
         enableOptions();
-        };
+        });
 
-    connect(&_settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction(), &OptionAction::currentIndexChanged, this, correlationCalculationTypeActionChanged);
-
-
-    const auto computePCATrigger = [this]() -> void {
-        if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }
+    // PCA trigger handler
+    connect(&_settingsAction.getCommonOptionsHolder().getComputePCAAction(), &TriggerAction::triggered, this, [this]() {
+        if (!_projectOpened) return;
         setStatusMessage("R", "PCA Computation in progress", "");
-        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
-        {
+        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-
         }
         disableOptions();
-
-        
         ManualCompute();
         enableOptions();
-        };
+        });
 
-    connect(&_settingsAction.getCommonOptionsHolder().getComputePCAAction(), &TriggerAction::triggered, this, computePCATrigger);
+    // Computation type changed handler
+    connect(&_settingsAction.getCommonOptionsHolder().getComputationTypeAction(), &OptionAction::currentIndexChanged, this, [this]() {
+        _settingsAction.getCommonOptionsHolder().getComputePCAAction().trigger();
+        });
 
+    // Cluster selection debounce handler
+    connect(&_settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
+        &OptionsAction::selectedOptionsChanged,
+        this,
+        [this]() { _clusterSelectionDebounceTimer.start(500); });
 
-    const auto pcaColorsToPlots = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
+    connect(&_clusterSelectionDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_projectOpened) return;
+        setStatusMessage("R", "Computation in progress", "");
+        disableOptions();
+        setSelectionAndAutoCompute();
+        enableOptions();
+        });
+}
 
-        if (_blockToggle) {
-            //qDebug() << "PCA coloring paused, returning early";
-            return;
-        }
+void Computation::setupColoringHandlers()
+{
+    // PCA coloring handler
+    connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, [this]() {
+        if (_blockToggle) return;
 
-        if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked())
-        {
+        if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
             _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
@@ -636,653 +723,261 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
             deselectAllRows(_settingsAction.getTableView2Action());
             deselectAllRows(_settingsAction.getTableView3Action());
         }
-        else
-        {
+        else {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
         }
-
-
         _colorUpdateDebounceTimer.start(100);
-        };
+        });
 
-    connect(&_settingsAction.getCommonOptionsHolder().getPcaColoringAction(), &ToggleAction::toggled, this, pcaColorsToPlots);
-
-    const auto changeColormap = [this]() -> void {
-
-
+    // Colormap change handler
+    connect(&_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, [this]() {
         QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
         auto linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-        if (colorMapStringValue.isEmpty())
-        {
+
+        if (colorMapStringValue.isEmpty()) {
             qWarning() << "No colormap selected";
             return;
         }
 
-        if (scatterplot1Name.isEmpty())
-        {
-            qWarning() << "No scatterplot view 1 selected";
-            return;
+        if (!scatterplot1Name.isEmpty()) {
+            colormapChangeScatterplot(scatterplot1Name, colorMapStringValue);
         }
-        colormapChangeScatterplot(scatterplot1Name, colorMapStringValue);
-        if (scatterplot2Name.isEmpty())
-        {
-            qWarning() << "No scatterplot view 2 selected";
-            return;
+        if (!scatterplot2Name.isEmpty()) {
+            colormapChangeScatterplot(scatterplot2Name, colorMapStringValue);
         }
-        colormapChangeScatterplot(scatterplot2Name, colorMapStringValue);
-        if (linePlotName.isEmpty())
-        {
-            qWarning() << "No line plot view selected";
-            return;
+        if (!linePlotName.isEmpty()) {
+            colormapChangeLinePlot(linePlotName, colorMapStringValue);
         }
-        
-        colormapChangeLinePlot(linePlotName, colorMapStringValue);
-        };
-    connect(&_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, changeColormap);
-    
-    const auto changePercentileValue = [this]() -> void {
-        _colorUpdateDebounceTimer.start(100);
-        };
+        });
 
+    // Percentile value change handlers
+    auto changePercentileValue = [this]() { _colorUpdateDebounceTimer.start(100); };
     connect(&_settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
     connect(&_settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
 
-    const auto selectionModeToggled = [this]()
-        {
-            /*if (!_projectOpened)
-            {
-                //qDebug() << "Project opening";
-                return;
-            }*/
-            if(_blockToggle)
-                {
-                //qDebug() << "Selection mode change blocked, returning early";
-                return;
-            }
-            if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
-            {
-                ScopedBlocker blocker(_blockToggle);
-                _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-                _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
-                _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
-                deselectAllRows(_settingsAction.getTableView1Action());
-                deselectAllRows(_settingsAction.getTableView2Action());
-                deselectAllRows(_settingsAction.getTableView3Action());
-            }
-            else
-            {
-                ScopedBlocker blocker(_blockToggle);
-                _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-                selectFirstRow(_settingsAction.getTableView1Action());
-            }
+    // Selection mode toggle handler
+    connect(&_settingsAction.getCommonOptionsHolder().getSelectionModeAction(), &ToggleAction::toggled, this, [this]() {
+        if (_blockToggle) return;
 
-            _colorUpdateDebounceTimer.start(100);
-
-        };
-
-    connect(&_settingsAction.getCommonOptionsHolder().getSelectionModeAction(), &ToggleAction::toggled, this, selectionModeToggled);
-
-    const auto colorallcellsWithExpressionChanged = [this]()
-        {
-            if (_blockToggle)
-            {
-                //qDebug() << "Selection mode change blocked, returning early";
-                return;
-            }
-            _colorUpdateDebounceTimer.start(100);
-        };
-
-    connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, colorallcellsWithExpressionChanged);
-
-
-    //connect(&_settingsAction.getCommonOptionsHolder().getDualPCAColoringAction(), &OptionsAction::selectedOptionsChanged, this, pcaColorsToPlots);
-
-    connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, pcaColorsToPlots);
-
-    connect(& _settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
-        &OptionsAction::selectedOptionsChanged,
-        this,
-        [this]() {
-            _clusterSelectionDebounceTimer.start(500);
-        });
-    connect(&_clusterSelectionDebounceTimer, &QTimer::timeout, this, [this]() {
-        if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
+        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
+            ScopedBlocker blocker(_blockToggle);
+            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
+            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
+            _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+            deselectAllRows(_settingsAction.getTableView1Action());
+            deselectAllRows(_settingsAction.getTableView2Action());
+            deselectAllRows(_settingsAction.getTableView3Action());
         }
-        setStatusMessage("R", "Computation in progress", "");
-        disableOptions();
-
-
-        
-        setSelectionAndAutoCompute();
-        enableOptions();
-
-        });
-
-    connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction(),
-        &DecimalAction::valueChanged,
-        this,
-        [this]() {
-            _scatterplot1ExpressionColoringRangeDebounceTimer.start(50);
-        });
-    connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction(),
-        &DecimalAction::valueChanged,
-        this,
-        [this]() {
-            _scatterplot1ExpressionColoringRangeDebounceTimer.start(50);
-        });
-    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction(),
-        &DecimalAction::valueChanged,
-        this,
-        [this]() {
-            _lineExpressionColoringRangeDebounceTimer.start(50);
-        });
-    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction(),
-        &DecimalAction::valueChanged,
-        this,
-        [this]() {
-            _lineExpressionColoringRangeDebounceTimer.start(50);
-        });
-    connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction(),
-        &DecimalAction::valueChanged,
-        this,
-        [this]() {
-            _scatterplot2ExpressionColoringRangeDebounceTimer.start(50);
-        });
-    connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction(),
-        &DecimalAction::valueChanged,
-        this,
-        [this]() {
-            _scatterplot2ExpressionColoringRangeDebounceTimer.start(50);
-        });
-    connect(&_lineExpressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
-
-        if (!_projectOpened)
-        {
-            return;
+        else {
+            ScopedBlocker blocker(_blockToggle);
+            _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
+            selectFirstRow(_settingsAction.getTableView1Action());
         }
-
-        if (_settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue())
-        {
-          _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().setValue(_settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue());
-            return;
-        }
-        auto linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
-        float minVal = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue();
-        float maxVal = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue();
-        if (linePlotName.isEmpty())
-        {
-            qWarning() << "No line plot view selected";
-            return;
-        }
-        if (minVal > maxVal)
-        {
-            _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().setValue(maxVal);
-            return;
-        }
-
-        rangeChangeLinePlot(linePlotName, minVal, maxVal); 
+        _colorUpdateDebounceTimer.start(100);
         });
 
-    connect(&_scatterplot1ExpressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
+    // Color all cells with expression handler
+    connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, [this]() {
+        if (_blockToggle) return;
+        _colorUpdateDebounceTimer.start(100);
+        });
 
-        if (!_projectOpened)
-        {
-            return;
-        }
+    // PCA dimension for coloring handler
+    connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, [this]() {
+        if (_blockToggle) return;
+        _colorUpdateDebounceTimer.start(100);
+        });
+}
 
-        if (_settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue())
-        {
-
-             _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(_settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue());
-
-            return;
-        }
-
+void Computation::setupScatterplotHandlers()
+{
+    // Show point selection changed handler
+    connect(&_settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, [this]() {
         QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        
-        float minValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
-        float maxValScatter1 = _settingsAction.getDataset1OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
-
-        if (scatterplot1Name.isEmpty())
-        {
-            qWarning() << "No scatterplot view 1 selected";
-            return;
-        }
-        if (minValScatter1 > maxValScatter1)
-        {
-            _settingsAction.getDataset1OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(maxValScatter1);
-            return;
-        }
-
-        rangeChangeScatterPlot(scatterplot1Name, minValScatter1, maxValScatter1);
-        });
-
-    connect(&_scatterplot2ExpressionColoringRangeDebounceTimer, &QTimer::timeout, this, [this]() {
-
-        if (!_projectOpened)
-        {
-            return;
-        }
-
-        if (_settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue() > _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue())
-        {
-
-           _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(_settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue());
-
-            return;
-        }
         QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        float minValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().getValue();
-        float maxValScatter2 = _settingsAction.getDataset2OptionsHolder().getScatterplotUpperColoringRangeAction().getValue();
-        if (scatterplot2Name.isEmpty())
-        {
-            qWarning() << "No scatterplot view 2 selected";
-            return;
-        }
-        if (minValScatter2 > maxValScatter2)
-        {
-            _settingsAction.getDataset2OptionsHolder().getScatterplotLowerColoringRangeAction().setValue(maxValScatter2);
-            return;
-        }
 
-        rangeChangeScatterPlot(scatterplot2Name, minValScatter2, maxValScatter2); 
-        });
-
-    connect(&_settingsAction.getCommonOptionsHolder().getTopNRowsAction(),
-        &IntegralAction::valueChanged,
-        this,
-        [this]() {
-            _NRangeDebounceTimer.start(300);
-        });
-    connect(&_settingsAction.getCommonOptionsHolder().getBottomNRowsAction(),
-        &IntegralAction::valueChanged,
-        this,
-        [this]() {
-            _NRangeDebounceTimer.start(300);
-        });
-    connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
-        if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }
-        setStatusMessage("R", "Updating table", "");
-        resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),true);
-        resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),false);
-        resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3, _settingsAction.getTableView3Action(), _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(), _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),false);
-        selectFirstRow(_settingsAction.getTableView1Action());
-        setStatusMessage("C", "Table updated", "");
-        if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
-        {
-            setStatusMessage("R", "Computation in progress", "");
-            disableOptions();
-
-            
-            ManualCompute();
-            enableOptions();
-
-        }
-        });
-
-
-
-    const auto showPointSelectionChanged = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-
-
-        if (scatterplotName1.isEmpty())
-        {
+        if (scatterplot1Name.isEmpty()) {
             qWarning() << "No scatterplot view 1 selected";
-
         }
-        if (scatterplotName2.isEmpty())
-        {
+        if (scatterplot2Name.isEmpty()) {
             qWarning() << "No scatterplot view 2 selected";
         }
 
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == scatterplotName1|| plugin->getGuiName() == scatterplotName2)
-                {
-                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Scale");
-                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Opacity");
-                    if (pointSelectionScaleAction)
-                    {
-                        if ( _settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked())
-                        {
+        if (scatterplotViewFactory) {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
+                if (plugin->getGuiName() == scatterplot1Name || plugin->getGuiName() == scatterplot2Name) {
+                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin, "Settings/Selection/Scale");
+                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin, "Settings/Selection/Opacity");
+
+                    if (pointSelectionScaleAction) {
+                        if (_settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
                             pointSelectionScaleAction->setValue(100.0);
                         }
-                        else
-                        {
+                        else {
                             pointSelectionScaleAction->setValue(160.0);
                         }
-
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Point selection scale action not found";
                     }
-                    if (pointSelectionOpacityAction)
-                    {
-                        if ( _settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked())
-                        {
+
+                    if (pointSelectionOpacityAction) {
+                        if (_settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
                             pointSelectionOpacityAction->setValue(0.0);
                         }
-                        else
-                        {
+                        else {
                             pointSelectionOpacityAction->setValue(100.0);
                         }
-
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Point selection opacity action not found";
                     }
                 }
             }
         }
-        };
+        });
 
-    connect(& _settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, showPointSelectionChanged);
+    // Focus selection changed handler
+    connect(&_settingsAction.getCommonOptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, [this]() {
+        QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+        QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
 
-
-    const auto focusSelectionChanged = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-
-
-        if (scatterplotName1.isEmpty())
-        {
+        if (scatterplot1Name.isEmpty()) {
             qWarning() << "No scatterplot view 1 selected";
-
         }
-        if (scatterplotName2.isEmpty())
-        {
+        if (scatterplot2Name.isEmpty()) {
             qWarning() << "No scatterplot view 2 selected";
         }
 
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == scatterplotName1 || plugin->getGuiName() == scatterplotName2)
-                {
-                    auto focusAction = findActionByPath<ToggleAction>(plugin,"Settings/Plot/Point/Focus selection");
-                    if (focusAction)
-                    {
+        if (scatterplotViewFactory) {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
+                if (plugin->getGuiName() == scatterplot1Name || plugin->getGuiName() == scatterplot2Name) {
+                    auto focusAction = findActionByPath<ToggleAction>(plugin, "Settings/Plot/Point/Focus selection");
+                    if (focusAction) {
                         focusAction->setChecked(_settingsAction.getCommonOptionsHolder().getFocusSelectionAction().isChecked());
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Focus selection action not found";
                     }
                 }
             }
         }
+        });
 
-        };
-
-    connect(& _settingsAction.getCommonOptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, focusSelectionChanged);
-
-
-    const auto embeddingDimensionYActionChanged1 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        setStatusMessage("M", "Embedding 1 Y dimension changed", "");
-        _colorUpdateDebounceTimer.start(100);
-        };
-
-    connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged1);
-
-
-    const auto embeddingDimensionYActionChanged2 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        setStatusMessage("M", "Embedding 2 Y dimension changed", "");
-        _colorUpdateDebounceTimer.start(100);
-
-
-
-        };
-
-    connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionYAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged2);
-
-    const auto embeddingDimensionXActionChanged1 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        setStatusMessage("M", "Embedding 1 X dimension changed", "");
-        _colorUpdateDebounceTimer.start(100);
-        };
-
-    connect(& _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionXAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged1);
-
-
-    const auto embeddingDimensionXActionChanged2 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        setStatusMessage("M", "Embedding 2 X dimension changed", "");
-        _colorUpdateDebounceTimer.start(100);
-
-        };
-
-    connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionXAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionXActionChanged2);
-
-
-    const auto computationTypeChanged = [this]() -> void {
-        _settingsAction.getCommonOptionsHolder().getComputePCAAction().trigger();
-        };
-
-    connect(&_settingsAction.getCommonOptionsHolder().getComputationTypeAction(), &OptionAction::currentIndexChanged, this, computationTypeChanged);
-
-
-    const auto scatterplotviewSelectionChanged1= [this]() -> void {
-        if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
+    // Scatterplot view selection changed handlers with project opened check
+    const auto scatterplotviewSelectionChanged1 = [this]() {
+        if (!_projectOpened) {
             return;
         }
         setStatusMessage("M", "Scatterplotview selection 1 updated", "");
 
         QString scatterplotName1 = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        if (scatterplotName1.isEmpty())
-        {
+        if (scatterplotName1.isEmpty()) {
             qWarning() << "No scatterplot view selected";
             return;
         }
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == scatterplotName1)
-                {
-                    mv::gui::ToggleAction* notifyDuringSelectionAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Point Selection/Notify during selection");
-                    mv::gui::ToggleAction* haloAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Halo");
+        if (scatterplotViewFactory) {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
+                if (plugin->getGuiName() == scatterplotName1) {
+                    mv::gui::ToggleAction* notifyDuringSelectionAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Point Selection/Notify during selection");
+                    mv::gui::ToggleAction* haloAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Halo");
 
                     if (notifyDuringSelectionAction) {
                         notifyDuringSelectionAction->setChecked(false);
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Notify during selection action not found.";
                     }
                     if (haloAction) {
                         haloAction->setChecked(true);
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Halo action not found.";
                     }
 
-                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Scale");
-                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Opacity");
-                    if (pointSelectionScaleAction)
-                    {
-
+                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin, "Settings/Selection/Scale");
+                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin, "Settings/Selection/Opacity");
+                    if (pointSelectionScaleAction) {
                         pointSelectionScaleAction->setValue(160.0);
-
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Point selection scale action not found";
                     }
-                    if (pointSelectionOpacityAction)
-                    {
-
+                    if (pointSelectionOpacityAction) {
                         pointSelectionOpacityAction->setValue(100.0);
-
-
-
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Point selection opacity action not found";
                     }
-
                 }
             }
         }
-
         };
 
-    connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged1);
-    
-    const auto lineplotviewSelectionChanged1 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
-        setStatusMessage("M", "Lineplotview selection 1 updated", "");
-        //TODO
-        };
-    
-    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, lineplotviewSelectionChanged1);
-
-
-
-
-
-    const auto scatterplotviewSelectionChanged2 = [this]() -> void {
-        /*if (!_projectOpened)
-        {
-            //qDebug() << "Project opening";
-            return;
-        }*/
+    const auto scatterplotviewSelectionChanged2 = [this]() {
         setStatusMessage("M", "Scatterplotview selection 2 updated", "");
 
         QString scatterplotName2 = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        if (scatterplotName2.isEmpty())
-        {
+        if (scatterplotName2.isEmpty()) {
             qWarning() << "No scatterplot view 2 selected";
             return;
         }
         selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
-        if (scatterplotViewFactory)
-        {
-            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory))
-            {
-                if (plugin->getGuiName() == scatterplotName2)
-                {
-                    mv::gui::ToggleAction* notifyDuringSelectionAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Point Selection/Notify during selection");
-                    mv::gui::ToggleAction* haloAction = findActionByPath<ToggleAction>(plugin,"Settings/Selection/Halo");
+        if (scatterplotViewFactory) {
+            for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
+                if (plugin->getGuiName() == scatterplotName2) {
+                    mv::gui::ToggleAction* notifyDuringSelectionAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Point Selection/Notify during selection");
+                    mv::gui::ToggleAction* haloAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Halo");
 
                     if (notifyDuringSelectionAction) {
                         notifyDuringSelectionAction->setChecked(false);
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Notify during selection action not found.";
                     }
                     if (haloAction) {
                         haloAction->setChecked(true);
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Halo action not found.";
                     }
 
-                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Scale");
-                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin,"Settings/Selection/Opacity");
-                    if (pointSelectionScaleAction)
-                    {
+                    auto pointSelectionScaleAction = findActionByPath<DecimalAction>(plugin, "Settings/Selection/Scale");
+                    auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin, "Settings/Selection/Opacity");
 
+                    if (pointSelectionScaleAction) {
                         pointSelectionScaleAction->setValue(160.0);
-
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Point selection scale action not found";
                     }
-                    if (pointSelectionOpacityAction)
-                    {
-
+                    if (pointSelectionOpacityAction) {
                         pointSelectionOpacityAction->setValue(100.0);
-
-
-
                     }
-                    else
-                    {
+                    else {
                         qWarning() << "Point selection opacity action not found";
                     }
-
                 }
             }
         }
-
         };
 
+    const auto lineplotviewSelectionChanged1 = [this]() {
+        setStatusMessage("M", "Lineplotview selection 1 updated", "");
+        //TODO
+        };
+
+    connect(&_settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged1);
     connect(&_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, scatterplotviewSelectionChanged2);
-    _pca1.setCompletionCallback(nullptr);
-    _pca1.setCompletionCallback([this](bool success, const std::string& message) {
-        _isManualComputeComputing = false;
-        _isPCATriggerComputing = false;
-        if (success) {
-            //qDebug() << "PCA 1 finished successfully:" << message.c_str();
-            processAfterPCAComplete();
-            
-        }
-        else {
-            setStatusMessage("E", "PCA Failed", message.c_str());
-            qWarning() << "PCA 1 failed:" << message.c_str();
-        }
-        });
+    connect(&_settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction(), &OptionAction::currentIndexChanged, this, lineplotviewSelectionChanged1);
 }
 void Computation::clearLinePlots()
 {

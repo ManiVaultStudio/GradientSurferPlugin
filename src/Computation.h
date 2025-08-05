@@ -56,6 +56,22 @@ public:
     Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAction& SettingsAction);
 
 private:
+    void initializeState();
+    void setupDebounceTimers();
+    void setupPlotSelectionOptions();
+    void setupRangeColoringHandlers();
+    void setupEmbeddingDimensionHandlers();
+    void setupTableHandlers();
+    void setupDatasetFilters();
+    void setupClusterUpdateHandlers();
+    void setupGeneSelectionHandlers();
+    void setupEmbeddingDatasetHandlers();
+    void setupComputeHandlers();
+    void setupColoringHandlers();
+    void setupScatterplotHandlers();
+    void setupStatusMessageHandler();
+    void setupPointDatasetHandlers();
+    
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
     void ManualCompute();
     void AutoCompute();
