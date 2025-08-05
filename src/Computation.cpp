@@ -1534,12 +1534,15 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "No valid Point datasets", "");
         return;
     }
+
     auto pointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
     auto pointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
     if (!pointDataset1.isValid() || !pointDataset2.isValid()) {
         setStatusMessage("E", "No valid Point datasets", "");
         return;
     }
+    const QString computationType = _settingsAction.getCommonOptionsHolder().getComputationTypeAction().getCurrentText();
+    const bool isPartialPCA = (computationType == "Partial PCA");
 
     // Prepare PCA data
     _selectedPCData1.coordinates = _pca1.scores();
@@ -1652,74 +1655,74 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "Gene indices size does not match PCA dimensions", "");
         return;
     }
+    if (isPartialPCA)
+    {  // Prepare loading values
+        LoadingValuesContainer loadingValues;
+        loadingValues.numberOfComponents = nComps;
+        loadingValues.numberOfDimensions = _selectedPCData1.numberOfDimensions;
 
-    // Prepare loading values
-    LoadingValuesContainer loadingValues;
-    loadingValues.numberOfComponents = nComps;
-    loadingValues.numberOfDimensions = _selectedPCData1.numberOfDimensions;
-
-    for (int id = 0; id < _selectedPCData1.numberOfDimensions; ++id) {
-        LoadingValues tempValues;
-        tempValues.geneId1 = _geneOfInterestIndices1[id];
-        tempValues.geneId2 = geneOfInterestIndices2[id];
-        tempValues.loadings.resize(nComps);
-        for (int j = 0; j < nComps; ++j) {
-            tempValues.loadings[j] = loadings1[id * nComps + j];
+        for (int id = 0; id < _selectedPCData1.numberOfDimensions; ++id) {
+            LoadingValues tempValues;
+            tempValues.geneId1 = _geneOfInterestIndices1[id];
+            tempValues.geneId2 = geneOfInterestIndices2[id];
+            tempValues.loadings.resize(nComps);
+            for (int j = 0; j < nComps; ++j) {
+                tempValues.loadings[j] = loadings1[id * nComps + j];
+            }
+            loadingValues.loadingValuesMap[commonGeneNames[id]] = tempValues;
         }
-        loadingValues.loadingValuesMap[commonGeneNames[id]] = tempValues;
-    }
 
-    // Validate cluster indices
-    const int numPointsReduced1 = static_cast<int>(_selectedClusterIndices1.size());
-    const int numPointsReduced2 = static_cast<int>(_selectedClusterIndices2.size());
-    if (numPointsReduced1 <= 0 || numPointsReduced2 <= 0) {
-        qWarning() << "No points selected for PCA computation";
-        setStatusMessage("E", "No points selected for PCA computation", "");
-        return;
-    }
-
-    // Compute final gene-PC similarity vectors
-    std::vector<float> finalGenePCSimVector1(numPointsReduced1 * nComps, 0.0f);
-    std::vector<float> finalGenePCSimVector2(numPointsReduced2 * nComps, 0.0f);
-
-    for (const auto& [geneName, value] : loadingValues.loadingValuesMap) {
-        const int geneId1 = value.geneId1;
-        const int geneId2 = value.geneId2;
-        const QVector<float>& loadings = value.loadings;
-
-        if (geneId1 < 0 || geneId1 >= pointDataset1->getNumDimensions() ||
-            geneId2 < 0 || geneId2 >= pointDataset2->getNumDimensions()) {
-            qWarning() << "Invalid gene indices for PCA computation: geneId1 =" << geneId1 << ", geneId2 =" << geneId2;
-            setStatusMessage("E", "Invalid gene indices for PCA computation", "");
+        // Validate cluster indices
+        const int numPointsReduced1 = static_cast<int>(_selectedClusterIndices1.size());
+        const int numPointsReduced2 = static_cast<int>(_selectedClusterIndices2.size());
+        if (numPointsReduced1 <= 0 || numPointsReduced2 <= 0) {
+            qWarning() << "No points selected for PCA computation";
+            setStatusMessage("E", "No points selected for PCA computation", "");
             return;
         }
 
-        std::vector<float> genePointVector1(numPointsReduced1, 0.0f);
-        std::vector<float> genePointVector2(numPointsReduced2, 0.0f);
-        std::vector<int> geneIDVector1{ geneId1 };
-        std::vector<int> geneIDVector2{ geneId2 };
+        // Compute final gene-PC similarity vectors
+        std::vector<float> finalGenePCSimVector1(numPointsReduced1 * nComps, 0.0f);
+        std::vector<float> finalGenePCSimVector2(numPointsReduced2 * nComps, 0.0f);
 
-        pointDataset1->populateDataForDimensions(genePointVector1, geneIDVector1, _selectedClusterIndices1);
-        pointDataset2->populateDataForDimensions(genePointVector2, geneIDVector2, _selectedClusterIndices2);
+        for (const auto& [geneName, value] : loadingValues.loadingValuesMap) {
+            const int geneId1 = value.geneId1;
+            const int geneId2 = value.geneId2;
+            const QVector<float>& loadings = value.loadings;
 
-        for (int j = 0; j < nComps; ++j) {
-            float loadingVal = loadings[j];
-            for (int k = 0; k < numPointsReduced1; ++k) {
-                finalGenePCSimVector1[k * nComps + j] += genePointVector1[k] * loadingVal;
+            if (geneId1 < 0 || geneId1 >= pointDataset1->getNumDimensions() ||
+                geneId2 < 0 || geneId2 >= pointDataset2->getNumDimensions()) {
+                qWarning() << "Invalid gene indices for PCA computation: geneId1 =" << geneId1 << ", geneId2 =" << geneId2;
+                setStatusMessage("E", "Invalid gene indices for PCA computation", "");
+                return;
             }
-            for (int k = 0; k < numPointsReduced2; ++k) {
-                finalGenePCSimVector2[k * nComps + j] += genePointVector2[k] * loadingVal;
+
+            std::vector<float> genePointVector1(numPointsReduced1, 0.0f);
+            std::vector<float> genePointVector2(numPointsReduced2, 0.0f);
+            std::vector<int> geneIDVector1{ geneId1 };
+            std::vector<int> geneIDVector2{ geneId2 };
+
+            pointDataset1->populateDataForDimensions(genePointVector1, geneIDVector1, _selectedClusterIndices1);
+            pointDataset2->populateDataForDimensions(genePointVector2, geneIDVector2, _selectedClusterIndices2);
+
+            for (int j = 0; j < nComps; ++j) {
+                float loadingVal = loadings[j];
+                for (int k = 0; k < numPointsReduced1; ++k) {
+                    finalGenePCSimVector1[k * nComps + j] += genePointVector1[k] * loadingVal;
+                }
+                for (int k = 0; k < numPointsReduced2; ++k) {
+                    finalGenePCSimVector2[k * nComps + j] += genePointVector2[k] * loadingVal;
+                }
             }
         }
+        // Set PCA common genes datasets
+        _pcaCommonGenesDataset1->setData(finalGenePCSimVector1.data(), numPointsReduced1, nComps);
+        mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
+        _pcaCommonGenesDataset2->setData(finalGenePCSimVector2.data(), numPointsReduced2, nComps);
+        mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
+
+        processAfterPCADatasetsPopulated();
     }
-    // Set PCA common genes datasets
-    _pcaCommonGenesDataset1->setData(finalGenePCSimVector1.data(), numPointsReduced1, nComps);
-    mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset1);
-    _pcaCommonGenesDataset2->setData(finalGenePCSimVector2.data(), numPointsReduced2, nComps);
-    mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
-
-    processAfterPCADatasetsPopulated();
-
 }
 
 
@@ -1836,7 +1839,9 @@ void Computation::coorelationScoresForPCs()
 }
 void Computation::processAfterPCADatasetsPopulated()
 {
-
+    static bool inProgress = false;
+    if (inProgress) return;
+    inProgress = true;
    // _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
 
     int numDimsForColoring = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions();
@@ -1900,7 +1905,7 @@ void Computation::processAfterPCADatasetsPopulated()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
-
+    inProgress = false;
 }
 
 
@@ -2199,9 +2204,7 @@ bool Computation::setupAndTriggerPCA()
     const QString computationType = _settingsAction.getCommonOptionsHolder().getComputationTypeAction().getCurrentText();
     const bool isPartialPCA = (computationType == "Partial PCA");
 
-    if (isPartialPCA) {
-        geneDataset0.reserve(numOfIntGenes);
-    }
+    geneDataset0.reserve(numOfIntGenes);
     geneDataset1.reserve(numOfIntGenes);
     geneDataset2.reserve(numOfIntGenes);
 
@@ -2213,9 +2216,9 @@ bool Computation::setupAndTriggerPCA()
         if (it2 != dimensionNames2.end()) {
             int geneId2 = static_cast<int>(std::distance(dimensionNames2.begin(), it2));
             dimensionNamesOfInterest.push_back(geneName);
-            if (isPartialPCA) {
-                geneDataset0.push_back(idx);
-            }
+
+            geneDataset0.push_back(idx);
+
             geneDataset1.push_back(idx);
             geneDataset2.push_back(geneId2);
         }
@@ -2235,7 +2238,7 @@ bool Computation::setupAndTriggerPCA()
     }
 
     std::vector<float> cellByGeneMatrix0;
-    if (isPartialPCA) {
+
         // Prepare cell indices
         std::vector<int> cellIndices0(_filteredSelectionIndices.begin(), _filteredSelectionIndices.end());
 
@@ -2253,7 +2256,7 @@ bool Computation::setupAndTriggerPCA()
             auto [minVal, maxVal] = minMax(cellByGeneMatrix0);
             qInfo() << "PCA cellByGeneMatrix0 min:" << minVal << "max:" << maxVal;
         }*/
-    }
+   
 
     std::vector<float> cellByGeneMatrix2(numAllFilteredCells2 * numDimsOfInterest, 0.0f);
     std::vector<float> cellByGeneMatrix1(numAllFilteredCells1 * numDimsOfInterest, 0.0f);
@@ -2325,10 +2328,11 @@ bool Computation::setupAndTriggerPCA()
     disconnect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, nullptr);
 
     setStatusMessage("R", "PCA Started", "");
-    if (isPartialPCA) {
-        _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
-    }
-    else {
+
+    _pca1.fit(cellByGeneMatrix0, numCells0, numDimsOfInterest, numOfIntGenes);
+
+    if (!isPartialPCA)
+    {
 
         if (!_pcaAnalysisCommonGenesDataset1Plugin) {
             _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
