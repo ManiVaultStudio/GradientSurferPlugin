@@ -75,7 +75,7 @@ void GradientSurferPlugin::init()
         QObject::connect(proxyModel, &QAbstractItemModel::layoutChanged, tableView, enforceRowHeight);
         enforceRowHeight();
         tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-        tableView->verticalHeader()->setDefaultSectionSize(18); 
+        tableView->verticalHeader()->setDefaultSectionSize(18);
 
         // --- Connect search box to filter ---
         QTimer* filterDelayTimer = new QTimer(tableView);
