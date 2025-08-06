@@ -53,12 +53,12 @@ void GradientSurferPlugin::init()
         layout->setContentsMargins(0, 0, 0, 0);
         layout->setSpacing(0);
 
-        QLabel* label = new QLabel(labelText, contentWidget);
-        label->setAlignment(Qt::AlignCenter);
-        label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
-        label->setWordWrap(true);
-        label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        layout->addWidget(label, 0);
+        //QLabel* label = new QLabel(labelText, contentWidget);
+        //label->setAlignment(Qt::AlignCenter);
+        //label->setStyleSheet("font-weight: bold; padding: 0px; font-size: 11px;");
+        //label->setWordWrap(true);
+        ////label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        //layout->addWidget(label, 0);
 
 
         // --- Set up filter proxy model ---
@@ -75,7 +75,7 @@ void GradientSurferPlugin::init()
         QObject::connect(proxyModel, &QAbstractItemModel::layoutChanged, tableView, enforceRowHeight);
         enforceRowHeight();
         tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-        tableView->verticalHeader()->setDefaultSectionSize(18); 
+        tableView->verticalHeader()->setDefaultSectionSize(18);
 
         // --- Connect search box to filter ---
         QTimer* filterDelayTimer = new QTimer(tableView);
@@ -96,52 +96,11 @@ void GradientSurferPlugin::init()
             }
         );
 
-        tableView->setParent(contentWidget);
-        tableView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         layout->addWidget(tableView, 1);
 
-        contentWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        contentWidget->setLayout(layout);
 
-        QScrollArea* scrollArea = new QScrollArea(parent);
-        scrollArea->setWidgetResizable(true);
-        scrollArea->setWidget(contentWidget);
-        scrollArea->setFrameShape(QFrame::NoFrame);
-        scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-
-        // Only set a reasonable minimum height, do not set maximum height
-        auto updateMinHeight = [scrollArea]() {
-            QScreen* screen = scrollArea->screen();
-            if (!screen) {
-                screen = QGuiApplication::primaryScreen();
-            }
-            if (screen) {
-                int minHeight = static_cast<int>(screen->availableGeometry().height() / 1.13);
-                scrollArea->setMinimumHeight(minHeight);
-            }
-            };
-
-        updateMinHeight();
-
-        // Update min height on screen geometry change
-        QScreen* screen = scrollArea->screen();
-        if (!screen) screen = QGuiApplication::primaryScreen();
-        if (screen) {
-            QObject::connect(screen, &QScreen::geometryChanged, scrollArea, [updateMinHeight]() {
-                updateMinHeight();
-                });
-        }
-
-        // Update min height on top-level window geometry change (deferred)
-        QTimer::singleShot(0, scrollArea, [scrollArea, updateMinHeight]() {
-            QWidget* topLevel = scrollArea->window();
-            if (topLevel) {
-                auto* filter = new MinHeightEventFilter(updateMinHeight, scrollArea);
-                topLevel->installEventFilter(filter);
-            }
-            });
-
-        return scrollArea;
+        return contentWidget;
         };
     // 1. Add the first table to the main layout (plugin's main widget)
     {
@@ -159,24 +118,30 @@ void GradientSurferPlugin::init()
     auto* table2Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 1 All Cells");
     table2Action->setWidgetConfigurationFunction(
         [createTableWidget, this](mv::gui::WidgetAction*, QWidget* parent) {
-            QWidget* tableWidget = createTableWidget("Gene Table: Dataset 1 All Cells", _settingsAction.getTableView3Action(), parent);
-            tableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-            return tableWidget;
+            auto layout = new QVBoxLayout(parent);
+
+            layout->setContentsMargins(0, 0, 0, 0);
+            parent->setLayout(layout);
+
+            layout->addWidget(createTableWidget("Gene Table: Dataset 1 All Cells", _settingsAction.getTableView3Action(), parent));
         }
     );
     // Remove fixed height from QSize
-    addDockingAction(table2Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(256, 0));
+    addDockingAction(table2Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right);
 
     // 3. Dock the third table ("Dataset 2 All Cells") on the right
     auto* table3Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 2 All Cells");
     table3Action->setWidgetConfigurationFunction(
         [createTableWidget, this](mv::gui::WidgetAction*, QWidget* parent) {
-            QWidget* tableWidget = createTableWidget("Gene Table: Dataset 2 All Cells", _settingsAction.getTableView2Action(), parent);
-            tableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-            return tableWidget;
+            auto layout = new QVBoxLayout(parent);
+
+            layout->setContentsMargins(0, 0, 0, 0);
+            parent->setLayout(layout);
+
+            layout->addWidget(createTableWidget("Gene Table: Dataset 2 All Cells", _settingsAction.getTableView2Action(), parent));
         }
     );
-    addDockingAction(table3Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right, QSize(256, 0));
+    addDockingAction(table3Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right);
 
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
     _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
