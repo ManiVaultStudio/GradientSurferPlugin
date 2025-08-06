@@ -1005,17 +1005,6 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
             geneOfInterestIndices.push_back(gene.geneIndex);
         }
     }
-    qInfo() << "is main table:"<< isMainTable;
-    qDebug() << "===================================================================";
-    for (const auto& entry : geneCorrValues) {
-        if (entry.isWithinRange)
-        {
-            qInfo() << "Gene:" << entry.geneName << "Correlation:" << entry.correlationValue << entry.isWithinRange << entry.rank;
-        }
- 
-    }
-    qDebug() << "===================================================================";
-    qDebug() << "geneOfInterestIndices" << geneOfInterestIndices.size() << geneOfInterestIndices;
     setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, tableViewOther1, tableViewOther2, geneSelectionAction2, isMainTable);
 
 }
@@ -1203,9 +1192,7 @@ std::pair<float, float> findDatasetLimits(QString datasetID)
     double freeRamGB = static_cast<double>(freeRam) / bytesPerGB;
     double totalRamGB = static_cast<double>(totalRam) / bytesPerGB;
     double occupiedRamGB = static_cast<double>(occupiedRam) / bytesPerGB;
-    qInfo() << "Available RAM:" << QString::number(freeRamGB, 'f', 2) << "GB,"
-        << "Total RAM:" << QString::number(totalRamGB, 'f', 2) << "GB,"
-        << "Occupied RAM:" << QString::number(occupiedRamGB, 'f', 2) << "GB";
+    //qInfo() << "Available RAM:" << QString::number(freeRamGB, 'f', 2) << "GB,"<< "Total RAM:" << QString::number(totalRamGB, 'f', 2) << "GB,"<< "Occupied RAM:" << QString::number(occupiedRamGB, 'f', 2) << "GB";
     constexpr uint64_t bytesPerFloat = 4ULL;
     uint64_t requiredBytes = static_cast<uint64_t>(numRows) * static_cast<uint64_t>(numCols) * bytesPerFloat;
     double requiredGB = static_cast<double>(requiredBytes) / bytesPerGB;
