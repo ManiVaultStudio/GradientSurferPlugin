@@ -884,20 +884,14 @@ void populateGenesByCorrelationRange(
         _commonSelectedGenesAcrossDatasetsInTables.clear();
     }
 
-    int rank = 1;
-    float prevCorr = std::numeric_limits<float>::quiet_NaN();
     for (int i = 0; i < count; ++i) {
         int idx = indices[i];
         float corr = correlationVector[idx];
 
-        // Assign rank: same correlation values get the same rank
-        if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
-            rank = i + 1;
-            prevCorr = corr;
-        }
+        // Assign unique rank to each gene, even if correlation values are the same
+        int rank = i + 1;
 
         bool isWithinRange = false;
-        // Only mark as within range if topNRows or bottomNRows > 0 and within those bounds
         if (isMainTable) {
             if ((topNRows > 0 && rank <= topNRows) ||
                 (bottomNRows > 0 && rank > (count - bottomNRows))) {
@@ -906,9 +900,9 @@ void populateGenesByCorrelationRange(
                     isWithinRange = true;
                     _commonSelectedGenesAcrossDatasetsInTables.push_back(geneNameOrdered[idx]);
                 }
-
             }
-        } else {
+        }
+        else {
             isWithinRange = _commonSelectedGenesAcrossDatasetsInTables.contains(geneNameOrdered[idx]);
         }
 
@@ -918,7 +912,7 @@ void populateGenesByCorrelationRange(
             corr,
             rank,
             isWithinRange
-        });
+            });
         if (isWithinRange) {
             geneOfInterestIndices.push_back(idx);
         }
