@@ -1170,6 +1170,12 @@ void Computation::AutoCompute()
             setStatusMessage("E", "Error occurred during filtering genes", "");
             return;
         }
+        //qinfo all values of _geneCorrValues1 
+        qInfo() << "Gene Correlation Values 1:";
+        for (const auto& entry : _geneCorrValues1) {
+            qInfo() << "Gene:" << entry.geneName << "Correlation:" << entry.correlationValue << entry.isWithinRange<< entry.rank;
+        }
+        
 
         _geneCorrValues1.erase(
             std::remove_if(
@@ -1615,7 +1621,7 @@ void Computation::processAfterPCAComplete()
     coorelationScoresForPCs();
 
     mv::events().notifyDatasetDataChanged(_pcaSelectedEmbeddingDataset);
-
+    qInfo() << "_geneOfInterestIndices1" << _geneOfInterestIndices1.size() << "genes of interest indices 1:" << _geneOfInterestIndices1;
     // Find common gene indices and names
     std::vector<int> geneOfInterestIndices2;
     QStringList commonGeneNames;
@@ -1624,6 +1630,12 @@ void Computation::processAfterPCAComplete()
     geneOfInterestIndices2.reserve(_geneOfInterestIndices1.size());
     commonGeneNames.reserve(_geneOfInterestIndices1.size());
 
+    // Build a map from gene name to index for genedims2
+    QHash<QString, int> geneNameToIndex2;
+    for (int i = 0; i < genedims2.size(); ++i) {
+        geneNameToIndex2[genedims2[i]] = i;
+    }
+
     for (int inddx : _geneOfInterestIndices1) {
         if (inddx < 0 || inddx >= genedims1.size()) {
             qWarning() << "Invalid index in _geneOfInterestIndices1:" << inddx;
@@ -1631,18 +1643,20 @@ void Computation::processAfterPCAComplete()
             return;
         }
         const QString& geneName = genedims1[inddx];
-        auto it = std::find(genedims2.begin(), genedims2.end(), geneName);
-        if (it != genedims2.end()) {
-            geneOfInterestIndices2.push_back(static_cast<int>(std::distance(genedims2.begin(), it)));
+        qInfo() << "Processing gene:" << geneName << "at index" << inddx;
+        auto it = geneNameToIndex2.find(geneName);
+        if (it != geneNameToIndex2.end()) {
+            geneOfInterestIndices2.push_back(it.value());
             commonGeneNames.push_back(geneName);
         }
     }
+    qInfo() << "_geneOfInterestIndices2" << geneOfInterestIndices2.size() << "genes of interest indices 2:" << geneOfInterestIndices2;
     if (commonGeneNames.empty()) {
         qWarning() << "No common genes found between datasets";
         setStatusMessage("E", "No common genes found between datasets", "");
         return;
     }
-
+    qInfo() << "Common gene names:" << commonGeneNames.size() << commonGeneNames;
     const int nCommon = static_cast<int>(_geneOfInterestIndices1.size());
     if (geneOfInterestIndices2.size() != nCommon || commonGeneNames.size() != nCommon) {
         qWarning() << "Gene indices or common gene names size mismatch";
