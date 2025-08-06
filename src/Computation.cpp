@@ -1169,7 +1169,7 @@ void Computation::AutoCompute()
             qWarning() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
             setStatusMessage("E", "Error occurred during filtering genes", "");
             return;
-        }
+        }      
 
         _geneCorrValues1.erase(
             std::remove_if(
@@ -1615,7 +1615,6 @@ void Computation::processAfterPCAComplete()
     coorelationScoresForPCs();
 
     mv::events().notifyDatasetDataChanged(_pcaSelectedEmbeddingDataset);
-
     // Find common gene indices and names
     std::vector<int> geneOfInterestIndices2;
     QStringList commonGeneNames;
@@ -1624,6 +1623,12 @@ void Computation::processAfterPCAComplete()
     geneOfInterestIndices2.reserve(_geneOfInterestIndices1.size());
     commonGeneNames.reserve(_geneOfInterestIndices1.size());
 
+    // Build a map from gene name to index for genedims2
+    QHash<QString, int> geneNameToIndex2;
+    for (int i = 0; i < genedims2.size(); ++i) {
+        geneNameToIndex2[genedims2[i]] = i;
+    }
+
     for (int inddx : _geneOfInterestIndices1) {
         if (inddx < 0 || inddx >= genedims1.size()) {
             qWarning() << "Invalid index in _geneOfInterestIndices1:" << inddx;
@@ -1631,9 +1636,9 @@ void Computation::processAfterPCAComplete()
             return;
         }
         const QString& geneName = genedims1[inddx];
-        auto it = std::find(genedims2.begin(), genedims2.end(), geneName);
-        if (it != genedims2.end()) {
-            geneOfInterestIndices2.push_back(static_cast<int>(std::distance(genedims2.begin(), it)));
+        auto it = geneNameToIndex2.find(geneName);
+        if (it != geneNameToIndex2.end()) {
+            geneOfInterestIndices2.push_back(it.value());
             commonGeneNames.push_back(geneName);
         }
     }
@@ -1642,11 +1647,9 @@ void Computation::processAfterPCAComplete()
         setStatusMessage("E", "No common genes found between datasets", "");
         return;
     }
-
     const int nCommon = static_cast<int>(_geneOfInterestIndices1.size());
     if (geneOfInterestIndices2.size() != nCommon || commonGeneNames.size() != nCommon) {
         qWarning() << "Gene indices or common gene names size mismatch";
-        qInfo() << "geneOfInterestIndices2 size:" << geneOfInterestIndices2.size() << ", commonGeneNames size:" << commonGeneNames.size() << ", _geneOfInterestIndices1 size:" << nCommon;
         setStatusMessage("E", "Gene indices or common gene names size mismatch", "");
         return;
     }
@@ -1868,16 +1871,6 @@ void Computation::processAfterPCADatasetsPopulated()
             setStatusMessage("E", "Dimension names size mismatch in PCA common genes datasets", "");
             return;
         }
-
-        //qInfo() << "_commonGeneNames.size():" << _commonGeneNames.size();
-        //qInfo() << "_geneOfInterestIndices1.size():" << _geneOfInterestIndices1.size();
-        //qInfo() << "_geneOfInterestIndices2.size():" << _geneOfInterestIndices2.size();
-        //qInfo() << "numDimsForColoring:" << numDimsForColoring;
-        //qInfo() << "_pcaCommonGenesDataset1.getNumDimensions():" << _pcaCommonGenesDataset1->getNumDimensions();
-        //qInfo() << "_pcaCommonGenesDataset2.getNumDimensions():" << _pcaCommonGenesDataset2->getNumDimensions();
-        //qInfo() << "dimensionNamesPC.size():" << dimensionNamesPC.size();
-        //qInfo() << "dimensionNamesPC:" << dimensionNamesPC;
-
 
 
         // Set PCA common genes datasets
@@ -2342,12 +2335,12 @@ bool Computation::setupAndTriggerPCA()
         }
 
         if (!_pcaAnalysisCommonGenesDataset1Plugin) {
-            qDebug() << "PCA Analysis Plugin not found";
+            qCritical() << "PCA Analysis Plugin not found";
             setStatusMessage("E", "PCA plugin not found", "");
             return false;
         }
         if (!_pcaAnalysisCommonGenesDataset2Plugin) {
-            qDebug() << "PCA Analysis Plugin not found";
+            qCritical() << "PCA Analysis Plugin not found";
             setStatusMessage("E", "PCA plugin not found", "");
             return false;
         }
@@ -2367,7 +2360,7 @@ bool Computation::setupAndTriggerPCA()
             });
         auto componentsAction1 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction1) {
-            qDebug() << "Number of PCA components action not found";
+            qCritical() << "Number of PCA components action not found";
             setStatusMessage("E", "PCA components action not found", "");
             return false;
         }
@@ -2376,7 +2369,7 @@ bool Computation::setupAndTriggerPCA()
 
         auto componentsAction2 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction2) {
-            qDebug() << "Number of PCA components action not found";
+            qCritical() << "Number of PCA components action not found";
             setStatusMessage("E", "PCA components action not found", "");
             return false;
         }
@@ -2388,7 +2381,7 @@ bool Computation::setupAndTriggerPCA()
         auto startAction2 = dynamic_cast<TriggerAction*>(_pcaCommonGenesDataset2->findChildByPath("PCA/Start analysis"));
         if (startAction1) {
             startAction1->trigger();
-            qDebug() << "PCA analysis 1 started";
+            //qDebug() << "PCA analysis 1 started";
             QEventLoop loop;
             loop.processEvents();
             _pcaCommonGenesDataset1->setSelectionIndices({});
@@ -2396,13 +2389,13 @@ bool Computation::setupAndTriggerPCA()
 
         }
         else {
-            qDebug() << "Start analysis action not found in PCA dataset";
+            qCritical() << "Start analysis action not found in PCA dataset";
             setStatusMessage("E", "PCA start action not found", "");
             return false;
         }
         if (startAction2) {
             startAction2->trigger();
-            qDebug() << "PCA analysis 2 started";
+            //qDebug() << "PCA analysis 2 started";
             QEventLoop loop;
             loop.processEvents();
             _pcaCommonGenesDataset2->setSelectionIndices({});
@@ -2410,7 +2403,7 @@ bool Computation::setupAndTriggerPCA()
 
         }
         else {
-            qDebug() << "Start analysis action not found in PCA dataset";
+            qCritical() << "Start analysis action not found in PCA dataset";
             setStatusMessage("E", "PCA start action not found", "");
             return false;
         }

@@ -21,7 +21,7 @@
 #include <QJsonArray>
 #include <iostream>
 #include <QHeaderView>
-
+#include<set>
 #include <cstdint>
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -864,31 +864,63 @@ void populateGenesByCorrelationRange(
     bool isMainTable)
 {
     constexpr float epsilon = 1e-6f;
-    const int count = std::min(static_cast<int>(correlationVector.size()), static_cast<int>(geneNameOrdered.size()));
+
+    geneCorrValues.clear();
+    geneOfInterestIndices.clear();
+
+    // Main table: filter to common genes, otherwise use all
+    const std::vector<float>* corrVec = &correlationVector;
+    const std::vector<QString>* geneVec = &geneNameOrdered;
+    std::vector<float> filteredCorr;
+    std::vector<QString> filteredGenes;
+    QSet<int> selectedRanks;
+    int count = 0;
+
+    if (isMainTable) {
+        for (size_t i = 0; i < geneNameOrdered.size() && i < correlationVector.size(); ++i) {
+            if (_commonGenesAcrossDatasets.contains(geneNameOrdered[i])) {
+                filteredGenes.push_back(geneNameOrdered[i]);
+                filteredCorr.push_back(correlationVector[i]);
+            }
+        }
+        corrVec = &filteredCorr;
+        geneVec = &filteredGenes;
+        count = static_cast<int>(filteredGenes.size());
+
+        if (topNRows > count || bottomNRows > count) {
+            qCritical() << "topNRows or bottomNRows exceeds the number of common genes across datasets:"
+                << topNRows << bottomNRows << count;
+            return;
+        }
+        for (int i = 1; i <= topNRows; ++i) selectedRanks.insert(i);
+        for (int i = count - bottomNRows + 1; i <= count; ++i) selectedRanks.insert(i);
+        if (selectedRanks.isEmpty()) {
+            qCritical() << "No common genes selected for correlation table, topNRows and bottomNRows are both 0 or exceed the number of common genes.";
+            return;
+        }
+        _commonSelectedGenesAcrossDatasetsInTables.clear();
+    }
+    else {
+        count = std::min(static_cast<int>(correlationVector.size()), static_cast<int>(geneNameOrdered.size()));
+    }
+
     if (count == 0 || topNRows < 0 || bottomNRows < 0) return;
 
     std::vector<int> indices(count);
     std::iota(indices.begin(), indices.end(), 0);
 
+    // Sort indices by correlation value (descending)
     std::sort(indices.begin(), indices.end(),
-        [&correlationVector](int a, int b) {
-            return correlationVector[a] > correlationVector[b];
+        [corrVec](int a, int b) {
+            return (*corrVec)[a] > (*corrVec)[b];
         });
-
-    geneCorrValues.clear();
-    geneCorrValues.reserve(count);
-    geneOfInterestIndices.clear();
-    geneOfInterestIndices.reserve(count);
-
-    if (isMainTable) {
-        _commonSelectedGenesAcrossDatasetsInTables.clear();
-    }
 
     int rank = 1;
     float prevCorr = std::numeric_limits<float>::quiet_NaN();
+
     for (int i = 0; i < count; ++i) {
         int idx = indices[i];
-        float corr = correlationVector[idx];
+        float corr = (*corrVec)[idx];
 
         // Assign rank: same correlation values get the same rank
         if (i == 0 || std::abs(corr - prevCorr) > epsilon) {
@@ -897,59 +929,72 @@ void populateGenesByCorrelationRange(
         }
 
         bool isWithinRange = false;
-        // Only mark as within range if topNRows or bottomNRows > 0 and within those bounds
         if (isMainTable) {
-            if ((topNRows > 0 && rank <= topNRows) ||
-                (bottomNRows > 0 && rank > (count - bottomNRows))) {
-                if (_commonGenesAcrossDatasets.contains(geneNameOrdered[idx]))
-                {
-                    isWithinRange = true;
-                    _commonSelectedGenesAcrossDatasetsInTables.push_back(geneNameOrdered[idx]);
-                }
-
+            if (selectedRanks.contains(rank)) {
+                isWithinRange = true;
+                _commonSelectedGenesAcrossDatasetsInTables.push_back((*geneVec)[idx]);
             }
-        } else {
+        }
+        else {
+            // For non-main tables, always use the original geneNameOrdered
             isWithinRange = _commonSelectedGenesAcrossDatasetsInTables.contains(geneNameOrdered[idx]);
         }
 
+        int geneIndex = 0;
+        if (isMainTable) {
+            // Map filtered index back to original index in geneNameOrdered
+            auto it = std::find(geneNameOrdered.begin(), geneNameOrdered.end(), (*geneVec)[idx]);
+            geneIndex = (it != geneNameOrdered.end()) ? static_cast<int>(std::distance(geneNameOrdered.begin(), it)) : -1;
+        }
+        else {
+            geneIndex = idx;
+        }
+
         geneCorrValues.emplace_back(CorrelationGeneCoords{
-            idx,
-            geneNameOrdered[idx],
+            geneIndex,
+            (*geneVec)[idx],
             corr,
             rank,
             isWithinRange
-        });
+            });
+
         if (isWithinRange) {
-            geneOfInterestIndices.push_back(idx);
+            geneOfInterestIndices.push_back(geneIndex);
         }
     }
 }
 
 void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, QTableView* tableViewMain, int topNRows, int bottomNRows, DimensionPickerAction& geneSelectionAction, QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2, bool isMainTable)
 {
-    constexpr float epsilon = 1e-6f;
+
     geneOfInterestIndices.clear();
     geneOfInterestIndices.reserve(geneCorrValues.size());
 
     int count = static_cast<int>(geneCorrValues.size());
-
+    QSet<int> selectedRanks;
     if (isMainTable)
     {
         _commonSelectedGenesAcrossDatasetsInTables.clear();
+        for (int i = 1; i <= topNRows; ++i) selectedRanks.insert(i);
+        for (int i = count - bottomNRows + 1; i <= count; ++i) selectedRanks.insert(i);
+        if (selectedRanks.isEmpty()) {
+            qCritical() << "No common genes selected for correlation table, topNRows and bottomNRows are both 0 or exceed the number of common genes.";
+            return;
+        }
     }
+    
     for (auto& gene : geneCorrValues) {
 
         bool isWithinRange = false;
-        // Only mark as within range if topNRows or bottomNRows > 0 and within those bounds
+
         if (isMainTable) {
-            if ((topNRows > 0 && gene.rank <= topNRows) ||
-                (bottomNRows > 0 && gene.rank > (count - bottomNRows))) {
-                if (_commonGenesAcrossDatasets.contains(gene.geneName))
+
+                if (selectedRanks.contains(gene.rank))
                 {
                     isWithinRange = true;
                     _commonSelectedGenesAcrossDatasetsInTables.push_back(gene.geneName);
                 }
-            }
+            
         }
         else {
             isWithinRange = _commonSelectedGenesAcrossDatasetsInTables.contains(gene.geneName);
@@ -958,7 +1003,6 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
         gene.isWithinRange = isWithinRange;
         if (isWithinRange) {
             geneOfInterestIndices.push_back(gene.geneIndex);
-
         }
     }
     setupTableModelAndSelection(tableViewMain, geneCorrValues, geneSelectionAction, tableViewOther1, tableViewOther2, geneSelectionAction2, isMainTable);
@@ -1148,9 +1192,7 @@ std::pair<float, float> findDatasetLimits(QString datasetID)
     double freeRamGB = static_cast<double>(freeRam) / bytesPerGB;
     double totalRamGB = static_cast<double>(totalRam) / bytesPerGB;
     double occupiedRamGB = static_cast<double>(occupiedRam) / bytesPerGB;
-    qInfo() << "Available RAM:" << QString::number(freeRamGB, 'f', 2) << "GB,"
-        << "Total RAM:" << QString::number(totalRamGB, 'f', 2) << "GB,"
-        << "Occupied RAM:" << QString::number(occupiedRamGB, 'f', 2) << "GB";
+    //qInfo() << "Available RAM:" << QString::number(freeRamGB, 'f', 2) << "GB,"<< "Total RAM:" << QString::number(totalRamGB, 'f', 2) << "GB,"<< "Occupied RAM:" << QString::number(occupiedRamGB, 'f', 2) << "GB";
     constexpr uint64_t bytesPerFloat = 4ULL;
     uint64_t requiredBytes = static_cast<uint64_t>(numRows) * static_cast<uint64_t>(numCols) * bytesPerFloat;
     double requiredGB = static_cast<double>(requiredBytes) / bytesPerGB;
