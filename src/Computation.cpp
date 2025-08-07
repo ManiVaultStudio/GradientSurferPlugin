@@ -3391,14 +3391,14 @@ void Computation::colorScatterPlots()
             _isColoringScatterplots = false;
             return;
         }
-        const QString selectedGeneName = ds1Opts.getGeneSelectionAction().getCurrentDimensionName();
-
+        const QString selectedGeneName1 = ds1Opts.getGeneSelectionAction().getCurrentDimensionName();
+        const QString selectedGeneName2 = ds2Opts.getGeneSelectionAction().getCurrentDimensionName();
         auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             geneDataset1ID, embeddingDataset1->getNumPoints(),
-            selectedGeneName, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile);
+            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile);
         auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             geneDataset2ID, embeddingDataset2->getNumPoints(),
-            selectedGeneName, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
+            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
         minVal1 = value1.first;
         maxVal1 = value1.second;
         minVal2 = value2.first;
