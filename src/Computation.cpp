@@ -241,24 +241,48 @@ void Computation::setupTableHandlers()
     connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
         if (!_projectOpened) return;
 
+        // Get current values
+        auto topN = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
+        auto bottomN = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
+
+        // Validate the values
+        if (topN < 2 && bottomN < 2) {
+            // If both are less than 2, set one of them to 0
+            if (topN > 0) {
+                bottomN = 0;
+                _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(bottomN);
+            }
+            else if (bottomN > 0) {
+                topN = 0;
+                _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            }
+            else {
+                // Both are 0, set topN to a default minimum (e.g., 2)
+                topN = 2;
+                _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            }
+            return; // Skip this execution, as the values are being adjusted
+        }
+
+        // If we get here, the values are valid
         setStatusMessage("R", "Updating table", "");
         resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(),
-            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(),
-            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(),
+            topN,
+            bottomN,
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),
             _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(),
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), true);
 
         resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(),
-            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(),
-            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(),
+            topN,
+            bottomN,
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),
             _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(),
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), false);
 
         resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3, _settingsAction.getTableView3Action(),
-            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(),
-            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(),
+            topN,
+            bottomN,
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),
             _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(),
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), false);
@@ -722,11 +746,17 @@ void Computation::setupColoringHandlers()
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
             deselectAllRows(_settingsAction.getTableView3Action());
+            setStatusMessage("M", "PCA selection changed. <br> Click on \"Compute\" to update tables", "");
         }
-        else {
+        else 
+        {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+            if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
+            {
+                _settingsAction.getCommonOptionsHolder().getComputeAction().trigger();
+            }
         }
         _colorUpdateDebounceTimer.start(100);
         });
@@ -789,7 +819,17 @@ void Computation::setupColoringHandlers()
     // PCA dimension for coloring handler
     connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, [this]() {
         if (_blockToggle) return;
-        _colorUpdateDebounceTimer.start(100);
+
+        if(_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()){
+            _colorUpdateDebounceTimer.start(100);
+        }
+        else
+        {
+            if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
+                {
+                    _settingsAction.getCommonOptionsHolder().getComputeAction().trigger();
+                }
+        }
         });
 }
 
@@ -1839,6 +1879,7 @@ void Computation::coorelationScoresForPCs()
     // Update coloring action
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaSelectedEmbeddingDataset);
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(maxIndex);
+    setStatusMessage("C", "Correlation scores for PCA dimensions computed successfully", "#28a745");
 }
 void Computation::processAfterPCADatasetsPopulated()
 {
