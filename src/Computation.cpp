@@ -722,7 +722,7 @@ void Computation::setupColoringHandlers()
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
             deselectAllRows(_settingsAction.getTableView3Action());
-            setStatusMessage("M", "PCA selection changed. Click on \"Compute\" to update tables", "");
+            setStatusMessage("M", "PCA selection changed. <br> Click on \"Compute\" to update tables", "");
         }
         else 
         {
