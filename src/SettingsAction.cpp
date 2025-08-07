@@ -87,7 +87,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setToolTip("Auto Compute Action");
 
     _commonOptionsHolder.getPcaColoringAction().setToolTip("PCA Coloring Action");
-    _commonOptionsHolder.getSelectionModeAction().setToolTip("Selection Mode Action");
+   // _commonOptionsHolder.getSelectionModeAction().setToolTip("Selection Mode Action");
   //  _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
     _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension Selection Action");
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
@@ -95,7 +95,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setChecked(true);
 
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
-    _commonOptionsHolder.getSelectionModeAction().setChecked(true);
+    //_commonOptionsHolder.getSelectionModeAction().setChecked(true);
 
     _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
@@ -173,7 +173,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getSelectionModeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    //_commonOptionsHolder.getSelectionModeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     //_commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
     //_commonOptionsHolder.getDualPCAColoringAction().initialize({ "Dataset1", "Dataset2" }, { "Dataset1", "Dataset2" });
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -441,7 +441,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _computePCAAction(this, "Compute: Selection PCs"),
     //_normalizeCombinedDatasetsAction(this, "Normalize Combined Datasets"),
     //_normalizationTypeAction(this, "Normalization Type"),
-    _selectionModeAction(this, "Selection Mode"),
+    //_selectionModeAction(this, "Selection Mode"),
     _focusSelectionAction(this, "Focus Selection"),
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
     _coloringMapSelectionAction(this, "Coloring Map Selection"),
@@ -472,7 +472,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_lowRangeColoringPercentileAction);
     addAction(&_highRangeColoringPercentileAction);
 
-    addAction(&_selectionModeAction);
+    //addAction(&_selectionModeAction);
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
 

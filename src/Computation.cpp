@@ -338,7 +338,7 @@ void Computation::initializeState()
             clearLinePlots();
             findCommonGenes();
             _taskDisable = false;
-            selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
+           //selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
             setStatusMessage("C", "Project opened", "");
             });
     }
@@ -550,7 +550,7 @@ void Computation::setupGeneSelectionHandlers()
         if (geneSelectionAction.getCurrentDimensionIndex() >= 0) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+            //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         }
         _colorUpdateDebounceTimer.start(200);
         };
@@ -636,7 +636,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
 
-                _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+                //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
                 colorScatterPlots();
             }
         }
@@ -700,7 +700,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(-1);
                 }
 
-                _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+                //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
                 //coloringScatterPlots(); //TODO Check
             }
         }
@@ -747,10 +747,10 @@ void Computation::setupComputeHandlers()
     connect(&_settingsAction.getCommonOptionsHolder().getComputeAction(), &TriggerAction::triggered, this, [this]() {
         if (!_projectOpened) return;
         setStatusMessage("R", "Correlation computation in progress", "");
-        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
+        /*if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-        }
+        }*/
         disableOptions();
         correlationAfterPCA();
         enableOptions();
@@ -769,10 +769,10 @@ void Computation::setupComputeHandlers()
     connect(&_settingsAction.getCommonOptionsHolder().getComputePCAAction(), &TriggerAction::triggered, this, [this]() {
         if (!_projectOpened) return;
         setStatusMessage("R", "PCA Computation in progress", "");
-        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
+        /*if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-        }
+        }*/
         disableOptions();
         ManualCompute();
         enableOptions();
@@ -817,7 +817,7 @@ void Computation::setupColoringHandlers()
 
         if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
-            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+            //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
             //_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
@@ -828,7 +828,7 @@ void Computation::setupColoringHandlers()
         else 
         {
             ScopedBlocker blocker(_blockToggle);
-            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
+            //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
             {
@@ -867,7 +867,7 @@ void Computation::setupColoringHandlers()
     connect(&_settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
 
     // Selection mode toggle handler
-    connect(&_settingsAction.getCommonOptionsHolder().getSelectionModeAction(), &ToggleAction::toggled, this, [this]() {
+   /* connect(&_settingsAction.getCommonOptionsHolder().getSelectionModeAction(), &ToggleAction::toggled, this, [this]() {
         if (_blockToggle) return;
 
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
@@ -886,7 +886,7 @@ void Computation::setupColoringHandlers()
         }
         _colorUpdateDebounceTimer.start(200);
         });
-
+    */
     // Color all cells with expression handler
     /*connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, [this]() {
         if (_blockToggle) return;
@@ -1046,7 +1046,7 @@ void Computation::setupScatterplotHandlers()
             qWarning() << "No scatterplot view 2 selected";
             return;
         }
-        selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
+        //selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
         auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
         if (scatterplotViewFactory) {
             for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
@@ -1212,7 +1212,7 @@ void Computation::AutoCompute()
         // Update filtered selection indices and notify
         _filteredSelectionIndices.assign(filtIndxs.begin(), filtIndxs.end());
         _embeddingDataset->setSelectionIndices(filtIndxs);
-        _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+        //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         _blockSelectionTrigger = true;
         mv::events().notifyDatasetDataSelectionChanged(_embeddingDataset);
 
@@ -1318,7 +1318,7 @@ void Computation::AutoCompute()
 
         {
             ScopedBlocker blocker(_blockToggle);
-            _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
+            //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
             _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
         }
 
@@ -2801,7 +2801,7 @@ void Computation::coloringLinePlotsOld()
         {
             colordatasetType = "Clusters";
         }
-        if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
+        /*if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
         {
             QString referenceClusterDatasetID = _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDatasetId();
             if (referenceClusterDatasetID.isEmpty())
@@ -2816,7 +2816,7 @@ void Computation::coloringLinePlotsOld()
                 .arg(yPositionString)
                 .arg(static_cast<int>(_filteredSelectionIndices.size()));
         }
-        else
+        else*/
         {
             float minValLine = _settingsAction.getDataset1OptionsHolder().getLineplotLowerColoringRangeAction().getValue();
             float maxValLine = _settingsAction.getDataset1OptionsHolder().getLineplotUpperColoringRangeAction().getValue();
@@ -2946,7 +2946,7 @@ void Computation::coloringScatterPlotsOld()
         return;
     }
     auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
-    if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
+    /*if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked())
     {
         
         QString colorDataset1ID = _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDatasetId();
@@ -2956,7 +2956,7 @@ void Computation::coloringScatterPlotsOld()
             scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, colorDataset2ID, embeddingDimensionX2, embeddingDimensionY2, false, "", "", 0.0, 0.0);
 
     }
-    else
+    else*/
     {
         if(!_scatterplotClusterColoringDataset1.isValid() || !_scatterplotClusterColoringDataset2.isValid())
         {
@@ -3096,7 +3096,7 @@ void Computation::disableOptions()
     _optionsDisabled = true;
 }
 
-void Computation::selectionModeAltToggleLogic(QString scatterplotName)
+/*void Computation::selectionModeAltToggleLogic(QString scatterplotName)
 {
     //QString scatterplotName = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
     if (_pixelSelectionStartedConnection != QMetaObject::Connection{}) {
@@ -3144,7 +3144,7 @@ void Computation::selectionModeAltToggleLogic(QString scatterplotName)
     {
         qWarning() << "Scatterplot View factory not found.";
     }
-}
+}*/
 
 void Computation::findCommonGenes()
 {
@@ -3212,7 +3212,7 @@ void Computation::colorLinePlots()
     auto& dataset1Options = _settingsAction.getDataset1OptionsHolder();
     const auto colorMapStringValue = commonOptions.getColoringMapSelectionAction().getColorMap();
 
-    if (commonOptions.getSelectionModeAction().isChecked())
+    /*if (commonOptions.getSelectionModeAction().isChecked())
     {
         if (_lineChartClusterColoringDataset1.isValid())
         {
@@ -3233,7 +3233,7 @@ void Computation::colorLinePlots()
                 .arg(_filteredSelectionIndices.size());
         }
     }
-    else
+    else*/
     {
         if (commonOptions.getPcaColoringAction().isChecked())
         {
@@ -3398,7 +3398,7 @@ void Computation::colorScatterPlots()
     float minVal1 = 0.0f, maxVal1 = 0.0f, minVal2 = 0.0f, maxVal2 = 0.0f;
     QString coloringdimension;
 
-    if (commonOpts.getSelectionModeAction().isChecked()) {
+    /*if (commonOpts.getSelectionModeAction().isChecked()) {
         // Selection mode: color by cluster datasets
         const QString colorDataset1ID = ds1Opts.getClusterDatasetAction().getCurrentDatasetId();
         const QString colorDataset2ID = ds2Opts.getClusterDatasetAction().getCurrentDatasetId();
@@ -3412,7 +3412,7 @@ void Computation::colorScatterPlots()
             coloringdimension, colorMapStringValue, minVal2, maxVal2);
         _isColoringScatterplots = false;
         return;
-    }
+    }*/
 
     // Non-selection mode: color by point coloring datasets
     if (!_scatterplotPointColoringDataset1.isValid() || !_scatterplotPointColoringDataset2.isValid()) {

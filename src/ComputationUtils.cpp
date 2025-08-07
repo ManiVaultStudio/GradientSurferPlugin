@@ -554,7 +554,7 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                     {
                         qCritical() << "Position dataset action not found in plugin:" << plugin->getGuiName();
                     }
-                    auto freezeSelectionValueAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
+                    /*auto freezeSelectionValueAction = findActionByPath<ToggleAction>(plugin, "Settings/Selection/Freeze selection");
                     if (freezeSelectionValueAction)
                     {
                         if (disableSelection)
@@ -569,7 +569,7 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                     else
                     {
                         qCritical() << "Freeze selection action not found in plugin:" << plugin->getGuiName();
-                    }
+                    }*/
                     if (dimensionForColoring != "")
                     {
                         auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");

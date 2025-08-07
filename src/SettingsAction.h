@@ -256,8 +256,8 @@ public:
         ToggleAction& getNormalizeCombinedDatasetsAction() { return _normalizeCombinedDatasetsAction; }
         */
 
-        const ToggleAction& getSelectionModeAction() const { return _selectionModeAction; }
-        ToggleAction& getSelectionModeAction() { return _selectionModeAction; }
+        //const ToggleAction& getSelectionModeAction() const { return _selectionModeAction; }
+        //ToggleAction& getSelectionModeAction() { return _selectionModeAction; }
 
         const ColorMap1DAction& getColoringMapSelectionAction() const { return _coloringMapSelectionAction; }
         ColorMap1DAction& getColoringMapSelectionAction() { return _coloringMapSelectionAction; }
@@ -315,7 +315,7 @@ public:
         OptionAction                 _correlationCalculationTypeAction;
         //ToggleAction                 _normalizeCombinedDatasetsAction;
         //OptionAction                _normalizationTypeAction;
-        ToggleAction                _selectionModeAction;
+        //ToggleAction                _selectionModeAction;
         ColorMap1DAction            _coloringMapSelectionAction;
 
         ToggleAction                        _focusSelectionAction;

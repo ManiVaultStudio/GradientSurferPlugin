@@ -116,7 +116,7 @@ private:
     void enableOptions();
     void disableOptions();
     void coorelationScoresForPCs();
-    void selectionModeAltToggleLogic(QString scatterplotName);
+    //void selectionModeAltToggleLogic(QString scatterplotName);
     void findCommonGenes();
 
 protected:
