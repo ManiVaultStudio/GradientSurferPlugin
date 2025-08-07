@@ -363,7 +363,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
 }
 
 inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Dataset1 Options"),
+    VerticalGroupAction(&settingsAction, "Dataset1 Advanced Options"),
     _settingsOptions(settingsAction),
     _clusterDatasetAction(this, "Cluster dataset"),
     _pointDatasetAction(this, "Point dataset"),
@@ -378,7 +378,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _lineplotUpperColoringRangeAction(this, "Lineplot Upper Coloring Range"),
     _lineplotLowerColoringRangeAction(this, "Lineplot Lower Coloring Range")
 {
-    setText("Dataset1 Options");
+    setText("Dataset1 Advanced Options");
     setIcon(mv::util::StyledIcon("database"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
@@ -400,7 +400,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
 
 
 inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Dataset2 Options"),
+    VerticalGroupAction(&settingsAction, "Dataset2 Advanced Options"),
     _settingsOptions(settingsAction),
     _clusterDatasetAction(this, "Cluster dataset"),
     _pointDatasetAction(this, "Point dataset"),
@@ -412,7 +412,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     _scatterplotUpperColoringRangeAction(this, "Scatterplot UpperColoring Range"),
     _scatterplotLowerColoringRangeAction(this, "Scatterplot Lower Coloring Range")
 {
-    setText("Dataset2 Options");
+    setText("Dataset2 Advanced Options");
     setIcon(mv::util::StyledIcon("database"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
@@ -462,27 +462,29 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_clusterDatasetSelectionAction);
     addAction(&_clusterValueSelectionAction);
-    //addAction(&_dualPCAColoringAction);
-    addAction(&_focusSelectionAction);
-    addAction(&_hidePointSelectionAction);
+
     addAction(&_topNRowsAction);
     addAction(&_bottomNRowsAction);
+
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_coloringMapSelectionAction);
     addAction(&_lowRangeColoringPercentileAction);
     addAction(&_highRangeColoringPercentileAction);
-    addAction(&_autoComputeAction);
-    addAction(&_correlationCalculationTypeAction);
-    //addAction(&_normalizationTypeAction);
-    //addAction(&_colorAllCellsWithExpressionAction);
-    addAction(&_tableSearchBoxAction);
-    //addAction(&_normalizeCombinedDatasetsAction);
+
     addAction(&_selectionModeAction);
+    addAction(&_focusSelectionAction);
+    addAction(&_hidePointSelectionAction);
+
+    addAction(&_autoComputeAction);
     addAction(&_computationTypeAction);
+    addAction(&_correlationCalculationTypeAction);
+
+    addAction(&_tableSearchBoxAction);
+
     addAction(&_computePCAAction);
     addAction(&_computeAction);
-    //_statusBarActionWidget->statusBar()->setMinimumHeight(50);
+
     addAction(_statusBarActionWidget);
 
 }
