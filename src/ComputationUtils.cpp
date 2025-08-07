@@ -1947,8 +1947,13 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     FunctionTimer timer(Q_FUNC_INFO);
 
     // Early parameter validation
+    if (dimensionVal.isEmpty())
+    {
+        return { 0.0f, 0.0f };
+    }
+
     if (coloringDataset.isEmpty() || colorMapValue.isEmpty() ||
-        selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty())
+        selectedIndices.empty() || pointValuesDataset.isEmpty())
     {
         qWarning() << "createScatterplotPointColors: Invalid parameters for scatterplot cluster colors creation. ";
         //qInfo() << "coloringDataset:" << coloringDataset<< ", colorMapValue:" << colorMapValue<< ", selectedIndices size:" << selectedIndices.size()<< ", pointValuesDataset:" << pointValuesDataset<< ", dimensionVal:" << dimensionVal;
