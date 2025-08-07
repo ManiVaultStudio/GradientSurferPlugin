@@ -45,12 +45,14 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset2OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("GradientSurfer:ScatterplotViewSelection2");
     _dataset2OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("GradientSurfer:EmbeddingDimension2X");
     _dataset2OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("GradientSurfer:EmbeddingDimension2Y");
+    _commonOptionsHolder.getClusterValueSelectionAction().setSerializationName("GradientSurfer:ClusterSelection");
+    _commonOptionsHolder.getClusterDatasetSelectionAction().setSerializationName("GradientSurfer:ClusterDatasetSelection");
 
 
     _dataset1OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
     _dataset1OptionsHolder.getPointDatasetAction().setToolTip("Point Dataset");
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setToolTip("Embedding Dataset");
-    _commonOptionsHolder.getClusterSelectionAction().setToolTip("Cluster Selection");
+    _commonOptionsHolder.getClusterValueSelectionAction().setToolTip("Cluster Selection");
     _dataset1OptionsHolder.getGeneSelectionAction().setToolTip("Gene Selection");
     _dataset2OptionsHolder.getGeneSelectionAction().setToolTip("Gene Selection2");
     _commonOptionsHolder.getStatusMessageAction().setToolTip("Status Message");
@@ -61,7 +63,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
     _commonOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
-    _commonOptionsHolder.getColorAllCellsWithExpressionAction().setToolTip("Color All Cells With Expression Action");
+    //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setToolTip("Color All Cells With Expression Action");
     _commonOptionsHolder.getTableSearchBoxAction().setToolTip("Table Search Box Action");
 
     _commonOptionsHolder.getTopNRowsAction().setToolTip("Top N Rows Action");
@@ -97,7 +99,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
 
     _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
-    _commonOptionsHolder.getColorAllCellsWithExpressionAction().setChecked(false);
+    //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setChecked(false);
 
 
 
@@ -155,7 +157,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder.getClusterDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getPointDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getClusterSelectionAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
+    _commonOptionsHolder.getClusterValueSelectionAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
     _dataset1OptionsHolder.getGeneSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset2OptionsHolder.getGeneSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -188,7 +190,8 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getComputationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getComputationTypeAction().initialize({ "Full PCA", "Partial PCA" }, "Partial PCA");
     _commonOptionsHolder.getComputationTypeAction().setToolTip("Computation Type Action");
-
+    _commonOptionsHolder.getClusterDatasetSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getClusterDatasetSelectionAction().setToolTip("Cluster Dataset Selection Action");
 
     _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
@@ -205,7 +208,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
 
 
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getColorAllCellsWithExpressionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _commonOptionsHolder.getTableSearchBoxAction().setDefaultWidgetFlags(StringAction::LineEdit);
     _commonOptionsHolder.getTableSearchBoxAction().setIconText("Search Tables");
@@ -360,7 +363,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
 }
 
 inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Dataset1 Options"),
+    VerticalGroupAction(&settingsAction, "Dataset1 Advanced Options"),
     _settingsOptions(settingsAction),
     _clusterDatasetAction(this, "Cluster dataset"),
     _pointDatasetAction(this, "Point dataset"),
@@ -375,7 +378,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
     _lineplotUpperColoringRangeAction(this, "Lineplot Upper Coloring Range"),
     _lineplotLowerColoringRangeAction(this, "Lineplot Lower Coloring Range")
 {
-    setText("Dataset1 Options");
+    setText("Dataset1 Advanced Options");
     setIcon(mv::util::StyledIcon("database"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
@@ -397,7 +400,7 @@ inline SettingsAction::Dataset1OptionsHolder::Dataset1OptionsHolder(SettingsActi
 
 
 inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Dataset2 Options"),
+    VerticalGroupAction(&settingsAction, "Dataset2 Advanced Options"),
     _settingsOptions(settingsAction),
     _clusterDatasetAction(this, "Cluster dataset"),
     _pointDatasetAction(this, "Point dataset"),
@@ -409,7 +412,7 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
     _scatterplotUpperColoringRangeAction(this, "Scatterplot UpperColoring Range"),
     _scatterplotLowerColoringRangeAction(this, "Scatterplot Lower Coloring Range")
 {
-    setText("Dataset2 Options");
+    setText("Dataset2 Advanced Options");
     setIcon(mv::util::StyledIcon("database"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
@@ -426,10 +429,10 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
 }
 
 inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& settingsAction) :
-    VerticalGroupAction(&settingsAction, "Shared Options"),
+    VerticalGroupAction(&settingsAction, "Settings Options"),
     _settingsOptions(settingsAction),
     _computeAction(this, "Compute: Expand PC's across datasets"),
-    _clusterSelectionAction(this, "Cluster selection"),
+    _clusterValueSelectionAction(this, "Cluster selection"),
     _pcaDimensionForColoringAction(this, "PC Selection"),
     //_dualPCAColoringAction(this, "PCA Coloring"),
     _pcaColoringAction(this, "PCA Coloring"),
@@ -447,37 +450,41 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _computationTypeAction(this, "Computation Type"),
     _statusMessageAction(this, "Status Message"),
     _statusBarActionWidget(new StatusBarAction(this, "Status")),
-    _colorAllCellsWithExpressionAction(this, "Color All Cells With Expression"),
+    //_colorAllCellsWithExpressionAction(this, "Color All Cells With Expression"),
     _tableSearchBoxAction(this, "Search Table"),
     _lowRangeColoringPercentileAction(this, "Low Range Coloring Percentile"),
-    _highRangeColoringPercentileAction(this, "High Range Coloring Percentile")
+    _highRangeColoringPercentileAction(this, "High Range Coloring Percentile"),
+    _clusterDatasetSelectionAction(this, "Cluster Dataset Selection")
 {
-    setText("Shared Options");
+    setText("Settings Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
-    addAction(&_clusterSelectionAction);
-    //addAction(&_dualPCAColoringAction);
-    addAction(&_focusSelectionAction);
-    addAction(&_hidePointSelectionAction);
+    addAction(&_clusterDatasetSelectionAction);
+    addAction(&_clusterValueSelectionAction);
+
     addAction(&_topNRowsAction);
     addAction(&_bottomNRowsAction);
+
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
     addAction(&_coloringMapSelectionAction);
     addAction(&_lowRangeColoringPercentileAction);
     addAction(&_highRangeColoringPercentileAction);
-    addAction(&_autoComputeAction);
-    addAction(&_correlationCalculationTypeAction);
-    //addAction(&_normalizationTypeAction);
-    addAction(&_colorAllCellsWithExpressionAction);
-    addAction(&_tableSearchBoxAction);
-    //addAction(&_normalizeCombinedDatasetsAction);
+
     addAction(&_selectionModeAction);
+    addAction(&_focusSelectionAction);
+    addAction(&_hidePointSelectionAction);
+
+    addAction(&_autoComputeAction);
     addAction(&_computationTypeAction);
+    addAction(&_correlationCalculationTypeAction);
+
+    addAction(&_tableSearchBoxAction);
+
     addAction(&_computePCAAction);
     addAction(&_computeAction);
-    _statusBarActionWidget->statusBar()->setMinimumHeight(50);
+
     addAction(_statusBarActionWidget);
 
 }
@@ -495,7 +502,8 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
 
-    _commonOptionsHolder.getClusterSelectionAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getClusterValueSelectionAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getClusterDatasetSelectionAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().fromParentVariantMap(variantMap);
@@ -526,7 +534,8 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
 
 
-    _commonOptionsHolder.getClusterSelectionAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getClusterValueSelectionAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getClusterDatasetSelectionAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelection2Action().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().insertIntoVariantMap(variantMap);

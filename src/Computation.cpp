@@ -244,28 +244,50 @@ void Computation::setupTableHandlers()
         // Get current values
         auto topN = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
         auto bottomN = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
+        bool valuesAdjusted = false;
 
         // Validate the values
-        if (topN < 2 && bottomN < 2) {
-            // If both are less than 2, set one of them to 0
-            if (topN > 0) {
+        if (topN == 0 && bottomN == 0) {
+            // Both are 0 - set topN to default minimum (2)
+            topN = 2;
+            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            valuesAdjusted = true;
+        }
+        else if (topN == 0 && bottomN < 2) {
+            // topN is 0, bottomN is less than 2 - set bottomN to 2
+            bottomN = 2;
+            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(bottomN);
+            valuesAdjusted = true;
+        }
+        else if (bottomN == 0 && topN < 2) {
+            // bottomN is 0, topN is less than 2 - set topN to 2
+            topN = 2;
+            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            valuesAdjusted = true;
+        }
+        else if (topN < 2 && bottomN < 2) {
+            // Both are non-zero but both are less than 2 - set the larger one to 2 and the other to 0
+            if (topN >= bottomN) {
+                topN = 2;
                 bottomN = 0;
-                _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(bottomN);
-            }
-            else if (bottomN > 0) {
-                topN = 0;
-                _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
             }
             else {
-                // Both are 0, set topN to a default minimum (e.g., 2)
-                topN = 2;
-                _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+                bottomN = 2;
+                topN = 0;
             }
+            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(bottomN);
+            valuesAdjusted = true;
+        }
+
+        if (valuesAdjusted) {
             return; // Skip this execution, as the values are being adjusted
         }
 
         // If we get here, the values are valid
         setStatusMessage("R", "Updating table", "");
+
+        // Update table 1
         resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(),
             topN,
             bottomN,
@@ -273,6 +295,7 @@ void Computation::setupTableHandlers()
             _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(),
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), true);
 
+        // Update table 2
         resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(),
             topN,
             bottomN,
@@ -280,6 +303,7 @@ void Computation::setupTableHandlers()
             _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(),
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), false);
 
+        // Update table 3
         resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3, _settingsAction.getTableView3Action(),
             topN,
             bottomN,
@@ -287,9 +311,11 @@ void Computation::setupTableHandlers()
             _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(),
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), false);
 
-        selectFirstRow(_settingsAction.getTableView1Action());
+        // Select first row in table 2
+        selectFirstRow(_settingsAction.getTableView2Action());
         setStatusMessage("C", "Table updated", "");
 
+        // Auto-compute if enabled
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
             setStatusMessage("R", "Computation in progress", "");
             disableOptions();
@@ -297,6 +323,7 @@ void Computation::setupTableHandlers()
             enableOptions();
         }
         });
+
 }
 
 void Computation::initializeState()
@@ -467,11 +494,50 @@ void Computation::setupPointDatasetHandlers()
         setStatusMessage("M", QString("Point dataset %1 updated").arg(isDataset1 ? "1" : "2"), "");
         };
 
+    const auto updateCommonClusterDatasetOptionNames= [this]() {
+        auto pointDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
+        auto pointDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset();
+        if (pointDataset1.isValid() && pointDataset2.isValid()) {
+            auto children1 = pointDataset1->getChildren();
+            auto children2 = pointDataset2->getChildren();
+            if (children1.isEmpty() || children2.isEmpty()) {
+                _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setOptions({});
+                
+                return;
+            }
+            QStringList commonClusterDatasetNames;
+            QSet<QString> clusterNames2;
+            for (const Dataset<Clusters>& child2 : children2) {
+                if (child2->getDataType() == ClusterType) {
+                    clusterNames2.insert(child2->getGuiName());
+                }
+            }
+            for (const Dataset<Clusters>& child1 : children1) {
+                if (child1->getDataType() == ClusterType) {
+                    const QString& name = child1->getGuiName();
+                    if (clusterNames2.contains(name)) {
+                        commonClusterDatasetNames.append(name);
+                    }
+                }
+            }
+            _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setOptions(commonClusterDatasetNames);
+            if (commonClusterDatasetNames.size()>0)
+            {
+                _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setCurrentIndex(0);
+            }
+
+
+        }
+        else {
+            _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setOptions({});
+        }
+        };
+
     connect(&_settingsAction.getDataset1OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged,
-        this, [updatePointDataset]() { updatePointDataset(true); });
+        this, [updatePointDataset, updateCommonClusterDatasetOptionNames]() { updatePointDataset(true); updateCommonClusterDatasetOptionNames(); });
 
     connect(&_settingsAction.getDataset2OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged,
-        this, [updatePointDataset]() { updatePointDataset(false); });
+        this, [updatePointDataset, updateCommonClusterDatasetOptionNames]() { updatePointDataset(false); updateCommonClusterDatasetOptionNames(); });
 }
 
 void Computation::setupGeneSelectionHandlers()
@@ -718,7 +784,7 @@ void Computation::setupComputeHandlers()
         });
 
     // Cluster selection debounce handler
-    connect(&_settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
+    connect(&_settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction(),
         &OptionsAction::selectedOptionsChanged,
         this,
         [this]() { _clusterSelectionDebounceTimer.start(500); });
@@ -729,6 +795,17 @@ void Computation::setupComputeHandlers()
         disableOptions();
         setSelectionAndAutoCompute();
         enableOptions();
+        });
+
+    connect(&_settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction(), &OptionAction::currentIndexChanged, this, [this]() {
+        
+        //if (!_projectOpened) return;
+        if (_settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().getCurrentText()!="")
+        {
+            _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentText(_settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().getCurrentText());
+            _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setCurrentText(_settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().getCurrentText());
+        }
+
         });
 }
 
@@ -741,12 +818,12 @@ void Computation::setupColoringHandlers()
         if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
+            //_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
             deselectAllRows(_settingsAction.getTableView3Action());
-            setStatusMessage("M", "PCA selection changed. <br> Click on \"Compute\" to update tables", "");
+            setStatusMessage("M", "PCA selection changed. Click on \"Compute\" to update tables", "");
         }
         else 
         {
@@ -796,7 +873,7 @@ void Computation::setupColoringHandlers()
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
+            //_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
@@ -811,10 +888,10 @@ void Computation::setupColoringHandlers()
         });
 
     // Color all cells with expression handler
-    connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, [this]() {
+    /*connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, [this]() {
         if (_blockToggle) return;
         _colorUpdateDebounceTimer.start(200);
-        });
+        });*/
 
     // PCA dimension for coloring handler
     connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, [this]() {
@@ -1100,7 +1177,7 @@ void Computation::AutoCompute()
             return;
 
         // Gather cluster and selection information
-        const auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
+        const auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction().getSelectedOptions();
         const auto selectIndices = _embeddingDataset->getSelectionIndices();
         const auto clusters1 = fullClusterDataset1->getClusters();
         const auto clusters2 = fullClusterDataset2->getClusters();
@@ -1302,9 +1379,12 @@ void Computation::setStatusMessage(const QString& status, const QString& message
         else if (status == "R") resolvedColor = "#007bff"; 
         else resolvedColor = "#6c757d";                    
     }
+    int brCount;
+    QString wrappedMessage = wrapMessageWithBrCount(message, brCount,50);
+    _settingsAction.getCommonOptionsHolder().getStatusBarAction()->statusBar()->setFixedHeight(30 + brCount * 20); // Adjust height based on number of <br> tags
     QJsonObject obj;
     obj["status"] = status;
-    obj["message"] = message;
+    obj["message"] = wrappedMessage;
     obj["color"] = resolvedColor;
 
     if (status == "E")
@@ -1372,7 +1452,7 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Clusters>& fullCluster
         return false;
     }
 
-    auto selectedClusterValues = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
+    auto selectedClusterValues = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction().getSelectedOptions();
     if (selectedClusterValues.isEmpty()) {
         qWarning() << "No selected cluster values";
         setStatusMessage("E", "No clusters selected", "");
@@ -1561,7 +1641,7 @@ void Computation::updateClusterOptions()
 
     QStringList clusterNamesCommon = getCommonSortedNames(clusterNames1, clusterNames2);
 
-    auto& clusterSelectionAction = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction();
+    auto& clusterSelectionAction = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction();
     clusterSelectionAction.setOptions(clusterNamesCommon);
     clusterSelectionAction.setSelectedOptions(clusterNamesCommon);
 }
@@ -2950,7 +3030,7 @@ void Computation::coloringScatterPlotsOld()
             
             QString selectedGeneName = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
             int selectedGeneIndx = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
-            if (!_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().isChecked())
+            /*if (!_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().isChecked())
             {
                 createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalPoints1, selectedGeneName, minValScatter1, maxValScatter1);
                 createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, geneDataset2ID, totalPoints2, selectedGeneName, minValScatter2, maxValScatter2);
@@ -2958,7 +3038,7 @@ void Computation::coloringScatterPlotsOld()
                 scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, scatterplotColorDataset1Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
                 scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, scatterplotColorDataset2Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
             }
-            else
+            else*/
             {
                 scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, geneDataset1ID, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
                 scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, geneDataset2ID, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
