@@ -244,28 +244,50 @@ void Computation::setupTableHandlers()
         // Get current values
         auto topN = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
         auto bottomN = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
+        bool valuesAdjusted = false;
 
         // Validate the values
-        if (topN < 2 && bottomN < 2) {
-            // If both are less than 2, set one of them to 0
-            if (topN > 0) {
+        if (topN == 0 && bottomN == 0) {
+            // Both are 0 - set topN to default minimum (2)
+            topN = 2;
+            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            valuesAdjusted = true;
+        }
+        else if (topN == 0 && bottomN < 2) {
+            // topN is 0, bottomN is less than 2 - set bottomN to 2
+            bottomN = 2;
+            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(bottomN);
+            valuesAdjusted = true;
+        }
+        else if (bottomN == 0 && topN < 2) {
+            // bottomN is 0, topN is less than 2 - set topN to 2
+            topN = 2;
+            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            valuesAdjusted = true;
+        }
+        else if (topN < 2 && bottomN < 2) {
+            // Both are non-zero but both are less than 2 - set the larger one to 2 and the other to 0
+            if (topN >= bottomN) {
+                topN = 2;
                 bottomN = 0;
-                _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(bottomN);
-            }
-            else if (bottomN > 0) {
-                topN = 0;
-                _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
             }
             else {
-                // Both are 0, set topN to a default minimum (e.g., 2)
-                topN = 2;
-                _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+                bottomN = 2;
+                topN = 0;
             }
+            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(bottomN);
+            valuesAdjusted = true;
+        }
+
+        if (valuesAdjusted) {
             return; // Skip this execution, as the values are being adjusted
         }
 
         // If we get here, the values are valid
         setStatusMessage("R", "Updating table", "");
+
+        // Update table 1
         resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(),
             topN,
             bottomN,
@@ -273,6 +295,7 @@ void Computation::setupTableHandlers()
             _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(),
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), true);
 
+        // Update table 2
         resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(),
             topN,
             bottomN,
@@ -280,6 +303,7 @@ void Computation::setupTableHandlers()
             _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(),
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), false);
 
+        // Update table 3
         resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3, _settingsAction.getTableView3Action(),
             topN,
             bottomN,
@@ -287,9 +311,11 @@ void Computation::setupTableHandlers()
             _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(),
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), false);
 
-        selectFirstRow(_settingsAction.getTableView1Action());
+        // Select first row in table 2
+        selectFirstRow(_settingsAction.getTableView2Action());
         setStatusMessage("C", "Table updated", "");
 
+        // Auto-compute if enabled
         if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
             setStatusMessage("R", "Computation in progress", "");
             disableOptions();
@@ -297,6 +323,7 @@ void Computation::setupTableHandlers()
             enableOptions();
         }
         });
+
 }
 
 void Computation::initializeState()
