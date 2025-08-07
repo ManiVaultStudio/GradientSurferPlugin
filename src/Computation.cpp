@@ -1279,19 +1279,14 @@ void Computation::ManualCompute()
         _isManualComputeComputing = false;
         return;
     }
-    auto topN = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
-    auto bottomN = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
-    int totalN = topN + bottomN;
-    if (totalN > _filteredSelectionIndices.size()) {
-        setStatusMessage("E", "Row selection exceeds available point selection size", "");
-        return ;
-    }
+    
     bool complete = setupAndTriggerPCA();
     if (!complete)
     {
         clearTable(_settingsAction.getTableView3Action());
         clearTable(_settingsAction.getTableView2Action());
-        setStatusMessage("E", "Error occurred during PCA setup", "");
+        //setStatusMessage("E", "Error occurred during PCA setup", "");
+        qCritical() << "Error occurred during PCA setup";
         _isManualComputeComputing = false;
         return;
     }
@@ -2270,7 +2265,10 @@ bool Computation::setupAndTriggerPCA()
         setStatusMessage("E", "No common genes found between datasets", "");
         return false;
     }
-
+    if (dimensionNamesOfInterest.size() > _filteredSelectionIndices.size()) {
+        setStatusMessage("E", "Row selection exceeds available point selection size", "");
+        return false;
+    }
     const int numDimsOfInterest = static_cast<int>(dimensionNamesOfInterest.size());
     if (numDimsOfInterest <= 0) {
         qWarning() << "No genes of interest selected for PCA";
