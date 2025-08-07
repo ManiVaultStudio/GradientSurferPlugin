@@ -2133,7 +2133,8 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
     mv::events().notifyDatasetDataChanged(_rotatedSelectedEmbeddingDataset);
 
 
-    std::vector<QString> dimensionNamesWithYCoords = { QStringLiteral("Rotated Y Coordinates") };
+    std::vector<QString> dimensionNamesWithYCoords = { QStringLiteral("Empty") };
+    dimensionNamesWithYCoords.push_back("Rotated Y Coordinates");
     dimensionNamesWithYCoords.push_back("Mean Expr All Genes");
     dimensionNamesWithYCoords.push_back("Mean Expr Selected Genes");
     dimensionNamesWithYCoords.insert(dimensionNamesWithYCoords.end(), dimensionNames.begin(), dimensionNames.end());
@@ -2156,24 +2157,26 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
         }
     }
 
-    std::vector<float> linechartdata(numCells * (3 + numGenes));
+    std::vector<float> linechartdata(numCells * (4 + numGenes));
 
 
     for (size_t i = 0; i < numCells; ++i) {
+        // Zero column: blank values
+        linechartdata[i * (4 + numGenes)] = 0.0f;
         // First column: Rotated Y coordinate
-        linechartdata[i * (3 + numGenes)] = rotatedYCoord[i];
+        linechartdata[i * (4 + numGenes)+1] = rotatedYCoord[i];
         // Second column: Mean of all genes
-        linechartdata[i * (3 + numGenes) + 1] = meanAllGenes[i];
+        linechartdata[i * (4 + numGenes) + 2] = meanAllGenes[i];
         // Third column: Mean of selected genes
-        linechartdata[i * (3 + numGenes) + 2] = meanSelectedGenes[i];
+        linechartdata[i * (4 + numGenes) + 3] = meanSelectedGenes[i];
         // Remaining columns: All gene values
         for (size_t j = 0; j < numGenes; ++j) {
-            linechartdata[i * (3 + numGenes) + 3 + j] = cellbygenematrix[i * numGenes + j];
+            linechartdata[i * (4 + numGenes) + 4 + j] = cellbygenematrix[i * numGenes + j];
         }
     }
 
 
-    _lineChartPointDataset1->setData(linechartdata.data(), static_cast<int>(numCells), noOfDimensions + 3);
+    _lineChartPointDataset1->setData(linechartdata.data(), static_cast<int>(numCells), noOfDimensions + 4);
 
     _lineChartPointDataset1->setDimensionNames(dimensionNamesWithYCoords);
     mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
@@ -3119,7 +3122,7 @@ void Computation::colorLinePlots()
 
     const int totalSelectedPoints = _selectedCellPointDataset->getNumPoints();
     constexpr auto smoothingType = "Moving Average";
-    constexpr auto xPositionString = "Rotated Y Coordinates";
+    QString xPositionString = "Rotated Y Coordinates";
     const int smoothingWindow = static_cast<int>(std::round(totalSelectedPoints * 0.2));
     QString yPositionString, titleText, colorDatasetID, colordatasetType;
     int colordimensionIndx = -1;
@@ -3213,14 +3216,18 @@ void Computation::colorLinePlots()
                         maxValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction().getValue()); 
                     }
                 }
+                titleText = QString("%1 vs %2 expression of selected cells (%3)")
+                    .arg(xPositionString, yPositionString)
+                    .arg(_filteredSelectionIndices.size());
             }
             else
             {
-                yPositionString = "Mean Expr All Genes";
+                xPositionString= "Empty";
+                colordimensionIndx = 0;
+                yPositionString = "Empty";
+                titleText = QString("Gene unavailable for selection dataset");
             }
-            titleText = QString("%1 vs %2 expression of selected cells (%3)")
-                .arg(xPositionString, yPositionString)
-                .arg(_filteredSelectionIndices.size());
+
         }
     }
 
