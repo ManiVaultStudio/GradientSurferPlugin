@@ -722,11 +722,17 @@ void Computation::setupColoringHandlers()
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
             deselectAllRows(_settingsAction.getTableView3Action());
+            setStatusMessage("M", "PCA selection changed. Click on \"Compute\" to update tables", "");
         }
-        else {
+        else 
+        {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
+            if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
+            {
+                _settingsAction.getCommonOptionsHolder().getComputeAction().trigger();
+            }
         }
         _colorUpdateDebounceTimer.start(100);
         });
@@ -789,7 +795,17 @@ void Computation::setupColoringHandlers()
     // PCA dimension for coloring handler
     connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, [this]() {
         if (_blockToggle) return;
-        _colorUpdateDebounceTimer.start(100);
+
+        if(_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()){
+            _colorUpdateDebounceTimer.start(100);
+        }
+        else
+        {
+            if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked())
+                {
+                    _settingsAction.getCommonOptionsHolder().getComputeAction().trigger();
+                }
+        }
         });
 }
 
