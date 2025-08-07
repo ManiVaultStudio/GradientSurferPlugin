@@ -1839,6 +1839,7 @@ void Computation::coorelationScoresForPCs()
     // Update coloring action
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaSelectedEmbeddingDataset);
     _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setCurrentDimensionIndex(maxIndex);
+    setStatusMessage("C", "Correlation scores for PCA dimensions computed successfully", "#28a745");
 }
 void Computation::processAfterPCADatasetsPopulated()
 {
