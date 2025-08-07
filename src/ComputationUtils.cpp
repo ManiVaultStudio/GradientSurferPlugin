@@ -1941,7 +1941,52 @@ float percentile(const std::vector<float>& data, float pct) {
     float weight_above = pos - idx_below;
     return sorted[idx_below] * (1.0f - weight_above) + sorted[idx_above] * weight_above;
 }
+QString wrapMessageWithBrCount(const QString& message, int& brCount, int maxLineLength) {
+    brCount = 0;
+    if (message.length() <= maxLineLength) {
+        return message;
+    }
 
+    QStringList words = message.split(' ', Qt::SkipEmptyParts);
+    QStringList wrappedLines;
+    QString currentLine;
+
+    for (const QString& word : words) {
+        if (word.length() > maxLineLength) {
+            if (!currentLine.isEmpty()) {
+                wrappedLines.append(currentLine);
+                currentLine.clear();
+                brCount++;
+            }
+            // Break long word into chunks
+            for (int i = 0; i < word.length(); i += maxLineLength) {
+                if (!wrappedLines.isEmpty() || i != 0) {
+                    brCount++;
+                }
+                wrappedLines.append(word.mid(i, maxLineLength));
+            }
+            continue;
+        }
+
+        if (currentLine.isEmpty()) {
+            currentLine = word;
+        }
+        else if (currentLine.length() + 1 + word.length() <= maxLineLength) {
+            currentLine += " " + word;
+        }
+        else {
+            wrappedLines.append(currentLine);
+            currentLine = word;
+            brCount++;
+        }
+    }
+
+    if (!currentLine.isEmpty()) {
+        wrappedLines.append(currentLine);
+    }
+
+    return wrappedLines.join("<br>");
+}
 std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax,float lowRangePercentileValue, float highRangePercentileValue)
 {
     FunctionTimer timer(Q_FUNC_INFO);

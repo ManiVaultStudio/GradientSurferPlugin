@@ -113,6 +113,7 @@ QString statusToIconName(const QString& status);
 void selectFirstRow(QTableView* tableView);
 void deselectAllRows(QTableView* tableView);
 void makeSelection(QString value, QTableView* tableView);
+QString wrapMessageWithBrCount(const QString& message, int& brCount, int maxLineLength = 100);
 void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, int topNRows, int bottomNRows, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, bool isMainTable);
 void setupTableModelAndSelection(QTableView* tableViewMain, std::vector<CorrelationGeneCoords>& geneCorrValues,DimensionPickerAction& geneSelectionAction,  QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2,bool isMainSelectionTable);
 void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices,QTableView* tableViewMain, int topNRows, int bottomNRows, DimensionPickerAction& geneSelectionAction,  QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2, bool mainTable);

@@ -796,7 +796,7 @@ void Computation::setupColoringHandlers()
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
             deselectAllRows(_settingsAction.getTableView3Action());
-            setStatusMessage("M", "PCA selection changed. <br> Click on \"Compute\" to update tables", "");
+            setStatusMessage("M", "PCA selection changed. Click on \"Compute\" to update tables", "");
         }
         else 
         {
@@ -1352,9 +1352,12 @@ void Computation::setStatusMessage(const QString& status, const QString& message
         else if (status == "R") resolvedColor = "#007bff"; 
         else resolvedColor = "#6c757d";                    
     }
+    int brCount;
+    QString wrappedMessage = wrapMessageWithBrCount(message, brCount,50);
+    _settingsAction.getCommonOptionsHolder().getStatusBarAction()->statusBar()->setFixedHeight(30 + brCount * 20); // Adjust height based on number of <br> tags
     QJsonObject obj;
     obj["status"] = status;
-    obj["message"] = message;
+    obj["message"] = wrappedMessage;
     obj["color"] = resolvedColor;
 
     if (status == "E")

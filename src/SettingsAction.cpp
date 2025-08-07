@@ -482,7 +482,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_computationTypeAction);
     addAction(&_computePCAAction);
     addAction(&_computeAction);
-    _statusBarActionWidget->statusBar()->setMinimumHeight(50);
+    //_statusBarActionWidget->statusBar()->setMinimumHeight(50);
     addAction(_statusBarActionWidget);
 
 }
