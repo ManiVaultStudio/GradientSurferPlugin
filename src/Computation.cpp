@@ -486,7 +486,7 @@ void Computation::setupGeneSelectionHandlers()
             _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         }
-        _colorUpdateDebounceTimer.start(100);
+        _colorUpdateDebounceTimer.start(200);
         };
 
     connect(&_settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), &DimensionPickerAction::currentDimensionIndexChanged,
@@ -651,22 +651,22 @@ void Computation::setupEmbeddingDimensionHandlers()
     // These were already consolidated correctly, but the message strings need to match original
     const auto embeddingDimensionYActionChanged1 = [this]() {
         setStatusMessage("M", "Embedding 1 Y dimension changed", "");
-        _colorUpdateDebounceTimer.start(100);
+        _colorUpdateDebounceTimer.start(200);
         };
 
     const auto embeddingDimensionYActionChanged2 = [this]() {
         setStatusMessage("M", "Embedding 2 Y dimension changed", "");
-        _colorUpdateDebounceTimer.start(100);
+        _colorUpdateDebounceTimer.start(200);
         };
 
     const auto embeddingDimensionXActionChanged1 = [this]() {
         setStatusMessage("M", "Embedding 1 X dimension changed", "");
-        _colorUpdateDebounceTimer.start(100);
+        _colorUpdateDebounceTimer.start(200);
         };
 
     const auto embeddingDimensionXActionChanged2 = [this]() {
         setStatusMessage("M", "Embedding 2 X dimension changed", "");
-        _colorUpdateDebounceTimer.start(100);
+        _colorUpdateDebounceTimer.start(200);
         };
 
     connect(&_settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, embeddingDimensionYActionChanged1);
@@ -758,7 +758,7 @@ void Computation::setupColoringHandlers()
                 _settingsAction.getCommonOptionsHolder().getComputeAction().trigger();
             }
         }
-        _colorUpdateDebounceTimer.start(100);
+        _colorUpdateDebounceTimer.start(200);
         });
 
     // Colormap change handler
@@ -785,7 +785,7 @@ void Computation::setupColoringHandlers()
         });
 
     // Percentile value change handlers
-    auto changePercentileValue = [this]() { _colorUpdateDebounceTimer.start(100); };
+    auto changePercentileValue = [this]() { _colorUpdateDebounceTimer.start(200); };
     connect(&_settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
     connect(&_settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
 
@@ -807,13 +807,13 @@ void Computation::setupColoringHandlers()
             _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
             selectFirstRow(_settingsAction.getTableView1Action());
         }
-        _colorUpdateDebounceTimer.start(100);
+        _colorUpdateDebounceTimer.start(200);
         });
 
     // Color all cells with expression handler
     connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, [this]() {
         if (_blockToggle) return;
-        _colorUpdateDebounceTimer.start(100);
+        _colorUpdateDebounceTimer.start(200);
         });
 
     // PCA dimension for coloring handler
@@ -821,7 +821,7 @@ void Computation::setupColoringHandlers()
         if (_blockToggle) return;
 
         if(_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()){
-            _colorUpdateDebounceTimer.start(100);
+            _colorUpdateDebounceTimer.start(200);
         }
         else
         {
@@ -1235,7 +1235,7 @@ void Computation::AutoCompute()
         );
 
         selectFirstRow(_settingsAction.getTableView1Action());
-        _colorUpdateDebounceTimer.start(100);
+        _colorUpdateDebounceTimer.start(200);
 
         setStatusMessage("C", "Computation completed", "#28a745");
 
@@ -1279,12 +1279,14 @@ void Computation::ManualCompute()
         _isManualComputeComputing = false;
         return;
     }
+    
     bool complete = setupAndTriggerPCA();
     if (!complete)
     {
         clearTable(_settingsAction.getTableView3Action());
         clearTable(_settingsAction.getTableView2Action());
-        setStatusMessage("E", "Error occurred during PCA setup", "");
+        //setStatusMessage("E", "Error occurred during PCA setup", "");
+        qCritical() << "Error occurred during PCA setup";
         _isManualComputeComputing = false;
         return;
     }
@@ -2263,7 +2265,10 @@ bool Computation::setupAndTriggerPCA()
         setStatusMessage("E", "No common genes found between datasets", "");
         return false;
     }
-
+    if (dimensionNamesOfInterest.size() > _filteredSelectionIndices.size()) {
+        setStatusMessage("E", "Row selection exceeds available point selection size", "");
+        return false;
+    }
     const int numDimsOfInterest = static_cast<int>(dimensionNamesOfInterest.size());
     if (numDimsOfInterest <= 0) {
         qWarning() << "No genes of interest selected for PCA";
@@ -3386,14 +3391,14 @@ void Computation::colorScatterPlots()
             _isColoringScatterplots = false;
             return;
         }
-        const QString selectedGeneName = ds1Opts.getGeneSelectionAction().getCurrentDimensionName();
-
+        const QString selectedGeneName1 = ds1Opts.getGeneSelectionAction().getCurrentDimensionName();
+        const QString selectedGeneName2 = ds2Opts.getGeneSelectionAction().getCurrentDimensionName();
         auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             geneDataset1ID, embeddingDataset1->getNumPoints(),
-            selectedGeneName, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile);
+            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile);
         auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             geneDataset2ID, embeddingDataset2->getNumPoints(),
-            selectedGeneName, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
+            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
         minVal1 = value1.first;
         maxVal1 = value1.second;
         minVal2 = value2.first;

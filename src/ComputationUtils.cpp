@@ -1950,18 +1950,19 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     if (coloringDataset.isEmpty() || colorMapValue.isEmpty() ||
         selectedIndices.empty() || pointValuesDataset.isEmpty() || dimensionVal.isEmpty())
     {
-        qWarning() << "createScatterplotPointColors: Invalid parameters for PCA cluster colors creation. ";
+        qWarning() << "createScatterplotPointColors: Invalid parameters for scatterplot cluster colors creation. ";
+        //qInfo() << "coloringDataset:" << coloringDataset<< ", colorMapValue:" << colorMapValue<< ", selectedIndices size:" << selectedIndices.size()<< ", pointValuesDataset:" << pointValuesDataset<< ", dimensionVal:" << dimensionVal;
         return { 0.0f, 0.0f };
     }
     if (numOfTotalPoints <= 0) {
-        qWarning() << "Invalid number of total points for PCA cluster colors creation.";
+        qWarning() << "Invalid number of total points for scatterplot cluster colors creation.";
         return { 0.0f, 0.0f };
     }
 
     auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
     auto pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
     if (!coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid()) {
-        qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
+        qWarning() << "Invalid datasets provided for scatterplot cluster colors creation.";
         return { 0.0f, 0.0f };
     }
 
