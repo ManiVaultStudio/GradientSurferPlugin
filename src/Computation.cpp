@@ -241,24 +241,48 @@ void Computation::setupTableHandlers()
     connect(&_NRangeDebounceTimer, &QTimer::timeout, this, [this]() {
         if (!_projectOpened) return;
 
+        // Get current values
+        auto topN = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
+        auto bottomN = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
+
+        // Validate the values
+        if (topN < 2 && bottomN < 2) {
+            // If both are less than 2, set one of them to 0
+            if (topN > 0) {
+                bottomN = 0;
+                _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().setValue(bottomN);
+            }
+            else if (bottomN > 0) {
+                topN = 0;
+                _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            }
+            else {
+                // Both are 0, set topN to a default minimum (e.g., 2)
+                topN = 2;
+                _settingsAction.getCommonOptionsHolder().getTopNRowsAction().setValue(topN);
+            }
+            return; // Skip this execution, as the values are being adjusted
+        }
+
+        // If we get here, the values are valid
         setStatusMessage("R", "Updating table", "");
         resetupCorrelationTable(_geneCorrValues1, _geneOfInterestIndices1, _settingsAction.getTableView1Action(),
-            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(),
-            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(),
+            topN,
+            bottomN,
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),
             _settingsAction.getTableView2Action(), _settingsAction.getTableView3Action(),
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), true);
 
         resetupCorrelationTable(_geneCorrValues2, _geneOfInterestIndices2, _settingsAction.getTableView2Action(),
-            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(),
-            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(),
+            topN,
+            bottomN,
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),
             _settingsAction.getTableView1Action(), _settingsAction.getTableView3Action(),
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), false);
 
         resetupCorrelationTable(_geneCorrValues3, _geneOfInterestIndices3, _settingsAction.getTableView3Action(),
-            _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue(),
-            _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue(),
+            topN,
+            bottomN,
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),
             _settingsAction.getTableView1Action(), _settingsAction.getTableView2Action(),
             _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), false);
