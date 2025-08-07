@@ -467,11 +467,50 @@ void Computation::setupPointDatasetHandlers()
         setStatusMessage("M", QString("Point dataset %1 updated").arg(isDataset1 ? "1" : "2"), "");
         };
 
+    const auto updateCommonClusterDatasetOptionNames= [this]() {
+        auto pointDataset1 = _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset();
+        auto pointDataset2 = _settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset();
+        if (pointDataset1.isValid() && pointDataset2.isValid()) {
+            auto children1 = pointDataset1->getChildren();
+            auto children2 = pointDataset2->getChildren();
+            if (children1.isEmpty() || children2.isEmpty()) {
+                _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setOptions({});
+                
+                return;
+            }
+            QStringList commonClusterDatasetNames;
+            QSet<QString> clusterNames2;
+            for (const Dataset<Clusters>& child2 : children2) {
+                if (child2->getDataType() == ClusterType) {
+                    clusterNames2.insert(child2->getGuiName());
+                }
+            }
+            for (const Dataset<Clusters>& child1 : children1) {
+                if (child1->getDataType() == ClusterType) {
+                    const QString& name = child1->getGuiName();
+                    if (clusterNames2.contains(name)) {
+                        commonClusterDatasetNames.append(name);
+                    }
+                }
+            }
+            _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setOptions(commonClusterDatasetNames);
+            if (commonClusterDatasetNames.size()>0)
+            {
+                _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setCurrentIndex(0);
+            }
+
+
+        }
+        else {
+            _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setOptions({});
+        }
+        };
+
     connect(&_settingsAction.getDataset1OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged,
-        this, [updatePointDataset]() { updatePointDataset(true); });
+        this, [updatePointDataset, updateCommonClusterDatasetOptionNames]() { updatePointDataset(true); updateCommonClusterDatasetOptionNames(); });
 
     connect(&_settingsAction.getDataset2OptionsHolder().getPointDatasetAction(), &DatasetPickerAction::currentIndexChanged,
-        this, [updatePointDataset]() { updatePointDataset(false); });
+        this, [updatePointDataset, updateCommonClusterDatasetOptionNames]() { updatePointDataset(false); updateCommonClusterDatasetOptionNames(); });
 }
 
 void Computation::setupGeneSelectionHandlers()
@@ -718,7 +757,7 @@ void Computation::setupComputeHandlers()
         });
 
     // Cluster selection debounce handler
-    connect(&_settingsAction.getCommonOptionsHolder().getClusterSelectionAction(),
+    connect(&_settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction(),
         &OptionsAction::selectedOptionsChanged,
         this,
         [this]() { _clusterSelectionDebounceTimer.start(500); });
@@ -729,6 +768,17 @@ void Computation::setupComputeHandlers()
         disableOptions();
         setSelectionAndAutoCompute();
         enableOptions();
+        });
+
+    connect(&_settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction(), &OptionAction::currentIndexChanged, this, [this]() {
+        
+        //if (!_projectOpened) return;
+        if (_settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().getCurrentText()!="")
+        {
+            _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentText(_settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().getCurrentText());
+            _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setCurrentText(_settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().getCurrentText());
+        }
+
         });
 }
 
@@ -741,7 +791,7 @@ void Computation::setupColoringHandlers()
         if (_settingsAction.getCommonOptionsHolder().getPcaColoringAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
-            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
+            //_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
@@ -796,7 +846,7 @@ void Computation::setupColoringHandlers()
         if (_settingsAction.getCommonOptionsHolder().getSelectionModeAction().isChecked()) {
             ScopedBlocker blocker(_blockToggle);
             _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(false);
-            _settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
+            //_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().setChecked(false);
             _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().setCurrentDimensionIndex(-1);
             deselectAllRows(_settingsAction.getTableView1Action());
             deselectAllRows(_settingsAction.getTableView2Action());
@@ -811,10 +861,10 @@ void Computation::setupColoringHandlers()
         });
 
     // Color all cells with expression handler
-    connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, [this]() {
+    /*connect(&_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction(), &ToggleAction::toggled, this, [this]() {
         if (_blockToggle) return;
         _colorUpdateDebounceTimer.start(200);
-        });
+        });*/
 
     // PCA dimension for coloring handler
     connect(&_settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction(), &DimensionPickerAction::currentDimensionIndexChanged, this, [this]() {
@@ -1100,7 +1150,7 @@ void Computation::AutoCompute()
             return;
 
         // Gather cluster and selection information
-        const auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
+        const auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction().getSelectedOptions();
         const auto selectIndices = _embeddingDataset->getSelectionIndices();
         const auto clusters1 = fullClusterDataset1->getClusters();
         const auto clusters2 = fullClusterDataset2->getClusters();
@@ -1372,7 +1422,7 @@ bool Computation::validateAndRetrieveDatasets(mv::Dataset<Clusters>& fullCluster
         return false;
     }
 
-    auto selectedClusterValues = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction().getSelectedOptions();
+    auto selectedClusterValues = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction().getSelectedOptions();
     if (selectedClusterValues.isEmpty()) {
         qWarning() << "No selected cluster values";
         setStatusMessage("E", "No clusters selected", "");
@@ -1561,7 +1611,7 @@ void Computation::updateClusterOptions()
 
     QStringList clusterNamesCommon = getCommonSortedNames(clusterNames1, clusterNames2);
 
-    auto& clusterSelectionAction = _settingsAction.getCommonOptionsHolder().getClusterSelectionAction();
+    auto& clusterSelectionAction = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction();
     clusterSelectionAction.setOptions(clusterNamesCommon);
     clusterSelectionAction.setSelectedOptions(clusterNamesCommon);
 }
@@ -2950,7 +3000,7 @@ void Computation::coloringScatterPlotsOld()
             
             QString selectedGeneName = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionName();
             int selectedGeneIndx = _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction().getCurrentDimensionIndex();
-            if (!_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().isChecked())
+            /*if (!_settingsAction.getCommonOptionsHolder().getColorAllCellsWithExpressionAction().isChecked())
             {
                 createScatterplotClusterColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1, geneDataset1ID, totalPoints1, selectedGeneName, minValScatter1, maxValScatter1);
                 createScatterplotClusterColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2, geneDataset2ID, totalPoints2, selectedGeneName, minValScatter2, maxValScatter2);
@@ -2958,7 +3008,7 @@ void Computation::coloringScatterPlotsOld()
                 scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, scatterplotColorDataset1Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
                 scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, scatterplotColorDataset2Id, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
             }
-            else
+            else*/
             {
                 scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, geneDataset1ID, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);
                 scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, geneDataset2ID, embeddingDimensionX1, embeddingDimensionY1, true, "", "", 0.0, 0.0);

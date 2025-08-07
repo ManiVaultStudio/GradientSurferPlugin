@@ -220,8 +220,8 @@ public:
         CommonOptionsHolder(SettingsAction& settingsAction);
 
 
-        const OptionsAction& getClusterSelectionAction() const { return _clusterSelectionAction; }
-        OptionsAction& getClusterSelectionAction() { return _clusterSelectionAction; }
+        const OptionsAction& getClusterValueSelectionAction() const { return _clusterValueSelectionAction; }
+        OptionsAction& getClusterValueSelectionAction() { return _clusterValueSelectionAction; }
 
         const TriggerAction& getComputeAction() const { return _computeAction; }
         TriggerAction& getComputeAction() { return _computeAction; }
@@ -285,8 +285,8 @@ public:
         const StringAction& getStatusMessageAction() const { return _statusMessageAction; }
         StringAction& getStatusMessageAction() { return _statusMessageAction; }
 
-        const ToggleAction& getColorAllCellsWithExpressionAction() const { return _colorAllCellsWithExpressionAction; }
-        ToggleAction& getColorAllCellsWithExpressionAction() { return _colorAllCellsWithExpressionAction; }
+        //const ToggleAction& getColorAllCellsWithExpressionAction() const { return _colorAllCellsWithExpressionAction; }
+        //ToggleAction& getColorAllCellsWithExpressionAction() { return _colorAllCellsWithExpressionAction; }
 
         const StringAction& getTableSearchBoxAction() const { return _tableSearchBoxAction; }
         StringAction& getTableSearchBoxAction() { return _tableSearchBoxAction; }
@@ -297,11 +297,14 @@ public:
         const DecimalAction& getHighRangeColoringPercentileAction() const { return _highRangeColoringPercentileAction; }
         DecimalAction& getHighRangeColoringPercentileAction() { return _highRangeColoringPercentileAction; }
 
+        const OptionAction& getClusterDatasetSelectionAction() const { return _clusterDatasetSelectionAction; }
+        OptionAction& getClusterDatasetSelectionAction() { return _clusterDatasetSelectionAction; }
+
     protected:
         SettingsAction& _settingsOptions;
 
         
-        OptionsAction                       _clusterSelectionAction;
+        OptionsAction                       _clusterValueSelectionAction;
         TriggerAction              _computeAction;
         TriggerAction              _computePCAAction;
 
@@ -324,10 +327,11 @@ public:
 
         StatusBarAction* _statusBarActionWidget;
         StringAction                        _statusMessageAction;
-        ToggleAction         _colorAllCellsWithExpressionAction;
+        //ToggleAction         _colorAllCellsWithExpressionAction;
         StringAction         _tableSearchBoxAction;
         DecimalAction       _lowRangeColoringPercentileAction;
         DecimalAction       _highRangeColoringPercentileAction;
+        OptionAction       _clusterDatasetSelectionAction;
     };
 
 
