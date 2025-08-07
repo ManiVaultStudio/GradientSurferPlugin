@@ -1279,6 +1279,13 @@ void Computation::ManualCompute()
         _isManualComputeComputing = false;
         return;
     }
+    auto topN = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
+    auto bottomN = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
+    int totalN = topN + bottomN;
+    if (totalN > _filteredSelectionIndices.size()) {
+        setStatusMessage("E", "Row selection exceeds available point selection size", "");
+        return ;
+    }
     bool complete = setupAndTriggerPCA();
     if (!complete)
     {
