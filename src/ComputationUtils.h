@@ -103,7 +103,7 @@ std::vector<int> getIndicesBySelectedClusters(
 StatusInfo parseStatusMessage(const QString& statusString);
 std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText);
 std::pair<float,float> findDatasetLimits(QString datasetID);
-void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices);
+bool computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices);
 void clearTable(QTableView* tableView);
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray);
 void normalizeVector(std::vector<float>& data, NormalizationType type);
@@ -117,7 +117,7 @@ QString wrapMessageWithBrCount(const QString& message, int& brCount, int maxLine
 void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, int topNRows, int bottomNRows, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, bool isMainTable);
 void setupTableModelAndSelection(QTableView* tableViewMain, std::vector<CorrelationGeneCoords>& geneCorrValues,DimensionPickerAction& geneSelectionAction,  QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2,bool isMainSelectionTable);
 void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices,QTableView* tableViewMain, int topNRows, int bottomNRows, DimensionPickerAction& geneSelectionAction,  QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2, bool mainTable);
-void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector, QString corrType);
+bool computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector, QString corrType);
 NormalizationType normalizationTypeFromString(const QString& normTypeStr);
 bool isCorrelationWithinRange(float corr, float minCorr, float maxCorr, float epsilon = 1e-6f);
 std::pair<float, float> minMax(const std::vector<float>& vec);

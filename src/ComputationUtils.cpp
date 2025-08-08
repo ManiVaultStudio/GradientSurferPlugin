@@ -1058,14 +1058,19 @@ void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues,
 
 }
 
-void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector, QString corrType)
+bool computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector, QString corrType)
 {
     FunctionTimer timer(Q_FUNC_INFO);
     const int numGenes = dataset->getNumDimensions();
     const int numCells = cellIndices.size();
     const int numCoords = coords.size();
 
-    assert(numCells == numCoords);
+    //assert(numCells == numCoords);
+    if (numCells != numCoords) {
+        qCritical() << "Number of cell indices does not match number of coordinates:"
+            << numCells << numCoords;
+        return false;
+    }
 
 
 
@@ -1144,10 +1149,10 @@ void computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv:
         }
 
     }
-
+    return true;
 
 }
-void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices)
+bool computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices)
 {
     FunctionTimer timer(Q_FUNC_INFO);
 
@@ -1157,7 +1162,11 @@ void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std:
 
     const int numCellsInPC = selectedPC.size();
 
-    assert(numCellsFilt == numCellsInPC);
+    //assert(numCellsFilt == numCellsInPC);
+    if (numCellsFilt != numCellsInPC) {
+        qCritical() << "numCellsFilt does not match numCellsInPC" << numCellsFilt << numCellsInPC;
+        return false;
+    }
 
     float meanCoord = computeMean(selectedPC);
 
@@ -1198,7 +1207,7 @@ void computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std:
 
         corrVector[geneIdx] = corr;
     }
-
+    return true;
 
 }
 
