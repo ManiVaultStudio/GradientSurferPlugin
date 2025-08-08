@@ -151,17 +151,17 @@ void GradientSurferPlugin::init()
     );
     addDockingAction(table2Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right);
 
-    _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
-    _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
-    _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetRemoved));
-    _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
-    _eventListener.registerDataEventByType(PointType, std::bind(&GradientSurferPlugin::onDataEvent, this, std::placeholders::_1));
+    //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
+    //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
+    //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetRemoved));
+    //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
+    //_eventListener.registerDataEventByType(PointType, std::bind(&GradientSurferPlugin::onDataEvent, this, std::placeholders::_1));
 }
 
-void GradientSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
+/*void GradientSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 {
 
-}
+}*/
 
 GradientSurferPluginFactory::GradientSurferPluginFactory()
 {

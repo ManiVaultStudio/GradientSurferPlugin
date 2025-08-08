@@ -21,7 +21,7 @@ using namespace mv::gui;
 /** Dataset reference used in this plugin is located in the ManiVault util namespace */
 using namespace mv::util;
 
-class QLabel;
+/*class QLabel;
 class MinHeightEventFilter : public QObject {
     std::function<void()> _callback;
 public:
@@ -35,7 +35,7 @@ protected:
         }
         return QObject::eventFilter(obj, event);
     }
-};
+};*/
 /**
  * Gradient surfer plugin class
  *
@@ -71,7 +71,7 @@ public:
      * Invoked when a data event occurs
      * @param dataEvent Data event which occurred
      */
-    void onDataEvent(mv::DatasetEvent* dataEvent);
+    //void onDataEvent(mv::DatasetEvent* dataEvent);
 
 public: // Serialization
 

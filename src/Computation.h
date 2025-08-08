@@ -118,7 +118,7 @@ private:
     void coorelationScoresForPCs();
     //void selectionModeAltToggleLogic(QString scatterplotName);
     void findCommonGenes();
-
+    void datasetNamesCheck();
 protected:
     GradientSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;

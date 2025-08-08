@@ -300,6 +300,13 @@ public:
         const OptionAction& getClusterDatasetSelectionAction() const { return _clusterDatasetSelectionAction; }
         OptionAction& getClusterDatasetSelectionAction() { return _clusterDatasetSelectionAction; }
 
+        const OptionAction& getComparatorDataset1SelectorAction() const { return _comparatorDataset1SelectorAction; }
+        OptionAction& getComparatorDataset1SelectorAction() { return _comparatorDataset1SelectorAction; }
+
+        const OptionAction& getComparatorDataset2SelectorAction() const { return _comparatorDataset2SelectorAction; }
+        OptionAction& getComparatorDataset2SelectorAction() { return _comparatorDataset2SelectorAction; }
+
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -332,6 +339,8 @@ public:
         DecimalAction       _lowRangeColoringPercentileAction;
         DecimalAction       _highRangeColoringPercentileAction;
         OptionAction       _clusterDatasetSelectionAction;
+        OptionAction       _comparatorDataset1SelectorAction;
+        OptionAction       _comparatorDataset2SelectorAction;
     };
 
 

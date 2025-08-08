@@ -57,7 +57,7 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
     setupRangeColoringHandlers();   
     setupTableHandlers();           
     setupScatterplotHandlers();
-
+    datasetNamesCheck();
     _pca1.setCompletionCallback([this](bool success, const std::string& message) {
         _isManualComputeComputing = false;
         _isPCATriggerComputing = false;
@@ -767,9 +767,98 @@ void Computation::setupEmbeddingDatasetHandlers()
 
     connect(&_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset1);
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset2);
+    connect(&_settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction(), &OptionAction::currentIndexChanged, this, [this]() {
+
+        //if (!_projectOpened) return;
+        if (_settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText() != "")
+        {
+            auto availableDatasets = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+            if (availableDatasets.size()>0) {
+
+                for (const Dataset<Points>& dataset : availableDatasets) {
+                    QString substring = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText();
+                    if (dataset->getGuiName().contains(substring)) 
+                    {
+                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                        break;
+                    }
+                }
+
+
+            }
+
+
+        }
+
+        });
+
+    connect(&_settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction(), &OptionAction::currentIndexChanged, this, [this]() {
+
+        //if (!_projectOpened) return;
+        if (_settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText() != "")
+        {
+            auto availableDatasets = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+            if (availableDatasets.size() > 0) {
+                for (const Dataset<Points>& dataset : availableDatasets) {
+                    QString substring = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText();
+                    if (dataset->getGuiName().contains(substring)) 
+                    {
+                        _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                        break;
+                    }
+                }
+            }
+        }
+
+        });
+    const auto optionsforembeddingdataset = [this]() {
+
+        datasetNamesCheck();
+
+        
+        };
+    connect(&mv::data(), &AbstractDataManager::datasetAdded, this, optionsforembeddingdataset);
+    connect(&mv::data(), &AbstractDataManager::datasetRemoved, this, optionsforembeddingdataset);
+
+ 
 }
 
+void Computation::datasetNamesCheck()
+{
+    auto allDatasets = mv::data().getAllDatasets();
+    QStringList substringList = { "Human", "Marmoset", "Macaque" };
+    QStringList finalSubStringList;
 
+    for (const auto& dataset : allDatasets) {
+        if (dataset->getDataType() == PointType) {
+            for (const auto& substring : substringList) {
+                if (dataset->getGuiName().contains(substring)) {
+                    if (!finalSubStringList.contains(substring)) {
+                        finalSubStringList.append(substring);
+                    }
+                }
+            }
+        }
+    }
+    _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions(finalSubStringList);
+    _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions(finalSubStringList);
+
+    if (finalSubStringList.size() > 1)
+    {
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setCurrentIndex(0);
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setCurrentIndex(1);
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(false);
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(false);
+    }
+    else
+    {
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setCurrentIndex(-1);
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setCurrentIndex(-1);
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(true);
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(true);
+    }
+
+}
 void Computation::setupEmbeddingDimensionHandlers()
 {
     // These were already consolidated correctly, but the message strings need to match original
