@@ -2437,7 +2437,7 @@ void Computation::correlationAfterPCA()
 
     setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView0Action(), _settingsAction.getTableView1Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),false);
     setupTableModelAndSelection(_settingsAction.getTableView1Action(), _geneCorrValues1, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView0Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),false);
-    selectFirstRow(_settingsAction.getTableView1Action());
+    selectFirstRow(_settingsAction.getTableView2Action());
     
 
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
