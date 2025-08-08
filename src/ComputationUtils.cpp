@@ -206,7 +206,6 @@ std::vector<int> getIndicesBySelectedClusters(
                 clusterIndices.end());
         }
     }
-
     return filtered;
 }
 
@@ -485,6 +484,7 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
 void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue, float minValue, float maxValue)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+    mv::gui::OptionAction* colorDatasetPickerAltValueAction;
     mv::gui::DatasetPickerAction* colorDatasetPickerValueAction;
     mv::gui::DatasetPickerAction* pointDatasetPickerValueAction;
     if ( positionDatasetID == "" || scatterplotName =="") {
@@ -522,13 +522,62 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                                 if (colorDatasetPickerValueAction)
                                 {
                                     auto clusterDataset = mv::data().getDataset(colorDatasetID);
+
                                     if (clusterDataset.isValid())
                                     {
                                         auto options = colorDatasetPickerValueAction->getDatasets();
+                                   
                                         if (options.size() > 0)
                                         {
                                             try {
                                                 colorDatasetPickerValueAction->setCurrentDataset(clusterDataset);
+
+
+                                            }
+                                            catch (const std::exception& e)
+                                            {
+                                                qCritical() << "Error setting current dataset:" << e.what();
+                                            }
+
+
+
+                                        }
+
+                                    }
+
+                                }
+                                colorDatasetPickerAltValueAction = findActionByPath<OptionAction>(plugin, "Settings/Coloring/Color by");
+                                if (colorDatasetPickerAltValueAction)
+                                {
+                                    auto clusterDataset = mv::data().getDataset(colorDatasetID);
+                                    QString colordatasetName = "";
+                                    if (clusterDataset->getDataType()==PointType)
+                                    {
+                                        Dataset<Points> pointDatasetcoloring = mv::data().getDataset<Points>(colorDatasetID);
+                                        if (pointDatasetcoloring.isValid())
+                                        {
+                                            colordatasetName = pointDatasetcoloring->getGuiName();
+                                        }
+                                    }
+                                    else if (clusterDataset->getDataType() == ClusterType)
+                                    {
+                                        Dataset<Clusters> clusterDatasetcoloring = mv::data().getDataset<Clusters>(colorDatasetID);
+                                        colordatasetName = clusterDatasetcoloring->getGuiName();
+                                    }
+
+                                    if (clusterDataset.isValid())
+                                    {
+                                        //auto options = colorDatasetPickerValueAction->getDatasets();
+                                        auto options = colorDatasetPickerAltValueAction->getOptions();
+                                        if (options.size() > 0)
+                                        {
+                                            try {
+                                                //colorDatasetPickerValueAction->setCurrentDataset(clusterDataset);
+                                                if (colordatasetName!="")
+                                                {
+                                                    colorDatasetPickerAltValueAction->setCurrentText(colordatasetName);
+                                                }
+                                                
                                             }
                                             catch (const std::exception& e)
                                             {

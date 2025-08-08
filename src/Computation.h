@@ -157,6 +157,8 @@ protected:
     QTimer _scatterplot1ExpressionColoringRangeDebounceTimer;
     QTimer _scatterplot2ExpressionColoringRangeDebounceTimer;
     QTimer _colorUpdateDebounceTimer;
+    //QTimer _scatterplotColorUpdateDebounceTimer;
+    //QTimer _lineplotColorUpdateDebounceTimer;
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
     int             _numOfPointsInLine1=0;
@@ -184,7 +186,10 @@ protected:
     bool _isColoringLineplots = false;
     bool _selectionBlocker = false;
     int  _selectionDataset = -1;
-    QMetaObject::Connection _mainSelectionChangedConnection;
-    QMetaObject::Connection _pixelSelectionStartedConnection;
+    bool _selectionModeEnable= false;
+    //QMetaObject::Connection _mainSelectionChangedConnection;
+    //QMetaObject::Connection _pixelSelectionStartedConnection;
+    QMetaObject::Connection _embeddingDataset1Connection;
+    QMetaObject::Connection _embeddingDataset2Connection;
     friend class ChannelAction;
 };

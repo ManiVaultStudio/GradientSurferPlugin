@@ -352,6 +352,14 @@ void Computation::setupDebounceTimers()
         colorLinePlots();
         colorScatterPlots();
         });
+    //_lineplotColorUpdateDebounceTimer.setSingleShot(true);
+    //connect(&_lineplotColorUpdateDebounceTimer, &QTimer::timeout, this, [this]() {
+        //colorLinePlots();
+        //});
+    //_scatterplotColorUpdateDebounceTimer.setSingleShot(true);
+    //connect(&_scatterplotColorUpdateDebounceTimer, &QTimer::timeout, this, [this]() {
+        //colorScatterPlots();
+        //});
 
     _NRangeDebounceTimer.setSingleShot(true);
     _clusterSelectionDebounceTimer.setSingleShot(true);
@@ -582,8 +590,13 @@ void Computation::setupEmbeddingDatasetHandlers()
                 clearTables();
                 clearLinePlots();
                 _selectionBlocker = true;
+                _selectionDataset = -1;
                 _embeddingDataset1->setSelectionIndices({});
-                _embeddingDataset2->setSelectionIndices({});
+                if (_embeddingDataset2.isValid())
+                {
+                    _embeddingDataset2->setSelectionIndices({});
+                }
+
                 _selectionBlocker = false;
                 auto parent = _embeddingDataset1->getParent();
                 if (parent.isValid()) {
@@ -639,17 +652,20 @@ void Computation::setupEmbeddingDatasetHandlers()
                     setSelectionAndAutoCompute();
                     enableOptions();
                     };
-
-                bool ok = connect(&_embeddingDataset1, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged1);
-                if (!ok) {
+                if (_embeddingDataset1Connection != QMetaObject::Connection{}) {
+                    disconnect(_embeddingDataset1Connection);
+                }
+                _embeddingDataset1Connection = connect(&_embeddingDataset1, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged1);
+                if (!_embeddingDataset1Connection) {
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
-
+                _selectionModeEnable = true;
                 //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
                 colorScatterPlots();
             }
         }
         setStatusMessage("M", "Embedding dataset 1 updated", "");
+        _selectionModeEnable = false;
         };
 
     const auto updateEmbeddingDataset2 = [this]() {
@@ -669,7 +685,11 @@ void Computation::setupEmbeddingDatasetHandlers()
                 clearTables();
                 clearLinePlots();
                 _selectionBlocker = true;
-                _embeddingDataset1->setSelectionIndices({});
+                _selectionDataset = -1;
+                if (_embeddingDataset1.isValid())
+                {
+                    _embeddingDataset1->setSelectionIndices({});
+                }
                 _embeddingDataset2->setSelectionIndices({});
                 _selectionBlocker = false;
                 auto parent = _embeddingDataset2->getParent();
@@ -729,17 +749,20 @@ void Computation::setupEmbeddingDatasetHandlers()
                     setSelectionAndAutoCompute();
                     enableOptions();
                     };
-
-                bool ok = connect(&_embeddingDataset2, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged2);
-                if (!ok) {
+                if (_embeddingDataset2Connection != QMetaObject::Connection{}) {
+                    disconnect(_embeddingDataset2Connection);
+                }
+                _embeddingDataset2Connection = connect(&_embeddingDataset2, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged2);
+                if (!_embeddingDataset2Connection) {
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
-
+                _selectionModeEnable = true;
                 //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
                 colorScatterPlots();
             }
         }
         setStatusMessage("M", "Embedding dataset 2 updated", "");
+        _selectionModeEnable = false;
         };
 
     connect(&_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset1);
@@ -3610,7 +3633,9 @@ void Computation::colorScatterPlots()
     float minVal1 = 0.0f, maxVal1 = 0.0f, minVal2 = 0.0f, maxVal2 = 0.0f;
     QString coloringdimension;
 
-    /*if (commonOpts.getSelectionModeAction().isChecked()) {
+    /*if (commonOpts.getSelectionModeAction().isChecked()) */
+    if(_selectionModeEnable)
+    {
         // Selection mode: color by cluster datasets
         const QString colorDataset1ID = ds1Opts.getClusterDatasetAction().getCurrentDatasetId();
         const QString colorDataset2ID = ds2Opts.getClusterDatasetAction().getCurrentDatasetId();
@@ -3624,7 +3649,8 @@ void Computation::colorScatterPlots()
             coloringdimension, colorMapStringValue, minVal2, maxVal2);
         _isColoringScatterplots = false;
         return;
-    }*/
+    }
+    
 
     // Non-selection mode: color by point coloring datasets
     if (!_scatterplotPointColoringDataset1.isValid() || !_scatterplotPointColoringDataset2.isValid()) {
@@ -3642,6 +3668,7 @@ void Computation::colorScatterPlots()
     }
     if (_selectedClusterIndices1.empty() || _selectedClusterIndices2.empty()) {
         setStatusMessage("E", "No selected cluster indices for dataset 1 or 2", "");
+        qCritical() << "Here3";
         _isColoringScatterplots = false;
         return;
     }
