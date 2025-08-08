@@ -188,7 +188,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     //_commonOptionsHolder.getNormalizationTypeAction().setToolTip("Normalization Type Action");
 
     _commonOptionsHolder.getComputationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getComputationTypeAction().initialize({ "Full PCA", "Partial PCA" }, "Partial PCA");
+    _commonOptionsHolder.getComputationTypeAction().initialize({ "Full PCA", "Partial PCA" }, "Full PCA");
     _commonOptionsHolder.getComputationTypeAction().setToolTip("Computation Type Action");
     _commonOptionsHolder.getClusterDatasetSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getClusterDatasetSelectionAction().setToolTip("Cluster Dataset Selection Action");
