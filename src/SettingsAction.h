@@ -306,6 +306,9 @@ public:
         const OptionAction& getComparatorDataset2SelectorAction() const { return _comparatorDataset2SelectorAction; }
         OptionAction& getComparatorDataset2SelectorAction() { return _comparatorDataset2SelectorAction; }
 
+        const StringAction& getDefaultDatasetNamesAction() const { return _defaultDatasetNamesAction; }
+        StringAction& getDefaultDatasetNamesAction() { return _defaultDatasetNamesAction; }
+
 
     protected:
         SettingsAction& _settingsOptions;
@@ -341,6 +344,7 @@ public:
         OptionAction       _clusterDatasetSelectionAction;
         OptionAction       _comparatorDataset1SelectorAction;
         OptionAction       _comparatorDataset2SelectorAction;
+        StringAction       _defaultDatasetNamesAction;
     };
 
 

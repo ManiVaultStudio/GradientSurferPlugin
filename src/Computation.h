@@ -157,6 +157,7 @@ protected:
     QTimer _scatterplot1ExpressionColoringRangeDebounceTimer;
     QTimer _scatterplot2ExpressionColoringRangeDebounceTimer;
     QTimer _colorUpdateDebounceTimer;
+    QTimer _datasetNamesStringCheckDebounceTimer;
     //QTimer _scatterplotColorUpdateDebounceTimer;
     //QTimer _lineplotColorUpdateDebounceTimer;
     bool      _pcaDataset1Complete = false;

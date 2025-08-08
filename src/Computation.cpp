@@ -337,6 +337,7 @@ void Computation::initializeState()
             clearTables();
             clearLinePlots();
             findCommonGenes();
+            datasetNamesCheck();
             _taskDisable = false;
            //selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
             setStatusMessage("C", "Project opened", "");
@@ -366,6 +367,7 @@ void Computation::setupDebounceTimers()
     _lineExpressionColoringRangeDebounceTimer.setSingleShot(true);
     _scatterplot1ExpressionColoringRangeDebounceTimer.setSingleShot(true);
     _scatterplot2ExpressionColoringRangeDebounceTimer.setSingleShot(true);
+    _datasetNamesStringCheckDebounceTimer.setSingleShot(true);
 }
 
 void Computation::setupStatusMessageHandler()
@@ -777,7 +779,7 @@ void Computation::setupEmbeddingDatasetHandlers()
 
                 for (const Dataset<Points>& dataset : availableDatasets) {
                     QString substring = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText();
-                    if (dataset->getGuiName().contains(substring)) 
+                    if (dataset->getGuiName().contains(substring, Qt::CaseInsensitive))
                     {
                         _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                         break;
@@ -801,7 +803,7 @@ void Computation::setupEmbeddingDatasetHandlers()
             if (availableDatasets.size() > 0) {
                 for (const Dataset<Points>& dataset : availableDatasets) {
                     QString substring = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText();
-                    if (dataset->getGuiName().contains(substring)) 
+                    if (dataset->getGuiName().contains(substring, Qt::CaseInsensitive))
                     {
                         _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                         break;
@@ -819,21 +821,55 @@ void Computation::setupEmbeddingDatasetHandlers()
         };
     connect(&mv::data(), &AbstractDataManager::datasetAdded, this, optionsforembeddingdataset);
     connect(&mv::data(), &AbstractDataManager::datasetRemoved, this, optionsforembeddingdataset);
+    connect(&_settingsAction.getCommonOptionsHolder().getDefaultDatasetNamesAction(),
+        &StringAction::stringChanged,
+        this,
+        [this]() { _datasetNamesStringCheckDebounceTimer.start(500); });
 
- 
+    connect(&_datasetNamesStringCheckDebounceTimer, &QTimer::timeout, this, [this]() {
+        datasetNamesCheck();
+        setStatusMessage("M", "Dataset names checked", "");
+        });
+
 }
 
 void Computation::datasetNamesCheck()
 {
+    if (!_projectOpened) return;
+    auto fullString= _settingsAction.getCommonOptionsHolder().getDefaultDatasetNamesAction().getString();//"Human; Marmoset; Macaque; smFISH; MERFISH; Embryo1; Embryo2; Embryo3"
+    if (fullString == "")
+    {
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions({});
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions({});
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(true);
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(true);
+        return;
+    }
     auto allDatasets = mv::data().getAllDatasets();
-    QStringList substringList = { "Human", "Marmoset", "Macaque" };
+    
+    //split fullString based on ";" and set into substringList
+    QStringList substringList;
+    for (const QString& str : fullString.split(';', Qt::SkipEmptyParts)) {
+        QString trimmed = str.trimmed();
+        if (!trimmed.isEmpty())
+            substringList.append(trimmed);
+    }
+    //qDebug() << "substringList:" << substringList;
+
+    if (substringList.isEmpty()) {
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions({});
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions({});
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(true);
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(true);
+        return;
+    }
     QStringList finalSubStringList;
 
     for (const auto& dataset : allDatasets) {
         if (dataset->getDataType() == PointType) {
             for (const auto& substring : substringList) {
-                if (dataset->getGuiName().contains(substring)) {
-                    if (!finalSubStringList.contains(substring)) {
+                if (dataset->getGuiName().contains(substring, Qt::CaseInsensitive)) {
+                    if (!finalSubStringList.contains(substring, Qt::CaseInsensitive)) {
                         finalSubStringList.append(substring);
                     }
                 }
@@ -1518,7 +1554,7 @@ void Computation::AutoCompute()
                 _geneCorrValues0.end(),
                 [this](const auto& entry) {
                     // Remove if NOT in _commonGenesAcrossDatasets
-                    return !_commonGenesAcrossDatasets.contains(entry.geneName);
+                    return !_commonGenesAcrossDatasets.contains(entry.geneName, Qt::CaseInsensitive);
                 }
             ),
             _geneCorrValues0.end()
