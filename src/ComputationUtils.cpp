@@ -276,7 +276,24 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
     // Sync selection in all other tables
     for (QTableView* table : allTables) {
         if (table != sourceTable) {
-            makeSelection(value, table);
+            // Check if the value exists in this table
+            QAbstractItemModel* model = table->model();
+            bool found = false;
+            if (model) {
+                for (int row = 0; row < model->rowCount(); ++row) {
+                    QString geneName = model->data(model->index(row, 0), Qt::DisplayRole).toString();
+                    if (geneName == value) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (found) {
+                makeSelection(value, table);
+            }
+            else {
+                deselectAllRows(table);
+            }
         }
     }
     // Sync all actions
