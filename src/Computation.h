@@ -116,16 +116,17 @@ private:
     void enableOptions();
     void disableOptions();
     void coorelationScoresForPCs();
-    void selectionModeAltToggleLogic(QString scatterplotName);
+    //void selectionModeAltToggleLogic(QString scatterplotName);
     void findCommonGenes();
-
+    void datasetNamesCheck();
 protected:
     GradientSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
     mv::Dataset<Points>         _selectedCellPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _pcaSelectedEmbeddingDataset = nullptr;
-    mv::Dataset<Points>         _embeddingDataset = nullptr;
+    mv::Dataset<Points>         _embeddingDataset1 = nullptr;
+    mv::Dataset<Points>         _embeddingDataset2 = nullptr;
     //mv::Dataset<Points>         _selectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset1 = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset2 = nullptr;
@@ -156,6 +157,8 @@ protected:
     QTimer _scatterplot1ExpressionColoringRangeDebounceTimer;
     QTimer _scatterplot2ExpressionColoringRangeDebounceTimer;
     QTimer _colorUpdateDebounceTimer;
+    //QTimer _scatterplotColorUpdateDebounceTimer;
+    //QTimer _lineplotColorUpdateDebounceTimer;
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
     int             _numOfPointsInLine1=0;
@@ -181,7 +184,12 @@ protected:
     bool _projectOpened = true;
     bool _isColoringScatterplots = false;
     bool _isColoringLineplots = false;
-    QMetaObject::Connection _mainSelectionChangedConnection;
-    QMetaObject::Connection _pixelSelectionStartedConnection;
+    bool _selectionBlocker = false;
+    int  _selectionDataset = -1;
+    bool _selectionModeEnable= false;
+    //QMetaObject::Connection _mainSelectionChangedConnection;
+    //QMetaObject::Connection _pixelSelectionStartedConnection;
+    QMetaObject::Connection _embeddingDataset1Connection;
+    QMetaObject::Connection _embeddingDataset2Connection;
     friend class ChannelAction;
 };

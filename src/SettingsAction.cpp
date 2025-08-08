@@ -47,6 +47,8 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset2OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("GradientSurfer:EmbeddingDimension2Y");
     _commonOptionsHolder.getClusterValueSelectionAction().setSerializationName("GradientSurfer:ClusterSelection");
     _commonOptionsHolder.getClusterDatasetSelectionAction().setSerializationName("GradientSurfer:ClusterDatasetSelection");
+    _commonOptionsHolder.getComparatorDataset1SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset1Selector");
+    _commonOptionsHolder.getComparatorDataset2SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset2Selector");
 
 
     _dataset1OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
@@ -87,7 +89,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setToolTip("Auto Compute Action");
 
     _commonOptionsHolder.getPcaColoringAction().setToolTip("PCA Coloring Action");
-    _commonOptionsHolder.getSelectionModeAction().setToolTip("Selection Mode Action");
+   // _commonOptionsHolder.getSelectionModeAction().setToolTip("Selection Mode Action");
   //  _commonOptionsHolder.getDualPCAColoringAction().setToolTip("PCA Dual Coloring Action");
     _commonOptionsHolder.getPcaDimensionForColoringAction().setToolTip("PCA Dimension Selection Action");
     _commonOptionsHolder.getCorrelationCalculationTypeAction().setToolTip("Correlation Calculation Type Action");
@@ -95,7 +97,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setChecked(true);
 
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
-    _commonOptionsHolder.getSelectionModeAction().setChecked(true);
+    //_commonOptionsHolder.getSelectionModeAction().setChecked(true);
 
     _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
@@ -173,7 +175,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _commonOptionsHolder.getPcaColoringAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-    _commonOptionsHolder.getSelectionModeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    //_commonOptionsHolder.getSelectionModeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     //_commonOptionsHolder.getDualPCAColoringAction().setDefaultWidgetFlags(OptionsAction::ComboBox | OptionsAction::Selection);
     //_commonOptionsHolder.getDualPCAColoringAction().initialize({ "Dataset1", "Dataset2" }, { "Dataset1", "Dataset2" });
     _commonOptionsHolder.getPcaDimensionForColoringAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -188,10 +190,16 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     //_commonOptionsHolder.getNormalizationTypeAction().setToolTip("Normalization Type Action");
 
     _commonOptionsHolder.getComputationTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getComputationTypeAction().initialize({ "Full PCA", "Partial PCA" }, "Partial PCA");
+    _commonOptionsHolder.getComputationTypeAction().initialize({ "Full PCA", "Partial PCA" }, "Full PCA");
     _commonOptionsHolder.getComputationTypeAction().setToolTip("Computation Type Action");
     _commonOptionsHolder.getClusterDatasetSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getClusterDatasetSelectionAction().setToolTip("Cluster Dataset Selection Action");
+    _commonOptionsHolder.getComparatorDataset1SelectorAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getComparatorDataset1SelectorAction().setToolTip("Comparator Dataset 1 Selector Action");
+    //_commonOptionsHolder.getComparatorDataset1SelectorAction().initialize({ "Human", "Marmoset", "Macaque" } , "Human");
+    //_commonOptionsHolder.getComparatorDataset2SelectorAction().initialize({ "Human", "Marmoset", "Macaque" }, "Marmoset");
+    _commonOptionsHolder.getComparatorDataset2SelectorAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getComparatorDataset2SelectorAction().setToolTip("Comparator Dataset 2 Selector Action");
 
     _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
@@ -214,7 +222,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getTableSearchBoxAction().setIconText("Search Tables");
     _commonOptionsHolder.getTableSearchBoxAction().setText("Search Tables");
     //_commonOptionsHolder.getTableSearchBoxAction().setClearable(true);
-    //QCompleter* completer = new QCompleter(_tableView1Action->model(), this);
+    //QCompleter* completer = new QCompleter(_tableView0Action->model(), this);
     //completer->setCompletionColumn(0);
     //_commonOptionsHolder.getTableSearchBoxAction().setCompleter(completer);
     _commonOptionsHolder.getTableSearchBoxAction().setIconByName("search");
@@ -242,44 +250,44 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset2OptionsHolder.getScatterplotViewSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
 
 
-    _tableView1Action = new QTableView();
-    _tableView1Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    _tableView1Action->setSelectionBehavior(QAbstractItemView::SelectRows);
-    _tableView1Action->setSelectionMode(QAbstractItemView::SingleSelection);
-    _tableView1Action->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    _tableView1Action->setAlternatingRowColors(false);
-    _tableView1Action->setSortingEnabled(true);
-    _tableView1Action->setShowGrid(true);
-    _tableView1Action->setGridStyle(Qt::SolidLine);
-    _tableView1Action->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-    _tableView1Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-    _tableView1Action->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    _tableView1Action->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    _tableView1Action->setCornerButtonEnabled(false);
-    _tableView1Action->setWordWrap(false);
-    _tableView1Action->setTabKeyNavigation(false);
-    _tableView1Action->setAcceptDrops(false);
-    _tableView1Action->setDropIndicatorShown(false);
-    _tableView1Action->setDragEnabled(false);
-    _tableView1Action->setDragDropMode(QAbstractItemView::NoDragDrop);
-    _tableView1Action->setDragDropOverwriteMode(false);
-    _tableView1Action->setAutoScroll(false);
-    _tableView1Action->setAutoScrollMargin(16);
-    _tableView1Action->setAutoFillBackground(true);
-    _tableView1Action->setFrameShape(QFrame::NoFrame);
-    _tableView1Action->setFrameShadow(QFrame::Plain);
-    _tableView1Action->setLineWidth(0);
-    _tableView1Action->setMidLineWidth(0);
-    _tableView1Action->setFocusPolicy(Qt::NoFocus);
-    _tableView1Action->setContextMenuPolicy(Qt::NoContextMenu);
-    _tableView1Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    _tableView1Action->setMinimumSize(QSize(0, 0));
-    _tableView1Action->setMaximumSize(QSize(16777215, 16777215));
-    _tableView1Action->setBaseSize(QSize(0, 0));
-    _tableView1Action->setFocusPolicy(Qt::StrongFocus);
-    _tableView1Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView0Action = new QTableView();
+    _tableView0Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView0Action->setSelectionBehavior(QAbstractItemView::SelectRows);
+    _tableView0Action->setSelectionMode(QAbstractItemView::SingleSelection);
+    _tableView0Action->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    _tableView0Action->setAlternatingRowColors(false);
+    _tableView0Action->setSortingEnabled(true);
+    _tableView0Action->setShowGrid(true);
+    _tableView0Action->setGridStyle(Qt::SolidLine);
+    _tableView0Action->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView0Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView0Action->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView0Action->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView0Action->setCornerButtonEnabled(false);
+    _tableView0Action->setWordWrap(false);
+    _tableView0Action->setTabKeyNavigation(false);
+    _tableView0Action->setAcceptDrops(false);
+    _tableView0Action->setDropIndicatorShown(false);
+    _tableView0Action->setDragEnabled(false);
+    _tableView0Action->setDragDropMode(QAbstractItemView::NoDragDrop);
+    _tableView0Action->setDragDropOverwriteMode(false);
+    _tableView0Action->setAutoScroll(false);
+    _tableView0Action->setAutoScrollMargin(16);
+    _tableView0Action->setAutoFillBackground(true);
+    _tableView0Action->setFrameShape(QFrame::NoFrame);
+    _tableView0Action->setFrameShadow(QFrame::Plain);
+    _tableView0Action->setLineWidth(0);
+    _tableView0Action->setMidLineWidth(0);
+    _tableView0Action->setFocusPolicy(Qt::NoFocus);
+    _tableView0Action->setContextMenuPolicy(Qt::NoContextMenu);
+    _tableView0Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView0Action->setMinimumSize(QSize(0, 0));
+    _tableView0Action->setMaximumSize(QSize(16777215, 16777215));
+    _tableView0Action->setBaseSize(QSize(0, 0));
+    _tableView0Action->setFocusPolicy(Qt::StrongFocus);
+    _tableView0Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 
-    _tableView1Action->setSelectionBehavior(QAbstractItemView::SelectRows);
+    _tableView0Action->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     _tableView2Action = new QTableView();
     _tableView2Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -321,44 +329,44 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _tableView2Action->setSelectionBehavior(QAbstractItemView::SelectRows);
 
 
-    _tableView3Action = new QTableView();
-    _tableView3Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    _tableView3Action->setSelectionBehavior(QAbstractItemView::SelectRows);
-    _tableView3Action->setSelectionMode(QAbstractItemView::SingleSelection);
-    _tableView3Action->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    _tableView3Action->setAlternatingRowColors(false);
-    _tableView3Action->setSortingEnabled(true);
-    _tableView3Action->setShowGrid(true);
-    _tableView3Action->setGridStyle(Qt::SolidLine);
-    _tableView3Action->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-    _tableView3Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-    _tableView3Action->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    _tableView3Action->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    _tableView3Action->setCornerButtonEnabled(false);
-    _tableView3Action->setWordWrap(false);
-    _tableView3Action->setTabKeyNavigation(false);
-    _tableView3Action->setAcceptDrops(false);
-    _tableView3Action->setDropIndicatorShown(false);
-    _tableView3Action->setDragEnabled(false);
-    _tableView3Action->setDragDropMode(QAbstractItemView::NoDragDrop);
-    _tableView3Action->setDragDropOverwriteMode(false);
-    _tableView3Action->setAutoScroll(false);
-    _tableView3Action->setAutoScrollMargin(16);
-    _tableView3Action->setAutoFillBackground(true);
-    _tableView3Action->setFrameShape(QFrame::NoFrame);
-    _tableView3Action->setFrameShadow(QFrame::Plain);
-    _tableView3Action->setLineWidth(0);
-    _tableView3Action->setMidLineWidth(0);
-    _tableView3Action->setFocusPolicy(Qt::NoFocus);
-    _tableView3Action->setContextMenuPolicy(Qt::NoContextMenu);
-    _tableView3Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    _tableView3Action->setMinimumSize(QSize(0, 0));
-    _tableView3Action->setMaximumSize(QSize(16777215, 16777215));
-    _tableView3Action->setBaseSize(QSize(0, 0));
-    _tableView3Action->setFocusPolicy(Qt::StrongFocus);
-    _tableView3Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView1Action = new QTableView();
+    _tableView1Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView1Action->setSelectionBehavior(QAbstractItemView::SelectRows);
+    _tableView1Action->setSelectionMode(QAbstractItemView::SingleSelection);
+    _tableView1Action->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    _tableView1Action->setAlternatingRowColors(false);
+    _tableView1Action->setSortingEnabled(true);
+    _tableView1Action->setShowGrid(true);
+    _tableView1Action->setGridStyle(Qt::SolidLine);
+    _tableView1Action->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView1Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    _tableView1Action->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView1Action->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    _tableView1Action->setCornerButtonEnabled(false);
+    _tableView1Action->setWordWrap(false);
+    _tableView1Action->setTabKeyNavigation(false);
+    _tableView1Action->setAcceptDrops(false);
+    _tableView1Action->setDropIndicatorShown(false);
+    _tableView1Action->setDragEnabled(false);
+    _tableView1Action->setDragDropMode(QAbstractItemView::NoDragDrop);
+    _tableView1Action->setDragDropOverwriteMode(false);
+    _tableView1Action->setAutoScroll(false);
+    _tableView1Action->setAutoScrollMargin(16);
+    _tableView1Action->setAutoFillBackground(true);
+    _tableView1Action->setFrameShape(QFrame::NoFrame);
+    _tableView1Action->setFrameShadow(QFrame::Plain);
+    _tableView1Action->setLineWidth(0);
+    _tableView1Action->setMidLineWidth(0);
+    _tableView1Action->setFocusPolicy(Qt::NoFocus);
+    _tableView1Action->setContextMenuPolicy(Qt::NoContextMenu);
+    _tableView1Action->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    _tableView1Action->setMinimumSize(QSize(0, 0));
+    _tableView1Action->setMaximumSize(QSize(16777215, 16777215));
+    _tableView1Action->setBaseSize(QSize(0, 0));
+    _tableView1Action->setFocusPolicy(Qt::StrongFocus);
+    _tableView1Action->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
 
-    _tableView3Action->setSelectionBehavior(QAbstractItemView::SelectRows);
+    _tableView1Action->setSelectionBehavior(QAbstractItemView::SelectRows);
 
 }
 
@@ -441,7 +449,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _computePCAAction(this, "Compute: Selection PCs"),
     //_normalizeCombinedDatasetsAction(this, "Normalize Combined Datasets"),
     //_normalizationTypeAction(this, "Normalization Type"),
-    _selectionModeAction(this, "Selection Mode"),
+    //_selectionModeAction(this, "Selection Mode"),
     _focusSelectionAction(this, "Focus Selection"),
     _hidePointSelectionAction(this, "Hide Point Selection Outline"),
     _coloringMapSelectionAction(this, "Coloring Map Selection"),
@@ -454,12 +462,18 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _tableSearchBoxAction(this, "Search Table"),
     _lowRangeColoringPercentileAction(this, "Low Range Coloring Percentile"),
     _highRangeColoringPercentileAction(this, "High Range Coloring Percentile"),
-    _clusterDatasetSelectionAction(this, "Cluster Dataset Selection")
+    _clusterDatasetSelectionAction(this, "Cluster Dataset Selection"),
+    _comparatorDataset1SelectorAction(this, "Dataset 1 Selector"),
+    _comparatorDataset2SelectorAction(this, "Dataset 2 Selector")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
+
+    addAction(&_comparatorDataset1SelectorAction);
+    addAction(&_comparatorDataset2SelectorAction);
+
     addAction(&_clusterDatasetSelectionAction);
     addAction(&_clusterValueSelectionAction);
 
@@ -472,7 +486,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_lowRangeColoringPercentileAction);
     addAction(&_highRangeColoringPercentileAction);
 
-    addAction(&_selectionModeAction);
+    //addAction(&_selectionModeAction);
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
 
@@ -504,6 +518,8 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
 
     _commonOptionsHolder.getClusterValueSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getClusterDatasetSelectionAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getComparatorDataset1SelectorAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getComparatorDataset2SelectorAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().fromParentVariantMap(variantMap);
@@ -536,6 +552,8 @@ QVariantMap SettingsAction::toVariantMap() const
 
     _commonOptionsHolder.getClusterValueSelectionAction().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getClusterDatasetSelectionAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getComparatorDataset1SelectorAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getComparatorDataset2SelectorAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelection2Action().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().insertIntoVariantMap(variantMap);

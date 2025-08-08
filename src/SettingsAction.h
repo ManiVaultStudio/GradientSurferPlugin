@@ -256,8 +256,8 @@ public:
         ToggleAction& getNormalizeCombinedDatasetsAction() { return _normalizeCombinedDatasetsAction; }
         */
 
-        const ToggleAction& getSelectionModeAction() const { return _selectionModeAction; }
-        ToggleAction& getSelectionModeAction() { return _selectionModeAction; }
+        //const ToggleAction& getSelectionModeAction() const { return _selectionModeAction; }
+        //ToggleAction& getSelectionModeAction() { return _selectionModeAction; }
 
         const ColorMap1DAction& getColoringMapSelectionAction() const { return _coloringMapSelectionAction; }
         ColorMap1DAction& getColoringMapSelectionAction() { return _coloringMapSelectionAction; }
@@ -300,6 +300,13 @@ public:
         const OptionAction& getClusterDatasetSelectionAction() const { return _clusterDatasetSelectionAction; }
         OptionAction& getClusterDatasetSelectionAction() { return _clusterDatasetSelectionAction; }
 
+        const OptionAction& getComparatorDataset1SelectorAction() const { return _comparatorDataset1SelectorAction; }
+        OptionAction& getComparatorDataset1SelectorAction() { return _comparatorDataset1SelectorAction; }
+
+        const OptionAction& getComparatorDataset2SelectorAction() const { return _comparatorDataset2SelectorAction; }
+        OptionAction& getComparatorDataset2SelectorAction() { return _comparatorDataset2SelectorAction; }
+
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -315,7 +322,7 @@ public:
         OptionAction                 _correlationCalculationTypeAction;
         //ToggleAction                 _normalizeCombinedDatasetsAction;
         //OptionAction                _normalizationTypeAction;
-        ToggleAction                _selectionModeAction;
+        //ToggleAction                _selectionModeAction;
         ColorMap1DAction            _coloringMapSelectionAction;
 
         ToggleAction                        _focusSelectionAction;
@@ -332,6 +339,8 @@ public:
         DecimalAction       _lowRangeColoringPercentileAction;
         DecimalAction       _highRangeColoringPercentileAction;
         OptionAction       _clusterDatasetSelectionAction;
+        OptionAction       _comparatorDataset1SelectorAction;
+        OptionAction       _comparatorDataset2SelectorAction;
     };
 
 
@@ -348,9 +357,10 @@ public:
     void fromVariantMap(const QVariantMap& variantMap) override;
     QVariantMap toVariantMap() const override;
 
-    QTableView* getTableView1Action() { return _tableView1Action; }
+    QTableView* getTableView0Action() { return _tableView0Action; }
     QTableView* getTableView2Action() { return _tableView2Action; }
-    QTableView* getTableView3Action() { return _tableView3Action; }
+    QTableView* getTableView1Action() { return _tableView1Action; }
+    QLabel*& getSelectionTableHeaderLabel() { return selectionTableHeaderLabel; }
 
 protected:
     GradientSurferPlugin& _viewerPlugin;
@@ -358,8 +368,9 @@ protected:
     Dataset1OptionsHolder              _dataset1OptionsHolder;
     Dataset2OptionsHolder              _dataset2OptionsHolder;
     CommonOptionsHolder              _commonOptionsHolder;
-    QTableView*                 _tableView1Action = nullptr;
+    QTableView*                 _tableView0Action = nullptr;
     QTableView*                 _tableView2Action = nullptr;
-    QTableView*                 _tableView3Action = nullptr;
+    QTableView*                 _tableView1Action = nullptr;
+    QLabel* selectionTableHeaderLabel = nullptr;
     friend class ChannelAction;
 };

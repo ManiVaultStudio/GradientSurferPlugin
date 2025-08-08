@@ -41,9 +41,9 @@ void GradientSurferPlugin::init()
             table->setModel(new QStandardItemModel(5, 3, table));
         }
         };
-    ensureTableModel(_settingsAction.getTableView1Action());
+    ensureTableModel(_settingsAction.getTableView0Action());
     ensureTableModel(_settingsAction.getTableView2Action());
-    ensureTableModel(_settingsAction.getTableView3Action());
+    ensureTableModel(_settingsAction.getTableView1Action());
 
 
 
@@ -108,30 +108,38 @@ void GradientSurferPlugin::init()
         QVBoxLayout* mainLayout = new QVBoxLayout();
         mainLayout->setContentsMargins(0, 0, 0, 0);
         mainLayout->setSpacing(0);
+
+        // Add header label
+        _settingsAction.getSelectionTableHeaderLabel() = new QLabel("Common Gene Table:Selection Dataset", &mainWidget);
+        _settingsAction.getSelectionTableHeaderLabel()->setAlignment(Qt::AlignCenter);
+        _settingsAction.getSelectionTableHeaderLabel()->setWordWrap(true);
+        _settingsAction.getSelectionTableHeaderLabel()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        mainLayout->addWidget(_settingsAction.getSelectionTableHeaderLabel(), 0);
+
         mainLayout->addWidget(
-            createTableWidget("Gene Table: Dataset 1 Selected Cells", _settingsAction.getTableView1Action(), &mainWidget)
+            createTableWidget("Common Gene Table:Selection Dataset", _settingsAction.getTableView0Action(), &mainWidget)
         );
         mainWidget.setLayout(mainLayout);
     }
 
     // 2. Dock the second table ("Dataset 1 All Cells") on the right
-    auto* table2Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 1 All Cells");
-    table2Action->setWidgetConfigurationFunction(
+    auto* table1Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 1 All Cells");
+    table1Action->setWidgetConfigurationFunction(
         [createTableWidget, this](mv::gui::WidgetAction*, QWidget* parent) {
             auto layout = new QVBoxLayout(parent);
 
             layout->setContentsMargins(0, 0, 0, 0);
             parent->setLayout(layout);
 
-            layout->addWidget(createTableWidget("Gene Table: Dataset 1 All Cells", _settingsAction.getTableView3Action(), parent));
+            layout->addWidget(createTableWidget("Gene Table: Dataset 1 All Cells", _settingsAction.getTableView1Action(), parent));
         }
     );
     // Remove fixed height from QSize
-    addDockingAction(table2Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right);
+    addDockingAction(table1Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right);
 
     // 3. Dock the third table ("Dataset 2 All Cells") on the right
-    auto* table3Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 2 All Cells");
-    table3Action->setWidgetConfigurationFunction(
+    auto* table2Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 2 All Cells");
+    table2Action->setWidgetConfigurationFunction(
         [createTableWidget, this](mv::gui::WidgetAction*, QWidget* parent) {
             auto layout = new QVBoxLayout(parent);
 
@@ -141,19 +149,19 @@ void GradientSurferPlugin::init()
             layout->addWidget(createTableWidget("Gene Table: Dataset 2 All Cells", _settingsAction.getTableView2Action(), parent));
         }
     );
-    addDockingAction(table3Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right);
+    addDockingAction(table2Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right);
 
-    _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
-    _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
-    _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetRemoved));
-    _eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
-    _eventListener.registerDataEventByType(PointType, std::bind(&GradientSurferPlugin::onDataEvent, this, std::placeholders::_1));
+    //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetAdded));
+    //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataChanged));
+    //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetRemoved));
+    //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
+    //_eventListener.registerDataEventByType(PointType, std::bind(&GradientSurferPlugin::onDataEvent, this, std::placeholders::_1));
 }
 
-void GradientSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
+/*void GradientSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)
 {
 
-}
+}*/
 
 GradientSurferPluginFactory::GradientSurferPluginFactory()
 {
