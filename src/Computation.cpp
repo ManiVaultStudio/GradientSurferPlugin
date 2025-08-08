@@ -645,7 +645,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                     _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1");
                     _selectionBlocker = true;
                     _embeddingDataset2->setSelectionIndices({});
-                    qDebug() << "Main selection changed for embedding dataset 1";
+                    //qDebug() << "Main selection changed for embedding dataset 1";
                     _selectionDataset = 1;
                     _selectionBlocker = false;
                     setStatusMessage("M", "Selected indices changed", "");
@@ -1524,14 +1524,25 @@ void Computation::AutoCompute()
         // Compute correlation gene coordinates
         std::vector<float> corrGeneCoords;
         const QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
-        
+
         if (_selectionDataset == 1)
         {
-            computeCorrelationGeneCoords(_filteredSelectionIndices, pointDataset1, yCoordinates, corrGeneCoords, corrType);
+            bool coorelationSuccessful1= computeCorrelationGeneCoords(_filteredSelectionIndices, pointDataset1, yCoordinates, corrGeneCoords, corrType);
+            if (!coorelationSuccessful1) {
+                setStatusMessage("E", "Error occurred during correlation computation for dataset 1", "");
+                qCritical() << "Error occurred during correlation computation for dataset 1";
+                return;
+            }
         }
         else if (_selectionDataset == 2)
         {
-            computeCorrelationGeneCoords(_filteredSelectionIndices, pointDataset2, yCoordinates, corrGeneCoords, corrType);
+            bool coorelationSuccessful2= computeCorrelationGeneCoords(_filteredSelectionIndices, pointDataset2, yCoordinates, corrGeneCoords, corrType);
+            if (!coorelationSuccessful2) {
+                setStatusMessage("E", "Error occurred during correlation computation for dataset 2", "");
+                qCritical() << "Error occurred during correlation computation for dataset 2";
+                return;
+            }
+
         }
         else
         {
@@ -1960,6 +1971,11 @@ void Computation::updateClusterOptions()
 
 void Computation::processAfterPCAComplete()
 {
+    static bool inProgress = false;
+    if (inProgress) return;
+    inProgress = true;
+    auto guard = qScopeGuard([&] { inProgress = false; });
+
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("C", "PCA analysis completed", "#28a745");
     qDebug() << "PCA analysis completed successfully";
@@ -2160,6 +2176,7 @@ void Computation::processAfterPCAComplete()
 
         processAfterPCADatasetsPopulated();
     }
+
 }
 
 
@@ -2232,7 +2249,12 @@ void Computation::coorelationScoresForPCs()
     // Compute correlation scores
     std::vector<float> corrGeneCoords;
     const QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
-    computeCorrelationGeneCoords(cellIndices, _pcaSelectedEmbeddingDataset, yCoordinates, corrGeneCoords, corrType);
+   bool coorelationsuccessful= computeCorrelationGeneCoords(cellIndices, _pcaSelectedEmbeddingDataset, yCoordinates, corrGeneCoords, corrType);
+   if (!coorelationsuccessful) {
+        qCritical() << "Correlation computation failed for PCA selected embedding dataset";
+        setStatusMessage("E", "Correlation computation failed for PCA selected embedding dataset", "");
+        return;
+   }
 
     // Find index of highest absolute value
     float maxAbsValue = 0.0f;
@@ -2280,6 +2302,8 @@ void Computation::processAfterPCADatasetsPopulated()
     static bool inProgress = false;
     if (inProgress) return;
     inProgress = true;
+    auto guard = qScopeGuard([&] { inProgress = false; });
+
    // _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().setPointsDataset(_pcaCommonGenesDataset2);
 
     int numDimsForColoring = _settingsAction.getCommonOptionsHolder().getPcaDimensionForColoringAction().getNumberOfDimensions();
@@ -2381,9 +2405,20 @@ void Computation::correlationAfterPCA()
     std::vector<float> correlationGenePC2;
     std::vector<float> correlationGenePC1;
 
-    computeCorrelationGenePC(pointDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2);
-    computeCorrelationGenePC(pointDataset1, selectedPC1, correlationGenePC1, _selectedClusterIndices1);
+    bool correlationSuccessful2= computeCorrelationGenePC(pointDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2);
+    if (!correlationSuccessful2) {
+        setStatusMessage("E", "Error occurred during correlation computation for dataset 2", "");
+        qCritical() << "Correlation computation failed for dataset 2";
+        return;
+    }
+    bool correlationSuccessful1 = computeCorrelationGenePC(pointDataset1, selectedPC1, correlationGenePC1, _selectedClusterIndices1);
     
+    if (!correlationSuccessful1) {
+        setStatusMessage("E", "Error occurred during correlation computation for dataset 1", "");
+        qCritical() << "Correlation computation failed for dataset 1";
+        return;
+    }
+
     const int topNRows = _settingsAction.getCommonOptionsHolder().getTopNRowsAction().getValue();
     const int bottomNRows = _settingsAction.getCommonOptionsHolder().getBottomNRowsAction().getValue();
     const auto dimensionNames2 = pointDataset2->getDimensionNames();
@@ -2778,13 +2813,58 @@ bool Computation::setupAndTriggerPCA()
         !_geneOfInterestIndices0.empty() &&
         !_filteredSelectionIndices.empty()) {
         const int numRowsLine = _lineChartPointDataset1->getNumPoints();
-        if (pointDataset1.isValid() &&
-            static_cast<int>(_filteredSelectionIndices.size()) == numRowsLine) {
-            int numOfGenes = static_cast<int>(_geneOfInterestIndices0.size());
-            std::vector<float> expDataSelectedCellGene(numRowsLine * numOfGenes, 0.0f);
-            pointDataset1->populateDataForDimensions(
-                expDataSelectedCellGene, _geneOfInterestIndices0, _filteredSelectionIndices);
 
+        if (numRowsLine <= 0) {
+            qWarning() << "Line chart dataset has no points";
+            setStatusMessage("E", "Line chart dataset has no points", "");
+            return false;
+        }
+        if (numRowsLine != static_cast<int>(_filteredSelectionIndices.size())) {
+            qWarning() << "Line chart dataset size mismatch: expected" << _filteredSelectionIndices.size()
+                << "but got" << numRowsLine;
+            setStatusMessage("E", "Line chart dataset size mismatch", "");
+            return false;
+        }
+        int numOfGenes = static_cast<int>(_geneOfInterestIndices0.size());
+        std::vector<float> expDataSelectedCellGene(numRowsLine* numOfGenes, 0.0f);
+
+
+        if (_selectionDataset == 1)
+        {
+            if (pointDataset1.isValid()) {
+
+                try {
+                    pointDataset1->populateDataForDimensions(
+                        expDataSelectedCellGene, _geneOfInterestIndices0, _filteredSelectionIndices);
+                }
+                catch (const std::exception& ex) {
+                    qWarning() << "Exception in populateDataForDimensions:" << ex.what();
+                    setStatusMessage("E", "Error occurred during populating filtered data for line chart", "");
+                    return false;
+                }
+            }
+        }
+        else if (_selectionDataset == 2)
+        {
+            if (pointDataset1.isValid()) {
+
+                try {
+                    pointDataset2->populateDataForDimensions(
+                        expDataSelectedCellGene, _geneOfInterestIndices0, _filteredSelectionIndices);
+                }
+                catch (const std::exception& ex) {
+                    qWarning() << "Exception in populateDataForDimensions:" << ex.what();
+                    setStatusMessage("E", "Error occurred during populating filtered data for line chart", "");
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            setStatusMessage("E", "Invalid selection dataset", "");
+            return false;
+
+        }
             // Compute mean expression for each cell
             std::vector<float> meanOfSelectedGenes(numRowsLine, 0.0f);
             for (int i = 0; i < numRowsLine; ++i) {
@@ -2799,7 +2879,7 @@ bool Computation::setupAndTriggerPCA()
                 _lineChartPointDataset1->setValueAt(i * stride + 2, meanOfSelectedGenes[i]);
             }
             events().notifyDatasetDataChanged(_lineChartPointDataset1);
-        }
+        
     }
 
 
