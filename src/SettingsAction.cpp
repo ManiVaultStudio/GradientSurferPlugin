@@ -45,10 +45,11 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset2OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("GradientSurfer:ScatterplotViewSelection2");
     _dataset2OptionsHolder.getEmbeddingDimensionXAction().setSerializationName("GradientSurfer:EmbeddingDimension2X");
     _dataset2OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("GradientSurfer:EmbeddingDimension2Y");
-    _commonOptionsHolder.getClusterValueSelectionAction().setSerializationName("GradientSurfer:ClusterSelection");
-    _commonOptionsHolder.getClusterDatasetSelectionAction().setSerializationName("GradientSurfer:ClusterDatasetSelection");
-    _commonOptionsHolder.getComparatorDataset1SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset1Selector");
-    _commonOptionsHolder.getComparatorDataset2SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset2Selector");
+    //_commonOptionsHolder.getClusterValueSelectionAction().setSerializationName("GradientSurfer:ClusterSelection");
+    //_commonOptionsHolder.getClusterDatasetSelectionAction().setSerializationName("GradientSurfer:ClusterDatasetSelection");
+    //_commonOptionsHolder.getComparatorDataset1SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset1Selector");
+    //_commonOptionsHolder.getComparatorDataset2SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset2Selector");
+    _commonOptionsHolder.getDefaultDatasetNamesAction().setSerializationName("GradientSurfer:DefaultDatasetNames");
 
 
     _dataset1OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
@@ -200,6 +201,10 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     //_commonOptionsHolder.getComparatorDataset2SelectorAction().initialize({ "Human", "Marmoset", "Macaque" }, "Marmoset");
     _commonOptionsHolder.getComparatorDataset2SelectorAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getComparatorDataset2SelectorAction().setToolTip("Comparator Dataset 2 Selector Action");
+    _commonOptionsHolder.getDefaultDatasetNamesAction().setDefaultWidgetFlags(StringAction::LineEdit);
+    _commonOptionsHolder.getDefaultDatasetNamesAction().setText("Default Dataset Names");
+    _commonOptionsHolder.getDefaultDatasetNamesAction().setToolTip("Default Dataset Names Action");
+    _commonOptionsHolder.getDefaultDatasetNamesAction().setString("Human; Marmoset; Macaque; smFISH; MERFISH; Embryo1; Embryo2; Embryo3");
 
     _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
@@ -464,13 +469,15 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _highRangeColoringPercentileAction(this, "High Range Coloring Percentile"),
     _clusterDatasetSelectionAction(this, "Cluster Dataset Selection"),
     _comparatorDataset1SelectorAction(this, "Dataset 1 Selector"),
-    _comparatorDataset2SelectorAction(this, "Dataset 2 Selector")
+    _comparatorDataset2SelectorAction(this, "Dataset 2 Selector"),
+    _defaultDatasetNamesAction(this, "Default Dataset Names")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
 
+    addAction(&_defaultDatasetNamesAction);
     addAction(&_comparatorDataset1SelectorAction);
     addAction(&_comparatorDataset2SelectorAction);
 
@@ -516,10 +523,11 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
 
-    _commonOptionsHolder.getClusterValueSelectionAction().fromParentVariantMap(variantMap);
-    _commonOptionsHolder.getClusterDatasetSelectionAction().fromParentVariantMap(variantMap);
-    _commonOptionsHolder.getComparatorDataset1SelectorAction().fromParentVariantMap(variantMap);
-    _commonOptionsHolder.getComparatorDataset2SelectorAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getClusterValueSelectionAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getDefaultDatasetNamesAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getClusterDatasetSelectionAction().fromParentVariantMap(variantMap);
+   // _commonOptionsHolder.getComparatorDataset1SelectorAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getComparatorDataset2SelectorAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().fromParentVariantMap(variantMap);
@@ -550,10 +558,11 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
 
 
-    _commonOptionsHolder.getClusterValueSelectionAction().insertIntoVariantMap(variantMap);
-    _commonOptionsHolder.getClusterDatasetSelectionAction().insertIntoVariantMap(variantMap);
-    _commonOptionsHolder.getComparatorDataset1SelectorAction().insertIntoVariantMap(variantMap);
-    _commonOptionsHolder.getComparatorDataset2SelectorAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getClusterValueSelectionAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getDefaultDatasetNamesAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getClusterDatasetSelectionAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getComparatorDataset1SelectorAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getComparatorDataset2SelectorAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelection2Action().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().insertIntoVariantMap(variantMap);
