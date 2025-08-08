@@ -125,7 +125,8 @@ protected:
     mv::Dataset<Points>         _selectedCellPointDataset = nullptr;
     mv::Dataset<Points>         _rotatedSelectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _pcaSelectedEmbeddingDataset = nullptr;
-    mv::Dataset<Points>         _embeddingDataset = nullptr;
+    mv::Dataset<Points>         _embeddingDataset1 = nullptr;
+    mv::Dataset<Points>         _embeddingDataset2 = nullptr;
     //mv::Dataset<Points>         _selectedEmbeddingDataset = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset1 = nullptr;
     mv::Dataset<Points>         _selectedGenePointDataset2 = nullptr;
@@ -181,6 +182,8 @@ protected:
     bool _projectOpened = true;
     bool _isColoringScatterplots = false;
     bool _isColoringLineplots = false;
+    bool _selectionBlocker = false;
+    int  _selectionDataset = -1;
     QMetaObject::Connection _mainSelectionChangedConnection;
     QMetaObject::Connection _pixelSelectionStartedConnection;
     friend class ChannelAction;

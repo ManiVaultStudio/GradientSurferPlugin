@@ -148,12 +148,12 @@ std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoor
 std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
 
 
-extern std::vector<CorrelationGeneCoords> _geneCorrValues1;
+extern std::vector<CorrelationGeneCoords> _geneCorrValues0;
 extern std::vector<CorrelationGeneCoords> _geneCorrValues2;
-extern std::vector<CorrelationGeneCoords> _geneCorrValues3;
-extern std::vector<int> _geneOfInterestIndices1;
+extern std::vector<CorrelationGeneCoords> _geneCorrValues1;
+extern std::vector<int> _geneOfInterestIndices0;
 extern std::vector<int> _geneOfInterestIndices2;
-extern std::vector<int> _geneOfInterestIndices3;
+extern std::vector<int> _geneOfInterestIndices1;
 //extern QStringList _commonGeneNames;
 //extern QStringList   _commonGeneListSelectedInTables;
 extern QStringList _commonSelectedGenesAcrossDatasetsInTables;

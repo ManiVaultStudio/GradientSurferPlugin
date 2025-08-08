@@ -106,12 +106,12 @@ std::uint64_t getAvailableRAM()
     return available;
 }
 
-std::vector<CorrelationGeneCoords> _geneCorrValues1;
+std::vector<CorrelationGeneCoords> _geneCorrValues0;
 std::vector<CorrelationGeneCoords> _geneCorrValues2;
-std::vector<CorrelationGeneCoords> _geneCorrValues3;
-std::vector<int> _geneOfInterestIndices1;
+std::vector<CorrelationGeneCoords> _geneCorrValues1;
+std::vector<int> _geneOfInterestIndices0;
 std::vector<int> _geneOfInterestIndices2;
-std::vector<int> _geneOfInterestIndices3;
+std::vector<int> _geneOfInterestIndices1;
 //QList<QString> _commonGeneNames;
 //QStringList _commonGeneListSelectedInTables;
 QStringList _commonSelectedGenesAcrossDatasetsInTables;

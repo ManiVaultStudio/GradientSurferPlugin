@@ -348,9 +348,10 @@ public:
     void fromVariantMap(const QVariantMap& variantMap) override;
     QVariantMap toVariantMap() const override;
 
-    QTableView* getTableView1Action() { return _tableView1Action; }
+    QTableView* getTableView0Action() { return _tableView0Action; }
     QTableView* getTableView2Action() { return _tableView2Action; }
-    QTableView* getTableView3Action() { return _tableView3Action; }
+    QTableView* getTableView1Action() { return _tableView1Action; }
+    QLabel*& getSelectionTableHeaderLabel() { return selectionTableHeaderLabel; }
 
 protected:
     GradientSurferPlugin& _viewerPlugin;
@@ -358,8 +359,9 @@ protected:
     Dataset1OptionsHolder              _dataset1OptionsHolder;
     Dataset2OptionsHolder              _dataset2OptionsHolder;
     CommonOptionsHolder              _commonOptionsHolder;
-    QTableView*                 _tableView1Action = nullptr;
+    QTableView*                 _tableView0Action = nullptr;
     QTableView*                 _tableView2Action = nullptr;
-    QTableView*                 _tableView3Action = nullptr;
+    QTableView*                 _tableView1Action = nullptr;
+    QLabel* selectionTableHeaderLabel = nullptr;
     friend class ChannelAction;
 };
