@@ -62,14 +62,23 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
         _isManualComputeComputing = false;
         _isPCATriggerComputing = false;
         if (success) {
-            processAfterPCAComplete();
+            //processAfterPCAComplete();
+            _pcaDataset0Complete = true;
+            allPCAsComplete();
         }
         else {
             setStatusMessage("E", "PCA Failed", message.c_str());
         }
         });
 }
-
+void Computation::allPCAsComplete()
+{
+    if (_pcaDataset1Complete && _pcaDataset2Complete && _pcaDataset0Complete) {
+        _isManualComputeComputing = false;
+        processAfterPCAComplete();
+    }
+    
+}
 void Computation::setupPlotSelectionOptions()
 {
     const auto plotSelectionOptions = [this]() {
@@ -1008,7 +1017,7 @@ void Computation::setupColoringHandlers()
             deselectAllRows(_settingsAction.getTableView0Action());
             deselectAllRows(_settingsAction.getTableView2Action());
             deselectAllRows(_settingsAction.getTableView1Action());
-            setStatusMessage("M", "PCA selection changed. Click on \"Compute\" to update tables", "");
+            setStatusMessage("M", "PCA selection changed. Click on \"Update tables\"", "");
         }
         else 
         {
@@ -1318,6 +1327,7 @@ void Computation::clearTables()
 
 void Computation::AutoCompute()
 {
+    if (!_projectOpened) return;
     if (_isAutoComputeComputing) return;
     _isAutoComputeComputing = true;
     auto guard = qScopeGuard([&] { _isAutoComputeComputing = false; });
@@ -1658,10 +1668,13 @@ void Computation::AutoCompute()
 
 void Computation::ManualCompute()
 {
+    if (!_projectOpened) return;
     if (_isManualComputeComputing) return;
     _isManualComputeComputing = true;
+
     _pcaDataset1Complete = false;
     _pcaDataset2Complete = false;
+    _pcaDataset0Complete = false;
 
     if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() || !_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid()) {
         setStatusMessage("E", "No valid Point datasets", "");
@@ -2222,9 +2235,9 @@ void Computation::processAfterPCAComplete()
         _pcaCommonGenesDataset2->setData(finalGenePCSimVector2.data(), numPointsReduced2, nComps);
         mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
 
-        processAfterPCADatasetsPopulated();
+        
     }
-
+    processAfterPCADatasetsPopulated();
 }
 
 
@@ -2701,6 +2714,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
 
 bool Computation::setupAndTriggerPCA()
 {
+    if (!_projectOpened) return false;
     if (_isPCATriggerComputing) return false;
     _isPCATriggerComputing = true;
     auto guard = qScopeGuard([this]() { _isPCATriggerComputing = false; });
@@ -3021,17 +3035,20 @@ bool Computation::setupAndTriggerPCA()
         }
         connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
             _pcaDataset1Complete = true;
-            if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            allPCAsComplete();
+            /*if (_pcaDataset1Complete && _pcaDataset2Complete) {
                 _isManualComputeComputing = false;
                 processAfterPCADatasetsPopulated();
-            }
+            }*/
+
             });
         connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
             _pcaDataset2Complete = true;
-            if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            allPCAsComplete();
+            /*if (_pcaDataset1Complete && _pcaDataset2Complete) {
                 _isManualComputeComputing = false;
                 processAfterPCADatasetsPopulated();
-            }
+            }*/
             });
         auto componentsAction1 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction1) {

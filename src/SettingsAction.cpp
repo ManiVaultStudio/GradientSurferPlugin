@@ -444,40 +444,48 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
 inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& settingsAction) :
     VerticalGroupAction(&settingsAction, "Settings Options"),
     _settingsOptions(settingsAction),
-    _computeAction(this, "Compute: Expand PC's across datasets"),
-    _clusterValueSelectionAction(this, "Cluster selection"),
-    _pcaDimensionForColoringAction(this, "PC Selection"),
-    //_dualPCAColoringAction(this, "PCA Coloring"),
-    _pcaColoringAction(this, "PCA Coloring"),
-    _autoComputeAction(this, "Auto Compute"),
-    _correlationCalculationTypeAction(this, "Correlation Calculation Type"),
-    _computePCAAction(this, "Compute: Selection PCs"),
-    //_normalizeCombinedDatasetsAction(this, "Normalize Combined Datasets"),
-    //_normalizationTypeAction(this, "Normalization Type"),
-    //_selectionModeAction(this, "Selection Mode"),
-    _focusSelectionAction(this, "Focus Selection"),
-    _hidePointSelectionAction(this, "Hide Point Selection Outline"),
-    _coloringMapSelectionAction(this, "Coloring Map Selection"),
-    _topNRowsAction(this, "Top N Rows Selection"),
-    _bottomNRowsAction(this, "Bottom N Rows Selection"),
-    _computationTypeAction(this, "Computation Type"),
-    _statusMessageAction(this, "Status Message"),
-    _statusBarActionWidget(new StatusBarAction(this, "Status")),
-    //_colorAllCellsWithExpressionAction(this, "Color All Cells With Expression"),
-    _tableSearchBoxAction(this, "Search Table"),
-    _lowRangeColoringPercentileAction(this, "Low Range Coloring Percentile"),
-    _highRangeColoringPercentileAction(this, "High Range Coloring Percentile"),
-    _clusterDatasetSelectionAction(this, "Cluster Dataset Selection"),
-    _comparatorDataset1SelectorAction(this, "Dataset 1 Selector"),
-    _comparatorDataset2SelectorAction(this, "Dataset 2 Selector"),
-    _defaultDatasetNamesAction(this, "Default Dataset Names")
+    // PCA-related actions
+    _computeAction(this, "Compute PCs"),
+    _computePCAAction(this, "Update Tables"),
+    _pcaDimensionForColoringAction(this, "PC Select"),
+    _pcaColoringAction(this, "PCA Color"),
+
+    // Clustering and selection actions
+    _clusterValueSelectionAction(this, "Cluster"),
+    _clusterDatasetSelectionAction(this, "Cluster Set"),
+    _focusSelectionAction(this, "Focus"),
+    _hidePointSelectionAction(this, "Hide Outline"),
+
+    // Data filtering actions
+    _topNRowsAction(this, "Top N Rows"),
+    _bottomNRowsAction(this, "Bottom N Rows"),
+    _lowRangeColoringPercentileAction(this, "Low Percentile"),
+    _highRangeColoringPercentileAction(this, "High Percentile"),
+
+    // Dataset comparison actions
+    _comparatorDataset1SelectorAction(this, "Set 1"),
+    _comparatorDataset2SelectorAction(this, "Set 2"),
+    _defaultDatasetNamesAction(this, "Default Names"),
+
+    // Computation settings actions
+    _autoComputeAction(this, "Auto"),
+    _correlationCalculationTypeAction(this, "Corr Type"),
+    _computationTypeAction(this, "Comp Type"),
+
+    // Coloring and visualization actions
+    _coloringMapSelectionAction(this, "Color Map"),
+
+    // Status and search actions
+    _statusMessageAction(this, "Status"),
+    _statusBarActionWidget(new StatusBarAction(this, "Status Bar")),
+    _tableSearchBoxAction(this, "Search")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
 
-    addAction(&_defaultDatasetNamesAction);
+    //addAction(&_defaultDatasetNamesAction);
     addAction(&_comparatorDataset1SelectorAction);
     addAction(&_comparatorDataset2SelectorAction);
 
