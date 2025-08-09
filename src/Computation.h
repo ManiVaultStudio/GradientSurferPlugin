@@ -113,6 +113,7 @@ private:
     void processAfterPCADatasetsPopulated();
     void clearTables();
     //void  normalizeData();
+    void allPCAsComplete();
     void enableOptions();
     void disableOptions();
     void coorelationScoresForPCs();
@@ -162,6 +163,7 @@ protected:
     //QTimer _lineplotColorUpdateDebounceTimer;
     bool      _pcaDataset1Complete = false;
     bool      _pcaDataset2Complete = false;
+    bool      _pcaDataset0Complete = false;
     int             _numOfPointsInLine1=0;
     int             _numOfPointsInLine2 = 0;
     QString    _selectedGene1 = "";

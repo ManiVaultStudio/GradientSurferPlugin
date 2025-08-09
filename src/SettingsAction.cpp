@@ -477,7 +477,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
 
-    addAction(&_defaultDatasetNamesAction);
+    //addAction(&_defaultDatasetNamesAction);
     addAction(&_comparatorDataset1SelectorAction);
     addAction(&_comparatorDataset2SelectorAction);
 

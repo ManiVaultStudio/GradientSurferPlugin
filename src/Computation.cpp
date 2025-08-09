@@ -62,14 +62,23 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
         _isManualComputeComputing = false;
         _isPCATriggerComputing = false;
         if (success) {
-            processAfterPCAComplete();
+            //processAfterPCAComplete();
+            _pcaDataset0Complete = true;
+            allPCAsComplete();
         }
         else {
             setStatusMessage("E", "PCA Failed", message.c_str());
         }
         });
 }
-
+void Computation::allPCAsComplete()
+{
+    if (_pcaDataset1Complete && _pcaDataset2Complete && _pcaDataset0Complete) {
+        _isManualComputeComputing = false;
+        processAfterPCAComplete();
+    }
+    
+}
 void Computation::setupPlotSelectionOptions()
 {
     const auto plotSelectionOptions = [this]() {
@@ -1662,6 +1671,7 @@ void Computation::ManualCompute()
     _isManualComputeComputing = true;
     _pcaDataset1Complete = false;
     _pcaDataset2Complete = false;
+    _pcaDataset0Complete = false;
 
     if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() || !_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid()) {
         setStatusMessage("E", "No valid Point datasets", "");
@@ -2222,9 +2232,9 @@ void Computation::processAfterPCAComplete()
         _pcaCommonGenesDataset2->setData(finalGenePCSimVector2.data(), numPointsReduced2, nComps);
         mv::events().notifyDatasetDataChanged(_pcaCommonGenesDataset2);
 
-        processAfterPCADatasetsPopulated();
+        
     }
-
+    processAfterPCADatasetsPopulated();
 }
 
 
@@ -3021,17 +3031,20 @@ bool Computation::setupAndTriggerPCA()
         }
         connect(&_pcaCommonGenesDataset1, &Dataset<Points>::dataChanged, this, [this]() {
             _pcaDataset1Complete = true;
-            if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            allPCAsComplete();
+            /*if (_pcaDataset1Complete && _pcaDataset2Complete) {
                 _isManualComputeComputing = false;
                 processAfterPCADatasetsPopulated();
-            }
+            }*/
+
             });
         connect(&_pcaCommonGenesDataset2, &Dataset<Points>::dataChanged, this, [this]() {
             _pcaDataset2Complete = true;
-            if (_pcaDataset1Complete && _pcaDataset2Complete) {
+            allPCAsComplete();
+            /*if (_pcaDataset1Complete && _pcaDataset2Complete) {
                 _isManualComputeComputing = false;
                 processAfterPCADatasetsPopulated();
-            }
+            }*/
             });
         auto componentsAction1 = dynamic_cast<IntegralAction*>(_pcaCommonGenesDataset1->findChildByPath("PCA/Number of PCA components"));
         if (!componentsAction1) {
