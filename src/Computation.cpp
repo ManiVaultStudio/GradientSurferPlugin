@@ -963,7 +963,9 @@ void Computation::setupComputeHandlers()
 
     // Computation type changed handler
     connect(&_settingsAction.getCommonOptionsHolder().getComputationTypeAction(), &OptionAction::currentIndexChanged, this, [this]() {
+        if (!_projectOpened) return;
         _settingsAction.getCommonOptionsHolder().getComputePCAAction().trigger();
+        
         });
 
     // Cluster selection debounce handler
@@ -1326,7 +1328,7 @@ void Computation::AutoCompute()
         clearTables();
         clearLinePlots();
         _numOfPointsInLine1 = 0;
-
+        //std::cout << "\n**********************************\n";
         // Ensure normalized datasets are available
         /*if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
             normalizeData();
@@ -2085,11 +2087,11 @@ void Computation::processAfterPCAComplete()
 
     mv::events().notifyDatasetDataChanged(_pcaSelectedEmbeddingDataset);
     // Find common gene indices and names
-    std::vector<int> geneOfInterestIndices2;
+    std::vector<int> altGeneOfInterestIndices;
     QStringList commonGeneNames;
     const auto& genedims1 = pointDataset1->getDimensionNames();
     const auto& genedims2 = pointDataset2->getDimensionNames();
-    geneOfInterestIndices2.reserve(_geneOfInterestIndices0.size());
+    altGeneOfInterestIndices.reserve(_geneOfInterestIndices0.size());
     commonGeneNames.reserve(_geneOfInterestIndices0.size());
 
     // Build a map from gene name to index for genedims2
@@ -2097,17 +2099,32 @@ void Computation::processAfterPCAComplete()
     for (int i = 0; i < genedims2.size(); ++i) {
         geneNameToIndex2[genedims2[i]] = i;
     }
-
+    QHash< QString, int> geneNameToIndex1;
+    for (int i = 0; i < genedims1.size(); ++i) {
+        geneNameToIndex1[genedims1[i]] = i;
+    }
+    if (_selectionDataset <1 && _selectionDataset >2)
+    {
+        qWarning() << "Invalid selection dataset for gene of interest indices";
+        setStatusMessage("E", "Invalid selection dataset for gene of interest indices", "");
+        return;
+    }
+    auto mainGeneDims = (_selectionDataset == 1) ? genedims1 : genedims2;
+    //auto altGeneDims = (_selectionDataset == 1) ? genedims2 : genedims1;
+    //auto mainGeneNameToIndex = (_selectionDataset == 1) ? geneNameToIndex1 : geneNameToIndex2;
+    auto altGeneNameToIndex = (_selectionDataset == 1) ? geneNameToIndex2 : geneNameToIndex1;
+    
     for (int inddx : _geneOfInterestIndices0) {
-        if (inddx < 0 || inddx >= genedims1.size()) {
+        if (inddx < 0 || inddx >= mainGeneDims.size()) {
             qWarning() << "Invalid index in _geneOfInterestIndices0:" << inddx;
             setStatusMessage("E", "Invalid index in gene of interest indices 1", "");
             return;
         }
-        const QString& geneName = genedims1[inddx];
-        auto it = geneNameToIndex2.find(geneName);
-        if (it != geneNameToIndex2.end()) {
-            geneOfInterestIndices2.push_back(it.value());
+        const QString& geneName = mainGeneDims[inddx];
+
+        auto it = altGeneNameToIndex.find(geneName);
+        if (it != altGeneNameToIndex.end()) {
+            altGeneOfInterestIndices.push_back(it.value());
             commonGeneNames.push_back(geneName);
         }
     }
@@ -2117,8 +2134,12 @@ void Computation::processAfterPCAComplete()
         return;
     }
     const int nCommon = static_cast<int>(_geneOfInterestIndices0.size());
-    if (geneOfInterestIndices2.size() != nCommon || commonGeneNames.size() != nCommon) {
-        qWarning() << "Gene indices or common gene names size mismatch";
+    if (altGeneOfInterestIndices.size() != nCommon || commonGeneNames.size() != nCommon) {
+        qCritical() << "Gene indices or common gene names size mismatch";
+        //qWarning() << "geneOfInterestIndices2.size() =" << altGeneOfInterestIndices.size() << ", commonGeneNames.size() =" << commonGeneNames.size() << ", nCommon =" << nCommon;
+        //qWarning() << "loadings1 size:" << loadings1.size() << ", expected size:" << _selectedPCData1.numberOfDimensions * nComps;
+        //qWarning() << "nComps:" << nComps << ", _selectedPCData1.numberOfDimensions:" << _selectedPCData1.numberOfDimensions;
+
         setStatusMessage("E", "Gene indices or common gene names size mismatch", "");
         return;
     }
@@ -2135,8 +2156,16 @@ void Computation::processAfterPCAComplete()
 
         for (int id = 0; id < _selectedPCData1.numberOfDimensions; ++id) {
             LoadingValues tempValues;
-            tempValues.geneId1 = _geneOfInterestIndices0[id];
-            tempValues.geneId2 = geneOfInterestIndices2[id];
+            if (_selectionDataset == 1)
+            {
+                tempValues.geneId1 = _geneOfInterestIndices0[id];
+                tempValues.geneId2 = altGeneOfInterestIndices[id];
+            }
+            else if (_selectionDataset == 2)
+            {
+                tempValues.geneId1 = altGeneOfInterestIndices[id];
+                tempValues.geneId2 = _geneOfInterestIndices0[id];
+            }
             tempValues.loadings.resize(nComps);
             for (int j = 0; j < nComps; ++j) {
                 tempValues.loadings[j] = loadings1[id * nComps + j];
@@ -2376,12 +2405,15 @@ void Computation::processAfterPCADatasetsPopulated()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
-    inProgress = false;
 }
 
 
 void Computation::correlationAfterPCA()
 {
+    static bool inProgress = false;
+    if (inProgress) return;
+    inProgress = true;
+    auto guard = qScopeGuard([&] { inProgress = false; });
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
     if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() || !_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid()) {
@@ -2414,6 +2446,24 @@ void Computation::correlationAfterPCA()
         setStatusMessage("E", "No cells in point dataset 1", "");
         return;
     }
+    //qInfo() << "PCA Dimension for correlation:" << selectedPCDimension;
+    if (selectedPCDimension >= pointDataset2->getNumDimensions() || selectedPCDimension >= pointDataset1->getNumDimensions()) {
+        setStatusMessage("E", "Selected PCA dimension exceeds available dimensions in datasets", "");
+        return;
+    }
+    if (selectedPCDimension < 0) {
+        setStatusMessage("E", "Selected PCA dimension is negative", "");
+        return;
+    }
+    if (_pcaCommonGenesDataset2.isValid() && _pcaCommonGenesDataset1.isValid()) {
+        if (_pcaCommonGenesDataset2->getNumDimensions() <= selectedPCDimension || _pcaCommonGenesDataset1->getNumDimensions() <= selectedPCDimension) {
+            setStatusMessage("E", "Selected PCA dimension exceeds available dimensions in PCA datasets", "");
+            return;
+        }
+    } else {
+        setStatusMessage("E", "PCA common genes datasets are not valid", "");
+        return;
+    }
 
     std::vector<float> selectedPC2(numAllCells2);
     _pcaCommonGenesDataset2->extractDataForDimension(selectedPC2, selectedPCDimension);
@@ -2427,6 +2477,7 @@ void Computation::correlationAfterPCA()
     bool correlationSuccessful2= computeCorrelationGenePC(pointDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2);
     if (!correlationSuccessful2) {
         setStatusMessage("E", "Error occurred during correlation computation for dataset 2", "");
+        qCritical() << selectedPC2.size() << "selectedPC2 size, numAllCells2:" << numAllCells2<< "_selectedClusterIndices2.size()"<< _selectedClusterIndices2.size();
         qCritical() << "Correlation computation failed for dataset 2";
         return;
     }
@@ -2434,6 +2485,7 @@ void Computation::correlationAfterPCA()
     
     if (!correlationSuccessful1) {
         setStatusMessage("E", "Error occurred during correlation computation for dataset 1", "");
+        qCritical() << selectedPC1.size() << "selectedPC1 size, numAllCells1:" << numAllCells1 << "_selectedClusterIndices1.size()" << _selectedClusterIndices1.size();
         qCritical() << "Correlation computation failed for dataset 1";
         return;
     }
