@@ -1327,6 +1327,7 @@ void Computation::clearTables()
 
 void Computation::AutoCompute()
 {
+    if (!_projectOpened) return;
     if (_isAutoComputeComputing) return;
     _isAutoComputeComputing = true;
     auto guard = qScopeGuard([&] { _isAutoComputeComputing = false; });
@@ -1667,8 +1668,10 @@ void Computation::AutoCompute()
 
 void Computation::ManualCompute()
 {
+    if (!_projectOpened) return;
     if (_isManualComputeComputing) return;
     _isManualComputeComputing = true;
+
     _pcaDataset1Complete = false;
     _pcaDataset2Complete = false;
     _pcaDataset0Complete = false;
@@ -2711,6 +2714,7 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
 
 bool Computation::setupAndTriggerPCA()
 {
+    if (!_projectOpened) return false;
     if (_isPCATriggerComputing) return false;
     _isPCATriggerComputing = true;
     auto guard = qScopeGuard([this]() { _isPCATriggerComputing = false; });
