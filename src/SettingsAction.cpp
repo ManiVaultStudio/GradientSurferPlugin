@@ -168,10 +168,10 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getStatusMessageAction().setDefaultWidgetFlags(StringAction::Label);
     _commonOptionsHolder.getComputeAction().setDefaultWidgetFlags(TriggerAction::IconText);
     _commonOptionsHolder.getComputeAction().setIcon(mv::util::StyledIcon("play"));
-    _commonOptionsHolder.getComputeAction().setText("Compute");
+    _commonOptionsHolder.getComputeAction().setText("Update tables after PCA");
     _commonOptionsHolder.getComputePCAAction().setDefaultWidgetFlags(TriggerAction::IconText);
     _commonOptionsHolder.getComputePCAAction().setIcon(mv::util::StyledIcon("play"));
-    _commonOptionsHolder.getComputePCAAction().setText("Compute PCA");
+    _commonOptionsHolder.getComputePCAAction().setText("Compute PCA across datasets");
 
     _commonOptionsHolder.getAutoComputeAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 

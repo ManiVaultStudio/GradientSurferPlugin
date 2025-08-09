@@ -963,7 +963,9 @@ void Computation::setupComputeHandlers()
 
     // Computation type changed handler
     connect(&_settingsAction.getCommonOptionsHolder().getComputationTypeAction(), &OptionAction::currentIndexChanged, this, [this]() {
+        if (!_projectOpened) return;
         _settingsAction.getCommonOptionsHolder().getComputePCAAction().trigger();
+        
         });
 
     // Cluster selection debounce handler
@@ -1326,7 +1328,7 @@ void Computation::AutoCompute()
         clearTables();
         clearLinePlots();
         _numOfPointsInLine1 = 0;
-
+        //std::cout << "\n**********************************\n";
         // Ensure normalized datasets are available
         /*if (!_normalizedFullDataset1.isValid() || !_normalizedFullDataset2.isValid()) {
             normalizeData();
@@ -1495,22 +1497,27 @@ void Computation::AutoCompute()
         }
         */
         // Prepare for dataset population
-        int noOfDimensions = pointDataset1->getNumDimensions();
-        const auto& dimensionNames = pointDataset1->getDimensionNames();
-        std::vector<int> columnIndices(noOfDimensions);
-        std::iota(columnIndices.begin(), columnIndices.end(), 0);
+        int noOfDimensions1 = pointDataset1->getNumDimensions();
+        const auto& dimensionNames1 = pointDataset1->getDimensionNames();
+        std::vector<int> columnIndices1(noOfDimensions1);
+        std::iota(columnIndices1.begin(), columnIndices1.end(), 0);
+
+        int noOfDimensions2 = pointDataset2->getNumDimensions();
+        const auto& dimensionNames2 = pointDataset2->getDimensionNames();
+        std::vector<int> columnIndices2(noOfDimensions2);
+        std::iota(columnIndices2.begin(), columnIndices2.end(), 0);
 
 
         if (_selectionDataset == 1)
         {
-            if (!populateAndUpdateDatasets(pointDataset1, rotatedXYCordinates, noOfDimensions, columnIndices, dimensionNames)) {
+            if (!populateAndUpdateDatasets(pointDataset1, rotatedXYCordinates, noOfDimensions1, columnIndices1, dimensionNames1)) {
                 setStatusMessage("E", "Error occurred during dataset population", "");
                 return;
             }
         }
         else if (_selectionDataset == 2)
         {
-            if (!populateAndUpdateDatasets(pointDataset2, rotatedXYCordinates, noOfDimensions, columnIndices, dimensionNames)) {
+            if (!populateAndUpdateDatasets(pointDataset2, rotatedXYCordinates, noOfDimensions2, columnIndices2, dimensionNames2)) {
                 setStatusMessage("E", "Error occurred during dataset population", "");
                 return;
             }
@@ -1551,7 +1558,21 @@ void Computation::AutoCompute()
 
         }
         try {
-            populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames, _geneCorrValues0, _geneOfInterestIndices0, true);
+
+            if (_selectionDataset == 1)
+            {
+                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames1, _geneCorrValues0, _geneOfInterestIndices0, true);
+            }
+            else if (_selectionDataset == 2)
+            {
+                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames2, _geneCorrValues0, _geneOfInterestIndices0, true);
+            }
+            else
+            {
+                setStatusMessage("E", "Invalid selection dataset", "");
+                return;
+
+            }
         }
         catch (const std::exception& ex) {
             qWarning() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
@@ -2066,11 +2087,11 @@ void Computation::processAfterPCAComplete()
 
     mv::events().notifyDatasetDataChanged(_pcaSelectedEmbeddingDataset);
     // Find common gene indices and names
-    std::vector<int> geneOfInterestIndices2;
+    std::vector<int> altGeneOfInterestIndices;
     QStringList commonGeneNames;
     const auto& genedims1 = pointDataset1->getDimensionNames();
     const auto& genedims2 = pointDataset2->getDimensionNames();
-    geneOfInterestIndices2.reserve(_geneOfInterestIndices0.size());
+    altGeneOfInterestIndices.reserve(_geneOfInterestIndices0.size());
     commonGeneNames.reserve(_geneOfInterestIndices0.size());
 
     // Build a map from gene name to index for genedims2
@@ -2078,17 +2099,32 @@ void Computation::processAfterPCAComplete()
     for (int i = 0; i < genedims2.size(); ++i) {
         geneNameToIndex2[genedims2[i]] = i;
     }
-
+    QHash< QString, int> geneNameToIndex1;
+    for (int i = 0; i < genedims1.size(); ++i) {
+        geneNameToIndex1[genedims1[i]] = i;
+    }
+    if (_selectionDataset <1 && _selectionDataset >2)
+    {
+        qWarning() << "Invalid selection dataset for gene of interest indices";
+        setStatusMessage("E", "Invalid selection dataset for gene of interest indices", "");
+        return;
+    }
+    auto mainGeneDims = (_selectionDataset == 1) ? genedims1 : genedims2;
+    //auto altGeneDims = (_selectionDataset == 1) ? genedims2 : genedims1;
+    //auto mainGeneNameToIndex = (_selectionDataset == 1) ? geneNameToIndex1 : geneNameToIndex2;
+    auto altGeneNameToIndex = (_selectionDataset == 1) ? geneNameToIndex2 : geneNameToIndex1;
+    
     for (int inddx : _geneOfInterestIndices0) {
-        if (inddx < 0 || inddx >= genedims1.size()) {
+        if (inddx < 0 || inddx >= mainGeneDims.size()) {
             qWarning() << "Invalid index in _geneOfInterestIndices0:" << inddx;
             setStatusMessage("E", "Invalid index in gene of interest indices 1", "");
             return;
         }
-        const QString& geneName = genedims1[inddx];
-        auto it = geneNameToIndex2.find(geneName);
-        if (it != geneNameToIndex2.end()) {
-            geneOfInterestIndices2.push_back(it.value());
+        const QString& geneName = mainGeneDims[inddx];
+
+        auto it = altGeneNameToIndex.find(geneName);
+        if (it != altGeneNameToIndex.end()) {
+            altGeneOfInterestIndices.push_back(it.value());
             commonGeneNames.push_back(geneName);
         }
     }
@@ -2098,8 +2134,12 @@ void Computation::processAfterPCAComplete()
         return;
     }
     const int nCommon = static_cast<int>(_geneOfInterestIndices0.size());
-    if (geneOfInterestIndices2.size() != nCommon || commonGeneNames.size() != nCommon) {
-        qWarning() << "Gene indices or common gene names size mismatch";
+    if (altGeneOfInterestIndices.size() != nCommon || commonGeneNames.size() != nCommon) {
+        qCritical() << "Gene indices or common gene names size mismatch";
+        //qWarning() << "geneOfInterestIndices2.size() =" << altGeneOfInterestIndices.size() << ", commonGeneNames.size() =" << commonGeneNames.size() << ", nCommon =" << nCommon;
+        //qWarning() << "loadings1 size:" << loadings1.size() << ", expected size:" << _selectedPCData1.numberOfDimensions * nComps;
+        //qWarning() << "nComps:" << nComps << ", _selectedPCData1.numberOfDimensions:" << _selectedPCData1.numberOfDimensions;
+
         setStatusMessage("E", "Gene indices or common gene names size mismatch", "");
         return;
     }
@@ -2116,8 +2156,16 @@ void Computation::processAfterPCAComplete()
 
         for (int id = 0; id < _selectedPCData1.numberOfDimensions; ++id) {
             LoadingValues tempValues;
-            tempValues.geneId1 = _geneOfInterestIndices0[id];
-            tempValues.geneId2 = geneOfInterestIndices2[id];
+            if (_selectionDataset == 1)
+            {
+                tempValues.geneId1 = _geneOfInterestIndices0[id];
+                tempValues.geneId2 = altGeneOfInterestIndices[id];
+            }
+            else if (_selectionDataset == 2)
+            {
+                tempValues.geneId1 = altGeneOfInterestIndices[id];
+                tempValues.geneId2 = _geneOfInterestIndices0[id];
+            }
             tempValues.loadings.resize(nComps);
             for (int j = 0; j < nComps; ++j) {
                 tempValues.loadings[j] = loadings1[id * nComps + j];
@@ -2357,12 +2405,15 @@ void Computation::processAfterPCADatasetsPopulated()
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
-    inProgress = false;
 }
 
 
 void Computation::correlationAfterPCA()
 {
+    static bool inProgress = false;
+    if (inProgress) return;
+    inProgress = true;
+    auto guard = qScopeGuard([&] { inProgress = false; });
     FunctionTimer timer(Q_FUNC_INFO);
     setStatusMessage("R", "Running correlation between genes and PC", "#28a745");
     if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() || !_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid()) {
@@ -2395,6 +2446,24 @@ void Computation::correlationAfterPCA()
         setStatusMessage("E", "No cells in point dataset 1", "");
         return;
     }
+    //qInfo() << "PCA Dimension for correlation:" << selectedPCDimension;
+    if (selectedPCDimension >= pointDataset2->getNumDimensions() || selectedPCDimension >= pointDataset1->getNumDimensions()) {
+        setStatusMessage("E", "Selected PCA dimension exceeds available dimensions in datasets", "");
+        return;
+    }
+    if (selectedPCDimension < 0) {
+        setStatusMessage("E", "Selected PCA dimension is negative", "");
+        return;
+    }
+    if (_pcaCommonGenesDataset2.isValid() && _pcaCommonGenesDataset1.isValid()) {
+        if (_pcaCommonGenesDataset2->getNumDimensions() <= selectedPCDimension || _pcaCommonGenesDataset1->getNumDimensions() <= selectedPCDimension) {
+            setStatusMessage("E", "Selected PCA dimension exceeds available dimensions in PCA datasets", "");
+            return;
+        }
+    } else {
+        setStatusMessage("E", "PCA common genes datasets are not valid", "");
+        return;
+    }
 
     std::vector<float> selectedPC2(numAllCells2);
     _pcaCommonGenesDataset2->extractDataForDimension(selectedPC2, selectedPCDimension);
@@ -2408,6 +2477,7 @@ void Computation::correlationAfterPCA()
     bool correlationSuccessful2= computeCorrelationGenePC(pointDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2);
     if (!correlationSuccessful2) {
         setStatusMessage("E", "Error occurred during correlation computation for dataset 2", "");
+        qCritical() << selectedPC2.size() << "selectedPC2 size, numAllCells2:" << numAllCells2<< "_selectedClusterIndices2.size()"<< _selectedClusterIndices2.size();
         qCritical() << "Correlation computation failed for dataset 2";
         return;
     }
@@ -2415,6 +2485,7 @@ void Computation::correlationAfterPCA()
     
     if (!correlationSuccessful1) {
         setStatusMessage("E", "Error occurred during correlation computation for dataset 1", "");
+        qCritical() << selectedPC1.size() << "selectedPC1 size, numAllCells1:" << numAllCells1 << "_selectedClusterIndices1.size()" << _selectedClusterIndices1.size();
         qCritical() << "Correlation computation failed for dataset 1";
         return;
     }
@@ -2437,7 +2508,7 @@ void Computation::correlationAfterPCA()
 
     setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView0Action(), _settingsAction.getTableView1Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),false);
     setupTableModelAndSelection(_settingsAction.getTableView1Action(), _geneCorrValues1, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView0Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),false);
-    selectFirstRow(_settingsAction.getTableView1Action());
+    selectFirstRow(_settingsAction.getTableView2Action());
     
 
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
@@ -2691,36 +2762,73 @@ bool Computation::setupAndTriggerPCA()
     geneDataset1.reserve(numOfIntGenes);
     geneDataset2.reserve(numOfIntGenes);
 
-    for (int idx : _geneOfInterestIndices0) {
-        if (idx < 0 || idx >= static_cast<int>(dimensionNames1.size()))
-            continue;
-        const QString& geneName = dimensionNames1[idx];
-        auto it2 = std::find(dimensionNames2.begin(), dimensionNames2.end(), geneName);
-        if (it2 != dimensionNames2.end()) {
-            int geneId2 = static_cast<int>(std::distance(dimensionNames2.begin(), it2));
-            dimensionNamesOfInterest.push_back(geneName);
-
-            
-            if (_selectionDataset == 1)
-            {
-                geneDataset0.push_back(idx);
-            }
-            else if (_selectionDataset == 2)
-            {
-                geneDataset0.push_back(geneId2);
-            }
-            else
-            {
-                setStatusMessage("E", "Invalid selection dataset", "");
-                return false;
-
-            }
-
-            geneDataset1.push_back(idx);
-            geneDataset2.push_back(geneId2);
-        }
+    // Pre-check to avoid processing if selection dataset is invalid
+    if (_selectionDataset != 1 && _selectionDataset != 2) {
+        setStatusMessage("E", "Invalid selection dataset", "");
+        return false;
     }
 
+    const auto& sourceNames = (_selectionDataset == 1) ? dimensionNames1 : dimensionNames2;
+    const auto& targetNames = (_selectionDataset == 1) ? dimensionNames2 : dimensionNames1;
+
+    for (int idx : _geneOfInterestIndices0) {
+        // Check if index is valid for source names
+        if (idx < 0 || idx >= static_cast<int>(sourceNames.size())) {
+            continue;
+        }
+
+        const QString& geneName = sourceNames[idx];
+
+        // Find the gene in the target dataset
+        auto it = std::find(targetNames.begin(), targetNames.end(), geneName);
+        if (it == targetNames.end()) {
+            continue;  // Gene not found in target dataset
+        }
+
+        int targetIdx = static_cast<int>(std::distance(targetNames.begin(), it));
+        dimensionNamesOfInterest.push_back(geneName);
+
+        // Push indices to appropriate datasets
+        geneDataset0.push_back(idx);
+        if (_selectionDataset == 1) {
+            geneDataset1.push_back(idx);
+            geneDataset2.push_back(targetIdx);
+        }
+        else {
+            geneDataset2.push_back(idx);
+            geneDataset1.push_back(targetIdx);
+        }
+    }
+    if (geneDataset0.empty() || geneDataset1.empty() || geneDataset2.empty()) {
+        qWarning() << "No common genes found between datasets";
+        setStatusMessage("E", "No common genes found between datasets", "");
+        return false;
+    }
+    if (geneDataset0.size() != geneDataset1.size() || geneDataset0.size() != geneDataset2.size()) {
+        qWarning() << "Gene datasets sizes mismatch: geneDataset0:" << geneDataset0.size()
+            << " geneDataset1:" << geneDataset1.size()
+            << " geneDataset2:" << geneDataset2.size();
+        setStatusMessage("E", "Gene datasets sizes mismatch", "");
+        return false;
+    }
+   /* qInfo() << _geneOfInterestIndices0.size() << "genes of interest selected for PCA computation" << _geneOfInterestIndices1.size() << "genes of interest selected for PCA computation in dataset 1" << _geneOfInterestIndices2.size() << "genes of interest selected for PCA computation in dataset 2";
+    qInfo() << geneDataset0.size() << "genes of interest in dataset 0" << geneDataset1.size() << "genes of interest in dataset 1" << geneDataset2.size() << "genes of interest in dataset 2";
+    //get min max values of _geneOfInterestIndices0 _geneOfInterestIndices1 _geneOfInterestIndices2 and geneDataset0 geneDataset1 geneDataset2 in qinfo
+    auto minmax_vec = [](const std::vector<int>& v) -> std::pair<int, int> {
+        if (v.empty()) return { 0, 0 };
+        auto [minIt, maxIt] = std::minmax_element(v.begin(), v.end());
+        return { *minIt, *maxIt };
+        };
+    auto print_minmax = [minmax_vec](const QString& name, const std::vector<int>& v) {
+        auto [minVal, maxVal] = minmax_vec(v);
+        qInfo() << name << "min:" << minVal << "max:" << maxVal;
+        };
+    print_minmax("_geneOfInterestIndices0", _geneOfInterestIndices0);
+    print_minmax("_geneOfInterestIndices1", _geneOfInterestIndices1);
+    print_minmax("_geneOfInterestIndices2", _geneOfInterestIndices2);
+    print_minmax("geneDataset0", geneDataset0);
+    print_minmax("geneDataset1", geneDataset1);
+    print_minmax("geneDataset2", geneDataset2);*/
     if (dimensionNamesOfInterest.empty()) {
         qWarning() << "No common genes found between datasets";
         setStatusMessage("E", "No common genes found between datasets", "");
@@ -2741,6 +2849,7 @@ bool Computation::setupAndTriggerPCA()
 
         // Prepare cell indices
         std::vector<int> cellIndices0(_filteredSelectionIndices.begin(), _filteredSelectionIndices.end());
+
 
         // Prepare data matrices
         cellByGeneMatrix0.resize(numCells0 * numDimsOfInterest);
