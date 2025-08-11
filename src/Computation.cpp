@@ -2830,8 +2830,6 @@ bool Computation::populateAndUpdateDatasets(mv::Dataset<Points>& fullNormalizedP
     dimensionNamesWithYCoords.push_back("Mean Expr All Genes");
     dimensionNamesWithYCoords.push_back("Mean Expr Selected Genes");
     dimensionNamesWithYCoords.insert(dimensionNamesWithYCoords.end(), dimensionNames.begin(), dimensionNames.end());
-
-
     std::vector<float> rotatedYCoord(numCells * 1);
     _rotatedSelectedEmbeddingDataset->extractDataForDimension(rotatedYCoord, 1);
     std::vector<float> meanSelectedGenes(numCells, 0.0f);
@@ -3642,6 +3640,7 @@ void Computation::colorLinePlots()
 
     auto& commonOptions = _settingsAction.getCommonOptionsHolder();
     auto& dataset1Options = _settingsAction.getDataset1OptionsHolder();
+    auto& dataset2Options = _settingsAction.getDataset2OptionsHolder();
     const auto colorMapStringValue = commonOptions.getColoringMapSelectionAction().getColorMap();
 
     /*if (commonOptions.getSelectionModeAction().isChecked())
@@ -3708,7 +3707,7 @@ void Computation::colorLinePlots()
             }
             else if (_selectionDataset == 2)
             {
-                selectedGene = dataset1Options.getGeneSelectionAction().getCurrentDimensionName();
+                selectedGene = dataset2Options.getGeneSelectionAction().getCurrentDimensionName();
             }
 
             if (!_lineChartPointDataset1.isValid())
