@@ -386,6 +386,7 @@ void Computation::setupDebounceTimers()
     _scatterplot1ExpressionColoringRangeDebounceTimer.setSingleShot(true);
     _scatterplot2ExpressionColoringRangeDebounceTimer.setSingleShot(true);
     _datasetNamesStringCheckDebounceTimer.setSingleShot(true);
+    _sliceNamesStringCheckDebounceTimer.setSingleShot(true);
 }
 
 void Computation::setupStatusMessageHandler()
@@ -846,7 +847,6 @@ void Computation::setupEmbeddingDatasetHandlers()
     const auto optionsforembeddingdataset = [this]() {
 
         datasetNamesCheck();
-
         
         };
     connect(&mv::data(), &AbstractDataManager::datasetAdded, this, optionsforembeddingdataset);
@@ -858,7 +858,18 @@ void Computation::setupEmbeddingDatasetHandlers()
 
     connect(&_datasetNamesStringCheckDebounceTimer, &QTimer::timeout, this, [this]() {
         datasetNamesCheck();
-        setStatusMessage("M", "Dataset names checked", "");
+        //setStatusMessage("M", "Dataset names checked", "");
+        });
+
+    connect(&_settingsAction.getCommonOptionsHolder().getDefaultSliceNamesAction(),
+        &StringAction::stringChanged,
+        this,
+        [this]() { _sliceNamesStringCheckDebounceTimer.start(500); });
+
+    connect(&_sliceNamesStringCheckDebounceTimer, &QTimer::timeout, this, [this]() {
+        datasetNamesCheck();
+        //setStatusMessage("M", "Slice names checked", "");
+
         });
 
 
@@ -908,65 +919,95 @@ void Computation::setupEmbeddingDatasetHandlers()
 void Computation::datasetNamesCheck()
 {
     if (!_projectOpened) return;
-    auto fullString= _settingsAction.getCommonOptionsHolder().getDefaultDatasetNamesAction().getString();//"Human; Marmoset; Macaque; smFISH; MERFISH; Embryo1; Embryo2; Embryo3"
-    if (fullString == "")
-    {
+    auto fullDatasetString = _settingsAction.getCommonOptionsHolder().getDefaultDatasetNamesAction().getString();
+    auto fullSliceString = _settingsAction.getCommonOptionsHolder().getDefaultSliceNamesAction().getString();
+
+    if (fullDatasetString.isEmpty()) {
         _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions({});
         _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions({});
         _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(true);
         _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(true);
+        _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setOptions({});
         return;
     }
+
     auto allDatasets = mv::data().getAllDatasets();
-    
-    //split fullString based on ";" and set into substringList
-    QStringList substringList;
-    for (const QString& str : fullString.split(';', Qt::SkipEmptyParts)) {
+
+    // Parse substrings
+    QStringList datasetSubstringList;
+    for (const QString& str : fullDatasetString.split(';', Qt::SkipEmptyParts)) {
         QString trimmed = str.trimmed();
         if (!trimmed.isEmpty())
-            substringList.append(trimmed);
+            datasetSubstringList.append(trimmed);
     }
-    //qDebug() << "substringList:" << substringList;
+    QStringList sliceSubstringList;
+    if (!fullSliceString.isEmpty()) {
+        for (const QString& str : fullSliceString.split(';', Qt::SkipEmptyParts)) {
+            QString trimmed = str.trimmed();
+            if (!trimmed.isEmpty())
+                sliceSubstringList.append(trimmed);
+        }
+    }
 
-    if (substringList.isEmpty()) {
+    if (datasetSubstringList.isEmpty()) {
         _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions({});
         _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions({});
         _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(true);
         _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(true);
+        _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setOptions({});
         return;
     }
-    QStringList finalSubStringList;
+
+    QSet<QString> finalDatasetSet;
+    QSet<QString> finalSliceSet;
 
     for (const auto& dataset : allDatasets) {
-        if (dataset->getDataType() == PointType) {
-            for (const auto& substring : substringList) {
-                if (dataset->getGuiName().contains(substring, Qt::CaseInsensitive)) {
-                    if (!finalSubStringList.contains(substring, Qt::CaseInsensitive)) {
-                        finalSubStringList.append(substring);
+        if (dataset->getDataType() != PointType)
+            continue;
+        const QString guiName = dataset->getGuiName();
+        for (const auto& substring : datasetSubstringList) {
+            if (guiName.contains(substring, Qt::CaseInsensitive)) {
+                finalDatasetSet.insert(substring);
+                if (!sliceSubstringList.isEmpty()) {
+                    for (const auto& slice : sliceSubstringList) {
+                        if (guiName.contains(slice, Qt::CaseInsensitive)) {
+                            finalSliceSet.insert(slice);
+                        }
                     }
                 }
             }
         }
     }
-    _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions(finalSubStringList);
-    _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions(finalSubStringList);
 
-    if (finalSubStringList.size() > 1)
-    {
+    QStringList finalDatasetSubStringList = finalDatasetSet.values();
+    QStringList finalSliceSubStringList = finalSliceSet.values();
+
+    _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions(finalDatasetSubStringList);
+    _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions(finalDatasetSubStringList);
+    _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setOptions(finalSliceSubStringList);
+
+    if (finalDatasetSubStringList.size() > 1) {
         _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setCurrentIndex(0);
         _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setCurrentIndex(1);
         _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(false);
         _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(false);
     }
-    else
-    {
+    else {
         _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setCurrentIndex(-1);
         _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setCurrentIndex(-1);
         _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(true);
         _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(true);
     }
 
+    if (finalSliceSubStringList.size() > 0) {
+        _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setCurrentIndex(0);
+    }
+    else {
+        _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setCurrentIndex(-1);
+    }
 }
+
+
 void Computation::setupEmbeddingDimensionHandlers()
 {
     // These were already consolidated correctly, but the message strings need to match original
