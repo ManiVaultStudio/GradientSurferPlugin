@@ -3600,7 +3600,16 @@ void Computation::colorLinePlots()
         }
         else
         {
-            const QString selectedGene = dataset1Options.getGeneSelectionAction().getCurrentDimensionName();
+            QString selectedGene = "";
+            if (_selectionDataset == 1)
+            {
+                selectedGene = dataset1Options.getGeneSelectionAction().getCurrentDimensionName();
+            }
+            else if (_selectionDataset == 2)
+            {
+                selectedGene = dataset1Options.getGeneSelectionAction().getCurrentDimensionName();
+            }
+
             if (!_lineChartPointDataset1.isValid())
             {
                 setStatusMessage("E", "No valid point dataset selected for coloring", "");
@@ -3626,17 +3635,26 @@ void Computation::colorLinePlots()
                         minValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction().getValue()); 
                         maxValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction().getValue()); 
                     }
+                    titleText = QString("%1 vs %2: selected (%3) in set %4")
+                        .arg(xPositionString, yPositionString)
+                        .arg(_filteredSelectionIndices.size())
+                        .arg(_selectionDataset);
                 }
-                titleText = QString("%1 vs %2 expression of selected cells (%3)")
-                    .arg(xPositionString, yPositionString)
-                    .arg(_filteredSelectionIndices.size());
+                else
+                {
+                    xPositionString = "Empty";
+                    colordimensionIndx = 0;
+                    yPositionString = "Empty";
+                    titleText = QString("Gene unavailable in set %1").arg(_selectionDataset);
+                }
+
             }
             else
             {
                 xPositionString= "Empty";
                 colordimensionIndx = 0;
                 yPositionString = "Empty";
-                titleText = QString("Gene unavailable for selection dataset");
+                titleText = QString("Gene unavailable in set %1").arg(_selectionDataset);
             }
 
         }
@@ -3644,23 +3662,30 @@ void Computation::colorLinePlots()
 
     dataset1Options.getLineplotLowerColoringRangeAction().setValue(minValue);
     dataset1Options.getLineplotUpperColoringRangeAction().setValue(maxValue);
+    /*if (colordimensionIndx<0)
+    {
+        clearLinePlots();
+    }
+    else*/
+    {
+        lineplotModeChange(
+            linePlotName,
+            _lineChartPointDataset1.getDatasetId(),
+            colorDatasetID,
+            colordatasetType,
+            colordimensionIndx,
+            xPositionString,
+            yPositionString,
+            titleText,
+            smoothingType,
+            smoothingWindow,
+            colorMapStringValue,
+            minValue,
+            maxValue
+        );
+        mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
+    }
 
-    lineplotModeChange(
-        linePlotName,
-        _lineChartPointDataset1.getDatasetId(),
-        colorDatasetID,
-        colordatasetType,
-        colordimensionIndx,
-        xPositionString,
-        yPositionString,
-        titleText,
-        smoothingType,
-        smoothingWindow,
-        colorMapStringValue,
-        minValue,
-        maxValue
-    );
-    mv::events().notifyDatasetDataChanged(_lineChartPointDataset1);
     _isColoringLineplots = false;
 }
 
