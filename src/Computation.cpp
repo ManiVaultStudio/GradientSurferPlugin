@@ -601,8 +601,12 @@ void Computation::setupGeneSelectionHandlers()
 void Computation::setupEmbeddingDatasetHandlers()
 {
     const auto updateEmbeddingDataset1 = [this]() {
-        if (_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid()) {
-            _embeddingDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+        auto ds1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+        auto ds2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+        bool sameDataset = ds1.isValid() && ds2.isValid() && ds1.getDatasetId() == ds2.getDatasetId();
+
+        if (ds1.isValid()) {
+            _embeddingDataset1 = mv::data().getDataset<Points>(ds1.getDatasetId());
 
             if (_embeddingDataset1.isValid()) {
                 _filteredSelectionIndices.clear();
@@ -618,13 +622,14 @@ void Computation::setupEmbeddingDatasetHandlers()
                 clearLinePlots();
                 _selectionBlocker = true;
                 _selectionDataset = -1;
-                _embeddingDataset1->setSelectionIndices({});
-                if (_embeddingDataset2.isValid())
-                {
-                    _embeddingDataset2->setSelectionIndices({});
+                if (!sameDataset) {
+                    _embeddingDataset1->setSelectionIndices({});
+                    if (_embeddingDataset2.isValid()) {
+                        _embeddingDataset2->setSelectionIndices({});
+                    }
                 }
-
                 _selectionBlocker = false;
+
                 auto parent = _embeddingDataset1->getParent();
                 if (parent.isValid()) {
                     _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setCurrentDataset(parent);
@@ -665,29 +670,52 @@ void Computation::setupEmbeddingDatasetHandlers()
                     _settingsAction.getDataset1OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(-1);
                 }
 
-                const auto mainSelectionChanged1 = [this]() {
-                    if (_blockSelectionTrigger || _selectionBlocker) return;
-                    _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1");
-                    _selectionBlocker = true;
-                    _embeddingDataset2->setSelectionIndices({});
-                    //qDebug() << "Main selection changed for embedding dataset 1";
-                    _selectionDataset = 1;
-                    _selectionBlocker = false;
-                    setStatusMessage("M", "Selected indices changed", "");
-                    setStatusMessage("R", "Computation in progress", "");
-                    disableOptions();
-                    setSelectionAndAutoCompute();
-                    enableOptions();
-                    };
+                // Only connect the signal once if both datasets are the same
                 if (_embeddingDataset1Connection != QMetaObject::Connection{}) {
                     disconnect(_embeddingDataset1Connection);
                 }
-                _embeddingDataset1Connection = connect(&_embeddingDataset1, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged1);
+                if (!sameDataset) {
+                    const auto mainSelectionChanged1 = [this]() {
+                        auto ds1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+                        auto ds2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+                        bool sameDataset = ds1.isValid() && ds2.isValid() && ds1.getDatasetId() == ds2.getDatasetId();
+
+                        if (_blockSelectionTrigger || _selectionBlocker) return;
+                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1");
+                        _selectionBlocker = true;
+                        if (!sameDataset && _embeddingDataset2.isValid()) {
+                            _embeddingDataset2->setSelectionIndices({});
+                        }
+                        _selectionDataset = 1;
+                        _selectionBlocker = false;
+                        setStatusMessage("M", "Selected indices changed", "");
+                        setStatusMessage("R", "Computation in progress", "");
+                        disableOptions();
+                        setSelectionAndAutoCompute();
+                        enableOptions();
+                        };
+                    _embeddingDataset1Connection = connect(&_embeddingDataset1, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged1);
+                }
+                else {
+                    // For the same dataset, only connect one handler and avoid cross-clearing
+                    const auto mainSelectionChangedShared = [this]() {
+                        if (_blockSelectionTrigger || _selectionBlocker) return;
+                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1/2");
+                        _selectionBlocker = true;
+                        _selectionDataset = 1; // or 2, as both are the same
+                        _selectionBlocker = false;
+                        setStatusMessage("M", "Selected indices changed", "");
+                        setStatusMessage("R", "Computation in progress", "");
+                        disableOptions();
+                        setSelectionAndAutoCompute();
+                        enableOptions();
+                        };
+                    _embeddingDataset1Connection = connect(&_embeddingDataset1, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChangedShared);
+                }
                 if (!_embeddingDataset1Connection) {
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
                 _selectionModeEnable = true;
-                //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
                 colorScatterPlots();
             }
         }
@@ -696,8 +724,12 @@ void Computation::setupEmbeddingDatasetHandlers()
         };
 
     const auto updateEmbeddingDataset2 = [this]() {
-        if (_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().isValid()) {
-            _embeddingDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset().getDatasetId());
+        auto ds1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+        auto ds2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+        bool sameDataset = ds1.isValid() && ds2.isValid() && ds1.getDatasetId() == ds2.getDatasetId();
+
+        if (ds2.isValid()) {
+            _embeddingDataset2 = mv::data().getDataset<Points>(ds2.getDatasetId());
 
             if (_embeddingDataset2.isValid()) {
                 _filteredSelectionIndices.clear();
@@ -713,12 +745,14 @@ void Computation::setupEmbeddingDatasetHandlers()
                 clearLinePlots();
                 _selectionBlocker = true;
                 _selectionDataset = -1;
-                if (_embeddingDataset1.isValid())
-                {
-                    _embeddingDataset1->setSelectionIndices({});
+                if (!sameDataset) {
+                    if (_embeddingDataset1.isValid()) {
+                        _embeddingDataset1->setSelectionIndices({});
+                    }
+                    _embeddingDataset2->setSelectionIndices({});
                 }
-                _embeddingDataset2->setSelectionIndices({});
                 _selectionBlocker = false;
+
                 auto parent = _embeddingDataset2->getParent();
                 if (parent.isValid()) {
                     _settingsAction.getDataset2OptionsHolder().getPointDatasetAction().setCurrentDataset(parent);
@@ -759,32 +793,52 @@ void Computation::setupEmbeddingDatasetHandlers()
                     _settingsAction.getDataset2OptionsHolder().getEmbeddingDimensionYAction().setCurrentDimensionIndex(-1);
                 }
 
-                //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
-                //coloringScatterPlots(); //TODO Check
-
-                const auto mainSelectionChanged2 = [this]() {
-                    if (_blockSelectionTrigger || _selectionBlocker) return;
-                    _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset2");
-                    _selectionBlocker = true;
-                    _embeddingDataset1->setSelectionIndices({});
-                    //qDebug() << "Main selection changed for embedding dataset 2";
-                    _selectionDataset = 2;
-                    _selectionBlocker = false;
-                    setStatusMessage("M", "Selected indices changed", "");
-                    setStatusMessage("R", "Computation in progress", "");
-                    disableOptions();
-                    setSelectionAndAutoCompute();
-                    enableOptions();
-                    };
+                // Only connect the signal once if both datasets are the same
                 if (_embeddingDataset2Connection != QMetaObject::Connection{}) {
                     disconnect(_embeddingDataset2Connection);
                 }
-                _embeddingDataset2Connection = connect(&_embeddingDataset2, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged2);
+                if (!sameDataset) {
+                    const auto mainSelectionChanged2 = [this]() {
+                        auto ds1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+                        auto ds2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getCurrentDataset();
+                        bool sameDataset = ds1.isValid() && ds2.isValid() && ds1.getDatasetId() == ds2.getDatasetId();
+
+                        if (_blockSelectionTrigger || _selectionBlocker) return;
+                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset2");
+                        _selectionBlocker = true;
+                        if (!sameDataset && _embeddingDataset1.isValid()) {
+                            _embeddingDataset1->setSelectionIndices({});
+                        }
+                        _selectionDataset = 2;
+                        _selectionBlocker = false;
+                        setStatusMessage("M", "Selected indices changed", "");
+                        setStatusMessage("R", "Computation in progress", "");
+                        disableOptions();
+                        setSelectionAndAutoCompute();
+                        enableOptions();
+                        };
+                    _embeddingDataset2Connection = connect(&_embeddingDataset2, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChanged2);
+                }
+                else {
+                    // For the same dataset, only connect one handler and avoid cross-clearing
+                    const auto mainSelectionChangedShared = [this]() {
+                        if (_blockSelectionTrigger || _selectionBlocker) return;
+                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1/2");
+                        _selectionBlocker = true;
+                        _selectionDataset = 2; // or 1, as both are the same
+                        _selectionBlocker = false;
+                        setStatusMessage("M", "Selected indices changed", "");
+                        setStatusMessage("R", "Computation in progress", "");
+                        disableOptions();
+                        setSelectionAndAutoCompute();
+                        enableOptions();
+                        };
+                    _embeddingDataset2Connection = connect(&_embeddingDataset2, &Dataset<Points>::dataSelectionChanged, this, mainSelectionChangedShared);
+                }
                 if (!_embeddingDataset2Connection) {
                     qWarning() << "Failed to connect to dataSelectionChanged signal of fullEmbeddingDataset";
                 }
                 _selectionModeEnable = true;
-                //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(true);
                 colorScatterPlots();
             }
         }
@@ -794,6 +848,9 @@ void Computation::setupEmbeddingDatasetHandlers()
 
     connect(&_settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset1);
     connect(&_settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, updateEmbeddingDataset2);
+
+
+
     connect(&_settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction(), &OptionAction::currentIndexChanged, this, [this]() {
 
         //if (!_projectOpened) return;
