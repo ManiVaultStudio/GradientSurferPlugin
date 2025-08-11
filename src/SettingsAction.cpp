@@ -51,7 +51,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     //_commonOptionsHolder.getComparatorDataset2SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset2Selector");
     _commonOptionsHolder.getDefaultDatasetNamesAction().setSerializationName("GradientSurfer:DefaultDatasetNames");
     //_commonOptionsHolder.getShowAdvancedOptions().setSerializationName("GradientSurfer:ShowAdvancedOptions");
-    _commonOptionsHolder.getSliceSelectionAction().setSerializationName("GradientSurfer:SliceSelection");
+    //_commonOptionsHolder.getSliceSelectionAction().setSerializationName("GradientSurfer:SliceSelection");
 
 
     _dataset1OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
@@ -541,7 +541,7 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset1OptionsHolder.getLineplotViewSelectionAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
-    _commonOptionsHolder.getSliceSelectionAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getSliceSelectionAction().fromParentVariantMap(variantMap);
     //_commonOptionsHolder.getClusterValueSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getDefaultDatasetNamesAction().fromParentVariantMap(variantMap);
     //_commonOptionsHolder.getClusterDatasetSelectionAction().fromParentVariantMap(variantMap);
@@ -576,7 +576,7 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
 
-    _commonOptionsHolder.getSliceSelectionAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getSliceSelectionAction().insertIntoVariantMap(variantMap);
     //_commonOptionsHolder.getClusterValueSelectionAction().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getDefaultDatasetNamesAction().insertIntoVariantMap(variantMap);
     //_commonOptionsHolder.getClusterDatasetSelectionAction().insertIntoVariantMap(variantMap);

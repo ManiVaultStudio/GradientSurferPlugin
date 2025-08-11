@@ -3156,6 +3156,11 @@ bool Computation::setupAndTriggerPCA()
             return false;
         }
     }
+    else
+    {
+        _pcaDataset1Complete = true;
+        _pcaDataset2Complete = true;
+    }
 
     return true;
 }
