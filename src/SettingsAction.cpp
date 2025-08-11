@@ -50,8 +50,9 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
    //_commonOptionsHolder.getComparatorDataset1SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset1Selector");
     //_commonOptionsHolder.getComparatorDataset2SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset2Selector");
     _commonOptionsHolder.getDefaultDatasetNamesAction().setSerializationName("GradientSurfer:DefaultDatasetNames");
+    _commonOptionsHolder.getDefaultSliceNamesAction().setSerializationName("GradientSurfer:DefaultSliceNames");
     //_commonOptionsHolder.getShowAdvancedOptions().setSerializationName("GradientSurfer:ShowAdvancedOptions");
-    _commonOptionsHolder.getSliceSelectionAction().setSerializationName("GradientSurfer:SliceSelection");
+    //_commonOptionsHolder.getSliceSelectionAction().setSerializationName("GradientSurfer:SliceSelection");
 
 
     _dataset1OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
@@ -104,7 +105,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     //_commonOptionsHolder.getSelectionModeAction().setChecked(true);
 
     _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
-    _commonOptionsHolder.getShowAdvancedOptions().setChecked(true);
+    _commonOptionsHolder.getShowAdvancedOptions().setChecked(false);
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setChecked(false);
 
@@ -212,6 +213,10 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getDefaultDatasetNamesAction().setText("Default Dataset Names");
     _commonOptionsHolder.getDefaultDatasetNamesAction().setToolTip("Default Dataset Names Action");
     _commonOptionsHolder.getDefaultDatasetNamesAction().setString("Human; Marmoset; Macaque; smFISH; MERFISH; Embryo1; Embryo2; Embryo3");
+    _commonOptionsHolder.getDefaultSliceNamesAction().setDefaultWidgetFlags(StringAction::LineEdit);
+    _commonOptionsHolder.getDefaultSliceNamesAction().setText("Default Slice Names");
+    _commonOptionsHolder.getDefaultSliceNamesAction().setToolTip("Default Slice Names Action");
+    _commonOptionsHolder.getDefaultSliceNamesAction().setString("P1; P2; P3; P4; P5; P6; P7; P8; P9; P10; P11; P12");
 
     _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
@@ -475,6 +480,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _comparatorDataset2SelectorAction(this, "Set 2"),
     _defaultDatasetNamesAction(this, "Default Names"),
     _sliceSelectionAction(this, "Slice"),
+    _defaultSliceNamesAction(this, "Default Slice Names"),
 
     // Computation settings actions
     _autoComputeAction(this, "Auto"),
@@ -495,6 +501,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
 
     //addAction(&_defaultDatasetNamesAction);
+    //addAction(&_defaultSliceNamesAction);
     addAction(&_showAdvancedOptions);
     addAction(&_comparatorDataset1SelectorAction);
     addAction(&_comparatorDataset2SelectorAction);
@@ -541,9 +548,10 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset1OptionsHolder.getLineplotViewSelectionAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
-    _commonOptionsHolder.getSliceSelectionAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getSliceSelectionAction().fromParentVariantMap(variantMap);
     //_commonOptionsHolder.getClusterValueSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getDefaultDatasetNamesAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getDefaultSliceNamesAction().fromParentVariantMap(variantMap);
     //_commonOptionsHolder.getClusterDatasetSelectionAction().fromParentVariantMap(variantMap);
     //_commonOptionsHolder.getComparatorDataset1SelectorAction().fromParentVariantMap(variantMap);
     //_commonOptionsHolder.getComparatorDataset2SelectorAction().fromParentVariantMap(variantMap);
@@ -576,9 +584,10 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
 
-    _commonOptionsHolder.getSliceSelectionAction().insertIntoVariantMap(variantMap);
+    //_commonOptionsHolder.getSliceSelectionAction().insertIntoVariantMap(variantMap);
     //_commonOptionsHolder.getClusterValueSelectionAction().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getDefaultDatasetNamesAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getDefaultSliceNamesAction().insertIntoVariantMap(variantMap);
     //_commonOptionsHolder.getClusterDatasetSelectionAction().insertIntoVariantMap(variantMap);
     //_commonOptionsHolder.getComparatorDataset1SelectorAction().insertIntoVariantMap(variantMap);
    // _commonOptionsHolder.getComparatorDataset2SelectorAction().insertIntoVariantMap(variantMap);

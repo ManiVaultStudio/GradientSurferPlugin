@@ -107,8 +107,6 @@ private:
     //void populateLineChartColorPointData();
     void colorScatterPlots();
     void colorLinePlots();
-    void coloringScatterPlotsOld();
-    void coloringLinePlotsOld();
     void clearLinePlots();
     void processAfterPCADatasetsPopulated();
     void clearTables();
@@ -159,6 +157,7 @@ protected:
     QTimer _scatterplot2ExpressionColoringRangeDebounceTimer;
     QTimer _colorUpdateDebounceTimer;
     QTimer _datasetNamesStringCheckDebounceTimer;
+    QTimer _sliceNamesStringCheckDebounceTimer;
     //QTimer _scatterplotColorUpdateDebounceTimer;
     //QTimer _lineplotColorUpdateDebounceTimer;
     bool      _pcaDataset1Complete = false;

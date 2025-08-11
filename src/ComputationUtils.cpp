@@ -14,9 +14,9 @@
 #include <cmath>
 #include <cassert>
 #include <stdexcept>
-#include <algorithm>
 #include <cmath>
 #include <QJsonDocument>
+#include <QRegularExpression>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <iostream>
@@ -302,6 +302,70 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
     }
 
     isSyncing = false;
+}
+
+
+
+// natural (alphanumeric) comparator: non-digit segments compare case-insensitively,
+// digit segments compare by numeric value, and non-digit < digit when types differ.
+bool naturalLess(const QString& a, const QString& b)
+{
+    int ia = 0, ib = 0;
+    const int na = a.size(), nb = b.size();
+
+    while (ia < na && ib < nb) {
+        const bool da = a[ia].isDigit();
+        const bool db = b[ib].isDigit();
+
+        // both numeric: compare numeric values (ignore leading zeros)
+        if (da && db) {
+            int ja = ia; while (ja < na && a[ja].isDigit()) ++ja;
+            int jb = ib; while (jb < nb && b[jb].isDigit()) ++jb;
+            QString sa = a.mid(ia, ja - ia);
+            QString sb = b.mid(ib, jb - ib);
+
+            // strip leading zeros for numeric comparison
+            int pa = 0; while (pa < sa.size() && sa[pa] == '0') ++pa;
+            int pb = 0; while (pb < sb.size() && sb[pb] == '0') ++pb;
+            QString sa_nz = sa.mid(pa);
+            QString sb_nz = sb.mid(pb);
+
+            // compare lengths (bigger length -> bigger number)
+            if (sa_nz.size() != sb_nz.size())
+                return sa_nz.size() < sb_nz.size();
+
+            if (sa_nz != sb_nz)
+                return sa_nz < sb_nz;
+
+            // numerically equal (e.g. "007" vs "7"), break tie by shorter original numeric part
+            if (sa.size() != sb.size())
+                return sa.size() < sb.size();
+
+            ia = ja; ib = jb;
+            continue;
+        }
+
+        // both non-numeric: compare case-insensitively as whole non-digit segments
+        if (!da && !db) {
+            int ja = ia; while (ja < na && !a[ja].isDigit()) ++ja;
+            int jb = ib; while (jb < nb && !b[jb].isDigit()) ++jb;
+            QString sa = a.mid(ia, ja - ia);
+            QString sb = b.mid(ib, jb - ib);
+
+            int cmp = QString::compare(sa, sb, Qt::CaseInsensitive);
+            if (cmp != 0) return cmp < 0;
+
+            ia = ja; ib = jb;
+            continue;
+        }
+
+        // one is digit and the other not: place non-digit first (so "P..." < "1...")
+        return !da; // if a is non-digit and b is digit -> true (a < b)
+    }
+
+    // shorter string wins if all previous segments equal
+    if (ia == na && ib == nb) return false; // equal
+    return ia == na;
 }
 
 void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString colorDatasetID, QString colordatasetType, int colorDatasetDimensionIndx,  QString xPositionString, QString yPositionString, QString titleText, QString smoothingType, int smoothingWindow, QString colorMapStringValue, float minValue, float maxValue)

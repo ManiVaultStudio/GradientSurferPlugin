@@ -315,6 +315,9 @@ public:
         const OptionAction& getSliceSelectionAction() const { return _sliceSelectionAction; }
         OptionAction& getSliceSelectionAction() { return _sliceSelectionAction; }
 
+        const StringAction& getDefaultSliceNamesAction() const { return _defaultSliceNamesAction; }
+        StringAction& getDefaultSliceNamesAction() { return _defaultSliceNamesAction; }
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -351,6 +354,7 @@ public:
         OptionAction       _comparatorDataset2SelectorAction;
         StringAction       _defaultDatasetNamesAction;
         OptionAction       _sliceSelectionAction;
+        StringAction        _defaultSliceNamesAction;
     };
 
 
