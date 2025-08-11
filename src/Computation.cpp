@@ -332,7 +332,7 @@ void Computation::setupTableHandlers()
         setStatusMessage("C", "Table updated", "");
 
         // Auto-compute if enabled
-        if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
+        if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked() && _projectOpened) {
             setStatusMessage("R", "Computation in progress", "");
             disableOptions();
             ManualCompute();
