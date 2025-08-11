@@ -104,7 +104,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     //_commonOptionsHolder.getSelectionModeAction().setChecked(true);
 
     _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
-    _commonOptionsHolder.getShowAdvancedOptions().setChecked(true);
+    _commonOptionsHolder.getShowAdvancedOptions().setChecked(false);
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setChecked(false);
 

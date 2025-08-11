@@ -31,18 +31,28 @@ void GradientSurferPlugin::init()
     _settingsAction.getDataset2OptionsHolder().setExpanded(false);
     _settingsAction.getCommonOptionsHolder().setExpanded(true);
 
-    groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
-    groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
     groupForAction->addGroupAction(&_settingsAction.getCommonOptionsHolder());
 
     addDockingAction(groupForAction, nullptr, gui::DockAreaFlag::Left, true, gui::AutoHideLocation::Left);
 
-    connect(&_settingsAction.getCommonOptionsHolder().getShowAdvancedOptions(), &ToggleAction::toggled, this, [this]() {
+    connect(&_settingsAction.getCommonOptionsHolder().getShowAdvancedOptions(), &ToggleAction::toggled, this, [this, groupForAction]() {
         bool visible = _settingsAction.getCommonOptionsHolder().getShowAdvancedOptions().isChecked();
-        _settingsAction.getDataset1OptionsHolder().setVisible(visible);
-        _settingsAction.getDataset2OptionsHolder().setVisible(visible);
-        QApplication::processEvents();
+
+        if (visible) {
+            groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
+            groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
+
+        }
+        else {
+                        groupForAction->removeGroupAction(&_settingsAction.getDataset1OptionsHolder());
+                        groupForAction->removeGroupAction(&_settingsAction.getDataset2OptionsHolder());
+        }
+        //_settingsAction.getDataset1OptionsHolder().setVisible(visible);
+        //_settingsAction.getDataset2OptionsHolder().setVisible(visible);
+        //QApplication::processEvents();
         });
+    //_settingsAction.getDataset1OptionsHolder().setVisible(false);
+    //_settingsAction.getDataset2OptionsHolder().setVisible(false);
     // Set a dummy model if none is set, so the table expands
     auto ensureTableModel = [](QTableView* table) {
         if (table && !table->model()) {
