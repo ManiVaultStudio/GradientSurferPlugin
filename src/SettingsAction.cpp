@@ -118,7 +118,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getBottomNRowsAction().setValue(0);
     _commonOptionsHolder.getTopNRowsAction().setMinimum(0);
     _commonOptionsHolder.getTopNRowsAction().setMaximum(100);
-    _commonOptionsHolder.getTopNRowsAction().setValue(20);
+    _commonOptionsHolder.getTopNRowsAction().setValue(5);
 
     _commonOptionsHolder.getLowRangeColoringPercentileAction().setNumberOfDecimals(2);
     _commonOptionsHolder.getLowRangeColoringPercentileAction().setMinimum(0.00);
