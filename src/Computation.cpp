@@ -64,6 +64,13 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
         if (success) {
             //processAfterPCAComplete();
             _pcaDataset0Complete = true;
+            const QString computationType = _settingsAction.getCommonOptionsHolder().getComputationTypeAction().getCurrentText();
+            const bool isPartialPCA = (computationType == "Partial PCA");
+            if (isPartialPCA)
+            {
+                _pcaDataset1Complete = true;
+                _pcaDataset2Complete = true;
+            }
             allPCAsComplete();
         }
         else {
@@ -3155,11 +3162,6 @@ bool Computation::setupAndTriggerPCA()
             setStatusMessage("E", "PCA start action not found", "");
             return false;
         }
-    }
-    else
-    {
-        _pcaDataset1Complete = true;
-        _pcaDataset2Complete = true;
     }
 
     return true;
