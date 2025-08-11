@@ -107,8 +107,6 @@ private:
     //void populateLineChartColorPointData();
     void colorScatterPlots();
     void colorLinePlots();
-    void coloringScatterPlotsOld();
-    void coloringLinePlotsOld();
     void clearLinePlots();
     void processAfterPCADatasetsPopulated();
     void clearTables();
