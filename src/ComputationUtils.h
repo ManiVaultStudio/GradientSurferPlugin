@@ -107,6 +107,7 @@ bool computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std:
 void clearTable(QTableView* tableView);
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray);
 void normalizeVector(std::vector<float>& data, NormalizationType type);
+bool naturalLess(const QString& a, const QString& b);
 NormalizationType normalizationTypeFromString(const QString& str);
 QString getContrastingTextColor(const QString& bgColor);
 QString statusToIconName(const QString& status);

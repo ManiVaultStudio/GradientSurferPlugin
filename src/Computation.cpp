@@ -916,22 +916,22 @@ void Computation::setupEmbeddingDatasetHandlers()
 
 }
 
+
 void Computation::datasetNamesCheck()
 {
     if (!_projectOpened) return;
     auto& holder = _settingsAction.getCommonOptionsHolder();
 
-    // Helper to parse a semicolon-separated string into trimmed items
+    // parse semicolon-separated list, trimmed
     auto parseList = [](const QString& input) {
-        QStringList result;
-        for (const auto& str : input.split(';', Qt::SkipEmptyParts)) {
-            auto trimmed = str.trimmed();
-            if (!trimmed.isEmpty()) result.append(trimmed);
+        QStringList out;
+        for (const auto& part : input.split(';', Qt::SkipEmptyParts)) {
+            QString t = part.trimmed();
+            if (!t.isEmpty()) out.append(t);
         }
-        return result;
+        return out;
         };
 
-    // Helper to clear all UI selectors
     auto clearUI = [&]() {
         holder.getComparatorDataset1SelectorAction().setOptions({});
         holder.getComparatorDataset2SelectorAction().setOptions({});
@@ -940,38 +940,37 @@ void Computation::datasetNamesCheck()
         holder.getSliceSelectionAction().setOptions({});
         };
 
-    auto datasetSubstrings = parseList(holder.getDefaultDatasetNamesAction().getString());
-    auto sliceSubstrings = parseList(holder.getDefaultSliceNamesAction().getString());
+    QStringList datasetSubstrings = parseList(holder.getDefaultDatasetNamesAction().getString());
+    QStringList sliceSubstrings = parseList(holder.getDefaultSliceNamesAction().getString());
 
     if (datasetSubstrings.isEmpty()) { clearUI(); return; }
 
     auto allDatasets = mv::data().getAllDatasets();
 
-    // Function to check if a dataset name matches a substring as a whole token
+    // match substrings as whole tokens (prevent "1" matching "10" or "11")
     auto matchesToken = [](const QString& name, const QString& token) {
-        QRegularExpression re(
-            QString("\\b%1\\b").arg(QRegularExpression::escape(token)),
-            QRegularExpression::CaseInsensitiveOption
-        );
+        QRegularExpression re(QString("\\b%1\\b").arg(QRegularExpression::escape(token)),
+            QRegularExpression::CaseInsensitiveOption);
         return re.match(name).hasMatch();
         };
 
-    // Filter dataset substrings that appear in at least one dataset
+    // keep dataset substrings present in at least one dataset
     QSet<QString> presentDatasets;
-    for (const auto& dataset : allDatasets) {
-        if (dataset->getDataType() != PointType) continue;
-        const QString& name = dataset->getGuiName();
+    for (const auto& ds : allDatasets) {
+        if (ds->getDataType() != PointType) continue;
+        const QString g = ds->getGuiName();
         for (const auto& sub : datasetSubstrings)
-            if (matchesToken(name, sub)) presentDatasets.insert(sub);
+            if (matchesToken(g, sub)) presentDatasets.insert(sub);
     }
 
     QStringList filteredDatasets = presentDatasets.values();
     if (filteredDatasets.isEmpty()) { clearUI(); return; }
 
-    // Build final slice list
+    // For each slice candidate, keep it only if for every filtered dataset substring
+    // there exists a dataset that contains both the dataset-substring and the slice-substring
     QStringList finalSlices;
     if (!sliceSubstrings.isEmpty()) {
-        for (const auto& slice : sliceSubstrings) {
+        for (const QString& slice : sliceSubstrings) {
             bool allPresent = std::all_of(filteredDatasets.begin(), filteredDatasets.end(),
                 [&](const QString& dsSub) {
                     return std::any_of(allDatasets.begin(), allDatasets.end(),
@@ -985,14 +984,16 @@ void Computation::datasetNamesCheck()
         }
     }
 
-    // Sort and set options
-    filteredDatasets.sort();
-    finalSlices.sort();
+    // natural sort using comparator above
+    std::sort(filteredDatasets.begin(), filteredDatasets.end(), naturalLess);
+    std::sort(finalSlices.begin(), finalSlices.end(), naturalLess);
+
+    // apply to UI
     holder.getComparatorDataset1SelectorAction().setOptions(filteredDatasets);
     holder.getComparatorDataset2SelectorAction().setOptions(filteredDatasets);
     holder.getSliceSelectionAction().setOptions(finalSlices);
 
-    // Configure dataset selectors
+    // selectors: allow dataset1 when at least one exists, dataset2 only if >1
     holder.getComparatorDataset1SelectorAction().setCurrentIndex(0);
     holder.getComparatorDataset1SelectorAction().setDisabled(false);
     if (filteredDatasets.size() > 1) {
@@ -1004,9 +1005,9 @@ void Computation::datasetNamesCheck()
         holder.getComparatorDataset2SelectorAction().setDisabled(true);
     }
 
-    // Configure slice selector
     holder.getSliceSelectionAction().setCurrentIndex(finalSlices.isEmpty() ? -1 : 0);
 }
+
 
 
 
