@@ -982,6 +982,10 @@ void Computation::datasetNamesCheck()
     QStringList finalDatasetSubStringList = finalDatasetSet.values();
     QStringList finalSliceSubStringList = finalSliceSet.values();
 
+    // Sort the final lists
+    finalDatasetSubStringList.sort();
+    finalSliceSubStringList.sort();
+
     _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions(finalDatasetSubStringList);
     _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions(finalDatasetSubStringList);
     _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setOptions(finalSliceSubStringList);
