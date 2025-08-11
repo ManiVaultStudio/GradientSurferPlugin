@@ -919,97 +919,95 @@ void Computation::setupEmbeddingDatasetHandlers()
 void Computation::datasetNamesCheck()
 {
     if (!_projectOpened) return;
-    auto fullDatasetString = _settingsAction.getCommonOptionsHolder().getDefaultDatasetNamesAction().getString();
-    auto fullSliceString = _settingsAction.getCommonOptionsHolder().getDefaultSliceNamesAction().getString();
+    auto& holder = _settingsAction.getCommonOptionsHolder();
 
-    if (fullDatasetString.isEmpty()) {
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions({});
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions({});
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(true);
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(true);
-        _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setOptions({});
-        return;
-    }
+    // Helper to parse a semicolon-separated string into trimmed items
+    auto parseList = [](const QString& input) {
+        QStringList result;
+        for (const auto& str : input.split(';', Qt::SkipEmptyParts)) {
+            auto trimmed = str.trimmed();
+            if (!trimmed.isEmpty()) result.append(trimmed);
+        }
+        return result;
+        };
+
+    // Helper to clear all UI selectors
+    auto clearUI = [&]() {
+        holder.getComparatorDataset1SelectorAction().setOptions({});
+        holder.getComparatorDataset2SelectorAction().setOptions({});
+        holder.getComparatorDataset1SelectorAction().setDisabled(true);
+        holder.getComparatorDataset2SelectorAction().setDisabled(true);
+        holder.getSliceSelectionAction().setOptions({});
+        };
+
+    auto datasetSubstrings = parseList(holder.getDefaultDatasetNamesAction().getString());
+    auto sliceSubstrings = parseList(holder.getDefaultSliceNamesAction().getString());
+
+    if (datasetSubstrings.isEmpty()) { clearUI(); return; }
 
     auto allDatasets = mv::data().getAllDatasets();
 
-    // Parse substrings
-    QStringList datasetSubstringList;
-    for (const QString& str : fullDatasetString.split(';', Qt::SkipEmptyParts)) {
-        QString trimmed = str.trimmed();
-        if (!trimmed.isEmpty())
-            datasetSubstringList.append(trimmed);
-    }
-    QStringList sliceSubstringList;
-    if (!fullSliceString.isEmpty()) {
-        for (const QString& str : fullSliceString.split(';', Qt::SkipEmptyParts)) {
-            QString trimmed = str.trimmed();
-            if (!trimmed.isEmpty())
-                sliceSubstringList.append(trimmed);
-        }
-    }
+    // Function to check if a dataset name matches a substring as a whole token
+    auto matchesToken = [](const QString& name, const QString& token) {
+        QRegularExpression re(
+            QString("\\b%1\\b").arg(QRegularExpression::escape(token)),
+            QRegularExpression::CaseInsensitiveOption
+        );
+        return re.match(name).hasMatch();
+        };
 
-    if (datasetSubstringList.isEmpty()) {
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions({});
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions({});
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(true);
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(true);
-        _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setOptions({});
-        return;
-    }
-
-    QSet<QString> finalDatasetSet;
-    QSet<QString> finalSliceSet;
-
+    // Filter dataset substrings that appear in at least one dataset
+    QSet<QString> presentDatasets;
     for (const auto& dataset : allDatasets) {
-        if (dataset->getDataType() != PointType)
-            continue;
-        const QString guiName = dataset->getGuiName();
-        for (const auto& substring : datasetSubstringList) {
-            if (guiName.contains(substring, Qt::CaseInsensitive)) {
-                finalDatasetSet.insert(substring);
-                if (!sliceSubstringList.isEmpty()) {
-                    for (const auto& slice : sliceSubstringList) {
-                        if (guiName.contains(slice, Qt::CaseInsensitive)) {
-                            finalSliceSet.insert(slice);
-                        }
-                    }
-                }
-            }
+        if (dataset->getDataType() != PointType) continue;
+        const QString& name = dataset->getGuiName();
+        for (const auto& sub : datasetSubstrings)
+            if (matchesToken(name, sub)) presentDatasets.insert(sub);
+    }
+
+    QStringList filteredDatasets = presentDatasets.values();
+    if (filteredDatasets.isEmpty()) { clearUI(); return; }
+
+    // Build final slice list
+    QStringList finalSlices;
+    if (!sliceSubstrings.isEmpty()) {
+        for (const auto& slice : sliceSubstrings) {
+            bool allPresent = std::all_of(filteredDatasets.begin(), filteredDatasets.end(),
+                [&](const QString& dsSub) {
+                    return std::any_of(allDatasets.begin(), allDatasets.end(),
+                        [&](const auto& dataset) {
+                            return dataset->getDataType() == PointType &&
+                                matchesToken(dataset->getGuiName(), dsSub) &&
+                                matchesToken(dataset->getGuiName(), slice);
+                        });
+                });
+            if (allPresent) finalSlices.append(slice);
         }
     }
 
-    QStringList finalDatasetSubStringList = finalDatasetSet.values();
-    QStringList finalSliceSubStringList = finalSliceSet.values();
+    // Sort and set options
+    filteredDatasets.sort();
+    finalSlices.sort();
+    holder.getComparatorDataset1SelectorAction().setOptions(filteredDatasets);
+    holder.getComparatorDataset2SelectorAction().setOptions(filteredDatasets);
+    holder.getSliceSelectionAction().setOptions(finalSlices);
 
-    // Sort the final lists
-    finalDatasetSubStringList.sort();
-    finalSliceSubStringList.sort();
-
-    _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setOptions(finalDatasetSubStringList);
-    _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setOptions(finalDatasetSubStringList);
-    _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setOptions(finalSliceSubStringList);
-
-    if (finalDatasetSubStringList.size() > 1) {
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setCurrentIndex(0);
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setCurrentIndex(1);
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(false);
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(false);
+    // Configure dataset selectors
+    holder.getComparatorDataset1SelectorAction().setCurrentIndex(0);
+    holder.getComparatorDataset1SelectorAction().setDisabled(false);
+    if (filteredDatasets.size() > 1) {
+        holder.getComparatorDataset2SelectorAction().setCurrentIndex(1);
+        holder.getComparatorDataset2SelectorAction().setDisabled(false);
     }
     else {
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setCurrentIndex(-1);
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setCurrentIndex(-1);
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().setDisabled(true);
-        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().setDisabled(true);
+        holder.getComparatorDataset2SelectorAction().setCurrentIndex(-1);
+        holder.getComparatorDataset2SelectorAction().setDisabled(true);
     }
 
-    if (finalSliceSubStringList.size() > 0) {
-        _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setCurrentIndex(0);
-    }
-    else {
-        _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().setCurrentIndex(-1);
-    }
+    // Configure slice selector
+    holder.getSliceSelectionAction().setCurrentIndex(finalSlices.isEmpty() ? -1 : 0);
 }
+
 
 
 void Computation::setupEmbeddingDimensionHandlers()
