@@ -309,6 +309,11 @@ public:
         const StringAction& getDefaultDatasetNamesAction() const { return _defaultDatasetNamesAction; }
         StringAction& getDefaultDatasetNamesAction() { return _defaultDatasetNamesAction; }
 
+        const ToggleAction& getShowAdvancedOptions() const { return _showAdvancedOptions; }
+        ToggleAction& getShowAdvancedOptions() { return _showAdvancedOptions; }
+
+        const OptionAction& getSliceSelectionAction() const { return _sliceSelectionAction; }
+        OptionAction& getSliceSelectionAction() { return _sliceSelectionAction; }
 
     protected:
         SettingsAction& _settingsOptions;
@@ -334,7 +339,7 @@ public:
         IntegralAction              _bottomNRowsAction;
         IntegralAction              _topNRowsAction;
         OptionAction               _computationTypeAction;
-
+        ToggleAction               _showAdvancedOptions;
         StatusBarAction* _statusBarActionWidget;
         StringAction                        _statusMessageAction;
         //ToggleAction         _colorAllCellsWithExpressionAction;
@@ -345,6 +350,7 @@ public:
         OptionAction       _comparatorDataset1SelectorAction;
         OptionAction       _comparatorDataset2SelectorAction;
         StringAction       _defaultDatasetNamesAction;
+        OptionAction       _sliceSelectionAction;
     };
 
 

@@ -93,6 +93,7 @@ public:
 protected:
     SettingsAction        _settingsAction;
     Computation        _computation;
+
 };
 
 /**

@@ -349,6 +349,8 @@ void Computation::initializeState()
             datasetNamesCheck();
             _taskDisable = false;
            //selectionModeAltToggleLogic(_settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText());
+            //_settingsAction.getCommonOptionsHolder().getShowAdvancedOptions().setChecked(false);
+            //QApplication::processEvents();
             setStatusMessage("C", "Project opened", "");
             });
     }
@@ -448,6 +450,12 @@ void Computation::setupDatasetFilters()
             return isValidPointChildDataset(dataset);
         }
     );
+    connect(&_settingsAction.getCommonOptionsHolder().getShowAdvancedOptions(), &ToggleAction::toggled, this, [this]() {
+        bool visible = _settingsAction.getCommonOptionsHolder().getShowAdvancedOptions().isChecked();
+        _settingsAction.getDataset1OptionsHolder().setVisible(visible);
+        _settingsAction.getDataset2OptionsHolder().setVisible(visible);
+        QApplication::processEvents();
+        });
 }
 
 void Computation::setupClusterUpdateHandlers()
@@ -781,23 +789,24 @@ void Computation::setupEmbeddingDatasetHandlers()
     connect(&_settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction(), &OptionAction::currentIndexChanged, this, [this]() {
 
         //if (!_projectOpened) return;
-        if (_settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText() != "")
+        auto slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText();
+        if (slice != "")
         {
-            auto availableDatasets = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (availableDatasets.size()>0) {
+            auto availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+            if (availableDatasets1.size() > 0) {
 
-                for (const Dataset<Points>& dataset : availableDatasets) {
-                    QString substring = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText();
-                    if (dataset->getGuiName().contains(substring, Qt::CaseInsensitive))
+                for (const Dataset<Points>& dataset : availableDatasets1) {
+                    QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText();
+                    if (dataset->getGuiName().contains(substring1, Qt::CaseInsensitive) && dataset->getGuiName().contains(slice, Qt::CaseInsensitive))
                     {
                         _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                         break;
                     }
+
                 }
 
 
             }
-
 
         }
 
@@ -806,18 +815,23 @@ void Computation::setupEmbeddingDatasetHandlers()
     connect(&_settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction(), &OptionAction::currentIndexChanged, this, [this]() {
 
         //if (!_projectOpened) return;
-        if (_settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText() != "")
+        auto slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText();
+        if (slice != "")
         {
-            auto availableDatasets = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (availableDatasets.size() > 0) {
-                for (const Dataset<Points>& dataset : availableDatasets) {
-                    QString substring = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText();
-                    if (dataset->getGuiName().contains(substring, Qt::CaseInsensitive))
+            auto availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+            if (availableDatasets2.size() > 0) {
+
+                for (const Dataset<Points>& dataset : availableDatasets2) {
+                    QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText();
+                    if (dataset->getGuiName().contains(substring2, Qt::CaseInsensitive) && dataset->getGuiName().contains(slice, Qt::CaseInsensitive))
                     {
                         _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                         break;
                     }
+
                 }
+
+
             }
         }
 
@@ -838,6 +852,48 @@ void Computation::setupEmbeddingDatasetHandlers()
     connect(&_datasetNamesStringCheckDebounceTimer, &QTimer::timeout, this, [this]() {
         datasetNamesCheck();
         setStatusMessage("M", "Dataset names checked", "");
+        });
+
+
+    connect(&_settingsAction.getCommonOptionsHolder().getSliceSelectionAction(), &OptionAction::currentIndexChanged, this, [this]() {
+
+        //if (!_projectOpened) return;
+        auto slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText();
+        if (slice != "")
+        {
+            auto availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+            if (availableDatasets1.size() > 0) {
+
+                for (const Dataset<Points>& dataset : availableDatasets1) {
+                    QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText();
+                    if (dataset->getGuiName().contains(substring1, Qt::CaseInsensitive) && dataset->getGuiName().contains(slice, Qt::CaseInsensitive))
+                    {
+                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                        break;
+                    }
+
+                }
+
+
+            }
+
+            auto availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+            if (availableDatasets2.size() > 0) {
+
+                for (const Dataset<Points>& dataset : availableDatasets2) {
+                    QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText();
+                    if (dataset->getGuiName().contains(substring2, Qt::CaseInsensitive) && dataset->getGuiName().contains(slice, Qt::CaseInsensitive))
+                    {
+                        _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                        break;
+                    }
+
+                }
+
+
+            }
+        }
+
         });
 
 }
