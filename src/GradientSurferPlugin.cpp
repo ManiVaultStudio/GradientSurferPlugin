@@ -28,13 +28,21 @@ void GradientSurferPlugin::init()
     // Settings panel on the left
     GroupsAction* groupForAction = new GroupsAction(this, "Settings");
     _settingsAction.getDataset1OptionsHolder().setExpanded(false);
-    groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
     _settingsAction.getDataset2OptionsHolder().setExpanded(false);
-    groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
     _settingsAction.getCommonOptionsHolder().setExpanded(true);
+
+    groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
+    groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
     groupForAction->addGroupAction(&_settingsAction.getCommonOptionsHolder());
+
     addDockingAction(groupForAction, nullptr, gui::DockAreaFlag::Left, true, gui::AutoHideLocation::Left);
 
+    connect(&_settingsAction.getCommonOptionsHolder().getShowAdvancedOptions(), &ToggleAction::toggled, this, [this]() {
+        bool visible = _settingsAction.getCommonOptionsHolder().getShowAdvancedOptions().isChecked();
+        _settingsAction.getDataset1OptionsHolder().setVisible(visible);
+        _settingsAction.getDataset2OptionsHolder().setVisible(visible);
+        QApplication::processEvents();
+        });
     // Set a dummy model if none is set, so the table expands
     auto ensureTableModel = [](QTableView* table) {
         if (table && !table->model()) {
@@ -156,6 +164,7 @@ void GradientSurferPlugin::init()
     //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetRemoved));
     //_eventListener.addSupportedEventType(static_cast<std::uint32_t>(EventType::DatasetDataSelectionChanged));
     //_eventListener.registerDataEventByType(PointType, std::bind(&GradientSurferPlugin::onDataEvent, this, std::placeholders::_1));
+    //QApplication::processEvents();
 }
 
 /*void GradientSurferPlugin::onDataEvent(mv::DatasetEvent* dataEvent)

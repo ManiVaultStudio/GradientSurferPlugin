@@ -47,9 +47,11 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset2OptionsHolder.getEmbeddingDimensionYAction().setSerializationName("GradientSurfer:EmbeddingDimension2Y");
     //_commonOptionsHolder.getClusterValueSelectionAction().setSerializationName("GradientSurfer:ClusterSelection");
     //_commonOptionsHolder.getClusterDatasetSelectionAction().setSerializationName("GradientSurfer:ClusterDatasetSelection");
-    //_commonOptionsHolder.getComparatorDataset1SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset1Selector");
+   //_commonOptionsHolder.getComparatorDataset1SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset1Selector");
     //_commonOptionsHolder.getComparatorDataset2SelectorAction().setSerializationName("GradientSurfer:ComparatorDataset2Selector");
     _commonOptionsHolder.getDefaultDatasetNamesAction().setSerializationName("GradientSurfer:DefaultDatasetNames");
+    //_commonOptionsHolder.getShowAdvancedOptions().setSerializationName("GradientSurfer:ShowAdvancedOptions");
+    _commonOptionsHolder.getSliceSelectionAction().setSerializationName("GradientSurfer:SliceSelection");
 
 
     _dataset1OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset");
@@ -65,6 +67,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
     _commonOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
+    _commonOptionsHolder.getShowAdvancedOptions().setToolTip("Show Advanced Options Action");
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setToolTip("Color All Cells With Expression Action");
     _commonOptionsHolder.getTableSearchBoxAction().setToolTip("Table Search Box Action");
@@ -101,6 +104,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     //_commonOptionsHolder.getSelectionModeAction().setChecked(true);
 
     _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
+    _commonOptionsHolder.getShowAdvancedOptions().setChecked(true);
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setChecked(false);
 
@@ -197,6 +201,9 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getClusterDatasetSelectionAction().setToolTip("Cluster Dataset Selection Action");
     _commonOptionsHolder.getComparatorDataset1SelectorAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getComparatorDataset1SelectorAction().setToolTip("Comparator Dataset 1 Selector Action");
+    _commonOptionsHolder.getSliceSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getSliceSelectionAction().setToolTip("Slice Selection Action");
+    _commonOptionsHolder.getSliceSelectionAction().initialize({ "P1", "P2", "P3", "P4","P5", "P6", "P7", "P8","P9", "P10", "P11", "P12" }, "P6");
     //_commonOptionsHolder.getComparatorDataset1SelectorAction().initialize({ "Human", "Marmoset", "Macaque" } , "Human");
     //_commonOptionsHolder.getComparatorDataset2SelectorAction().initialize({ "Human", "Marmoset", "Macaque" }, "Marmoset");
     _commonOptionsHolder.getComparatorDataset2SelectorAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -218,7 +225,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
 
 
     _commonOptionsHolder.getFocusSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
-
+    _commonOptionsHolder.getShowAdvancedOptions().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _commonOptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
@@ -463,9 +470,11 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _highRangeColoringPercentileAction(this, "High Percentile"),
 
     // Dataset comparison actions
+    _showAdvancedOptions(this, "Advanced Options"),
     _comparatorDataset1SelectorAction(this, "Set 1"),
     _comparatorDataset2SelectorAction(this, "Set 2"),
     _defaultDatasetNamesAction(this, "Default Names"),
+    _sliceSelectionAction(this, "Slice"),
 
     // Computation settings actions
     _autoComputeAction(this, "Auto"),
@@ -486,8 +495,10 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
 
     //addAction(&_defaultDatasetNamesAction);
+    addAction(&_showAdvancedOptions);
     addAction(&_comparatorDataset1SelectorAction);
     addAction(&_comparatorDataset2SelectorAction);
+    addAction(&_sliceSelectionAction);
 
     addAction(&_clusterDatasetSelectionAction);
     addAction(&_clusterValueSelectionAction);
@@ -530,11 +541,11 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset1OptionsHolder.getLineplotViewSelectionAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
-
+    _commonOptionsHolder.getSliceSelectionAction().fromParentVariantMap(variantMap);
     //_commonOptionsHolder.getClusterValueSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getDefaultDatasetNamesAction().fromParentVariantMap(variantMap);
     //_commonOptionsHolder.getClusterDatasetSelectionAction().fromParentVariantMap(variantMap);
-   // _commonOptionsHolder.getComparatorDataset1SelectorAction().fromParentVariantMap(variantMap);
+    //_commonOptionsHolder.getComparatorDataset1SelectorAction().fromParentVariantMap(variantMap);
     //_commonOptionsHolder.getComparatorDataset2SelectorAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
@@ -542,14 +553,14 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _commonOptionsHolder.getBottomNRowsAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getLowRangeColoringPercentileAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getHighRangeColoringPercentileAction().fromParentVariantMap(variantMap);
-
+   
     _dataset2OptionsHolder.getClusterDatasetAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getPointDatasetAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDatasetAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getScatterplotViewSelectionAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
-
+    //_commonOptionsHolder.getShowAdvancedOptions().fromParentVariantMap(variantMap);
 }
 
 QVariantMap SettingsAction::toVariantMap() const
@@ -565,12 +576,12 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
 
-
+    _commonOptionsHolder.getSliceSelectionAction().insertIntoVariantMap(variantMap);
     //_commonOptionsHolder.getClusterValueSelectionAction().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getDefaultDatasetNamesAction().insertIntoVariantMap(variantMap);
     //_commonOptionsHolder.getClusterDatasetSelectionAction().insertIntoVariantMap(variantMap);
     //_commonOptionsHolder.getComparatorDataset1SelectorAction().insertIntoVariantMap(variantMap);
-    //_commonOptionsHolder.getComparatorDataset2SelectorAction().insertIntoVariantMap(variantMap);
+   // _commonOptionsHolder.getComparatorDataset2SelectorAction().insertIntoVariantMap(variantMap);
     _dataset1OptionsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelection2Action().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().insertIntoVariantMap(variantMap);
@@ -583,7 +594,7 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset2OptionsHolder.getScatterplotViewSelectionAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimensionXAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
-
+    //_commonOptionsHolder.getShowAdvancedOptions().insertIntoVariantMap(variantMap);
 
 
     return variantMap;
