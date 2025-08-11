@@ -3889,7 +3889,7 @@ void Computation::colorScatterPlots()
     }
     if (_selectedClusterIndices1.empty() || _selectedClusterIndices2.empty()) {
         setStatusMessage("E", "No selected cluster indices for dataset 1 or 2", "");
-        qCritical() << "Here3";
+        qWarning() << " No selected cluster indices for dataset 1 or 2";
         _isColoringScatterplots = false;
         return;
     }
