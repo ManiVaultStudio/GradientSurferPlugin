@@ -57,6 +57,7 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
     setupRangeColoringHandlers();   
     setupTableHandlers();           
     setupScatterplotHandlers();
+    setupCustomizationOptions();
     datasetNamesCheck();
     _pca1.setCompletionCallback([this](bool success, const std::string& message) {
         _isManualComputeComputing = false;
@@ -123,7 +124,20 @@ void Computation::setupPlotSelectionOptions()
 
     connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, plotSelectionOptions);
 }
+void Computation::setupCustomizationOptions()
+{
+    connect(&_settingsAction.getCustomizationOptionsHolder().getSmoothingWindowPercentageAction(),
+        &IntegralAction::valueChanged,
+        this,
+        [this]() { _smoothingWindowPercentDebounceTimer.start(100); });
 
+    connect(&_smoothingWindowPercentDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_projectOpened) return;
+
+
+        colorLinePlots();
+        });
+}
 void Computation::setupRangeColoringHandlers()
 {
     // Expression coloring range handlers for scatterplot 1
@@ -381,6 +395,7 @@ void Computation::setupDebounceTimers()
         //});
 
     _NRangeDebounceTimer.setSingleShot(true);
+    _smoothingWindowPercentDebounceTimer.setSingleShot(true);
     _clusterSelectionDebounceTimer.setSingleShot(true);
     _lineExpressionColoringRangeDebounceTimer.setSingleShot(true);
     _scatterplot1ExpressionColoringRangeDebounceTimer.setSingleShot(true);
@@ -681,7 +696,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                         bool sameDataset = ds1.isValid() && ds2.isValid() && ds1.getDatasetId() == ds2.getDatasetId();
 
                         if (_blockSelectionTrigger || _selectionBlocker) return;
-                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1");
+                        updateTableHeaders();
                         _selectionBlocker = true;
                         if (!sameDataset && _embeddingDataset2.isValid()) {
                             _embeddingDataset2->setSelectionIndices({});
@@ -700,7 +715,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                     // For the same dataset, only connect one handler and avoid cross-clearing
                     const auto mainSelectionChangedShared = [this]() {
                         if (_blockSelectionTrigger || _selectionBlocker) return;
-                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1/2");
+                        updateTableHeaders();
                         _selectionBlocker = true;
                         _selectionDataset = 1; // or 2, as both are the same
                         _selectionBlocker = false;
@@ -804,7 +819,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                         bool sameDataset = ds1.isValid() && ds2.isValid() && ds1.getDatasetId() == ds2.getDatasetId();
 
                         if (_blockSelectionTrigger || _selectionBlocker) return;
-                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset2");
+                        updateTableHeaders();
                         _selectionBlocker = true;
                         if (!sameDataset && _embeddingDataset1.isValid()) {
                             _embeddingDataset1->setSelectionIndices({});
@@ -823,7 +838,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                     // For the same dataset, only connect one handler and avoid cross-clearing
                     const auto mainSelectionChangedShared = [this]() {
                         if (_blockSelectionTrigger || _selectionBlocker) return;
-                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1/2");
+                        updateTableHeaders();
                         _selectionBlocker = true;
                         _selectionDataset = 2; // or 1, as both are the same
                         _selectionBlocker = false;
@@ -854,25 +869,19 @@ void Computation::setupEmbeddingDatasetHandlers()
     connect(&_settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction(), &OptionAction::currentIndexChanged, this, [this]() {
 
         //if (!_projectOpened) return;
-        auto slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText();
-        if (slice != "")
-        {
-            auto availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (availableDatasets1.size() > 0) {
+        auto availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+        QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText().trimmed();
+        QString slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText().trimmed();
 
-                for (const Dataset<Points>& dataset : availableDatasets1) {
-                    QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText();
-                    if (dataset->getGuiName().contains(substring1, Qt::CaseInsensitive) && dataset->getGuiName().contains(slice, Qt::CaseInsensitive))
-                    {
-                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
-                        break;
-                    }
+        QRegularExpression re(QString("\\b%1\\b").arg(QRegularExpression::escape(substring1)), QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
 
-                }
-
-
+        for (const Dataset<Points>& dataset : availableDatasets1) {
+            const QString& name = dataset->getGuiName();
+            if (re.match(name).hasMatch() && (slice.isEmpty() || reSlice.match(name).hasMatch())) {
+                _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                break;
             }
-
         }
 
         });
@@ -880,25 +889,22 @@ void Computation::setupEmbeddingDatasetHandlers()
     connect(&_settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction(), &OptionAction::currentIndexChanged, this, [this]() {
 
         //if (!_projectOpened) return;
-        auto slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText();
-        if (slice != "")
-        {
-            auto availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (availableDatasets2.size() > 0) {
 
-                for (const Dataset<Points>& dataset : availableDatasets2) {
-                    QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText();
-                    if (dataset->getGuiName().contains(substring2, Qt::CaseInsensitive) && dataset->getGuiName().contains(slice, Qt::CaseInsensitive))
-                    {
-                        _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
-                        break;
-                    }
+        auto availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+        QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText().trimmed();
+        QString slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText().trimmed();
 
-                }
+        QRegularExpression re(QString("\\b%1\\b").arg(QRegularExpression::escape(substring2)), QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
 
-
+        for (const Dataset<Points>& dataset : availableDatasets2) {
+            const QString& name = dataset->getGuiName();
+            if (re.match(name).hasMatch() && (slice.isEmpty() || reSlice.match(name).hasMatch())) {
+                _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                break;
             }
         }
+ 
 
         });
     const auto optionsforembeddingdataset = [this]() {
@@ -934,45 +940,42 @@ void Computation::setupEmbeddingDatasetHandlers()
 
         //if (!_projectOpened) return;
         auto slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText();
-        if (slice != "")
+        if (!slice.isEmpty())
         {
             auto availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (availableDatasets1.size() > 0) {
+            if (!availableDatasets1.isEmpty()) {
+                QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText().trimmed();
+                QRegularExpression re(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring1)), QRegularExpression::CaseInsensitiveOption);
+                QRegularExpression reSlice(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
 
                 for (const Dataset<Points>& dataset : availableDatasets1) {
-                    QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText();
-                    if (dataset->getGuiName().contains(substring1, Qt::CaseInsensitive) && dataset->getGuiName().contains(slice, Qt::CaseInsensitive))
-                    {
+                    const QString& name = dataset->getGuiName();
+                    if (re.match(name).hasMatch() && reSlice.match(name).hasMatch()) {
                         _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                         break;
                     }
-
                 }
-
-
             }
 
             auto availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (availableDatasets2.size() > 0) {
+            if (!availableDatasets2.isEmpty()) {
+                QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText().trimmed();
+                QRegularExpression re2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring2)), QRegularExpression::CaseInsensitiveOption);
+                QRegularExpression reSlice2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
 
                 for (const Dataset<Points>& dataset : availableDatasets2) {
-                    QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText();
-                    if (dataset->getGuiName().contains(substring2, Qt::CaseInsensitive) && dataset->getGuiName().contains(slice, Qt::CaseInsensitive))
-                    {
+                    const QString& name = dataset->getGuiName();
+                    if (re2.match(name).hasMatch() && reSlice2.match(name).hasMatch()) {
                         _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                         break;
                     }
-
                 }
-
-
             }
         }
 
         });
 
 }
-
 
 void Computation::datasetNamesCheck()
 {
@@ -1004,11 +1007,27 @@ void Computation::datasetNamesCheck()
 
     auto allDatasets = mv::data().getAllDatasets();
 
+    // Pre-compile regexes for dataset substrings
+    QHash<QString, QRegularExpression> datasetRegexes;
+    for (const auto& sub : datasetSubstrings) {
+        datasetRegexes.insert(sub, QRegularExpression(
+            QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(sub)),
+            QRegularExpression::CaseInsensitiveOption));
+    }
+
+    // Pre-compile regexes for slice substrings
+    QHash<QString, QRegularExpression> sliceRegexes;
+    for (const auto& slice : sliceSubstrings) {
+        sliceRegexes.insert(slice, QRegularExpression(
+            QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice)),
+            QRegularExpression::CaseInsensitiveOption));
+    }
+
     // match substrings as whole tokens (prevent "1" matching "10" or "11")
-    auto matchesToken = [](const QString& name, const QString& token) {
-        QRegularExpression re(QString("\\b%1\\b").arg(QRegularExpression::escape(token)),
-            QRegularExpression::CaseInsensitiveOption);
-        return re.match(name).hasMatch();
+    auto matchesToken = [&](const QString& name, const QString& token, const QHash<QString, QRegularExpression>& regexes) {
+        auto it = regexes.find(token);
+        if (it == regexes.end()) return false;
+        return it.value().match(name).hasMatch();
         };
 
     // keep dataset substrings present in at least one dataset
@@ -1017,7 +1036,7 @@ void Computation::datasetNamesCheck()
         if (ds->getDataType() != PointType) continue;
         const QString g = ds->getGuiName();
         for (const auto& sub : datasetSubstrings)
-            if (matchesToken(g, sub)) presentDatasets.insert(sub);
+            if (matchesToken(g, sub, datasetRegexes)) presentDatasets.insert(sub);
     }
 
     QStringList filteredDatasets = presentDatasets.values();
@@ -1033,8 +1052,8 @@ void Computation::datasetNamesCheck()
                     return std::any_of(allDatasets.begin(), allDatasets.end(),
                         [&](const auto& dataset) {
                             return dataset->getDataType() == PointType &&
-                                matchesToken(dataset->getGuiName(), dsSub) &&
-                                matchesToken(dataset->getGuiName(), slice);
+                                matchesToken(dataset->getGuiName(), dsSub, datasetRegexes) &&
+                                matchesToken(dataset->getGuiName(), slice, sliceRegexes);
                         });
                 });
             if (allPresent) finalSlices.append(slice);
@@ -1064,9 +1083,6 @@ void Computation::datasetNamesCheck()
 
     holder.getSliceSelectionAction().setCurrentIndex(finalSlices.isEmpty() ? -1 : 0);
 }
-
-
-
 
 void Computation::setupEmbeddingDimensionHandlers()
 {
@@ -1197,10 +1213,10 @@ void Computation::setupColoringHandlers()
         });
 
     // Colormap change handler
-    connect(&_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, [this]() {
+    connect(&_settingsAction.getCustomizationOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, [this]() {
         QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        auto colorMapStringValue = _settingsAction.getCustomizationOptionsHolder().getColoringMapSelectionAction().getColorMap();
         auto linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
 
         if (colorMapStringValue.isEmpty()) {
@@ -1221,8 +1237,8 @@ void Computation::setupColoringHandlers()
 
     // Percentile value change handlers
     auto changePercentileValue = [this]() { _colorUpdateDebounceTimer.start(200); };
-    connect(&_settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
-    connect(&_settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
+    connect(&_settingsAction.getCustomizationOptionsHolder().getLowRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
+    connect(&_settingsAction.getCustomizationOptionsHolder().getHighRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
 
     // Selection mode toggle handler
    /* connect(&_settingsAction.getCommonOptionsHolder().getSelectionModeAction(), &ToggleAction::toggled, this, [this]() {
@@ -1267,11 +1283,29 @@ void Computation::setupColoringHandlers()
         }
         });
 }
+void Computation::updateTableHeaders()
+{
+    QString titleDatasetName0 = getOrDefaultDatasetName(
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText(),
+        _selectionDataset);
 
+    QString titleDatasetName1 = getOrDefaultDatasetName(
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText(),
+        1);
+
+    QString titleDatasetName2 = getOrDefaultDatasetName(
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText(),
+        2);
+
+    _settingsAction.getSelectionTableHeaderLabel()->setText(
+        QStringLiteral("Common Gene Selection Table: %1").arg(titleDatasetName0));
+    _settingsAction.getTable1HeaderLabel()->setText(titleDatasetName1);
+    _settingsAction.getTable2HeaderLabel()->setText(titleDatasetName2);
+}
 void Computation::setupScatterplotHandlers()
 {
     // Show point selection changed handler
-    connect(&_settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, [this]() {
+    connect(&_settingsAction.getCustomizationOptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, [this]() {
         QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
 
@@ -1290,7 +1324,7 @@ void Computation::setupScatterplotHandlers()
                     auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin, "Settings/Selection/Opacity");
 
                     if (pointSelectionScaleAction) {
-                        if (_settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
+                        if (_settingsAction.getCustomizationOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
                             pointSelectionScaleAction->setValue(100.0);
                         }
                         else {
@@ -1302,7 +1336,7 @@ void Computation::setupScatterplotHandlers()
                     }
 
                     if (pointSelectionOpacityAction) {
-                        if (_settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
+                        if (_settingsAction.getCustomizationOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
                             pointSelectionOpacityAction->setValue(0.0);
                         }
                         else {
@@ -1318,7 +1352,7 @@ void Computation::setupScatterplotHandlers()
         });
 
     // Focus selection changed handler
-    connect(&_settingsAction.getCommonOptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, [this]() {
+    connect(&_settingsAction.getCustomizationOptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, [this]() {
         QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
 
@@ -1335,7 +1369,7 @@ void Computation::setupScatterplotHandlers()
                 if (plugin->getGuiName() == scatterplot1Name || plugin->getGuiName() == scatterplot2Name) {
                     auto focusAction = findActionByPath<ToggleAction>(plugin, "Settings/Plot/Point/Focus selection");
                     if (focusAction) {
-                        focusAction->setChecked(_settingsAction.getCommonOptionsHolder().getFocusSelectionAction().isChecked());
+                        focusAction->setChecked(_settingsAction.getCustomizationOptionsHolder().getFocusSelectionAction().isChecked());
                     }
                     else {
                         qWarning() << "Focus selection action not found";
@@ -3633,15 +3667,32 @@ void Computation::colorLinePlots()
     const int totalSelectedPoints = _selectedCellPointDataset->getNumPoints();
     constexpr auto smoothingType = "Moving Average";
     QString xPositionString = "Rotated Y Coordinates";
-    const int smoothingWindow = static_cast<int>(std::round(totalSelectedPoints * 0.2));
+    int smoothingpercent = _settingsAction.getCustomizationOptionsHolder().getSmoothingWindowPercentageAction().getValue();
+
+    const int smoothingWindow = static_cast<int>(std::round(totalSelectedPoints * (static_cast<double>(smoothingpercent) / 100.0)));
+    //qInfo() << "Smoothing window size: " << smoothingWindow << " for total selected points: " << totalSelectedPoints << " with percentage: " << smoothingpercent;
     QString yPositionString, titleText, colorDatasetID, colordatasetType;
     int colordimensionIndx = -1;
     float minValue = 0.0f, maxValue = 0.0f;
 
     auto& commonOptions = _settingsAction.getCommonOptionsHolder();
+    auto& customOptions = _settingsAction.getCustomizationOptionsHolder();
     auto& dataset1Options = _settingsAction.getDataset1OptionsHolder();
     auto& dataset2Options = _settingsAction.getDataset2OptionsHolder();
-    const auto colorMapStringValue = commonOptions.getColoringMapSelectionAction().getColorMap();
+    const auto colorMapStringValue = customOptions.getColoringMapSelectionAction().getColorMap();
+    QString titleDatasetName = "";
+    if (_selectionDataset == 1)
+    {
+        titleDatasetName = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText();
+    }
+    else if (_selectionDataset == 2)
+    {
+        titleDatasetName = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText();
+    }
+    if (titleDatasetName.isEmpty())
+    {
+        titleDatasetName = "Dataset " + QString::number(_selectionDataset);
+    }
 
     /*if (commonOptions.getSelectionModeAction().isChecked())
     {
@@ -3694,9 +3745,10 @@ void Computation::colorLinePlots()
                 }
             }
             yPositionString = "Mean Expr All Genes";
-            titleText = QString("%1 vs %2 expression of selected cells (%3)")
+            titleText = QString("%1 vs %2 expression of selected cells (%3) in %4")
                 .arg(xPositionString, yPositionString)
-                .arg(_filteredSelectionIndices.size());
+                .arg(_filteredSelectionIndices.size())
+                .arg(titleDatasetName);
         }
         else
         {
@@ -3732,20 +3784,20 @@ void Computation::colorLinePlots()
                     std::vector<float> selectedData(numbpts);
                     _lineChartPointDataset1->extractDataForDimension(selectedData, colordimensionIndx);
                     if (!selectedData.empty()) {
-                        minValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction().getValue()); 
-                        maxValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction().getValue()); 
+                        minValue = percentile(selectedData, customOptions.getLowRangeColoringPercentileAction().getValue());
+                        maxValue = percentile(selectedData, customOptions.getHighRangeColoringPercentileAction().getValue());
                     }
-                    titleText = QString("%1 vs %2: selected (%3) in set %4")
+                    titleText = QString("%1 vs %2: selected (%3) in %4")
                         .arg(xPositionString, yPositionString)
                         .arg(_filteredSelectionIndices.size())
-                        .arg(_selectionDataset);
+                        .arg(titleDatasetName);
                 }
                 else
                 {
                     xPositionString = "Empty";
                     colordimensionIndx = 0;
                     yPositionString = "Empty";
-                    titleText = QString("Gene unavailable in set %1").arg(_selectionDataset);
+                    titleText = QString("Gene unavailable in %1").arg(titleDatasetName);
                 }
 
             }
@@ -3754,7 +3806,7 @@ void Computation::colorLinePlots()
                 xPositionString= "Empty";
                 colordimensionIndx = 0;
                 yPositionString = "Empty";
-                titleText = QString("Gene unavailable in set %1").arg(_selectionDataset);
+                titleText = QString("Gene unavailable in %1").arg(titleDatasetName);
             }
 
         }
@@ -3798,6 +3850,7 @@ void Computation::colorScatterPlots()
     auto& ds1Opts = _settingsAction.getDataset1OptionsHolder();
     auto& ds2Opts = _settingsAction.getDataset2OptionsHolder();
     auto& commonOpts = _settingsAction.getCommonOptionsHolder();
+    auto& customOptions = _settingsAction.getCustomizationOptionsHolder();
 
     const auto& embDs1 = ds1Opts.getEmbeddingDatasetAction().getCurrentDataset();
     const auto& embDs2 = ds2Opts.getEmbeddingDatasetAction().getCurrentDataset();
@@ -3848,7 +3901,7 @@ void Computation::colorScatterPlots()
     auto& maxValScatter1 = ds1Opts.getScatterplotUpperColoringRangeAction();
     auto& minValScatter2 = ds2Opts.getScatterplotLowerColoringRangeAction();
     auto& maxValScatter2 = ds2Opts.getScatterplotUpperColoringRangeAction();
-    const auto colorMapStringValue = commonOpts.getColoringMapSelectionAction().getColorMap();
+    const auto colorMapStringValue = customOptions.getColoringMapSelectionAction().getColorMap();
 
     float minVal1 = 0.0f, maxVal1 = 0.0f, minVal2 = 0.0f, maxVal2 = 0.0f;
     QString coloringdimension;
@@ -3894,8 +3947,8 @@ void Computation::colorScatterPlots()
     }
     std::pair<float, float> sentinelValMinMax1{ minValScatter1.getMinimum(), maxValScatter1.getMaximum() };
     std::pair<float, float> sentinelValMinMax2{ minValScatter2.getMinimum(), maxValScatter2.getMaximum() };
-    float lowRangePercentile = commonOpts.getLowRangeColoringPercentileAction().getValue();
-    float highRangePercentile = commonOpts.getHighRangeColoringPercentileAction().getValue();
+    float lowRangePercentile = customOptions.getLowRangeColoringPercentileAction().getValue();
+    float highRangePercentile = customOptions.getHighRangeColoringPercentileAction().getValue();
     // Determine coloring source: PCA or gene
     if (commonOpts.getPcaColoringAction().isChecked()) {
         if (!_pcaCommonGenesDataset1.isValid() || !_pcaCommonGenesDataset2.isValid()) {

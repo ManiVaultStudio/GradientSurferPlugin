@@ -29,9 +29,11 @@ void GradientSurferPlugin::init()
     GroupsAction* groupForAction = new GroupsAction(this, "Settings");
     _settingsAction.getDataset1OptionsHolder().setExpanded(false);
     _settingsAction.getDataset2OptionsHolder().setExpanded(false);
+    _settingsAction.getCustomizationOptionsHolder().setExpanded(false);
     _settingsAction.getCommonOptionsHolder().setExpanded(true);
 
     groupForAction->addGroupAction(&_settingsAction.getCommonOptionsHolder());
+    groupForAction->addGroupAction(&_settingsAction.getCustomizationOptionsHolder());
 
     addDockingAction(groupForAction, nullptr, gui::DockAreaFlag::Left, true, gui::AutoHideLocation::Left);
 
@@ -128,43 +130,54 @@ void GradientSurferPlugin::init()
         mainLayout->setSpacing(0);
 
         // Add header label
-        _settingsAction.getSelectionTableHeaderLabel() = new QLabel("Common Gene Table:Selection Dataset", &mainWidget);
+        _settingsAction.getSelectionTableHeaderLabel() = new QLabel("Selected Cells Gene Table", &mainWidget);
         _settingsAction.getSelectionTableHeaderLabel()->setAlignment(Qt::AlignCenter);
         _settingsAction.getSelectionTableHeaderLabel()->setWordWrap(true);
         _settingsAction.getSelectionTableHeaderLabel()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         mainLayout->addWidget(_settingsAction.getSelectionTableHeaderLabel(), 0);
 
         mainLayout->addWidget(
-            createTableWidget("Common Gene Table:Selection Dataset", _settingsAction.getTableView0Action(), &mainWidget)
+            createTableWidget("Selected Cells Gene Table", _settingsAction.getTableView0Action(), &mainWidget)
         );
         mainWidget.setLayout(mainLayout);
     }
 
     // 2. Dock the second table ("Dataset 1 All Cells") on the right
-    auto* table1Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 1 All Cells");
+    auto* table1Action = new mv::gui::WidgetAction(this, "All Cells Gene Table 1");
     table1Action->setWidgetConfigurationFunction(
         [createTableWidget, this](mv::gui::WidgetAction*, QWidget* parent) {
             auto layout = new QVBoxLayout(parent);
 
             layout->setContentsMargins(0, 0, 0, 0);
             parent->setLayout(layout);
+            if (!_settingsAction.getTable1HeaderLabel())
+            {
+                _settingsAction.getTable1HeaderLabel() = new QLabel(parent);
+            }
+            _settingsAction.getTable1HeaderLabel()->setText("All Cells Gene Table 1");
 
-            layout->addWidget(createTableWidget("Gene Table: Dataset 1 All Cells", _settingsAction.getTableView1Action(), parent));
+            layout->addWidget(_settingsAction.getTable1HeaderLabel(), 0); 
+
+            layout->addWidget(createTableWidget("All Cells Gene Table 1", _settingsAction.getTableView1Action(), parent));
         }
     );
     // Remove fixed height from QSize
     addDockingAction(table1Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right);
-
     // 3. Dock the third table ("Dataset 2 All Cells") on the right
-    auto* table2Action = new mv::gui::WidgetAction(this, "Gene Table: Dataset 2 All Cells");
+    auto* table2Action = new mv::gui::WidgetAction(this, "All Cells Gene Table 2");
     table2Action->setWidgetConfigurationFunction(
         [createTableWidget, this](mv::gui::WidgetAction*, QWidget* parent) {
             auto layout = new QVBoxLayout(parent);
 
             layout->setContentsMargins(0, 0, 0, 0);
             parent->setLayout(layout);
-
-            layout->addWidget(createTableWidget("Gene Table: Dataset 2 All Cells", _settingsAction.getTableView2Action(), parent));
+            if (!_settingsAction.getTable2HeaderLabel())
+            {
+                _settingsAction.getTable2HeaderLabel() = new QLabel(parent);
+            }
+            _settingsAction.getTable2HeaderLabel()->setText("All Cells Gene Table 2");
+            layout->addWidget(_settingsAction.getTable2HeaderLabel(), 0);
+            layout->addWidget(createTableWidget("All Cells Gene Table 2", _settingsAction.getTableView2Action(), parent));
         }
     );
     addDockingAction(table2Action, nullptr, gui::DockAreaFlag::Right, true, gui::AutoHideLocation::Right);

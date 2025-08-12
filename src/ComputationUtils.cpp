@@ -523,10 +523,10 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
                                 {
                                     smoothingTypeAction->setCurrentText(smoothingType);
                                     int maxVal = (pointDataset->getNumPoints());
-                                    int currentVal = static_cast<int>(std::round(maxVal * 0.50));
+                                    //int currentVal = static_cast<int>(std::round(maxVal * 0.50)); //
                                     smoothingWindowAction->setMaximum(maxVal);
-                                    smoothingWindowAction->setMinimum(1);
-                                    smoothingWindowAction->setValue(currentVal);
+                                    smoothingWindowAction->setMinimum(0);
+                                    smoothingWindowAction->setValue(smoothingWindow);
                                 }
                                 else
                                 {
@@ -941,7 +941,10 @@ void makeSelection(QString value, QTableView* tableView)
         }
     }
 }
-
+QString getOrDefaultDatasetName(const QString& name, int fallbackIndex) 
+{
+    return name.isEmpty() ? QString("Dataset %1").arg(fallbackIndex) : name;
+}
 void selectFirstRow(QTableView* tableView)
 {
     if (!tableView || !tableView->selectionModel()) return;

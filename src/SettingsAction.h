@@ -259,17 +259,6 @@ public:
         //const ToggleAction& getSelectionModeAction() const { return _selectionModeAction; }
         //ToggleAction& getSelectionModeAction() { return _selectionModeAction; }
 
-        const ColorMap1DAction& getColoringMapSelectionAction() const { return _coloringMapSelectionAction; }
-        ColorMap1DAction& getColoringMapSelectionAction() { return _coloringMapSelectionAction; }
-
-
-
-
-        const ToggleAction& getFocusSelectionAction() const { return _focusSelectionAction; }
-        ToggleAction& getFocusSelectionAction() { return _focusSelectionAction; }
-
-        const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
-        ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
 
         const IntegralAction& getBottomNRowsAction() const { return _bottomNRowsAction; }
         IntegralAction& getBottomNRowsAction() { return _bottomNRowsAction; }
@@ -291,11 +280,7 @@ public:
         const StringAction& getTableSearchBoxAction() const { return _tableSearchBoxAction; }
         StringAction& getTableSearchBoxAction() { return _tableSearchBoxAction; }
 
-        const DecimalAction& getLowRangeColoringPercentileAction() const { return _lowRangeColoringPercentileAction; }
-        DecimalAction& getLowRangeColoringPercentileAction() { return _lowRangeColoringPercentileAction; }
 
-        const DecimalAction& getHighRangeColoringPercentileAction() const { return _highRangeColoringPercentileAction; }
-        DecimalAction& getHighRangeColoringPercentileAction() { return _highRangeColoringPercentileAction; }
 
         const OptionAction& getClusterDatasetSelectionAction() const { return _clusterDatasetSelectionAction; }
         OptionAction& getClusterDatasetSelectionAction() { return _clusterDatasetSelectionAction; }
@@ -318,6 +303,8 @@ public:
         const StringAction& getDefaultSliceNamesAction() const { return _defaultSliceNamesAction; }
         StringAction& getDefaultSliceNamesAction() { return _defaultSliceNamesAction; }
 
+
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -334,10 +321,8 @@ public:
         //ToggleAction                 _normalizeCombinedDatasetsAction;
         //OptionAction                _normalizationTypeAction;
         //ToggleAction                _selectionModeAction;
-        ColorMap1DAction            _coloringMapSelectionAction;
 
-        ToggleAction                        _focusSelectionAction;
-        ToggleAction                        _hidePointSelectionAction;
+
 
         IntegralAction              _bottomNRowsAction;
         IntegralAction              _topNRowsAction;
@@ -347,44 +332,86 @@ public:
         StringAction                        _statusMessageAction;
         //ToggleAction         _colorAllCellsWithExpressionAction;
         StringAction         _tableSearchBoxAction;
-        DecimalAction       _lowRangeColoringPercentileAction;
-        DecimalAction       _highRangeColoringPercentileAction;
         OptionAction       _clusterDatasetSelectionAction;
         OptionAction       _comparatorDataset1SelectorAction;
         OptionAction       _comparatorDataset2SelectorAction;
         StringAction       _defaultDatasetNamesAction;
         OptionAction       _sliceSelectionAction;
         StringAction        _defaultSliceNamesAction;
+
     };
 
 
+    class CustomizationOptionsHolder : public VerticalGroupAction
+    {
+    public:
+        CustomizationOptionsHolder(SettingsAction& settingsAction);
 
+        const ColorMap1DAction& getColoringMapSelectionAction() const { return _coloringMapSelectionAction; }
+        ColorMap1DAction& getColoringMapSelectionAction() { return _coloringMapSelectionAction; }
+
+
+
+
+        const ToggleAction& getFocusSelectionAction() const { return _focusSelectionAction; }
+        ToggleAction& getFocusSelectionAction() { return _focusSelectionAction; }
+
+        const ToggleAction& getHidePointSelectionOutlineAction() const { return _hidePointSelectionAction; }
+        ToggleAction& getHidePointSelectionOutlineAction() { return _hidePointSelectionAction; }
+
+
+        const DecimalAction& getLowRangeColoringPercentileAction() const { return _lowRangeColoringPercentileAction; }
+        DecimalAction& getLowRangeColoringPercentileAction() { return _lowRangeColoringPercentileAction; }
+
+        const DecimalAction& getHighRangeColoringPercentileAction() const { return _highRangeColoringPercentileAction; }
+        DecimalAction& getHighRangeColoringPercentileAction() { return _highRangeColoringPercentileAction; }
+
+
+        const IntegralAction& getSmoothingWindowPercentageAction() const { return _smoothingWindowPercentageAction; }
+        IntegralAction& getSmoothingWindowPercentageAction() { return _smoothingWindowPercentageAction; }
+
+    protected:
+        SettingsAction& _settingsOptions;
+
+        ColorMap1DAction            _coloringMapSelectionAction;
+        DecimalAction       _lowRangeColoringPercentileAction;
+        DecimalAction       _highRangeColoringPercentileAction;
+        ToggleAction                        _focusSelectionAction;
+        ToggleAction                        _hidePointSelectionAction;
+        IntegralAction      _smoothingWindowPercentageAction;
+    };
 public:
     SettingsAction(GradientSurferPlugin& GradientSurferPlugin);
 
-    Dataset1OptionsHolder& getDataset1OptionsHolder() { return _dataset1OptionsHolder; }
-    Dataset2OptionsHolder& getDataset2OptionsHolder() { return _dataset2OptionsHolder; }
-    CommonOptionsHolder& getCommonOptionsHolder() { return _commonOptionsHolder; }
+    Dataset1OptionsHolder& getDataset1OptionsHolder()   { return _dataset1OptionsHolder; }
+    Dataset2OptionsHolder& getDataset2OptionsHolder()   { return _dataset2OptionsHolder; }
+    CommonOptionsHolder& getCommonOptionsHolder()       { return _commonOptionsHolder; }
+    CustomizationOptionsHolder& getCustomizationOptionsHolder() { return _customizationOptionsHolder; }
 
 
 public: 
     void fromVariantMap(const QVariantMap& variantMap) override;
     QVariantMap toVariantMap() const override;
 
-    QTableView* getTableView0Action() { return _tableView0Action; }
-    QTableView* getTableView2Action() { return _tableView2Action; }
-    QTableView* getTableView1Action() { return _tableView1Action; }
-    QLabel*& getSelectionTableHeaderLabel() { return selectionTableHeaderLabel; }
+    QTableView* getTableView0Action()       { return _tableView0Action; }
+    QTableView* getTableView2Action()       { return _tableView2Action; }
+    QTableView* getTableView1Action()       { return _tableView1Action; }
+    QLabel*& getSelectionTableHeaderLabel() { return _selectionTableHeaderLabel; }
+    QLabel*& getTable1HeaderLabel()         { return _table1HeaderLabel; }
+    QLabel*& getTable2HeaderLabel()         { return _table2HeaderLabel; }
 
 protected:
     GradientSurferPlugin& _viewerPlugin;
     mv::CoreInterface* _core;
-    Dataset1OptionsHolder              _dataset1OptionsHolder;
-    Dataset2OptionsHolder              _dataset2OptionsHolder;
-    CommonOptionsHolder              _commonOptionsHolder;
-    QTableView*                 _tableView0Action = nullptr;
-    QTableView*                 _tableView2Action = nullptr;
-    QTableView*                 _tableView1Action = nullptr;
-    QLabel* selectionTableHeaderLabel = nullptr;
+    Dataset1OptionsHolder           _dataset1OptionsHolder;
+    Dataset2OptionsHolder           _dataset2OptionsHolder;
+    CommonOptionsHolder             _commonOptionsHolder;
+    CustomizationOptionsHolder      _customizationOptionsHolder;
+    QTableView*                     _tableView0Action = nullptr;
+    QTableView*                     _tableView2Action = nullptr;
+    QTableView*                     _tableView1Action = nullptr;
+    QLabel*                         _selectionTableHeaderLabel = nullptr;
+    QLabel*                         _table1HeaderLabel = nullptr;
+    QLabel*                         _table2HeaderLabel = nullptr;
     friend class ChannelAction;
 };

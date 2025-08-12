@@ -23,7 +23,8 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _viewerPlugin(GradientSurferPlugin),
     _dataset1OptionsHolder(*this),
     _dataset2OptionsHolder(*this),
-    _commonOptionsHolder(*this)
+    _commonOptionsHolder(*this),
+    _customizationOptionsHolder(*this)
 {
     setSerializationName("GradientSurfer:Settings");
     _dataset1OptionsHolder.getClusterDatasetAction().setSerializationName("GradientSurfer:Clusterdataset");
@@ -31,8 +32,8 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder.getEmbeddingDatasetAction().setSerializationName("GradientSurfer:EmbeddingDataset");
     _commonOptionsHolder.getTopNRowsAction().setSerializationName("GradientSurfer:TopNRows");
     _commonOptionsHolder.getBottomNRowsAction().setSerializationName("GradientSurfer:BottomNRows");
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setSerializationName("GradientSurfer:LowRangeColoringPercentile");
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setSerializationName("GradientSurfer:HighRangeColoringPercentile");
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().setSerializationName("GradientSurfer:LowRangeColoringPercentile");
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().setSerializationName("GradientSurfer:HighRangeColoringPercentile");
     _dataset1OptionsHolder.getGeneSelectionAction().setSerializationName("GradientSurfer:GeneSelection");
     _dataset2OptionsHolder.getGeneSelectionAction().setSerializationName("GradientSurfer:GeneSelection2");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setSerializationName("GradientSurfer:ScatterplotViewSelection");
@@ -67,9 +68,9 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getStatusBarAction()->setToolTip("Status Bar Action");
     _dataset1OptionsHolder.getScatterplotViewSelectionAction().setToolTip("Scatterplot View Selection");
     _dataset1OptionsHolder.getLineplotViewSelectionAction().setToolTip("Lineplot View Selection");
-    _commonOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
+    _customizationOptionsHolder.getFocusSelectionAction().setToolTip("Focus Selection Action");
     _commonOptionsHolder.getShowAdvancedOptions().setToolTip("Show Advanced Options Action");
-    _commonOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
+    _customizationOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setToolTip("Color All Cells With Expression Action");
     _commonOptionsHolder.getTableSearchBoxAction().setToolTip("Table Search Box Action");
 
@@ -81,8 +82,9 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder.getLineplotUpperColoringRangeAction().setToolTip("Lineplot Upper Coloring Range");
     _dataset1OptionsHolder.getLineplotLowerColoringRangeAction().setToolTip("Lineplot Lower Coloring Range");
     _commonOptionsHolder.getBottomNRowsAction().setToolTip("Bottom N Rows Action");
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setToolTip("Low Range Coloring Percentile Action");
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setToolTip("High Range Coloring Percentile Action");
+    _customizationOptionsHolder.getSmoothingWindowPercentageAction().setToolTip("Smoothing Window Percentage Action");
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().setToolTip("Low Range Coloring Percentile Action");
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().setToolTip("High Range Coloring Percentile Action");
     _dataset2OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset 2");
     _dataset2OptionsHolder.getPointDatasetAction().setToolTip("Point Dataset 2");
     _dataset2OptionsHolder.getEmbeddingDatasetAction().setToolTip("Embedding Dataset 2");
@@ -104,9 +106,9 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getPcaColoringAction().setChecked(false);
     //_commonOptionsHolder.getSelectionModeAction().setChecked(true);
 
-    _commonOptionsHolder.getFocusSelectionAction().setChecked(false);
+    _customizationOptionsHolder.getFocusSelectionAction().setChecked(false);
     _commonOptionsHolder.getShowAdvancedOptions().setChecked(false);
-    _commonOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
+    _customizationOptionsHolder.getHidePointSelectionOutlineAction().setChecked(false);
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setChecked(false);
 
 
@@ -120,17 +122,23 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getTopNRowsAction().setMaximum(100);
     _commonOptionsHolder.getTopNRowsAction().setValue(5);
 
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setNumberOfDecimals(2);
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setMinimum(0.00);
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setMaximum(1.00);
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setSingleStep(0.01);
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setValue(0.00);
+    _customizationOptionsHolder.getSmoothingWindowPercentageAction().setMinimum(1);
+    _customizationOptionsHolder.getSmoothingWindowPercentageAction().setMaximum(100);
+    _customizationOptionsHolder.getSmoothingWindowPercentageAction().setNumberOfDecimals(0);
+    _customizationOptionsHolder.getSmoothingWindowPercentageAction().setValue(10);
 
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setNumberOfDecimals(2);
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setMinimum(0.00);
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setMaximum(1.00);
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setSingleStep(0.01);
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setValue(0.95);
+
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().setNumberOfDecimals(2);
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().setMinimum(0.00);
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().setMaximum(1.00);
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().setSingleStep(0.01);
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().setValue(0.00);
+
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().setNumberOfDecimals(2);
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().setMinimum(0.00);
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().setMaximum(1.00);
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().setSingleStep(0.01);
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().setValue(0.95);
 
 
 
@@ -218,21 +226,21 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getDefaultSliceNamesAction().setToolTip("Default Slice Names Action");
     _commonOptionsHolder.getDefaultSliceNamesAction().setString("P1; P2; P3; P4; P5; P6; P7; P8; P9; P10; P11; P12");
 
-    _commonOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
-    _commonOptionsHolder.getColoringMapSelectionAction().getSettingsAction().setVisible(false);
-    _commonOptionsHolder.getColoringMapSelectionAction().getSettings1DAction().setVisible(false);
-    _commonOptionsHolder.getColoringMapSelectionAction().getSettings2DAction().setVisible(false);
+    _customizationOptionsHolder.getColoringMapSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _customizationOptionsHolder.getColoringMapSelectionAction().setColorMap("Viridis");
+    _customizationOptionsHolder.getColoringMapSelectionAction().getSettingsAction().setVisible(false);
+    _customizationOptionsHolder.getColoringMapSelectionAction().getSettings1DAction().setVisible(false);
+    _customizationOptionsHolder.getColoringMapSelectionAction().getSettings2DAction().setVisible(false);
 
     //_commonOptionsHolder.getNormalizeCombinedDatasetsAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     //_commonOptionsHolder.getNormalizeCombinedDatasetsAction().setChecked(true);
 
 
 
-    _commonOptionsHolder.getFocusSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _customizationOptionsHolder.getFocusSelectionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     _commonOptionsHolder.getShowAdvancedOptions().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
-    _commonOptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    _customizationOptionsHolder.getHidePointSelectionOutlineAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
 
     _commonOptionsHolder.getTableSearchBoxAction().setDefaultWidgetFlags(StringAction::LineEdit);
@@ -247,8 +255,9 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
 
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _customizationOptionsHolder.getSmoothingWindowPercentageAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
 
     _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
     _dataset1OptionsHolder.getScatterplotLowerColoringRangeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
@@ -453,6 +462,30 @@ inline SettingsAction::Dataset2OptionsHolder::Dataset2OptionsHolder(SettingsActi
 
 }
 
+inline SettingsAction::CustomizationOptionsHolder::CustomizationOptionsHolder(SettingsAction& settingsAction) :
+    VerticalGroupAction(&settingsAction, "Customization Options"),
+    _settingsOptions(settingsAction),
+    _focusSelectionAction(this, "Focus"),
+    _hidePointSelectionAction(this, "Hide Outline"),
+    _lowRangeColoringPercentileAction(this, "Low Percentile"),
+    _highRangeColoringPercentileAction(this, "High Percentile"),
+    _coloringMapSelectionAction(this, "Color Map"),
+    _smoothingWindowPercentageAction(this, "Line Smoothing")
+{
+    setText("Customization Options");
+    setIcon(mv::util::StyledIcon("wrench"));
+    setPopupSizeHint(QSize(300, 0));
+    setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
+
+    addAction(&_coloringMapSelectionAction);
+    addAction(&_lowRangeColoringPercentileAction);
+    addAction(&_highRangeColoringPercentileAction);
+    addAction(&_focusSelectionAction);
+    addAction(&_hidePointSelectionAction);
+    addAction(&_smoothingWindowPercentageAction);
+
+}
+
 inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& settingsAction) :
     VerticalGroupAction(&settingsAction, "Settings Options"),
     _settingsOptions(settingsAction),
@@ -465,14 +498,11 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     // Clustering and selection actions
     _clusterValueSelectionAction(this, "Cluster"),
     _clusterDatasetSelectionAction(this, "Cluster Set"),
-    _focusSelectionAction(this, "Focus"),
-    _hidePointSelectionAction(this, "Hide Outline"),
 
     // Data filtering actions
     _topNRowsAction(this, "Top N Rows"),
     _bottomNRowsAction(this, "Bottom N Rows"),
-    _lowRangeColoringPercentileAction(this, "Low Percentile"),
-    _highRangeColoringPercentileAction(this, "High Percentile"),
+
 
     // Dataset comparison actions
     _showAdvancedOptions(this, "Advanced Options"),
@@ -486,9 +516,6 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _autoComputeAction(this, "Auto"),
     _correlationCalculationTypeAction(this, "Corr Type"),
     _computationTypeAction(this, "Comp Type"),
-
-    // Coloring and visualization actions
-    _coloringMapSelectionAction(this, "Color Map"),
 
     // Status and search actions
     _statusMessageAction(this, "Status"),
@@ -515,14 +542,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
 
     addAction(&_pcaDimensionForColoringAction);
     addAction(&_pcaColoringAction);
-    addAction(&_coloringMapSelectionAction);
-    addAction(&_lowRangeColoringPercentileAction);
-    addAction(&_highRangeColoringPercentileAction);
-
-    //addAction(&_selectionModeAction);
-    addAction(&_focusSelectionAction);
-    addAction(&_hidePointSelectionAction);
-
+    
     addAction(&_autoComputeAction);
     addAction(&_computationTypeAction);
     addAction(&_correlationCalculationTypeAction);
@@ -559,8 +579,8 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset2OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getBottomNRowsAction().fromParentVariantMap(variantMap);
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().fromParentVariantMap(variantMap);
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().fromParentVariantMap(variantMap);
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().fromParentVariantMap(variantMap);
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().fromParentVariantMap(variantMap);
    
     _dataset2OptionsHolder.getClusterDatasetAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getPointDatasetAction().fromParentVariantMap(variantMap);
@@ -595,8 +615,8 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset2OptionsHolder.getGeneSelection2Action().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getBottomNRowsAction().insertIntoVariantMap(variantMap);
-    _commonOptionsHolder.getLowRangeColoringPercentileAction().insertIntoVariantMap(variantMap);
-    _commonOptionsHolder.getHighRangeColoringPercentileAction().insertIntoVariantMap(variantMap);
+    _customizationOptionsHolder.getLowRangeColoringPercentileAction().insertIntoVariantMap(variantMap);
+    _customizationOptionsHolder.getHighRangeColoringPercentileAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getClusterDatasetAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getPointDatasetAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDatasetAction().insertIntoVariantMap(variantMap);

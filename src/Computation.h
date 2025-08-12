@@ -117,7 +117,9 @@ private:
     void coorelationScoresForPCs();
     //void selectionModeAltToggleLogic(QString scatterplotName);
     void findCommonGenes();
+    void updateTableHeaders();
     void datasetNamesCheck();
+    void setupCustomizationOptions();
 protected:
     GradientSurferPlugin&          _viewerPlugin;
     SettingsAction&             _settingsAction;
@@ -152,6 +154,7 @@ protected:
     SelectedPCData              _selectedPCData1;
     QTimer _clusterSelectionDebounceTimer;
     QTimer _NRangeDebounceTimer;
+    QTimer _smoothingWindowPercentDebounceTimer;
     QTimer _lineExpressionColoringRangeDebounceTimer;
     QTimer _scatterplot1ExpressionColoringRangeDebounceTimer;
     QTimer _scatterplot2ExpressionColoringRangeDebounceTimer;
@@ -193,5 +196,6 @@ protected:
     //QMetaObject::Connection _pixelSelectionStartedConnection;
     QMetaObject::Connection _embeddingDataset1Connection;
     QMetaObject::Connection _embeddingDataset2Connection;
+
     friend class ChannelAction;
 };
