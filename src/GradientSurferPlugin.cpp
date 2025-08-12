@@ -125,20 +125,25 @@ void GradientSurferPlugin::init()
     // 1. Add the first table to the main layout (plugin's main widget)
     {
         QWidget& mainWidget = getWidget(); // Use reference, not pointer
+
+        // Add header label
+        _settingsAction.getSelectionTableHeaderLabel() = new QLabel("Selected Cells Gene Table", &mainWidget);
+
         QVBoxLayout* mainLayout = new QVBoxLayout();
         mainLayout->setContentsMargins(0, 0, 0, 0);
         mainLayout->setSpacing(0);
 
-        // Add header label
-        _settingsAction.getSelectionTableHeaderLabel() = new QLabel("Selected Cells Gene Table", &mainWidget);
         _settingsAction.getSelectionTableHeaderLabel()->setAlignment(Qt::AlignCenter);
         _settingsAction.getSelectionTableHeaderLabel()->setWordWrap(true);
         _settingsAction.getSelectionTableHeaderLabel()->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         mainLayout->addWidget(_settingsAction.getSelectionTableHeaderLabel(), 0);
 
         mainLayout->addWidget(
-            createTableWidget("Selected Cells Gene Table", _settingsAction.getTableView0Action(), &mainWidget)
+            createTableWidget("Selected Cells Gene Table", _settingsAction.getTableView0Action(), &mainWidget),1
         );
+        mainLayout->addWidget(_settingsAction.getCommonOptionsHolder().getStatusBarAction()->createWidget(&getWidget()), 0);
+
+
         mainWidget.setLayout(mainLayout);
     }
 
