@@ -126,7 +126,7 @@ void Computation::setupPlotSelectionOptions()
 }
 void Computation::setupCustomizationOptions()
 {
-    connect(&_settingsAction.getCommonOptionsHolder().getSmoothingWindowPercentageAction(),
+    connect(&_settingsAction.getCustomizationOptionsHolder().getSmoothingWindowPercentageAction(),
         &IntegralAction::valueChanged,
         this,
         [this]() { _smoothingWindowPercentDebounceTimer.start(100); });
@@ -1212,10 +1212,10 @@ void Computation::setupColoringHandlers()
         });
 
     // Colormap change handler
-    connect(&_settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, [this]() {
+    connect(&_settingsAction.getCustomizationOptionsHolder().getColoringMapSelectionAction(), &ColorMap1DAction::imageChanged, this, [this]() {
         QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
-        auto colorMapStringValue = _settingsAction.getCommonOptionsHolder().getColoringMapSelectionAction().getColorMap();
+        auto colorMapStringValue = _settingsAction.getCustomizationOptionsHolder().getColoringMapSelectionAction().getColorMap();
         auto linePlotName = _settingsAction.getDataset1OptionsHolder().getLineplotViewSelectionAction().getCurrentText();
 
         if (colorMapStringValue.isEmpty()) {
@@ -1236,8 +1236,8 @@ void Computation::setupColoringHandlers()
 
     // Percentile value change handlers
     auto changePercentileValue = [this]() { _colorUpdateDebounceTimer.start(200); };
-    connect(&_settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
-    connect(&_settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
+    connect(&_settingsAction.getCustomizationOptionsHolder().getLowRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
+    connect(&_settingsAction.getCustomizationOptionsHolder().getHighRangeColoringPercentileAction(), &DecimalAction::valueChanged, this, changePercentileValue);
 
     // Selection mode toggle handler
    /* connect(&_settingsAction.getCommonOptionsHolder().getSelectionModeAction(), &ToggleAction::toggled, this, [this]() {
@@ -1304,7 +1304,7 @@ void Computation::updateTableHeaders()
 void Computation::setupScatterplotHandlers()
 {
     // Show point selection changed handler
-    connect(&_settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, [this]() {
+    connect(&_settingsAction.getCustomizationOptionsHolder().getHidePointSelectionOutlineAction(), &ToggleAction::toggled, this, [this]() {
         QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
 
@@ -1323,7 +1323,7 @@ void Computation::setupScatterplotHandlers()
                     auto pointSelectionOpacityAction = findActionByPath<DecimalAction>(plugin, "Settings/Selection/Opacity");
 
                     if (pointSelectionScaleAction) {
-                        if (_settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
+                        if (_settingsAction.getCustomizationOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
                             pointSelectionScaleAction->setValue(100.0);
                         }
                         else {
@@ -1335,7 +1335,7 @@ void Computation::setupScatterplotHandlers()
                     }
 
                     if (pointSelectionOpacityAction) {
-                        if (_settingsAction.getCommonOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
+                        if (_settingsAction.getCustomizationOptionsHolder().getHidePointSelectionOutlineAction().isChecked()) {
                             pointSelectionOpacityAction->setValue(0.0);
                         }
                         else {
@@ -1351,7 +1351,7 @@ void Computation::setupScatterplotHandlers()
         });
 
     // Focus selection changed handler
-    connect(&_settingsAction.getCommonOptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, [this]() {
+    connect(&_settingsAction.getCustomizationOptionsHolder().getFocusSelectionAction(), &ToggleAction::toggled, this, [this]() {
         QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
         QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
 
@@ -1368,7 +1368,7 @@ void Computation::setupScatterplotHandlers()
                 if (plugin->getGuiName() == scatterplot1Name || plugin->getGuiName() == scatterplot2Name) {
                     auto focusAction = findActionByPath<ToggleAction>(plugin, "Settings/Plot/Point/Focus selection");
                     if (focusAction) {
-                        focusAction->setChecked(_settingsAction.getCommonOptionsHolder().getFocusSelectionAction().isChecked());
+                        focusAction->setChecked(_settingsAction.getCustomizationOptionsHolder().getFocusSelectionAction().isChecked());
                     }
                     else {
                         qWarning() << "Focus selection action not found";
@@ -3666,7 +3666,7 @@ void Computation::colorLinePlots()
     const int totalSelectedPoints = _selectedCellPointDataset->getNumPoints();
     constexpr auto smoothingType = "Moving Average";
     QString xPositionString = "Rotated Y Coordinates";
-    int smoothingpercent = _settingsAction.getCommonOptionsHolder().getSmoothingWindowPercentageAction().getValue();
+    int smoothingpercent = _settingsAction.getCustomizationOptionsHolder().getSmoothingWindowPercentageAction().getValue();
 
     const int smoothingWindow = static_cast<int>(std::round(totalSelectedPoints * (static_cast<double>(smoothingpercent) / 100.0)));
     //qInfo() << "Smoothing window size: " << smoothingWindow << " for total selected points: " << totalSelectedPoints << " with percentage: " << smoothingpercent;
@@ -3675,9 +3675,10 @@ void Computation::colorLinePlots()
     float minValue = 0.0f, maxValue = 0.0f;
 
     auto& commonOptions = _settingsAction.getCommonOptionsHolder();
+    auto& customOptions = _settingsAction.getCustomizationOptionsHolder();
     auto& dataset1Options = _settingsAction.getDataset1OptionsHolder();
     auto& dataset2Options = _settingsAction.getDataset2OptionsHolder();
-    const auto colorMapStringValue = commonOptions.getColoringMapSelectionAction().getColorMap();
+    const auto colorMapStringValue = customOptions.getColoringMapSelectionAction().getColorMap();
     QString titleDatasetName = "";
     if (_selectionDataset == 1)
     {
@@ -3782,8 +3783,8 @@ void Computation::colorLinePlots()
                     std::vector<float> selectedData(numbpts);
                     _lineChartPointDataset1->extractDataForDimension(selectedData, colordimensionIndx);
                     if (!selectedData.empty()) {
-                        minValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction().getValue()); 
-                        maxValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction().getValue()); 
+                        minValue = percentile(selectedData, customOptions.getLowRangeColoringPercentileAction().getValue());
+                        maxValue = percentile(selectedData, customOptions.getHighRangeColoringPercentileAction().getValue());
                     }
                     titleText = QString("%1 vs %2: selected (%3) in %4")
                         .arg(xPositionString, yPositionString)
@@ -3848,6 +3849,7 @@ void Computation::colorScatterPlots()
     auto& ds1Opts = _settingsAction.getDataset1OptionsHolder();
     auto& ds2Opts = _settingsAction.getDataset2OptionsHolder();
     auto& commonOpts = _settingsAction.getCommonOptionsHolder();
+    auto& customOptions = _settingsAction.getCustomizationOptionsHolder();
 
     const auto& embDs1 = ds1Opts.getEmbeddingDatasetAction().getCurrentDataset();
     const auto& embDs2 = ds2Opts.getEmbeddingDatasetAction().getCurrentDataset();
@@ -3898,7 +3900,7 @@ void Computation::colorScatterPlots()
     auto& maxValScatter1 = ds1Opts.getScatterplotUpperColoringRangeAction();
     auto& minValScatter2 = ds2Opts.getScatterplotLowerColoringRangeAction();
     auto& maxValScatter2 = ds2Opts.getScatterplotUpperColoringRangeAction();
-    const auto colorMapStringValue = commonOpts.getColoringMapSelectionAction().getColorMap();
+    const auto colorMapStringValue = customOptions.getColoringMapSelectionAction().getColorMap();
 
     float minVal1 = 0.0f, maxVal1 = 0.0f, minVal2 = 0.0f, maxVal2 = 0.0f;
     QString coloringdimension;
@@ -3944,8 +3946,8 @@ void Computation::colorScatterPlots()
     }
     std::pair<float, float> sentinelValMinMax1{ minValScatter1.getMinimum(), maxValScatter1.getMaximum() };
     std::pair<float, float> sentinelValMinMax2{ minValScatter2.getMinimum(), maxValScatter2.getMaximum() };
-    float lowRangePercentile = commonOpts.getLowRangeColoringPercentileAction().getValue();
-    float highRangePercentile = commonOpts.getHighRangeColoringPercentileAction().getValue();
+    float lowRangePercentile = customOptions.getLowRangeColoringPercentileAction().getValue();
+    float highRangePercentile = customOptions.getHighRangeColoringPercentileAction().getValue();
     // Determine coloring source: PCA or gene
     if (commonOpts.getPcaColoringAction().isChecked()) {
         if (!_pcaCommonGenesDataset1.isValid() || !_pcaCommonGenesDataset2.isValid()) {

@@ -29,9 +29,11 @@ void GradientSurferPlugin::init()
     GroupsAction* groupForAction = new GroupsAction(this, "Settings");
     _settingsAction.getDataset1OptionsHolder().setExpanded(false);
     _settingsAction.getDataset2OptionsHolder().setExpanded(false);
+    _settingsAction.getCustomizationOptionsHolder().setExpanded(false);
     _settingsAction.getCommonOptionsHolder().setExpanded(true);
 
     groupForAction->addGroupAction(&_settingsAction.getCommonOptionsHolder());
+    groupForAction->addGroupAction(&_settingsAction.getCustomizationOptionsHolder());
 
     addDockingAction(groupForAction, nullptr, gui::DockAreaFlag::Left, true, gui::AutoHideLocation::Left);
 
