@@ -552,7 +552,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_computePCAAction);
     addAction(&_computeAction);
 
-    addAction(_statusBarActionWidget);
+    //addAction(_statusBarActionWidget);
 
 }
 

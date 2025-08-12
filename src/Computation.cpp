@@ -1904,7 +1904,7 @@ void Computation::setStatusMessage(const QString& status, const QString& message
         else resolvedColor = "#6c757d";                    
     }
     int brCount;
-    QString wrappedMessage = wrapMessageWithBrCount(message, brCount,50);
+    QString wrappedMessage = wrapMessageWithBrCount(message, brCount,40);
     _settingsAction.getCommonOptionsHolder().getStatusBarAction()->statusBar()->setFixedHeight(30 + brCount * 20); // Adjust height based on number of <br> tags
     QJsonObject obj;
     obj["status"] = status;
