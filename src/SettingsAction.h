@@ -362,29 +362,33 @@ public:
 public:
     SettingsAction(GradientSurferPlugin& GradientSurferPlugin);
 
-    Dataset1OptionsHolder& getDataset1OptionsHolder() { return _dataset1OptionsHolder; }
-    Dataset2OptionsHolder& getDataset2OptionsHolder() { return _dataset2OptionsHolder; }
-    CommonOptionsHolder& getCommonOptionsHolder() { return _commonOptionsHolder; }
+    Dataset1OptionsHolder& getDataset1OptionsHolder()   { return _dataset1OptionsHolder; }
+    Dataset2OptionsHolder& getDataset2OptionsHolder()   { return _dataset2OptionsHolder; }
+    CommonOptionsHolder& getCommonOptionsHolder()       { return _commonOptionsHolder; }
 
 
 public: 
     void fromVariantMap(const QVariantMap& variantMap) override;
     QVariantMap toVariantMap() const override;
 
-    QTableView* getTableView0Action() { return _tableView0Action; }
-    QTableView* getTableView2Action() { return _tableView2Action; }
-    QTableView* getTableView1Action() { return _tableView1Action; }
-    QLabel*& getSelectionTableHeaderLabel() { return selectionTableHeaderLabel; }
+    QTableView* getTableView0Action()       { return _tableView0Action; }
+    QTableView* getTableView2Action()       { return _tableView2Action; }
+    QTableView* getTableView1Action()       { return _tableView1Action; }
+    QLabel*& getSelectionTableHeaderLabel() { return _selectionTableHeaderLabel; }
+    QLabel*& getTable1HeaderLabel()         { return _table1HeaderLabel; }
+    QLabel*& getTable2HeaderLabel()         { return _table2HeaderLabel; }
 
 protected:
     GradientSurferPlugin& _viewerPlugin;
     mv::CoreInterface* _core;
-    Dataset1OptionsHolder              _dataset1OptionsHolder;
-    Dataset2OptionsHolder              _dataset2OptionsHolder;
-    CommonOptionsHolder              _commonOptionsHolder;
-    QTableView*                 _tableView0Action = nullptr;
-    QTableView*                 _tableView2Action = nullptr;
-    QTableView*                 _tableView1Action = nullptr;
-    QLabel* selectionTableHeaderLabel = nullptr;
+    Dataset1OptionsHolder           _dataset1OptionsHolder;
+    Dataset2OptionsHolder           _dataset2OptionsHolder;
+    CommonOptionsHolder             _commonOptionsHolder;
+    QTableView*                     _tableView0Action = nullptr;
+    QTableView*                     _tableView2Action = nullptr;
+    QTableView*                     _tableView1Action = nullptr;
+    QLabel*                         _selectionTableHeaderLabel = nullptr;
+    QLabel*                         _table1HeaderLabel = nullptr;
+    QLabel*                         _table2HeaderLabel = nullptr;
     friend class ChannelAction;
 };

@@ -941,7 +941,10 @@ void makeSelection(QString value, QTableView* tableView)
         }
     }
 }
-
+QString getOrDefaultDatasetName(const QString& name, int fallbackIndex) 
+{
+    return name.isEmpty() ? QString("Dataset %1").arg(fallbackIndex) : name;
+}
 void selectFirstRow(QTableView* tableView)
 {
     if (!tableView || !tableView->selectionModel()) return;

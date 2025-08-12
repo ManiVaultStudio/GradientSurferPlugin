@@ -681,7 +681,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                         bool sameDataset = ds1.isValid() && ds2.isValid() && ds1.getDatasetId() == ds2.getDatasetId();
 
                         if (_blockSelectionTrigger || _selectionBlocker) return;
-                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1");
+                        updateTableHeaders();
                         _selectionBlocker = true;
                         if (!sameDataset && _embeddingDataset2.isValid()) {
                             _embeddingDataset2->setSelectionIndices({});
@@ -700,7 +700,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                     // For the same dataset, only connect one handler and avoid cross-clearing
                     const auto mainSelectionChangedShared = [this]() {
                         if (_blockSelectionTrigger || _selectionBlocker) return;
-                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1/2");
+                        updateTableHeaders();
                         _selectionBlocker = true;
                         _selectionDataset = 1; // or 2, as both are the same
                         _selectionBlocker = false;
@@ -804,7 +804,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                         bool sameDataset = ds1.isValid() && ds2.isValid() && ds1.getDatasetId() == ds2.getDatasetId();
 
                         if (_blockSelectionTrigger || _selectionBlocker) return;
-                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset2");
+                        updateTableHeaders();
                         _selectionBlocker = true;
                         if (!sameDataset && _embeddingDataset1.isValid()) {
                             _embeddingDataset1->setSelectionIndices({});
@@ -823,7 +823,7 @@ void Computation::setupEmbeddingDatasetHandlers()
                     // For the same dataset, only connect one handler and avoid cross-clearing
                     const auto mainSelectionChangedShared = [this]() {
                         if (_blockSelectionTrigger || _selectionBlocker) return;
-                        _settingsAction.getSelectionTableHeaderLabel()->setText("Common Gene Table:Selection Dataset1/2");
+                        updateTableHeaders();
                         _selectionBlocker = true;
                         _selectionDataset = 2; // or 1, as both are the same
                         _selectionBlocker = false;
@@ -1267,7 +1267,25 @@ void Computation::setupColoringHandlers()
         }
         });
 }
+void Computation::updateTableHeaders()
+{
+    QString titleDatasetName0 = getOrDefaultDatasetName(
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText(),
+        _selectionDataset);
 
+    QString titleDatasetName1 = getOrDefaultDatasetName(
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText(),
+        1);
+
+    QString titleDatasetName2 = getOrDefaultDatasetName(
+        _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText(),
+        2);
+
+    _settingsAction.getSelectionTableHeaderLabel()->setText(
+        QStringLiteral("Common Gene Selection Table: %1").arg(titleDatasetName0));
+    _settingsAction.getTable1HeaderLabel()->setText(titleDatasetName1);
+    _settingsAction.getTable2HeaderLabel()->setText(titleDatasetName2);
+}
 void Computation::setupScatterplotHandlers()
 {
     // Show point selection changed handler
@@ -3642,6 +3660,19 @@ void Computation::colorLinePlots()
     auto& dataset1Options = _settingsAction.getDataset1OptionsHolder();
     auto& dataset2Options = _settingsAction.getDataset2OptionsHolder();
     const auto colorMapStringValue = commonOptions.getColoringMapSelectionAction().getColorMap();
+    QString titleDatasetName = "";
+    if (_selectionDataset == 1)
+    {
+        titleDatasetName = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText();
+    }
+    else if (_selectionDataset == 2)
+    {
+        titleDatasetName = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText();
+    }
+    if (titleDatasetName.isEmpty())
+    {
+        titleDatasetName = "Dataset " + QString::number(_selectionDataset);
+    }
 
     /*if (commonOptions.getSelectionModeAction().isChecked())
     {
@@ -3694,9 +3725,10 @@ void Computation::colorLinePlots()
                 }
             }
             yPositionString = "Mean Expr All Genes";
-            titleText = QString("%1 vs %2 expression of selected cells (%3)")
+            titleText = QString("%1 vs %2 expression of selected cells (%3) in %4")
                 .arg(xPositionString, yPositionString)
-                .arg(_filteredSelectionIndices.size());
+                .arg(_filteredSelectionIndices.size())
+                .arg(titleDatasetName);
         }
         else
         {
@@ -3735,17 +3767,17 @@ void Computation::colorLinePlots()
                         minValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getLowRangeColoringPercentileAction().getValue()); 
                         maxValue = percentile(selectedData, _settingsAction.getCommonOptionsHolder().getHighRangeColoringPercentileAction().getValue()); 
                     }
-                    titleText = QString("%1 vs %2: selected (%3) in set %4")
+                    titleText = QString("%1 vs %2: selected (%3) in %4")
                         .arg(xPositionString, yPositionString)
                         .arg(_filteredSelectionIndices.size())
-                        .arg(_selectionDataset);
+                        .arg(titleDatasetName);
                 }
                 else
                 {
                     xPositionString = "Empty";
                     colordimensionIndx = 0;
                     yPositionString = "Empty";
-                    titleText = QString("Gene unavailable in set %1").arg(_selectionDataset);
+                    titleText = QString("Gene unavailable in %1").arg(titleDatasetName);
                 }
 
             }
@@ -3754,7 +3786,7 @@ void Computation::colorLinePlots()
                 xPositionString= "Empty";
                 colordimensionIndx = 0;
                 yPositionString = "Empty";
-                titleText = QString("Gene unavailable in set %1").arg(_selectionDataset);
+                titleText = QString("Gene unavailable in %1").arg(titleDatasetName);
             }
 
         }
