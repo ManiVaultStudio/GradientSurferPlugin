@@ -523,10 +523,10 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
                                 {
                                     smoothingTypeAction->setCurrentText(smoothingType);
                                     int maxVal = (pointDataset->getNumPoints());
-                                    int currentVal = static_cast<int>(std::round(maxVal * 0.50));
+                                    //int currentVal = static_cast<int>(std::round(maxVal * 0.50)); //
                                     smoothingWindowAction->setMaximum(maxVal);
-                                    smoothingWindowAction->setMinimum(1);
-                                    smoothingWindowAction->setValue(currentVal);
+                                    smoothingWindowAction->setMinimum(0);
+                                    smoothingWindowAction->setValue(smoothingWindow);
                                 }
                                 else
                                 {

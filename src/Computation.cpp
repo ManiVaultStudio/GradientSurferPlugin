@@ -57,6 +57,7 @@ Computation::Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAct
     setupRangeColoringHandlers();   
     setupTableHandlers();           
     setupScatterplotHandlers();
+    setupCustomizationOptions();
     datasetNamesCheck();
     _pca1.setCompletionCallback([this](bool success, const std::string& message) {
         _isManualComputeComputing = false;
@@ -123,7 +124,20 @@ void Computation::setupPlotSelectionOptions()
 
     connect(&mv::plugins(), &AbstractPluginManager::pluginAdded, this, plotSelectionOptions);
 }
+void Computation::setupCustomizationOptions()
+{
+    connect(&_settingsAction.getCommonOptionsHolder().getSmoothingWindowPercentageAction(),
+        &IntegralAction::valueChanged,
+        this,
+        [this]() { _smoothingWindowPercentDebounceTimer.start(100); });
 
+    connect(&_smoothingWindowPercentDebounceTimer, &QTimer::timeout, this, [this]() {
+        if (!_projectOpened) return;
+
+
+        colorLinePlots();
+        });
+}
 void Computation::setupRangeColoringHandlers()
 {
     // Expression coloring range handlers for scatterplot 1
@@ -381,6 +395,7 @@ void Computation::setupDebounceTimers()
         //});
 
     _NRangeDebounceTimer.setSingleShot(true);
+    _smoothingWindowPercentDebounceTimer.setSingleShot(true);
     _clusterSelectionDebounceTimer.setSingleShot(true);
     _lineExpressionColoringRangeDebounceTimer.setSingleShot(true);
     _scatterplot1ExpressionColoringRangeDebounceTimer.setSingleShot(true);
@@ -3651,7 +3666,10 @@ void Computation::colorLinePlots()
     const int totalSelectedPoints = _selectedCellPointDataset->getNumPoints();
     constexpr auto smoothingType = "Moving Average";
     QString xPositionString = "Rotated Y Coordinates";
-    const int smoothingWindow = static_cast<int>(std::round(totalSelectedPoints * 0.2));
+    int smoothingpercent = _settingsAction.getCommonOptionsHolder().getSmoothingWindowPercentageAction().getValue();
+
+    const int smoothingWindow = static_cast<int>(std::round(totalSelectedPoints * (static_cast<double>(smoothingpercent) / 100.0)));
+    //qInfo() << "Smoothing window size: " << smoothingWindow << " for total selected points: " << totalSelectedPoints << " with percentage: " << smoothingpercent;
     QString yPositionString, titleText, colorDatasetID, colordatasetType;
     int colordimensionIndx = -1;
     float minValue = 0.0f, maxValue = 0.0f;

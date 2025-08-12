@@ -318,6 +318,9 @@ public:
         const StringAction& getDefaultSliceNamesAction() const { return _defaultSliceNamesAction; }
         StringAction& getDefaultSliceNamesAction() { return _defaultSliceNamesAction; }
 
+        const IntegralAction& getSmoothingWindowPercentageAction() const { return _smoothingWindowPercentageAction; }
+        IntegralAction& getSmoothingWindowPercentageAction() { return _smoothingWindowPercentageAction; }
+
     protected:
         SettingsAction& _settingsOptions;
 
@@ -355,6 +358,7 @@ public:
         StringAction       _defaultDatasetNamesAction;
         OptionAction       _sliceSelectionAction;
         StringAction        _defaultSliceNamesAction;
+        IntegralAction      _smoothingWindowPercentageAction;
     };
 
 

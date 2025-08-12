@@ -81,6 +81,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder.getLineplotUpperColoringRangeAction().setToolTip("Lineplot Upper Coloring Range");
     _dataset1OptionsHolder.getLineplotLowerColoringRangeAction().setToolTip("Lineplot Lower Coloring Range");
     _commonOptionsHolder.getBottomNRowsAction().setToolTip("Bottom N Rows Action");
+    _commonOptionsHolder.getSmoothingWindowPercentageAction().setToolTip("Smoothing Window Percentage Action");
     _commonOptionsHolder.getLowRangeColoringPercentileAction().setToolTip("Low Range Coloring Percentile Action");
     _commonOptionsHolder.getHighRangeColoringPercentileAction().setToolTip("High Range Coloring Percentile Action");
     _dataset2OptionsHolder.getClusterDatasetAction().setToolTip("Cluster Dataset 2");
@@ -119,6 +120,12 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getTopNRowsAction().setMinimum(0);
     _commonOptionsHolder.getTopNRowsAction().setMaximum(100);
     _commonOptionsHolder.getTopNRowsAction().setValue(5);
+
+    _commonOptionsHolder.getSmoothingWindowPercentageAction().setMinimum(1);
+    _commonOptionsHolder.getSmoothingWindowPercentageAction().setMaximum(100);
+    _commonOptionsHolder.getSmoothingWindowPercentageAction().setNumberOfDecimals(0);
+    _commonOptionsHolder.getSmoothingWindowPercentageAction().setValue(10);
+
 
     _commonOptionsHolder.getLowRangeColoringPercentileAction().setNumberOfDecimals(2);
     _commonOptionsHolder.getLowRangeColoringPercentileAction().setMinimum(0.00);
@@ -247,6 +254,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
 
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
+    _commonOptionsHolder.getSmoothingWindowPercentageAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getLowRangeColoringPercentileAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
     _commonOptionsHolder.getHighRangeColoringPercentileAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
 
@@ -489,6 +497,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
 
     // Coloring and visualization actions
     _coloringMapSelectionAction(this, "Color Map"),
+    _smoothingWindowPercentageAction(this, "Line Smoothing %"),
 
     // Status and search actions
     _statusMessageAction(this, "Status"),
@@ -522,6 +531,7 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     //addAction(&_selectionModeAction);
     addAction(&_focusSelectionAction);
     addAction(&_hidePointSelectionAction);
+    addAction(&_smoothingWindowPercentageAction);
 
     addAction(&_autoComputeAction);
     addAction(&_computationTypeAction);
