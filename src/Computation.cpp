@@ -977,7 +977,6 @@ void Computation::setupEmbeddingDatasetHandlers()
 
 }
 
-
 void Computation::datasetNamesCheck()
 {
     if (!_projectOpened) return;
@@ -1008,11 +1007,27 @@ void Computation::datasetNamesCheck()
 
     auto allDatasets = mv::data().getAllDatasets();
 
+    // Pre-compile regexes for dataset substrings
+    QHash<QString, QRegularExpression> datasetRegexes;
+    for (const auto& sub : datasetSubstrings) {
+        datasetRegexes.insert(sub, QRegularExpression(
+            QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(sub)),
+            QRegularExpression::CaseInsensitiveOption));
+    }
+
+    // Pre-compile regexes for slice substrings
+    QHash<QString, QRegularExpression> sliceRegexes;
+    for (const auto& slice : sliceSubstrings) {
+        sliceRegexes.insert(slice, QRegularExpression(
+            QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice)),
+            QRegularExpression::CaseInsensitiveOption));
+    }
+
     // match substrings as whole tokens (prevent "1" matching "10" or "11")
-    auto matchesToken = [](const QString& name, const QString& token) {
-        QRegularExpression re(QString("\\b%1\\b").arg(QRegularExpression::escape(token)),
-            QRegularExpression::CaseInsensitiveOption);
-        return re.match(name).hasMatch();
+    auto matchesToken = [&](const QString& name, const QString& token, const QHash<QString, QRegularExpression>& regexes) {
+        auto it = regexes.find(token);
+        if (it == regexes.end()) return false;
+        return it.value().match(name).hasMatch();
         };
 
     // keep dataset substrings present in at least one dataset
@@ -1021,7 +1036,7 @@ void Computation::datasetNamesCheck()
         if (ds->getDataType() != PointType) continue;
         const QString g = ds->getGuiName();
         for (const auto& sub : datasetSubstrings)
-            if (matchesToken(g, sub)) presentDatasets.insert(sub);
+            if (matchesToken(g, sub, datasetRegexes)) presentDatasets.insert(sub);
     }
 
     QStringList filteredDatasets = presentDatasets.values();
@@ -1037,8 +1052,8 @@ void Computation::datasetNamesCheck()
                     return std::any_of(allDatasets.begin(), allDatasets.end(),
                         [&](const auto& dataset) {
                             return dataset->getDataType() == PointType &&
-                                matchesToken(dataset->getGuiName(), dsSub) &&
-                                matchesToken(dataset->getGuiName(), slice);
+                                matchesToken(dataset->getGuiName(), dsSub, datasetRegexes) &&
+                                matchesToken(dataset->getGuiName(), slice, sliceRegexes);
                         });
                 });
             if (allPresent) finalSlices.append(slice);
@@ -1068,9 +1083,6 @@ void Computation::datasetNamesCheck()
 
     holder.getSliceSelectionAction().setCurrentIndex(finalSlices.isEmpty() ? -1 : 0);
 }
-
-
-
 
 void Computation::setupEmbeddingDimensionHandlers()
 {
