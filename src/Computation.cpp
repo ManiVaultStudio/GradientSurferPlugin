@@ -1480,7 +1480,7 @@ void Computation::setupScatterplotHandlers()
         };
 
     const auto lineplotviewSelectionChanged1 = [this]() {
-        setStatusMessage("M", "Lineplotview selection 1 updated", "");
+        //setStatusMessage("M", "Lineplotview selection 1 updated", "");
         //TODO
         };
 
