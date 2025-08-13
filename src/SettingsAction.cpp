@@ -125,7 +125,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _customizationOptionsHolder.getSmoothingWindowPercentageAction().setMinimum(1);
     _customizationOptionsHolder.getSmoothingWindowPercentageAction().setMaximum(100);
     _customizationOptionsHolder.getSmoothingWindowPercentageAction().setNumberOfDecimals(0);
-    _customizationOptionsHolder.getSmoothingWindowPercentageAction().setValue(10);
+    _customizationOptionsHolder.getSmoothingWindowPercentageAction().setValue(20);
 
 
     _customizationOptionsHolder.getLowRangeColoringPercentileAction().setNumberOfDecimals(2);
