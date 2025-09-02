@@ -982,6 +982,8 @@ void Computation::datasetNamesCheck()
     if (!_projectOpened) return;
     auto& holder = _settingsAction.getCommonOptionsHolder();
 
+    QString currentSlice = holder.getSliceSelectionAction().getCurrentText();
+
     // parse semicolon-separated list, trimmed
     auto parseList = [](const QString& input) {
         QStringList out;
@@ -1069,11 +1071,15 @@ void Computation::datasetNamesCheck()
     holder.getComparatorDataset2SelectorAction().setOptions(filteredDatasets);
     holder.getSliceSelectionAction().setOptions(finalSlices);
 
-    // selectors: allow dataset1 when at least one exists, dataset2 only if >1
-    holder.getComparatorDataset1SelectorAction().setCurrentIndex(0);
-    holder.getComparatorDataset1SelectorAction().setDisabled(false);
+    QString previous1 = holder.getComparatorDataset1SelectorAction().getCurrentText();
+    QString previous2 = holder.getComparatorDataset2SelectorAction().getCurrentText();
+
+    int idx1 = filteredDatasets.indexOf(previous1);
+    holder.getComparatorDataset1SelectorAction().setCurrentIndex(idx1 >= 0 ? idx1 : (filteredDatasets.isEmpty() ? -1 : 0));
+
+    int idx2 = filteredDatasets.indexOf(previous2);
     if (filteredDatasets.size() > 1) {
-        holder.getComparatorDataset2SelectorAction().setCurrentIndex(1);
+        holder.getComparatorDataset2SelectorAction().setCurrentIndex(idx2 >= 0 ? idx2 : 1);
         holder.getComparatorDataset2SelectorAction().setDisabled(false);
     }
     else {
@@ -1081,7 +1087,9 @@ void Computation::datasetNamesCheck()
         holder.getComparatorDataset2SelectorAction().setDisabled(true);
     }
 
-    holder.getSliceSelectionAction().setCurrentIndex(finalSlices.isEmpty() ? -1 : 0);
+
+    int sliceIndex = finalSlices.indexOf(currentSlice);
+    holder.getSliceSelectionAction().setCurrentIndex(sliceIndex >= 0 ? sliceIndex : (finalSlices.isEmpty() ? -1 : 0));
 }
 
 void Computation::setupEmbeddingDimensionHandlers()
@@ -1887,7 +1895,7 @@ void Computation::ManualCompute()
         clearTable(_settingsAction.getTableView1Action());
         clearTable(_settingsAction.getTableView2Action());
         //setStatusMessage("E", "Error occurred during PCA setup", "");
-        qCritical() << "Error occurred during PCA setup";
+        qWarning() << "Error occurred during PCA setup";
         _isManualComputeComputing = false;
         return;
     }
@@ -2612,7 +2620,7 @@ void Computation::processAfterPCADatasetsPopulated()
         clearTable(_settingsAction.getTableView2Action());
         return;
     }
-
+    _settingsAction.getCommonOptionsHolder().getPcaColoringAction().setChecked(true);
     if (_settingsAction.getCommonOptionsHolder().getAutoComputeAction().isChecked()) {
         correlationAfterPCA();
     }
@@ -2719,7 +2727,7 @@ void Computation::correlationAfterPCA()
 
     setupTableModelAndSelection(_settingsAction.getTableView2Action(), _geneCorrValues2, _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView0Action(), _settingsAction.getTableView1Action(), _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(),false);
     setupTableModelAndSelection(_settingsAction.getTableView1Action(), _geneCorrValues1, _settingsAction.getDataset1OptionsHolder().getGeneSelectionAction(), _settingsAction.getTableView0Action(), _settingsAction.getTableView2Action(), _settingsAction.getDataset2OptionsHolder().getGeneSelectionAction(),false);
-    selectFirstRow(_settingsAction.getTableView2Action());
+    //selectFirstRow(_settingsAction.getTableView2Action());
     
 
     setStatusMessage("C", "Correlation between genes and PC completed", "#28a745");
