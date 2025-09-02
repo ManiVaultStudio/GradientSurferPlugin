@@ -1895,7 +1895,7 @@ void Computation::ManualCompute()
         clearTable(_settingsAction.getTableView1Action());
         clearTable(_settingsAction.getTableView2Action());
         //setStatusMessage("E", "Error occurred during PCA setup", "");
-        qCritical() << "Error occurred during PCA setup";
+        qWarning() << "Error occurred during PCA setup";
         _isManualComputeComputing = false;
         return;
     }
