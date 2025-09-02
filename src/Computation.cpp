@@ -982,6 +982,8 @@ void Computation::datasetNamesCheck()
     if (!_projectOpened) return;
     auto& holder = _settingsAction.getCommonOptionsHolder();
 
+    QString currentSlice = holder.getSliceSelectionAction().getCurrentText();
+
     // parse semicolon-separated list, trimmed
     auto parseList = [](const QString& input) {
         QStringList out;
@@ -1069,11 +1071,15 @@ void Computation::datasetNamesCheck()
     holder.getComparatorDataset2SelectorAction().setOptions(filteredDatasets);
     holder.getSliceSelectionAction().setOptions(finalSlices);
 
-    // selectors: allow dataset1 when at least one exists, dataset2 only if >1
-    holder.getComparatorDataset1SelectorAction().setCurrentIndex(0);
-    holder.getComparatorDataset1SelectorAction().setDisabled(false);
+    QString previous1 = holder.getComparatorDataset1SelectorAction().getCurrentText();
+    QString previous2 = holder.getComparatorDataset2SelectorAction().getCurrentText();
+
+    int idx1 = filteredDatasets.indexOf(previous1);
+    holder.getComparatorDataset1SelectorAction().setCurrentIndex(idx1 >= 0 ? idx1 : (filteredDatasets.isEmpty() ? -1 : 0));
+
+    int idx2 = filteredDatasets.indexOf(previous2);
     if (filteredDatasets.size() > 1) {
-        holder.getComparatorDataset2SelectorAction().setCurrentIndex(1);
+        holder.getComparatorDataset2SelectorAction().setCurrentIndex(idx2 >= 0 ? idx2 : 1);
         holder.getComparatorDataset2SelectorAction().setDisabled(false);
     }
     else {
@@ -1081,7 +1087,9 @@ void Computation::datasetNamesCheck()
         holder.getComparatorDataset2SelectorAction().setDisabled(true);
     }
 
-    holder.getSliceSelectionAction().setCurrentIndex(finalSlices.isEmpty() ? -1 : 0);
+
+    int sliceIndex = finalSlices.indexOf(currentSlice);
+    holder.getSliceSelectionAction().setCurrentIndex(sliceIndex >= 0 ? sliceIndex : (finalSlices.isEmpty() ? -1 : 0));
 }
 
 void Computation::setupEmbeddingDimensionHandlers()
