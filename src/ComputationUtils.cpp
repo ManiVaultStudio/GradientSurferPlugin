@@ -2134,7 +2134,7 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     FunctionTimer timer(Q_FUNC_INFO);
 
     // Early parameter validation
-    if (dimensionVal.isEmpty())
+    if (dimensionVal.trimmed().isEmpty())
     {
         return { 0.0f, 0.0f };
     }
