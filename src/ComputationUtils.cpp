@@ -2129,24 +2129,50 @@ QString wrapMessageWithBrCount(const QString& message, int& brCount, int maxLine
 
     return wrappedLines.join("<br>");
 }
-std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax,float lowRangePercentileValue, float highRangePercentileValue)
+std::pair<float, float> createScatterplotPointColors(
+    QString coloringDataset,
+    QString colorMapValue,
+    std::vector<int>& selectedIndices,
+    QString pointValuesDataset,
+    int numOfTotalPoints,
+    QString dimensionVal,
+    float minValue,
+    float maxValue,
+    bool isFullData,
+    std::pair<float, float> sentinelMinMax,
+    float lowRangePercentileValue,
+    float highRangePercentileValue)
 {
     FunctionTimer timer(Q_FUNC_INFO);
 
-    // Early parameter validation
+    // Helper to zero out coloringDatasetFull
+    auto zeroOutDataset = [&](auto& coloringDatasetFull) {
+        if (coloringDatasetFull.isValid() && numOfTotalPoints > 0) {
+            std::vector<float> zeros(static_cast<size_t>(numOfTotalPoints), 0.0f);
+            coloringDatasetFull->setData(zeros.data(), numOfTotalPoints, 1);
+            coloringDatasetFull->setDimensionNames({ "ColorDim" });
+            events().notifyDatasetDataChanged(coloringDatasetFull);
+        }
+        };
+
     if (dimensionVal.trimmed().isEmpty())
     {
+        auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
+        zeroOutDataset(coloringDatasetFull);
         return { 0.0f, 0.0f };
     }
 
     if (coloringDataset.isEmpty() || colorMapValue.isEmpty() ||
         selectedIndices.empty() || pointValuesDataset.isEmpty())
     {
+        auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
+        zeroOutDataset(coloringDatasetFull);
         qWarning() << "createScatterplotPointColors: Invalid parameters for scatterplot cluster colors creation. ";
-        //qInfo() << "coloringDataset:" << coloringDataset<< ", colorMapValue:" << colorMapValue<< ", selectedIndices size:" << selectedIndices.size()<< ", pointValuesDataset:" << pointValuesDataset<< ", dimensionVal:" << dimensionVal;
         return { 0.0f, 0.0f };
     }
     if (numOfTotalPoints <= 0) {
+        auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
+        zeroOutDataset(coloringDatasetFull);
         qWarning() << "Invalid number of total points for scatterplot cluster colors creation.";
         return { 0.0f, 0.0f };
     }
@@ -2154,14 +2180,15 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
     auto pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
     if (!coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid()) {
+        zeroOutDataset(coloringDatasetFull);
         qWarning() << "Invalid datasets provided for scatterplot cluster colors creation.";
         return { 0.0f, 0.0f };
     }
 
-    // Find the dimension index
     auto getdimensionValues = pointValuesDatasetFull->getDimensionNames();
     int dimensionIndex = findDimensionIndexWithFallback(getdimensionValues, dimensionVal);
     if (dimensionIndex < 0) {
+        zeroOutDataset(coloringDatasetFull);
         qWarning() << "Dimension" << dimensionVal << "not found in dataset" << pointValuesDataset;
         return { 0.0f, 0.0f };
     }
@@ -2169,16 +2196,16 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     std::vector<float> geneExpValues(selectedIndices.size());
 
     if (!isFullData) {
-        // If not full data, extract all points for the dimension
         if (pointValuesDatasetFull->getNumPoints() != static_cast<int>(selectedIndices.size())) {
+            zeroOutDataset(coloringDatasetFull);
             qWarning() << "Data mismatch: number of points does not match selected indices.";
             return { 0.0f, 0.0f };
         }
         pointValuesDatasetFull->extractDataForDimension(geneExpValues, dimensionIndex);
     }
     else {
-        // If full data, populate only for selected indices
         if (!selectedIndices.empty() && *std::max_element(selectedIndices.begin(), selectedIndices.end()) >= pointValuesDatasetFull->getNumPoints()) {
+            zeroOutDataset(coloringDatasetFull);
             qWarning() << "Data mismatch: selected index out of range.";
             return { 0.0f, 0.0f };
         }
@@ -2187,26 +2214,23 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     }
 
     if (geneExpValues.size() != selectedIndices.size()) {
+        zeroOutDataset(coloringDatasetFull);
         qWarning() << "Data mismatch: geneExpValues and selectedIndices size differ.";
         return { 0.0f, 0.0f };
     }
 
-    // Compute robust min/max from geneExpValues (e.g., 1st and 99th percentiles)
     float computedMin = percentile(geneExpValues, lowRangePercentileValue);
     float computedMax = percentile(geneExpValues, highRangePercentileValue);
     float fulldatasetMin = sentinelMinMax.first;
     float fulldatasetMax = sentinelMinMax.second;
 
-    // Robust min/max logic
     float globalMin = std::min(fulldatasetMin, computedMin);
     float globalMax = std::max(fulldatasetMax, computedMax);
 
-    // Choose a sentinel value outside the global range
-    float sentinelValue = globalMin - 100.0f; // or globalMax + 100.0f, depending on convention
+    float sentinelValue = globalMin - 100.0f;
 
     std::vector<float> finalData(static_cast<size_t>(numOfTotalPoints), sentinelValue);
 
-    // Map gene expression values to their corresponding indices
     for (size_t i = 0; i < selectedIndices.size(); ++i) {
         int idx = selectedIndices[i];
         if (idx >= 0 && idx < numOfTotalPoints) {
@@ -2218,9 +2242,7 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     }
 
     coloringDatasetFull->setData(finalData.data(), numOfTotalPoints, 1);
-
     coloringDatasetFull->setDimensionNames({ "ColorDim" });
-
     events().notifyDatasetDataChanged(coloringDatasetFull);
 
     return { computedMin, computedMax };
