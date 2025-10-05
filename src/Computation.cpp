@@ -4027,7 +4027,8 @@ void Computation::colorScatterPlots()
             return;
         }
         const QString selectedPCADimensionName = commonOpts.getPcaDimensionForColoringAction().getCurrentDimensionName();
-
+        _scatterplotPointColoringDataset1->setGuiName("PCA "+ selectedPCADimensionName +" Coloring Dataset 1");
+        _scatterplotPointColoringDataset2->setGuiName("PCA " + selectedPCADimensionName + " Coloring Dataset 2");
        auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             pcaDataset1ID, _embeddingDataset1->getNumPoints(),
             selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile);
@@ -4055,6 +4056,27 @@ void Computation::colorScatterPlots()
         }
         const QString selectedGeneName1 = ds1Opts.getGeneSelectionAction().getCurrentDimensionName();
         const QString selectedGeneName2 = ds2Opts.getGeneSelectionAction().getCurrentDimensionName();
+        if (!selectedGeneName1.trimmed().isEmpty())
+        {
+            //_scatterplotPointColoringDataset1->setGuiName("Gene " + selectedGeneName1 + " Coloring Dataset 1");
+            _scatterplotPointColoringDataset1->setGuiName("Gene Coloring Dataset 1");
+        }
+        else
+        {
+            //_scatterplotPointColoringDataset1->setGuiName("Gene "+ selectedGeneName1 +" Unavailable Coloring Dataset 1");
+            _scatterplotPointColoringDataset1->setGuiName("Gene Unavailable Coloring Dataset 1");
+        }
+        if (!selectedGeneName2.trimmed().isEmpty())
+        {
+            //_scatterplotPointColoringDataset2->setGuiName("Gene " + selectedGeneName2 + " Coloring Dataset 2");
+            _scatterplotPointColoringDataset2->setGuiName("Gene Coloring Dataset 2");
+        }
+        else
+        {
+            //_scatterplotPointColoringDataset2->setGuiName("Gene " + selectedGeneName2 + " Unavailable Coloring Dataset 2");
+            _scatterplotPointColoringDataset2->setGuiName("Gene Unavailable Coloring Dataset 2");
+        }
+        
         auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             geneDataset1ID, _embeddingDataset1->getNumPoints(),
             selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile);
