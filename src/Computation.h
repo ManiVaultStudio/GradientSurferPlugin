@@ -196,6 +196,9 @@ protected:
     //QMetaObject::Connection _pixelSelectionStartedConnection;
     QMetaObject::Connection _embeddingDataset1Connection;
     QMetaObject::Connection _embeddingDataset2Connection;
-
+    QString _selectedClusterDataset1Name = "";
+    QString _selectedClusterDataset2Name = "";
+    QString  _clusterSetNameString = "";
+    QStringList _selectedClusterNamesList = {};
     friend class ChannelAction;
 };

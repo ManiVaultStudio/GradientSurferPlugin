@@ -573,7 +573,11 @@ void Computation::setupPointDatasetHandlers()
             _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setOptions(commonClusterDatasetNames);
             if (commonClusterDatasetNames.size()>0)
             {
-                _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setCurrentIndex(0);
+                if (commonClusterDatasetNames.contains(_clusterSetNameString))
+                {
+                    _settingsAction.getCommonOptionsHolder().getClusterDatasetSelectionAction().setCurrentText(_clusterSetNameString);
+                }
+                
             }
 
 
@@ -650,20 +654,33 @@ void Computation::setupEmbeddingDatasetHandlers()
                     _settingsAction.getDataset1OptionsHolder().getPointDatasetAction().setCurrentDataset(parent);
                     auto children = parent->getChildren();
                     Datasets clusterDatasets;
+                    QStringList clusterDatasetNames;
                     for (const Dataset<Clusters>& child : children) {
                         if (child->getDataType() == ClusterType && (child->getGroupIndex() != 667 || child->getGroupIndex() != 666)) {
                             clusterDatasets.append(child);
+                            clusterDatasetNames.append(child->getGuiName());
                         }
                     }
-                    auto selectedClusterDatasetName = _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset();
-
+                   
                     _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setDatasets(clusterDatasets);
-                    if (clusterDatasets.contains(selectedClusterDatasetName)) {
-                        _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentDataset(selectedClusterDatasetName);
+                    
+                    if (clusterDatasetNames.contains(_selectedClusterDataset1Name)) {
+                        _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentText(_selectedClusterDataset1Name);
                     }
-                    else if (clusterDatasets.size() > 0) {
-                        _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentDataset(clusterDatasets.first());
+                    else  {
+                        if (clusterDatasets.size() > 0)
+                        {
+                            _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentDataset(clusterDatasets.first());
+
+                        }
+                        else
+                        {
+                            _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setCurrentText({});
+                        }
+                        
                     }
+
+
                 }
                 else {
                     _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().setDatasets({});
@@ -773,20 +790,34 @@ void Computation::setupEmbeddingDatasetHandlers()
                     _settingsAction.getDataset2OptionsHolder().getPointDatasetAction().setCurrentDataset(parent);
                     auto children = parent->getChildren();
                     Datasets clusterDatasets;
+                    QStringList clusterDatasetNames;
                     for (const Dataset<Clusters>& child : children) {
                         if (child->getDataType() == ClusterType && (child->getGroupIndex() != 667 || child->getGroupIndex() != 666)) {
                             clusterDatasets.append(child);
+                            clusterDatasetNames.append(child->getGuiName());
                         }
                     }
 
-                    auto selectedClusterDatasetName = _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().getCurrentDataset();
                     _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setDatasets(clusterDatasets);
-                    if (clusterDatasets.contains(selectedClusterDatasetName)) {
-                        _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setCurrentDataset(selectedClusterDatasetName);
+
+                    if (clusterDatasetNames.contains(_selectedClusterDataset2Name)) {
+                        _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setCurrentText(_selectedClusterDataset2Name);
                     }
-                    else if (clusterDatasets.size() > 0) {
-                        _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setCurrentDataset(clusterDatasets.first());
+                    else {
+                        if (clusterDatasets.size() > 0)
+                        {
+                            _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setCurrentDataset(clusterDatasets.first());
+
+                        }
+                        else
+                        {
+                            _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setCurrentText({});
+                        }
+
                     }
+
+
+
                 }
                 else {
                     _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().setDatasets({});
@@ -1175,6 +1206,7 @@ void Computation::setupComputeHandlers()
         if (!_projectOpened) return;
         setStatusMessage("R", "Computation in progress", "");
         disableOptions();
+        _selectedClusterNamesList = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction().getSelectedOptions();
         setSelectionAndAutoCompute();
         enableOptions();
         });
@@ -2185,6 +2217,7 @@ void Computation::updateClusterOptions()
     {
         auto clusterFullDataset1 = mv::data().getDataset<Clusters>(
             _settingsAction.getDataset1OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+        _selectedClusterDataset1Name = clusterFullDataset1->getGuiName();
         const auto clusters1 = clusterFullDataset1->getClusters();
         for (const auto& cluster : clusters1)
             clusterNames1.insert(cluster.getName());
@@ -2195,18 +2228,40 @@ void Computation::updateClusterOptions()
     {
         auto clusterFullDataset2 = mv::data().getDataset<Clusters>(
             _settingsAction.getDataset2OptionsHolder().getClusterDatasetAction().getCurrentDataset().getDatasetId());
+        _selectedClusterDataset2Name = clusterFullDataset2->getGuiName();
         const auto clusters2 = clusterFullDataset2->getClusters();
         for (const auto& cluster : clusters2)
             clusterNames2.insert(cluster.getName());
     }
+    _clusterSetNameString = "";
+    if (_selectedClusterDataset1Name== _selectedClusterDataset2Name)
+    {
+        _clusterSetNameString = _selectedClusterDataset1Name;
+    }
 
+    QStringList selectedClusterNamesList;
 
-
-    QStringList clusterNamesCommon = getCommonSortedNames(clusterNames1, clusterNames2);
-
+    selectedClusterNamesList = getCommonSortedNames(clusterNames1, clusterNames2);
     auto& clusterSelectionAction = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction();
-    clusterSelectionAction.setOptions(clusterNamesCommon);
-    clusterSelectionAction.setSelectedOptions(clusterNamesCommon);
+    clusterSelectionAction.setOptions(selectedClusterNamesList);
+
+    //find common values between _selectedClusterNamesList and selectedClusterNamesList
+    QStringList commonSelectedClusters;
+    for (const auto& name : _selectedClusterNamesList) {
+        if (selectedClusterNamesList.contains(name)) {
+            commonSelectedClusters.append(name);
+        }
+    }
+    if (!commonSelectedClusters.isEmpty()) {
+        _selectedClusterNamesList = commonSelectedClusters;
+        clusterSelectionAction.setSelectedOptions(_selectedClusterNamesList);
+    }
+    else {
+        _selectedClusterNamesList = selectedClusterNamesList;
+        clusterSelectionAction.setSelectedOptions(_selectedClusterNamesList);
+    }
+
+    
 }
 
 void Computation::processAfterPCAComplete()
