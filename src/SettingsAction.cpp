@@ -24,7 +24,8 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder(*this),
     _dataset2OptionsHolder(*this),
     _commonOptionsHolder(*this),
-    _customizationOptionsHolder(*this)
+    _customizationOptionsHolder(*this),
+    _experimentOptionsHolder(*this)
 {
     setSerializationName("GradientSurfer:Settings");
     _dataset1OptionsHolder.getClusterDatasetAction().setSerializationName("GradientSurfer:Clusterdataset");
@@ -556,6 +557,27 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
 
 }
 
+inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(SettingsAction& settingsAction) :
+    VerticalGroupAction(&settingsAction, "Experiment Options"),
+    _settingsOptions(settingsAction),
+    _saveTablesAction(this, "Save Tables"),
+    _saveScatterplotsAction(this, "Save Scatterplots"),
+    _saveSelectionAction(this, "Save Selection"),
+    _loadSelectionAction(this, "Load Selection"),
+    _rotationDatasetAction(this, "Rotation Dataset"),
+    _rotationDegreeAction(this, "Rotation Degree")
+{
+    setText("Experiment Options");
+    setIcon(mv::util::StyledIcon("flask"));
+    setPopupSizeHint(QSize(300, 0));
+    setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
+    addAction(&_saveTablesAction);
+    addAction(&_saveScatterplotsAction);
+    addAction(&_saveSelectionAction);
+    addAction(&_loadSelectionAction);
+    addAction(&_rotationDatasetAction);
+    addAction(&_rotationDegreeAction);
+}
 
 void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
 {

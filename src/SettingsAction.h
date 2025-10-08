@@ -38,7 +38,6 @@
 #include <actions/HorizontalToolbarAction.h>
 #include <actions/VerticalToolbarAction.h>
 #include "QStatusBar"
-#include "HighPerfLineChart.h"
 #include <actions/ColorMap1DAction.h>
 
 using namespace mv::gui;
@@ -380,6 +379,42 @@ public:
         ToggleAction                        _hidePointSelectionAction;
         IntegralAction      _smoothingWindowPercentageAction;
     };
+
+    class ExperimentOptionsHolder : public VerticalGroupAction
+    {
+    public:
+        ExperimentOptionsHolder(SettingsAction& settingsAction);
+
+        const TriggerAction& getSaveTablesAction() const { return _saveTablesAction; }
+        TriggerAction& getSaveTablesAction() { return _saveTablesAction; }
+
+        const TriggerAction& getSaveScatterplotsAction() const { return _saveScatterplotsAction; }
+        TriggerAction& getSaveScatterplotsAction() { return _saveScatterplotsAction; }
+
+        const TriggerAction& getSaveSelectionAction() const { return _saveSelectionAction; }
+        TriggerAction& getSaveSelectionAction() { return _saveSelectionAction; }
+
+        const TriggerAction& getLoadSelectionAction() const { return _loadSelectionAction; }
+        TriggerAction& getLoadSelectionAction() { return _loadSelectionAction; }
+
+        const DatasetPickerAction& getRotationDatasetAction() const { return _rotationDatasetAction; }
+        DatasetPickerAction& getRotationDatasetAction() { return _rotationDatasetAction; }
+
+        const IntegralAction& getRotationDegreeAction() const { return _rotationDegreeAction; }
+        IntegralAction& getRotationDegreeAction() { return _rotationDegreeAction; }
+
+
+    protected:
+        SettingsAction& _settingsOptions;
+        TriggerAction               _saveTablesAction;
+        TriggerAction               _saveScatterplotsAction;
+        TriggerAction               _saveSelectionAction;
+        TriggerAction               _loadSelectionAction;
+        DatasetPickerAction         _rotationDatasetAction;
+        IntegralAction              _rotationDegreeAction;
+    };
+
+
 public:
     SettingsAction(GradientSurferPlugin& GradientSurferPlugin);
 
@@ -387,6 +422,7 @@ public:
     Dataset2OptionsHolder& getDataset2OptionsHolder()   { return _dataset2OptionsHolder; }
     CommonOptionsHolder& getCommonOptionsHolder()       { return _commonOptionsHolder; }
     CustomizationOptionsHolder& getCustomizationOptionsHolder() { return _customizationOptionsHolder; }
+    ExperimentOptionsHolder& getExperimentOptionsHolder() { return _experimentOptionsHolder; }
 
 
 public: 
@@ -406,6 +442,7 @@ protected:
     Dataset1OptionsHolder           _dataset1OptionsHolder;
     Dataset2OptionsHolder           _dataset2OptionsHolder;
     CommonOptionsHolder             _commonOptionsHolder;
+    ExperimentOptionsHolder        _experimentOptionsHolder;
     CustomizationOptionsHolder      _customizationOptionsHolder;
     QTableView*                     _tableView0Action = nullptr;
     QTableView*                     _tableView2Action = nullptr;
