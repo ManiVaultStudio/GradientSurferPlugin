@@ -43,14 +43,41 @@ void Experiments::setupExperimentActions()
     expOpts.getRotationDegreeAction().setSingleStep(0.01);
     expOpts.getRotationDegreeAction().setNumberOfDecimals(2);
 
+    expOpts.getApplyRotationAction().setToolTip("Apply Rotation");
+    //expOpts.getApplyRotationAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+
+    expOpts.getLoadCoordinatesAction().setToolTip("Load Coordinates");
+    //expOpts.getLoadCoordinatesAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+
+    expOpts.getStoreCoordinatesAction().setToolTip("Store Coordinates");
+    //expOpts.getStoreCoordinatesAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+
+    expOpts.getLoadSelectionAction().setToolTip("Load Selection");
+    //expOpts.getLoadSelectionAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+
+    expOpts.getStoreSelectionAction().setToolTip("Store Selection");
+    //expOpts.getStoreSelectionAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+
+    expOpts.getSaveTablesAction().setToolTip("Save Tables");
+    //expOpts.getSaveTablesAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+
+    expOpts.getApplyFlipAction().setToolTip("Apply Flip");
+    //expOpts.getApplyFlipAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+
+    expOpts.getFlipTypeAction().setToolTip("Select Flip Type");
+    expOpts.getFlipTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
+    expOpts.getFlipTypeAction().initialize({ "horizontal", "vertical" },"horizontal");
 
     connect(&expOpts.getSaveTablesAction(), &TriggerAction::triggered, this, [this]() { saveTables(); });
     connect(&expOpts.getStoreSelectionAction(), &TriggerAction::triggered, this, [this]() { storeSelection(); });
     connect(&expOpts.getLoadSelectionAction(), &TriggerAction::triggered, this, [this]() { loadSelection(); });
-    connect(&expOpts.getStoreRotationAction(), &TriggerAction::triggered, this, [this]() { storeRotation(); });
-    connect(&expOpts.getLoadRotationAction(), &TriggerAction::triggered, this, [this]() { loadRotation(); });
+    connect(&expOpts.getStoreCoordinatesAction(), &TriggerAction::triggered, this, [this]() { storeRotation(); });
+    connect(&expOpts.getLoadCoordinatesAction(), &TriggerAction::triggered, this, [this]() { loadRotation(); });
     connect(&expOpts.getApplyRotationAction(), &TriggerAction::triggered, this, [this]() { applyRotation(); });
     connect(&expOpts.getRotationDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, [this]() { applyRotation(); });
+
+    connect(&expOpts.getApplyFlipAction(), &TriggerAction::triggered, this, [this]() { applyFlip(); });
+    connect(&expOpts.getFlipTypeAction(), &OptionAction::currentIndexChanged, this, [this]() { applyFlip(); });
 }
 
 void Experiments::saveTables()
@@ -222,4 +249,69 @@ void Experiments::applyRotation()
 
     qDebug() << "Rotation applied successfully.";
 
+}
+
+void Experiments::applyFlip()
+{
+    auto& expOpts = _settings->getExperimentOptionsHolder();
+    Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
+    const QString& flipType = "vertical"; // "horizontal" or "vertical"
+
+    if (!dataset.isValid()) {
+        qWarning() << "No valid dataset selected for flip.";
+        return;
+    }
+    int numofPoints = dataset->getNumPoints();
+    int numOfDims = dataset->getNumDimensions();
+    if (numOfDims < 2) {
+        qWarning() << "Dataset has less than 2 dimensions, cannot apply flip.";
+        return;
+    }
+    if (numOfDims > 2) {
+        qWarning() << "Dataset has more than 2 dimensions, cannot apply flip.";
+        return;
+    }
+    if (numofPoints <= 0) {
+        qWarning() << "Dataset has no points, cannot apply flip.";
+        return;
+    }
+
+    std::vector<float> XYCoordinates;
+    XYCoordinates.resize(numofPoints * numOfDims);
+
+    try {
+        std::vector<int> dimIndices = { 0, 1 };
+        std::vector<int> pointIndices(numofPoints);
+        std::iota(pointIndices.begin(), pointIndices.end(), 0);
+        dataset->populateDataForDimensions(
+            XYCoordinates,
+            dimIndices,
+            pointIndices
+        );
+    }
+    catch (const std::exception& ex) {
+        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
+        return;
+    }
+
+    // Flip logic
+    for (int i = 0; i < numofPoints; ++i) {
+        if (flipType.compare("vertical", Qt::CaseInsensitive) == 0) {
+            // Flip Y
+            XYCoordinates[i * 2 + 1] = -XYCoordinates[i * 2 + 1];
+        }
+        else if (flipType.compare("horizontal", Qt::CaseInsensitive) == 0) {
+            // Flip X
+            XYCoordinates[i * 2 + 0] = -XYCoordinates[i * 2 + 0];
+        }
+        else {
+            qWarning() << "Unknown flip type:" << flipType;
+            return;
+        }
+    }
+
+    dataset->setData(XYCoordinates.data(), numofPoints, numOfDims);
+    mv::events().notifyDatasetDataChanged(dataset);
+
+    qDebug() << "Flip (" << flipType << ") applied successfully.";
 }

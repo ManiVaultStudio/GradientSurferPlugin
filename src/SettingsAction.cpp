@@ -563,11 +563,13 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     _saveTablesAction(this, "Save Tables"),
     _storeSelectionAction(this, "Store Selection"),
     _loadSelectionAction(this, "Load Selection"),
-    _storeRotationAction(this, "Store Rotation"),
-    _loadRotationAction(this, "Load Rotation"),
+    _storeCoordinatesAction(this, "Store Coordinates"),
+    _loadCoordinatesAction(this, "Load Coordinates"),
     _rotationDatasetAction(this, "Rotation Dataset"),
     _rotationDegreeAction(this, "Rotation Degree"),
-    _applyRotationAction(this, "Apply Rotation")
+    _applyRotationAction(this, "Apply Rotation"),
+    _applyFlipAction(this, "Apply Flip"),
+    _flipTypeAction(this, "Flip Type")
 {
     setText("Experiment Options");
     setIcon(mv::util::StyledIcon("flask"));
@@ -579,8 +581,10 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     addAction(&_loadSelectionAction);
     addAction(&_rotationDegreeAction);
     addAction(&_applyRotationAction);
-    addAction(&_storeRotationAction);
-    addAction(&_loadRotationAction);
+    addAction(&_flipTypeAction);
+    addAction(&_applyFlipAction);
+    addAction(&_storeCoordinatesAction);
+    addAction(&_loadCoordinatesAction);
 }
 
 void SettingsAction::fromVariantMap(const QVariantMap& variantMap)

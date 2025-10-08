@@ -23,6 +23,7 @@ private:
     void loadRotation();
     void storeRotation();
     void applyRotation();
+    void applyFlip();
 
     GradientSurferPlugin* _plugin;
     SettingsAction* _settings;

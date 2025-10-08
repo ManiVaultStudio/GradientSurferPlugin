@@ -397,11 +397,11 @@ public:
         const DatasetPickerAction& getRotationDatasetAction() const { return _rotationDatasetAction; }
         DatasetPickerAction& getRotationDatasetAction() { return _rotationDatasetAction; }
 
-        const TriggerAction& getStoreRotationAction() const { return _storeRotationAction; }
-        TriggerAction& getStoreRotationAction() { return _storeRotationAction; }
+        const TriggerAction& getStoreCoordinatesAction() const { return _storeCoordinatesAction; }
+        TriggerAction& getStoreCoordinatesAction() { return _storeCoordinatesAction; }
 
-        const TriggerAction& getLoadRotationAction() const { return _loadRotationAction; }
-        TriggerAction& getLoadRotationAction() { return _loadRotationAction; }
+        const TriggerAction& getLoadCoordinatesAction() const { return _loadCoordinatesAction; }
+        TriggerAction& getLoadCoordinatesAction() { return _loadCoordinatesAction; }
 
         const DecimalAction& getRotationDegreeAction() const { return _rotationDegreeAction; }
         DecimalAction& getRotationDegreeAction() { return _rotationDegreeAction; }
@@ -409,16 +409,24 @@ public:
         const TriggerAction& getApplyRotationAction() const { return _applyRotationAction; }
         TriggerAction& getApplyRotationAction() { return _applyRotationAction; }
 
+        const TriggerAction& getApplyFlipAction() const { return _applyFlipAction; }
+        TriggerAction& getApplyFlipAction() { return _applyFlipAction; }
+
+        const OptionAction& getFlipTypeAction() const { return _flipTypeAction; }
+        OptionAction& getFlipTypeAction() { return _flipTypeAction; }
+
     protected:
         SettingsAction& _settingsOptions;
         TriggerAction               _saveTablesAction;
         TriggerAction               _storeSelectionAction;
         TriggerAction               _loadSelectionAction;
-        TriggerAction               _storeRotationAction;
-        TriggerAction               _loadRotationAction;
+        TriggerAction               _storeCoordinatesAction;
+        TriggerAction               _loadCoordinatesAction;
         DatasetPickerAction         _rotationDatasetAction;
         DecimalAction              _rotationDegreeAction;
         TriggerAction              _applyRotationAction;
+        TriggerAction              _applyFlipAction;
+        OptionAction               _flipTypeAction;
     };
 
 
