@@ -27,7 +27,7 @@ void Experiments::setupExperimentActions()
     _rotationDebounceTimer.setSingleShot(true);
 
     connect(&expOpts.getRotationDegreeAction(),
-        &IntegralAction::valueChanged,
+        &DecimalAction::valueChanged,
         this,
         [this]() { _rotationDebounceTimer.start(300); });
 
@@ -37,15 +37,19 @@ void Experiments::setupExperimentActions()
 
 
     expOpts.getRotationDegreeAction().setToolTip("Rotation Angle");
-    expOpts.getRotationDegreeAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
-    expOpts.getRotationDegreeAction().setMinimum(0);
-    expOpts.getRotationDegreeAction().setMaximum(360);
-    expOpts.getRotationDegreeAction().setValue(0);
+    expOpts.getRotationDegreeAction().setDefaultWidgetFlags(DecimalAction::Slider | DecimalAction::SpinBox);
+    expOpts.getRotationDegreeAction().setMaximum(360.00);
+    expOpts.getRotationDegreeAction().setMinimum(0.00);
+    expOpts.getRotationDegreeAction().setSingleStep(0.01);
+    expOpts.getRotationDegreeAction().setNumberOfDecimals(2);
+
+
     connect(&expOpts.getSaveTablesAction(), &TriggerAction::triggered, this, [this]() { saveTables(); });
     connect(&expOpts.getStoreSelectionAction(), &TriggerAction::triggered, this, [this]() { storeSelection(); });
     connect(&expOpts.getLoadSelectionAction(), &TriggerAction::triggered, this, [this]() { loadSelection(); });
     connect(&expOpts.getStoreRotationAction(), &TriggerAction::triggered, this, [this]() { storeRotation(); });
     connect(&expOpts.getLoadRotationAction(), &TriggerAction::triggered, this, [this]() { loadRotation(); });
+    connect(&expOpts.getApplyRotationAction(), &TriggerAction::triggered, this, [this]() { applyRotation(); });
     connect(&expOpts.getRotationDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, [this]() { applyRotation(); });
 }
 
@@ -157,16 +161,65 @@ void Experiments::loadRotation()
 void Experiments::applyRotation()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();
-    auto dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
-    int degree = expOpts.getRotationDegreeAction().getValue();
-
+    Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
+    float degree = expOpts.getRotationDegreeAction().getValue();
+    if (degree == 0.0f) {
+        qDebug() << "Rotation degree is 0, no rotation applied.";
+        return;
+    }
     if (!dataset.isValid()) {
         qWarning() << "No valid dataset selected for rotation.";
         return;
     }
+    int numofPoints = dataset->getNumPoints();
+    int numOfDims = dataset->getNumDimensions();
+    if (numOfDims < 2) {
+        qWarning() << "Dataset has less than 2 dimensions, cannot apply rotation.";
+        return;
+    }
 
-    qDebug() << "Applying rotation of" << degree << "degrees to dataset:" << dataset.getDatasetId();
+    if (numOfDims >2)
+    {
+        qWarning() << "Dataset has more than 2 dimensions, cannot apply rotation.";
+        return;
+    }
+    if (numofPoints <= 0) {
+        qWarning() << "Dataset has no points, cannot apply rotation.";
+        return;
+    }
+    std::vector<float> XYCoordinates;
+    std::vector<float> rotatedXYCordinates;
 
+    qDebug() << "Applying rotation of" << degree << "degrees to dataset:" << dataset->getGuiName() + " (" + dataset.getDatasetId() + ")";
 
+    try {
+        XYCoordinates.resize(numofPoints * numOfDims);
+        std::vector<int> dimIndices = { 0, 1 };
+        std::vector<int> pointIndices(numofPoints);
+        std::iota(pointIndices.begin(), pointIndices.end(), 0); 
+        dataset->populateDataForDimensions(
+            XYCoordinates,
+            dimIndices,
+            pointIndices
+        );
+    }
+    catch (const std::exception& ex) {
+        qWarning() << "Exception in populateDataForDimensions:" << ex.what();
+        return;
+    }
+
+    try {
+        rotatedXYCordinates.resize(numofPoints * numOfDims);
+        rotatedXYCordinates = rotateAxis(XYCoordinates, degree);
+    }
+    catch (const std::exception& ex) {
+        qWarning() << "Exception in rotateAxis:" << ex.what();
+        return;
+    }
+
+    dataset->setData(rotatedXYCordinates.data(), numofPoints, numOfDims);
+    mv::events().notifyDatasetDataChanged(dataset);
+
+    qDebug() << "Rotation applied successfully.";
 
 }

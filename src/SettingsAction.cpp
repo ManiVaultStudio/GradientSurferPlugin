@@ -566,7 +566,8 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     _storeRotationAction(this, "Store Rotation"),
     _loadRotationAction(this, "Load Rotation"),
     _rotationDatasetAction(this, "Rotation Dataset"),
-    _rotationDegreeAction(this, "Rotation Degree")
+    _rotationDegreeAction(this, "Rotation Degree"),
+    _applyRotationAction(this, "Apply Rotation")
 {
     setText("Experiment Options");
     setIcon(mv::util::StyledIcon("flask"));
@@ -577,6 +578,7 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     addAction(&_storeSelectionAction);
     addAction(&_loadSelectionAction);
     addAction(&_rotationDegreeAction);
+    addAction(&_applyRotationAction);
     addAction(&_storeRotationAction);
     addAction(&_loadRotationAction);
 }

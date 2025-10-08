@@ -403,9 +403,11 @@ public:
         const TriggerAction& getLoadRotationAction() const { return _loadRotationAction; }
         TriggerAction& getLoadRotationAction() { return _loadRotationAction; }
 
-        const IntegralAction& getRotationDegreeAction() const { return _rotationDegreeAction; }
-        IntegralAction& getRotationDegreeAction() { return _rotationDegreeAction; }
+        const DecimalAction& getRotationDegreeAction() const { return _rotationDegreeAction; }
+        DecimalAction& getRotationDegreeAction() { return _rotationDegreeAction; }
 
+        const TriggerAction& getApplyRotationAction() const { return _applyRotationAction; }
+        TriggerAction& getApplyRotationAction() { return _applyRotationAction; }
 
     protected:
         SettingsAction& _settingsOptions;
@@ -415,7 +417,8 @@ public:
         TriggerAction               _storeRotationAction;
         TriggerAction               _loadRotationAction;
         DatasetPickerAction         _rotationDatasetAction;
-        IntegralAction              _rotationDegreeAction;
+        DecimalAction              _rotationDegreeAction;
+        TriggerAction              _applyRotationAction;
     };
 
 
