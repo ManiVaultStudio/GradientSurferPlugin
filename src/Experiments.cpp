@@ -182,15 +182,93 @@ void Experiments::saveTables()
 
 void Experiments::storeSelection()
 {
+    auto& expOpts = _settings->getExperimentOptionsHolder();
+    Dataset<Points> dataset = expOpts.getSelectionDatasetAction().getCurrentDataset();
+
+    if (!dataset.isValid()) {
+        QMessageBox::warning(_parentWidget, "Save Selection", "No valid dataset selected for saving selections.");
+        return;
+    }
+
+    auto selectionIndices = dataset->getSelectionIndices();
+    if (selectionIndices.empty()) {
+        QMessageBox::warning(_parentWidget, "Save Selection", "No points selected in the dataset.");
+        return;
+    }
+
     QString fileName = QFileDialog::getSaveFileName(_parentWidget, "Save Selection", QString(), "TXT Files (*.txt);;All Files (*)");
     if (fileName.isEmpty()) return;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(_parentWidget, "Save Selection", "Failed to open file for writing.");
+        return;
+    }
+    QTextStream out(&file);
+
+    // Write indices as comma-separated values
+    for (size_t i = 0; i < selectionIndices.size(); ++i) {
+        out << selectionIndices[i];
+        if (i < selectionIndices.size() - 1)
+            out << ",";
+    }
+    out << "\n";
+    file.close();
+
     QMessageBox::information(_parentWidget, "Save Selection", "Selection saved to:\n" + fileName);
 }
 
 void Experiments::loadSelection()
 {
+    auto& expOpts = _settings->getExperimentOptionsHolder();
+    Dataset<Points> dataset = expOpts.getSelectionDatasetAction().getCurrentDataset();
+
+    if (!dataset.isValid()) {
+        QMessageBox::warning(_parentWidget, "Load Selection", "No valid dataset selected for loading selections.");
+        return;
+    }
+
+    int numofPoints = dataset->getNumPoints();
+
     QString fileName = QFileDialog::getOpenFileName(_parentWidget, "Load Selection", QString(), "TXT Files (*.txt);;All Files (*)");
     if (fileName.isEmpty()) return;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(_parentWidget, "Load Selection", "Failed to open file for reading.");
+        return;
+    }
+    QTextStream in(&file);
+
+    QString line = in.readLine().trimmed();
+    file.close();
+    if (line.isEmpty()) {
+        QMessageBox::warning(_parentWidget, "Load Selection", "File is empty.");
+        return;
+    }
+
+    QStringList parts = line.split(",");
+    std::vector<std::seed_seq::result_type> selectionIndices;
+    selectionIndices.reserve(parts.size());
+    for (const QString& part : parts) {
+        bool ok = false;
+        int idx = part.toInt(&ok);
+        if (!ok) {
+            QMessageBox::warning(_parentWidget, "Load Selection",
+                QString("Invalid index '%1' in file. Not an integer.").arg(part));
+            return;
+        }
+        if (idx < 0 || idx >= numofPoints) {
+            QMessageBox::warning(_parentWidget, "Load Selection",
+                QString("Invalid index '%1' in file. Must be between 0 and %2.").arg(idx).arg(numofPoints - 1));
+            return;
+        }
+        selectionIndices.push_back(idx);
+    }
+
+    dataset->setSelectionIndices(selectionIndices);
+    mv::events().notifyDatasetDataSelectionChanged(dataset);
+
     QMessageBox::information(_parentWidget, "Load Selection", "Selection loaded from:\n" + fileName);
 }
 
@@ -261,6 +339,9 @@ void Experiments::loadCoordinates()
         return;
     }
 
+    int currentNumofPoints = dataset->getNumPoints();
+    int currentNumOfDims = dataset->getNumDimensions();
+
     QString fileName = QFileDialog::getOpenFileName(_parentWidget, "Load Rotation", QString(), "TXT Files (*.txt);;All Files (*)");
     if (fileName.isEmpty()) return;
 
@@ -280,10 +361,20 @@ void Experiments::loadCoordinates()
         return;
     }
     bool ok1 = false, ok2 = false;
-    int numofPoints = headerParts[0].toInt(&ok1);
-    int numOfDims = headerParts[1].toInt(&ok2);
-    if (!ok1 || !ok2 || numofPoints <= 0 || numOfDims <= 0) {
+    int fileNumofPoints = headerParts[0].toInt(&ok1);
+    int fileNumOfDims = headerParts[1].toInt(&ok2);
+    if (!ok1 || !ok2 || fileNumofPoints <= 0 || fileNumOfDims <= 0) {
         QMessageBox::warning(_parentWidget, "Load Rotation", "Invalid numofPoints or numOfDims in header.");
+        file.close();
+        return;
+    }
+
+    // Check if current dataset matches file
+    if (currentNumofPoints != fileNumofPoints || currentNumOfDims != fileNumOfDims) {
+        QMessageBox::warning(_parentWidget, "Load Rotation",
+            QString("Dataset shape mismatch.\nCurrent: %1 points, %2 dims\nFile: %3 points, %4 dims")
+            .arg(currentNumofPoints).arg(currentNumOfDims)
+            .arg(fileNumofPoints).arg(fileNumOfDims));
         file.close();
         return;
     }
@@ -297,15 +388,15 @@ void Experiments::loadCoordinates()
     }
 
     QStringList parts = line.split(",");
-    if (parts.size() != numofPoints * numOfDims) {
+    if (parts.size() != fileNumofPoints * fileNumOfDims) {
         QMessageBox::warning(_parentWidget, "Load Rotation",
-            QString("Loaded %1 values, but expected %2 (points=%3, dims=%4).")
-            .arg(parts.size()).arg(numofPoints * numOfDims).arg(numofPoints).arg(numOfDims));
+            QString("Coordinate count mismatch.\nFile header: %1 points x %2 dims = %3 values\nFile contains: %4 values")
+            .arg(fileNumofPoints).arg(fileNumOfDims).arg(fileNumofPoints * fileNumOfDims).arg(parts.size()));
         return;
     }
 
     std::vector<float> coordinates;
-    coordinates.reserve(numofPoints * numOfDims);
+    coordinates.reserve(fileNumofPoints * fileNumOfDims);
     for (const QString& part : parts) {
         bool ok = false;
         float val = part.toFloat(&ok);
@@ -316,11 +407,12 @@ void Experiments::loadCoordinates()
         coordinates.push_back(val);
     }
 
-    dataset->setData(coordinates.data(), numofPoints, numOfDims);
+    dataset->setData(coordinates.data(), fileNumofPoints, fileNumOfDims);
     mv::events().notifyDatasetDataChanged(dataset);
 
     QMessageBox::information(_parentWidget, "Load Rotation", "Rotation loaded from:\n" + fileName);
 }
+
 void Experiments::applyRotation()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();
