@@ -20,8 +20,8 @@ private:
     void saveTables();
     void storeSelection();
     void loadSelection();
-    void loadRotation();
-    void storeRotation();
+    void loadCoordinates();
+    void storeCoordinates();
     void applyRotation();
     void applyFlip();
 

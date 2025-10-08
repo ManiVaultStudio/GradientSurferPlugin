@@ -24,6 +24,11 @@ void Experiments::setupExperimentActions()
             return isValidPointChildDataset(dataset);
         }
     );
+    expOpts.getSelectionDatasetAction().setFilterFunction(
+        [this](mv::Dataset<DatasetImpl> dataset) {
+            return isValidPointChildDataset(dataset);
+        }
+    );
     _rotationDebounceTimer.setSingleShot(true);
 
     connect(&expOpts.getRotationDegreeAction(),
@@ -47,22 +52,40 @@ void Experiments::setupExperimentActions()
     //expOpts.getApplyRotationAction().setDefaultWidgetFlags(TriggerAction::Trigger);
 
     expOpts.getLoadCoordinatesAction().setToolTip("Load Coordinates");
-    //expOpts.getLoadCoordinatesAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+    expOpts.getLoadCoordinatesAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    expOpts.getLoadCoordinatesAction().setIconByName("document-open");
+    expOpts.getLoadCoordinatesAction().setIconText("Load Coordinates");
+    expOpts.getLoadCoordinatesAction().setText("Load Coordinates");
 
     expOpts.getStoreCoordinatesAction().setToolTip("Store Coordinates");
-    //expOpts.getStoreCoordinatesAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+    expOpts.getStoreCoordinatesAction().setIconByName("document-save");
+    expOpts.getStoreCoordinatesAction().setIconText("Store Coordinates");
+    expOpts.getStoreCoordinatesAction().setText("Store Coordinates");
+    expOpts.getStoreCoordinatesAction().setDefaultWidgetFlags(TriggerAction::IconText);
 
     expOpts.getLoadSelectionAction().setToolTip("Load Selection");
-    //expOpts.getLoadSelectionAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+    expOpts.getLoadSelectionAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    expOpts.getLoadSelectionAction().setIconByName("document-open");
+    expOpts.getLoadSelectionAction().setIconText("Load Selection");
+    expOpts.getLoadSelectionAction().setText("Load Selection");
 
     expOpts.getStoreSelectionAction().setToolTip("Store Selection");
-    //expOpts.getStoreSelectionAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+    expOpts.getStoreSelectionAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    expOpts.getStoreSelectionAction().setIconByName("document-save");
+    expOpts.getStoreSelectionAction().setIconText("Store Selection");
+    expOpts.getStoreSelectionAction().setText("Store Selection");
 
     expOpts.getSaveTablesAction().setToolTip("Save Tables");
-    //expOpts.getSaveTablesAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+    expOpts.getSaveTablesAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    expOpts.getSaveTablesAction().setIconByName("document-save");
+    expOpts.getSaveTablesAction().setIconText("Save Tables");
+    expOpts.getSaveTablesAction().setText("Save Tables");
 
     expOpts.getApplyFlipAction().setToolTip("Apply Flip");
-    //expOpts.getApplyFlipAction().setDefaultWidgetFlags(TriggerAction::Trigger);
+    expOpts.getApplyFlipAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    expOpts.getApplyFlipAction().setIconByName("transform-move");
+    expOpts.getApplyFlipAction().setIconText("Apply Flip");
+    expOpts.getApplyFlipAction().setText("Apply Flip");
 
     expOpts.getFlipTypeAction().setToolTip("Select Flip Type");
     expOpts.getFlipTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -71,8 +94,8 @@ void Experiments::setupExperimentActions()
     connect(&expOpts.getSaveTablesAction(), &TriggerAction::triggered, this, [this]() { saveTables(); });
     connect(&expOpts.getStoreSelectionAction(), &TriggerAction::triggered, this, [this]() { storeSelection(); });
     connect(&expOpts.getLoadSelectionAction(), &TriggerAction::triggered, this, [this]() { loadSelection(); });
-    connect(&expOpts.getStoreCoordinatesAction(), &TriggerAction::triggered, this, [this]() { storeRotation(); });
-    connect(&expOpts.getLoadCoordinatesAction(), &TriggerAction::triggered, this, [this]() { loadRotation(); });
+    connect(&expOpts.getStoreCoordinatesAction(), &TriggerAction::triggered, this, [this]() { storeCoordinates(); });
+    connect(&expOpts.getLoadCoordinatesAction(), &TriggerAction::triggered, this, [this]() { loadCoordinates(); });
     connect(&expOpts.getApplyRotationAction(), &TriggerAction::triggered, this, [this]() { applyRotation(); });
     connect(&expOpts.getRotationDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, [this]() { applyRotation(); });
 
@@ -171,20 +194,133 @@ void Experiments::loadSelection()
     QMessageBox::information(_parentWidget, "Load Selection", "Selection loaded from:\n" + fileName);
 }
 
-void Experiments::storeRotation()
+void Experiments::storeCoordinates()
 {
+    auto& expOpts = _settings->getExperimentOptionsHolder();
+    Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
+
+    if (!dataset.isValid()) {
+        QMessageBox::warning(_parentWidget, "Save Rotation", "No valid dataset selected for saving coordinates.");
+        return;
+    }
+
+    int numofPoints = dataset->getNumPoints();
+    int numOfDims = dataset->getNumDimensions();
+    if (numofPoints <= 0 || numOfDims <= 0) {
+        QMessageBox::warning(_parentWidget, "Save Rotation", "Dataset must have at least one point and one dimension.");
+        return;
+    }
+
+    std::vector<float> coordinates(numofPoints * numOfDims);
+    try {
+        std::vector<int> dimIndices(numOfDims);
+        std::iota(dimIndices.begin(), dimIndices.end(), 0);
+        std::vector<int> pointIndices(numofPoints);
+        std::iota(pointIndices.begin(), pointIndices.end(), 0);
+        dataset->populateDataForDimensions(
+            coordinates,
+            dimIndices,
+            pointIndices
+        );
+    }
+    catch (const std::exception& ex) {
+        QMessageBox::warning(_parentWidget, "Save Rotation", QString("Error populating coordinates: %1").arg(ex.what()));
+        return;
+    }
+
     QString fileName = QFileDialog::getSaveFileName(_parentWidget, "Save Rotation", QString(), "TXT Files (*.txt);;All Files (*)");
     if (fileName.isEmpty()) return;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(_parentWidget, "Save Rotation", "Failed to open file for writing.");
+        return;
+    }
+    QTextStream out(&file);
+
+    // Write header: numofPoints,numOfDims
+    out << numofPoints << "," << numOfDims << "\n";
+    // Write all coordinates in a single line: x1,y1,x2,y2,...
+    for (int i = 0; i < numofPoints * numOfDims; ++i) {
+        out << QString::number(coordinates[i], 'g', 8);
+        if (i < numofPoints * numOfDims - 1)
+            out << ",";
+    }
+    out << "\n";
+    file.close();
     QMessageBox::information(_parentWidget, "Save Rotation", "Rotation saved to:\n" + fileName);
 }
 
-void Experiments::loadRotation()
+void Experiments::loadCoordinates()
 {
+    auto& expOpts = _settings->getExperimentOptionsHolder();
+    Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
+
+    if (!dataset.isValid()) {
+        QMessageBox::warning(_parentWidget, "Load Rotation", "No valid dataset selected for loading coordinates.");
+        return;
+    }
+
     QString fileName = QFileDialog::getOpenFileName(_parentWidget, "Load Rotation", QString(), "TXT Files (*.txt);;All Files (*)");
     if (fileName.isEmpty()) return;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(_parentWidget, "Load Rotation", "Failed to open file for reading.");
+        return;
+    }
+    QTextStream in(&file);
+
+    // Read header line
+    QString header = in.readLine().trimmed();
+    QStringList headerParts = header.split(",");
+    if (headerParts.size() != 2) {
+        QMessageBox::warning(_parentWidget, "Load Rotation", "Header line must contain numofPoints and numOfDims.");
+        file.close();
+        return;
+    }
+    bool ok1 = false, ok2 = false;
+    int numofPoints = headerParts[0].toInt(&ok1);
+    int numOfDims = headerParts[1].toInt(&ok2);
+    if (!ok1 || !ok2 || numofPoints <= 0 || numOfDims <= 0) {
+        QMessageBox::warning(_parentWidget, "Load Rotation", "Invalid numofPoints or numOfDims in header.");
+        file.close();
+        return;
+    }
+
+    // Read coordinates line
+    QString line = in.readLine().trimmed();
+    file.close();
+    if (line.isEmpty()) {
+        QMessageBox::warning(_parentWidget, "Load Rotation", "File is missing coordinates line.");
+        return;
+    }
+
+    QStringList parts = line.split(",");
+    if (parts.size() != numofPoints * numOfDims) {
+        QMessageBox::warning(_parentWidget, "Load Rotation",
+            QString("Loaded %1 values, but expected %2 (points=%3, dims=%4).")
+            .arg(parts.size()).arg(numofPoints * numOfDims).arg(numofPoints).arg(numOfDims));
+        return;
+    }
+
+    std::vector<float> coordinates;
+    coordinates.reserve(numofPoints * numOfDims);
+    for (const QString& part : parts) {
+        bool ok = false;
+        float val = part.toFloat(&ok);
+        if (!ok) {
+            QMessageBox::warning(_parentWidget, "Load Rotation", "Invalid number in file.");
+            return;
+        }
+        coordinates.push_back(val);
+    }
+
+    dataset->setData(coordinates.data(), numofPoints, numOfDims);
+    mv::events().notifyDatasetDataChanged(dataset);
+
     QMessageBox::information(_parentWidget, "Load Rotation", "Rotation loaded from:\n" + fileName);
 }
-
 void Experiments::applyRotation()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();

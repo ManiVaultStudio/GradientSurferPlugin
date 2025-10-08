@@ -566,6 +566,7 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     _storeCoordinatesAction(this, "Store Coordinates"),
     _loadCoordinatesAction(this, "Load Coordinates"),
     _rotationDatasetAction(this, "Rotation Dataset"),
+    _selectionDatasetAction(this, "Selection Dataset"),
     _rotationDegreeAction(this, "Rotation Degree"),
     _applyRotationAction(this, "Apply Rotation"),
     _applyFlipAction(this, "Apply Flip"),
@@ -577,6 +578,7 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_saveTablesAction);
     addAction(&_rotationDatasetAction);
+    addAction(&_selectionDatasetAction);
     addAction(&_storeSelectionAction);
     addAction(&_loadSelectionAction);
     addAction(&_rotationDegreeAction);

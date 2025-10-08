@@ -397,6 +397,9 @@ public:
         const DatasetPickerAction& getRotationDatasetAction() const { return _rotationDatasetAction; }
         DatasetPickerAction& getRotationDatasetAction() { return _rotationDatasetAction; }
 
+        const DatasetPickerAction& getSelectionDatasetAction() const { return _selectionDatasetAction; }
+        DatasetPickerAction& getSelectionDatasetAction() { return _selectionDatasetAction; }
+
         const TriggerAction& getStoreCoordinatesAction() const { return _storeCoordinatesAction; }
         TriggerAction& getStoreCoordinatesAction() { return _storeCoordinatesAction; }
 
@@ -423,6 +426,7 @@ public:
         TriggerAction               _storeCoordinatesAction;
         TriggerAction               _loadCoordinatesAction;
         DatasetPickerAction         _rotationDatasetAction;
+        DatasetPickerAction         _selectionDatasetAction;
         DecimalAction              _rotationDegreeAction;
         TriggerAction              _applyRotationAction;
         TriggerAction              _applyFlipAction;
