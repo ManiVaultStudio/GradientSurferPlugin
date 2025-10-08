@@ -388,11 +388,8 @@ public:
         const TriggerAction& getSaveTablesAction() const { return _saveTablesAction; }
         TriggerAction& getSaveTablesAction() { return _saveTablesAction; }
 
-        const TriggerAction& getSaveScatterplotsAction() const { return _saveScatterplotsAction; }
-        TriggerAction& getSaveScatterplotsAction() { return _saveScatterplotsAction; }
-
-        const TriggerAction& getSaveSelectionAction() const { return _saveSelectionAction; }
-        TriggerAction& getSaveSelectionAction() { return _saveSelectionAction; }
+        const TriggerAction& getStoreSelectionAction() const { return _storeSelectionAction; }
+        TriggerAction& getStoreSelectionAction() { return _storeSelectionAction; }
 
         const TriggerAction& getLoadSelectionAction() const { return _loadSelectionAction; }
         TriggerAction& getLoadSelectionAction() { return _loadSelectionAction; }
@@ -407,8 +404,7 @@ public:
     protected:
         SettingsAction& _settingsOptions;
         TriggerAction               _saveTablesAction;
-        TriggerAction               _saveScatterplotsAction;
-        TriggerAction               _saveSelectionAction;
+        TriggerAction               _storeSelectionAction;
         TriggerAction               _loadSelectionAction;
         DatasetPickerAction         _rotationDatasetAction;
         IntegralAction              _rotationDegreeAction;

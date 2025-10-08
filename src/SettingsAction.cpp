@@ -561,8 +561,7 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     VerticalGroupAction(&settingsAction, "Experiment Options"),
     _settingsOptions(settingsAction),
     _saveTablesAction(this, "Save Tables"),
-    _saveScatterplotsAction(this, "Save Scatterplots"),
-    _saveSelectionAction(this, "Save Selection"),
+    _storeSelectionAction(this, "Store Selection"),
     _loadSelectionAction(this, "Load Selection"),
     _rotationDatasetAction(this, "Rotation Dataset"),
     _rotationDegreeAction(this, "Rotation Degree")
@@ -572,8 +571,6 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_saveTablesAction);
-    addAction(&_saveScatterplotsAction);
-    addAction(&_saveSelectionAction);
     addAction(&_loadSelectionAction);
     addAction(&_rotationDatasetAction);
     addAction(&_rotationDegreeAction);

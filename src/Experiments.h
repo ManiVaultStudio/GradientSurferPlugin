@@ -18,8 +18,7 @@ private:
     void setupExperimentActions();
 
     void saveTables();
-    void saveScatterplots();
-    void saveSelection();
+    void storeSelection();
     void loadSelection();
     void applyRotation();
 
