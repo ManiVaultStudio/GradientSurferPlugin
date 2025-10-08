@@ -20,10 +20,13 @@ private:
     void saveTables();
     void storeSelection();
     void loadSelection();
+    void loadRotation();
+    void storeRotation();
     void applyRotation();
 
     GradientSurferPlugin* _plugin;
     SettingsAction* _settings;
     Computation* _computation;
+    QTimer _rotationDebounceTimer;
     QWidget* _parentWidget;
 };

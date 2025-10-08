@@ -397,6 +397,12 @@ public:
         const DatasetPickerAction& getRotationDatasetAction() const { return _rotationDatasetAction; }
         DatasetPickerAction& getRotationDatasetAction() { return _rotationDatasetAction; }
 
+        const TriggerAction& getStoreRotationAction() const { return _storeRotationAction; }
+        TriggerAction& getStoreRotationAction() { return _storeRotationAction; }
+
+        const TriggerAction& getLoadRotationAction() const { return _loadRotationAction; }
+        TriggerAction& getLoadRotationAction() { return _loadRotationAction; }
+
         const IntegralAction& getRotationDegreeAction() const { return _rotationDegreeAction; }
         IntegralAction& getRotationDegreeAction() { return _rotationDegreeAction; }
 
@@ -406,6 +412,8 @@ public:
         TriggerAction               _saveTablesAction;
         TriggerAction               _storeSelectionAction;
         TriggerAction               _loadSelectionAction;
+        TriggerAction               _storeRotationAction;
+        TriggerAction               _loadRotationAction;
         DatasetPickerAction         _rotationDatasetAction;
         IntegralAction              _rotationDegreeAction;
     };

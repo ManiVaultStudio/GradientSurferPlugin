@@ -2,6 +2,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDebug>
+#include "ComputationUtils.h"
 
 Experiments::Experiments(GradientSurferPlugin& plugin, SettingsAction& settings, Computation& computation, QWidget* parent)
     : QObject(parent),
@@ -18,10 +19,33 @@ void Experiments::setupExperimentActions()
     // Access ExperimentOptionsHolder via _settings
     auto& expOpts = _settings->getExperimentOptionsHolder();
 
+    expOpts.getRotationDatasetAction().setFilterFunction(
+        [this](mv::Dataset<DatasetImpl> dataset) {
+            return isValidPointChildDataset(dataset);
+        }
+    );
+    _rotationDebounceTimer.setSingleShot(true);
+
+    connect(&expOpts.getRotationDegreeAction(),
+        &IntegralAction::valueChanged,
+        this,
+        [this]() { _rotationDebounceTimer.start(300); });
+
+    connect(&_rotationDebounceTimer, &QTimer::timeout, this, [this]() {
+        applyRotation();
+        });
+
+
+    expOpts.getRotationDegreeAction().setToolTip("Rotation Angle");
+    expOpts.getRotationDegreeAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
+    expOpts.getRotationDegreeAction().setMinimum(0);
+    expOpts.getRotationDegreeAction().setMaximum(360);
+    expOpts.getRotationDegreeAction().setValue(0);
     connect(&expOpts.getSaveTablesAction(), &TriggerAction::triggered, this, [this]() { saveTables(); });
     connect(&expOpts.getStoreSelectionAction(), &TriggerAction::triggered, this, [this]() { storeSelection(); });
     connect(&expOpts.getLoadSelectionAction(), &TriggerAction::triggered, this, [this]() { loadSelection(); });
-    connect(&expOpts.getRotationDegreeAction(), &IntegralAction::valueChanged, this, [this]() { applyRotation(); });
+    connect(&expOpts.getStoreRotationAction(), &TriggerAction::triggered, this, [this]() { storeRotation(); });
+    connect(&expOpts.getLoadRotationAction(), &TriggerAction::triggered, this, [this]() { loadRotation(); });
     connect(&expOpts.getRotationDatasetAction(), &DatasetPickerAction::currentIndexChanged, this, [this]() { applyRotation(); });
 }
 
@@ -116,6 +140,20 @@ void Experiments::loadSelection()
     QMessageBox::information(_parentWidget, "Load Selection", "Selection loaded from:\n" + fileName);
 }
 
+void Experiments::storeRotation()
+{
+    QString fileName = QFileDialog::getSaveFileName(_parentWidget, "Save Rotation", QString(), "TXT Files (*.txt);;All Files (*)");
+    if (fileName.isEmpty()) return;
+    QMessageBox::information(_parentWidget, "Save Rotation", "Rotation saved to:\n" + fileName);
+}
+
+void Experiments::loadRotation()
+{
+    QString fileName = QFileDialog::getOpenFileName(_parentWidget, "Load Rotation", QString(), "TXT Files (*.txt);;All Files (*)");
+    if (fileName.isEmpty()) return;
+    QMessageBox::information(_parentWidget, "Load Rotation", "Rotation loaded from:\n" + fileName);
+}
+
 void Experiments::applyRotation()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();
@@ -126,5 +164,9 @@ void Experiments::applyRotation()
         qWarning() << "No valid dataset selected for rotation.";
         return;
     }
+
     qDebug() << "Applying rotation of" << degree << "degrees to dataset:" << dataset.getDatasetId();
+
+
+
 }

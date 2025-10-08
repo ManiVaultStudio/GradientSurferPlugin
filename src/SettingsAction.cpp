@@ -563,6 +563,8 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     _saveTablesAction(this, "Save Tables"),
     _storeSelectionAction(this, "Store Selection"),
     _loadSelectionAction(this, "Load Selection"),
+    _storeRotationAction(this, "Store Rotation"),
+    _loadRotationAction(this, "Load Rotation"),
     _rotationDatasetAction(this, "Rotation Dataset"),
     _rotationDegreeAction(this, "Rotation Degree")
 {
@@ -571,9 +573,12 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_saveTablesAction);
-    addAction(&_loadSelectionAction);
     addAction(&_rotationDatasetAction);
+    addAction(&_storeSelectionAction);
+    addAction(&_loadSelectionAction);
     addAction(&_rotationDegreeAction);
+    addAction(&_storeRotationAction);
+    addAction(&_loadRotationAction);
 }
 
 void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
