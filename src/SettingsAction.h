@@ -418,6 +418,12 @@ public:
         const OptionAction& getFlipTypeAction() const { return _flipTypeAction; }
         OptionAction& getFlipTypeAction() { return _flipTypeAction; }
 
+        ToggleAction& getAutoComputationAction() { return _autoComputationAction; }
+        const ToggleAction& getAutoComputationAction() const { return _autoComputationAction; }
+
+        TriggerAction& getAutoComputationTriggerAction() { return _autoComputationTriggerAction; }
+        const TriggerAction& getAutoComputationTriggerAction() const { return _autoComputationTriggerAction; }
+
     protected:
         SettingsAction& _settingsOptions;
         TriggerAction               _saveTablesAction;
@@ -431,6 +437,8 @@ public:
         TriggerAction              _applyRotationAction;
         TriggerAction              _applyFlipAction;
         OptionAction               _flipTypeAction;
+        ToggleAction               _autoComputationAction;
+        TriggerAction              _autoComputationTriggerAction;
     };
 
 

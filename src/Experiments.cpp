@@ -3,6 +3,7 @@
 #include <QMessageBox>
 #include <QDebug>
 #include "ComputationUtils.h"
+#include "Computation.h" 
 
 Experiments::Experiments(GradientSurferPlugin& plugin, SettingsAction& settings, Computation& computation, QWidget* parent)
     : QObject(parent),
@@ -56,6 +57,26 @@ void Experiments::setupExperimentActions()
     expOpts.getLoadCoordinatesAction().setIconByName("document-open");
     expOpts.getLoadCoordinatesAction().setIconText("Load Coordinates");
     expOpts.getLoadCoordinatesAction().setText("Load Coordinates");
+    
+    expOpts.getAutoComputationAction().setToolTip("Auto Compute");
+    expOpts.getAutoComputationAction().setDefaultWidgetFlags(ToggleAction::CheckBox);
+    expOpts.getAutoComputationAction().setChecked(true);
+    expOpts.getAutoComputationAction().setText("Auto Compute");
+    expOpts.getAutoComputationAction().setIconByName("system-run");
+    expOpts.getAutoComputationAction().setIconText("Auto Compute");
+    connect(&expOpts.getAutoComputationAction(), &ToggleAction::toggled, this, [this]() {
+        if (_settings->getExperimentOptionsHolder().getAutoComputationAction().isChecked()) {
+            correctRangeAndAutoCompute();
+        }
+        });
+
+    expOpts.getAutoComputationTriggerAction().setToolTip("Compute");
+    expOpts.getAutoComputationTriggerAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    expOpts.getAutoComputationTriggerAction().setIconByName("system-run");
+    expOpts.getAutoComputationTriggerAction().setIconText("Compute");
+    expOpts.getAutoComputationTriggerAction().setText("Compute");
+    connect(&expOpts.getAutoComputationTriggerAction(), &TriggerAction::triggered, this, [this]() { correctRangeAndAutoCompute(); });
+
 
     expOpts.getStoreCoordinatesAction().setToolTip("Store Coordinates");
     expOpts.getStoreCoordinatesAction().setIconByName("document-save");
@@ -270,6 +291,9 @@ void Experiments::loadSelection()
     mv::events().notifyDatasetDataSelectionChanged(dataset);
 
     QMessageBox::information(_parentWidget, "Load Selection", "Selection loaded from:\n" + fileName);
+    if (_settings->getExperimentOptionsHolder().getAutoComputationAction().isChecked()) {
+        correctRangeAndAutoCompute();
+    }
 }
 
 void Experiments::storeCoordinates()
@@ -411,6 +435,9 @@ void Experiments::loadCoordinates()
     mv::events().notifyDatasetDataChanged(dataset);
 
     QMessageBox::information(_parentWidget, "Load Rotation", "Rotation loaded from:\n" + fileName);
+        if (_settings->getExperimentOptionsHolder().getAutoComputationAction().isChecked()) {
+            correctRangeAndAutoCompute();
+    }
 }
 
 void Experiments::applyRotation()
@@ -476,6 +503,9 @@ void Experiments::applyRotation()
     mv::events().notifyDatasetDataChanged(dataset);
 
     qDebug() << "Rotation applied successfully.";
+        if (_settings->getExperimentOptionsHolder().getAutoComputationAction().isChecked()) {
+            correctRangeAndAutoCompute();
+        }
 
 }
 
@@ -542,4 +572,68 @@ void Experiments::applyFlip()
     mv::events().notifyDatasetDataChanged(dataset);
 
     qDebug() << "Flip (" << flipType << ") applied successfully.";
+        if (_settings->getExperimentOptionsHolder().getAutoComputationAction().isChecked()) {
+            correctRangeAndAutoCompute();
+        }
+}
+
+
+void Experiments::correctRangeAndAutoCompute()
+{
+    // Dataset 1
+    auto& ds1 = _settings->getDataset1OptionsHolder();
+    auto& lower1 = ds1.getScatterplotLowerColoringRangeAction();
+    auto& upper1 = ds1.getScatterplotUpperColoringRangeAction();
+    auto pointDataset1 = ds1.getPointDatasetAction().getCurrentDataset();
+    QString datasetId1 = pointDataset1.isValid() ? pointDataset1.getDatasetId() : "";
+    QString scatterplotName1 = ds1.getScatterplotViewSelectionAction().getCurrentText();
+
+    // Dataset 2
+    auto& ds2 = _settings->getDataset2OptionsHolder();
+    auto& lower2 = ds2.getScatterplotLowerColoringRangeAction();
+    auto& upper2 = ds2.getScatterplotUpperColoringRangeAction();
+    auto pointDataset2 = ds2.getPointDatasetAction().getCurrentDataset();
+    QString datasetId2 = pointDataset2.isValid() ? pointDataset2.getDatasetId() : "";
+    QString scatterplotName2 = ds2.getScatterplotViewSelectionAction().getCurrentText();
+
+    // Get min/max from actual data (PointDataset)
+    auto [min1, max1] = findDatasetLimits(datasetId1);
+    auto [min2, max2] = findDatasetLimits(datasetId2);
+
+    // Set min/max for range actions
+    lower1.setMinimum(min1);
+    lower1.setMaximum(max1);
+    upper1.setMinimum(min1);
+    upper1.setMaximum(max1);
+
+    lower2.setMinimum(min2);
+    lower2.setMaximum(max2);
+    upper2.setMinimum(min2);
+    upper2.setMaximum(max2);
+
+    // Clamp values if needed
+    float l1 = lower1.getValue();
+    float u1 = upper1.getValue();
+    if (l1 > u1) lower1.setValue(u1);
+    if (l1 < min1) lower1.setValue(min1);
+    if (u1 > max1) upper1.setValue(max1);
+
+    float l2 = lower2.getValue();
+    float u2 = upper2.getValue();
+    if (l2 > u2) lower2.setValue(u2);
+    if (l2 < min2) lower2.setValue(min2);
+    if (u2 > max2) upper2.setValue(max2);
+
+    // Update scatterplot plugin ranges
+    rangeChangeScatterPlot(scatterplotName1, lower1.getValue(), upper1.getValue());
+    rangeChangeScatterPlot(scatterplotName2, lower2.getValue(), upper2.getValue());
+
+    auto& lineLower1 = ds1.getLineplotLowerColoringRangeAction();
+    auto& lineUpper1 = ds1.getLineplotUpperColoringRangeAction();
+    rangeChangeLinePlot(ds1.getLineplotViewSelectionAction().getCurrentText(), lineLower1.getValue(), lineUpper1.getValue());
+
+    // Trigger auto-compute
+    if (_computation) {
+       _computation->setSelectionAndAutoCompute();
+    }
 }

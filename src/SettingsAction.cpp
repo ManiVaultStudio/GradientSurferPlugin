@@ -570,7 +570,9 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     _rotationDegreeAction(this, "Rotation Degree"),
     _applyRotationAction(this, "Apply Rotation"),
     _applyFlipAction(this, "Apply Flip"),
-    _flipTypeAction(this, "Flip Type")
+    _flipTypeAction(this, "Flip Type"),
+    _autoComputationAction(this, "Auto Compute"),
+    _autoComputationTriggerAction(this, "Compute")
 {
     setText("Experiment Options");
     setIcon(mv::util::StyledIcon("flask"));
@@ -587,6 +589,8 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     addAction(&_applyFlipAction);
     addAction(&_storeCoordinatesAction);
     addAction(&_loadCoordinatesAction);
+    addAction(&_autoComputationAction);
+    addAction(&_autoComputationTriggerAction);
 }
 
 void SettingsAction::fromVariantMap(const QVariantMap& variantMap)

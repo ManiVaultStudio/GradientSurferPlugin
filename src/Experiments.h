@@ -24,6 +24,7 @@ private:
     void storeCoordinates();
     void applyRotation();
     void applyFlip();
+    void correctRangeAndAutoCompute();
 
     GradientSurferPlugin* _plugin;
     SettingsAction* _settings;
