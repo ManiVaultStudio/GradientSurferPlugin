@@ -4058,23 +4058,23 @@ void Computation::colorScatterPlots()
         const QString selectedGeneName2 = ds2Opts.getGeneSelectionAction().getCurrentDimensionName();
         if (!selectedGeneName1.trimmed().isEmpty())
         {
-            //_scatterplotPointColoringDataset1->setGuiName("Gene " + selectedGeneName1 + " Coloring Dataset 1");
-            _scatterplotPointColoringDataset1->setGuiName("Gene Coloring Dataset 1");
+            _scatterplotPointColoringDataset1->setGuiName("Gene " + selectedGeneName1 + " Coloring Dataset 1");
+            //_scatterplotPointColoringDataset1->setGuiName("Gene Coloring Dataset 1");
         }
         else
         {
-            //_scatterplotPointColoringDataset1->setGuiName("Gene "+ selectedGeneName1 +" Unavailable Coloring Dataset 1");
-            _scatterplotPointColoringDataset1->setGuiName("Gene Unavailable Coloring Dataset 1");
+            _scatterplotPointColoringDataset1->setGuiName("Gene "+ selectedGeneName1 +" Unavailable Coloring Dataset 1");
+            //_scatterplotPointColoringDataset1->setGuiName("Gene Unavailable Coloring Dataset 1");
         }
         if (!selectedGeneName2.trimmed().isEmpty())
         {
-            //_scatterplotPointColoringDataset2->setGuiName("Gene " + selectedGeneName2 + " Coloring Dataset 2");
-            _scatterplotPointColoringDataset2->setGuiName("Gene Coloring Dataset 2");
+            _scatterplotPointColoringDataset2->setGuiName("Gene " + selectedGeneName2 + " Coloring Dataset 2");
+            //_scatterplotPointColoringDataset2->setGuiName("Gene Coloring Dataset 2");
         }
         else
         {
-            //_scatterplotPointColoringDataset2->setGuiName("Gene " + selectedGeneName2 + " Unavailable Coloring Dataset 2");
-            _scatterplotPointColoringDataset2->setGuiName("Gene Unavailable Coloring Dataset 2");
+            _scatterplotPointColoringDataset2->setGuiName("Gene " + selectedGeneName2 + " Unavailable Coloring Dataset 2");
+            //_scatterplotPointColoringDataset2->setGuiName("Gene Unavailable Coloring Dataset 2");
         }
         
         auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,

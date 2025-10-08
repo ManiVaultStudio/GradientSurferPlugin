@@ -38,7 +38,6 @@
 #include <actions/HorizontalToolbarAction.h>
 #include <actions/VerticalToolbarAction.h>
 #include "QStatusBar"
-#include "HighPerfLineChart.h"
 #include <actions/ColorMap1DAction.h>
 
 using namespace mv::gui;
@@ -380,6 +379,69 @@ public:
         ToggleAction                        _hidePointSelectionAction;
         IntegralAction      _smoothingWindowPercentageAction;
     };
+
+    class ExperimentOptionsHolder : public VerticalGroupAction
+    {
+    public:
+        ExperimentOptionsHolder(SettingsAction& settingsAction);
+
+        const TriggerAction& getSaveTablesAction() const { return _saveTablesAction; }
+        TriggerAction& getSaveTablesAction() { return _saveTablesAction; }
+
+        const TriggerAction& getStoreSelectionAction() const { return _storeSelectionAction; }
+        TriggerAction& getStoreSelectionAction() { return _storeSelectionAction; }
+
+        const TriggerAction& getLoadSelectionAction() const { return _loadSelectionAction; }
+        TriggerAction& getLoadSelectionAction() { return _loadSelectionAction; }
+
+        const DatasetPickerAction& getRotationDatasetAction() const { return _rotationDatasetAction; }
+        DatasetPickerAction& getRotationDatasetAction() { return _rotationDatasetAction; }
+
+        const DatasetPickerAction& getSelectionDatasetAction() const { return _selectionDatasetAction; }
+        DatasetPickerAction& getSelectionDatasetAction() { return _selectionDatasetAction; }
+
+        const TriggerAction& getStoreCoordinatesAction() const { return _storeCoordinatesAction; }
+        TriggerAction& getStoreCoordinatesAction() { return _storeCoordinatesAction; }
+
+        const TriggerAction& getLoadCoordinatesAction() const { return _loadCoordinatesAction; }
+        TriggerAction& getLoadCoordinatesAction() { return _loadCoordinatesAction; }
+
+        const DecimalAction& getRotationDegreeAction() const { return _rotationDegreeAction; }
+        DecimalAction& getRotationDegreeAction() { return _rotationDegreeAction; }
+
+        const TriggerAction& getApplyRotationAction() const { return _applyRotationAction; }
+        TriggerAction& getApplyRotationAction() { return _applyRotationAction; }
+
+        const TriggerAction& getApplyFlipAction() const { return _applyFlipAction; }
+        TriggerAction& getApplyFlipAction() { return _applyFlipAction; }
+
+        const OptionAction& getFlipTypeAction() const { return _flipTypeAction; }
+        OptionAction& getFlipTypeAction() { return _flipTypeAction; }
+
+        ToggleAction& getAutoComputationAction() { return _autoComputationAction; }
+        const ToggleAction& getAutoComputationAction() const { return _autoComputationAction; }
+
+        TriggerAction& getAutoComputationTriggerAction() { return _autoComputationTriggerAction; }
+        const TriggerAction& getAutoComputationTriggerAction() const { return _autoComputationTriggerAction; }
+
+    protected:
+        SettingsAction& _settingsOptions;
+        TriggerAction               _saveTablesAction;
+        TriggerAction               _storeSelectionAction;
+        TriggerAction               _loadSelectionAction;
+        TriggerAction               _storeCoordinatesAction;
+        TriggerAction               _loadCoordinatesAction;
+        DatasetPickerAction         _rotationDatasetAction;
+        DatasetPickerAction         _selectionDatasetAction;
+        DecimalAction              _rotationDegreeAction;
+        TriggerAction              _applyRotationAction;
+        TriggerAction              _applyFlipAction;
+        OptionAction               _flipTypeAction;
+        ToggleAction               _autoComputationAction;
+        TriggerAction              _autoComputationTriggerAction;
+    };
+
+
 public:
     SettingsAction(GradientSurferPlugin& GradientSurferPlugin);
 
@@ -387,6 +449,7 @@ public:
     Dataset2OptionsHolder& getDataset2OptionsHolder()   { return _dataset2OptionsHolder; }
     CommonOptionsHolder& getCommonOptionsHolder()       { return _commonOptionsHolder; }
     CustomizationOptionsHolder& getCustomizationOptionsHolder() { return _customizationOptionsHolder; }
+    ExperimentOptionsHolder& getExperimentOptionsHolder() { return _experimentOptionsHolder; }
 
 
 public: 
@@ -406,6 +469,7 @@ protected:
     Dataset1OptionsHolder           _dataset1OptionsHolder;
     Dataset2OptionsHolder           _dataset2OptionsHolder;
     CommonOptionsHolder             _commonOptionsHolder;
+    ExperimentOptionsHolder        _experimentOptionsHolder;
     CustomizationOptionsHolder      _customizationOptionsHolder;
     QTableView*                     _tableView0Action = nullptr;
     QTableView*                     _tableView2Action = nullptr;

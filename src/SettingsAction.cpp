@@ -24,7 +24,8 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _dataset1OptionsHolder(*this),
     _dataset2OptionsHolder(*this),
     _commonOptionsHolder(*this),
-    _customizationOptionsHolder(*this)
+    _customizationOptionsHolder(*this),
+    _experimentOptionsHolder(*this)
 {
     setSerializationName("GradientSurfer:Settings");
     _dataset1OptionsHolder.getClusterDatasetAction().setSerializationName("GradientSurfer:Clusterdataset");
@@ -556,6 +557,41 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
 
 }
 
+inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(SettingsAction& settingsAction) :
+    VerticalGroupAction(&settingsAction, "Experiment Options"),
+    _settingsOptions(settingsAction),
+    _saveTablesAction(this, "Save Tables"),
+    _storeSelectionAction(this, "Store Selection"),
+    _loadSelectionAction(this, "Load Selection"),
+    _storeCoordinatesAction(this, "Store Coordinates"),
+    _loadCoordinatesAction(this, "Load Coordinates"),
+    _rotationDatasetAction(this, "Rotation Dataset"),
+    _selectionDatasetAction(this, "Selection Dataset"),
+    _rotationDegreeAction(this, "Rotation Degree"),
+    _applyRotationAction(this, "Apply Rotation"),
+    _applyFlipAction(this, "Apply Flip"),
+    _flipTypeAction(this, "Flip Type"),
+    _autoComputationAction(this, "Auto Compute"),
+    _autoComputationTriggerAction(this, "Compute")
+{
+    setText("Experiment Options");
+    setIcon(mv::util::StyledIcon("flask"));
+    setPopupSizeHint(QSize(300, 0));
+    setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
+    addAction(&_saveTablesAction);
+    addAction(&_rotationDatasetAction);
+    addAction(&_selectionDatasetAction);
+    addAction(&_storeSelectionAction);
+    addAction(&_loadSelectionAction);
+    addAction(&_rotationDegreeAction);
+    addAction(&_applyRotationAction);
+    addAction(&_flipTypeAction);
+    addAction(&_applyFlipAction);
+    addAction(&_storeCoordinatesAction);
+    addAction(&_loadCoordinatesAction);
+    addAction(&_autoComputationAction);
+    addAction(&_autoComputationTriggerAction);
+}
 
 void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
 {

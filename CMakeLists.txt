@@ -41,8 +41,8 @@ set(PLUGIN_SOURCES
     src/SettingsAction.cpp
     src/Computation.h
     src/Computation.cpp
-    src/HighPerfLineChart.cpp
-    src/HighPerfLineChart.h
+    src/Experiments.h
+    src/Experiments.cpp
     src/CorrelationBarDelegate.h
     src/CorrelationBarDelegate.cpp
     src/ComputationUtils.h

@@ -15,7 +15,8 @@ using namespace mv;
 GradientSurferPlugin::GradientSurferPlugin(const PluginFactory* factory) :
     ViewPlugin(factory),
     _settingsAction(*this),
-    _computation(*this, _settingsAction)
+    _computation(*this, _settingsAction),
+    _experiments(*this, _settingsAction, _computation)
 {
 
     getLearningCenterAction().addVideos(QStringList({ "Practitioner", "Developer" }));
@@ -30,6 +31,7 @@ void GradientSurferPlugin::init()
     _settingsAction.getDataset1OptionsHolder().setExpanded(false);
     _settingsAction.getDataset2OptionsHolder().setExpanded(false);
     _settingsAction.getCustomizationOptionsHolder().setExpanded(false);
+    _settingsAction.getExperimentOptionsHolder().setExpanded(false);
     _settingsAction.getCommonOptionsHolder().setExpanded(true);
 
     groupForAction->addGroupAction(&_settingsAction.getCommonOptionsHolder());
@@ -43,11 +45,13 @@ void GradientSurferPlugin::init()
         if (visible) {
             groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
             groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
+            groupForAction->addGroupAction(&_settingsAction.getExperimentOptionsHolder());
 
         }
         else {
                         groupForAction->removeGroupAction(&_settingsAction.getDataset1OptionsHolder());
                         groupForAction->removeGroupAction(&_settingsAction.getDataset2OptionsHolder());
+                        groupForAction->removeGroupAction(&_settingsAction.getExperimentOptionsHolder());
         }
         //_settingsAction.getDataset1OptionsHolder().setVisible(visible);
         //_settingsAction.getDataset2OptionsHolder().setVisible(visible);

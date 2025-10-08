@@ -11,6 +11,7 @@
 
 #include "SettingsAction.h"
 #include "Computation.h"
+#include "Experiments.h"
 
 /** All plugin related classes are in the ManiVault plugin namespace */
 using namespace mv::plugin;
@@ -93,6 +94,7 @@ public:
 protected:
     SettingsAction        _settingsAction;
     Computation        _computation;
+    Experiments        _experiments;
 
 };
 

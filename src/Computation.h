@@ -54,7 +54,7 @@ class Computation : public WidgetAction
 
 public:
     Computation(GradientSurferPlugin& GradientSurferPlugin, SettingsAction& SettingsAction);
-
+    void setSelectionAndAutoCompute();
 private:
     void initializeState();
     void setupDebounceTimers();
@@ -71,10 +71,10 @@ private:
     void setupScatterplotHandlers();
     void setupStatusMessageHandler();
     void setupPointDatasetHandlers();
-    
+    void AutoCompute();
     void setStatusMessage(const QString& status, const QString& message, const QString& color);
     void ManualCompute();
-    void AutoCompute();
+    
 
     // Helper functions for AutoCompute refactor
     bool validateAndRetrieveDatasets(
@@ -102,7 +102,7 @@ private:
         const std::vector<int>& columnIndices,
         const std::vector<QString>& dimensionNames);
     bool setupAndTriggerPCA();
-    void setSelectionAndAutoCompute();
+
     void correlationAfterPCA();
     //void populateLineChartColorPointData();
     void colorScatterPlots();
