@@ -2169,7 +2169,7 @@ bool Computation::createDatasetsIfNeeded()
         _pcaCommonGenesDataset1->setGroupIndex(667);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset1);
         if (_selectedGenePointDataset1.isValid() && _pcaCommonGenesDataset1.isValid()) {
-            _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
+            _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA Analysis", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
         }
         else
         {
@@ -2185,7 +2185,7 @@ bool Computation::createDatasetsIfNeeded()
         _pcaCommonGenesDataset2->setGroupIndex(668);
         mv::events().notifyDatasetAdded(_pcaCommonGenesDataset2);
         if (_selectedGenePointDataset2.isValid() && _pcaCommonGenesDataset2.isValid()) {
-            _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
+            _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA Analysis", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
         }
         else
         {
@@ -3276,10 +3276,10 @@ bool Computation::setupAndTriggerPCA()
     {
 
         if (!_pcaAnalysisCommonGenesDataset1Plugin) {
-            _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
+            _pcaAnalysisCommonGenesDataset1Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA Analysis", { _selectedGenePointDataset1 }, { _pcaCommonGenesDataset1 });
         }
         if (!_pcaAnalysisCommonGenesDataset2Plugin) {
-            _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
+            _pcaAnalysisCommonGenesDataset2Plugin = mv::plugins().requestPlugin<AnalysisPlugin>("PCA Analysis", { _selectedGenePointDataset2 }, { _pcaCommonGenesDataset2 });
         }
 
         if (!_pcaAnalysisCommonGenesDataset1Plugin) {
