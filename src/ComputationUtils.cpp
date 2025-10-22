@@ -1236,17 +1236,16 @@ bool computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv:
     return true;
 
 }
-bool computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices)
+
+bool computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices, QString corrType)
 {
     FunctionTimer timer(Q_FUNC_INFO);
 
     const int numGenes = fullDataset->getNumDimensions();
     const int numAllCells = fullDataset->getNumPoints();
     const int numCellsFilt = allClusterFilteredIndices.size();
-
     const int numCellsInPC = selectedPC.size();
 
-    //assert(numCellsFilt == numCellsInPC);
     if (numCellsFilt != numCellsInPC) {
         qCritical() << "numCellsFilt does not match numCellsInPC" << numCellsFilt << numCellsInPC;
         return false;
@@ -1268,9 +1267,8 @@ bool computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std:
     for (int geneIdx = 0; geneIdx < numGenes; ++geneIdx) {
         std::vector<float> geneVals(numCellsFilt);
 
-        //fullDataset->extractDataForDimension(geneVals, geneIdx);
         std::vector<int> geneIndex = { geneIdx };
-        fullDataset->populateDataForDimensions(geneVals,geneIndex, allClusterFilteredIndices);
+        fullDataset->populateDataForDimensions(geneVals, geneIndex, allClusterFilteredIndices);
         float sumGene = 0.0f;
         for (float v : geneVals) sumGene += v;
         float meanGene = sumGene / numCellsFilt;
@@ -1289,10 +1287,21 @@ bool computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std:
 
         if (std::isnan(corr)) corr = 0.0f;
 
-        corrVector[geneIdx] = corr;
+        // Apply corrType logic
+        if (corrType == "Absolute") {
+            corrVector[geneIdx] = std::abs(corr);
+        }
+        else if (corrType == "Positive") {
+            corrVector[geneIdx] = (corr > 0.0f) ? corr : 0.0f;
+        }
+        else if (corrType == "Negative") {
+            corrVector[geneIdx] = (corr < 0.0f) ? corr : 0.0f;
+        }
+        else {
+            corrVector[geneIdx] = corr;
+        }
     }
     return true;
-
 }
 
 std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText) {
