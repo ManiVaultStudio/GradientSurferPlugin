@@ -77,6 +77,15 @@ void Experiments::setupExperimentActions()
     expOpts.getAutoComputationTriggerAction().setText("Compute");
     connect(&expOpts.getAutoComputationTriggerAction(), &TriggerAction::triggered, this, [this]() { correctRangeAndAutoCompute(); });
 
+    expOpts.getSaveSelectedGeneListAction().setToolTip("Save Selected Genes");
+    expOpts.getSaveSelectedGeneListAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    expOpts.getSaveSelectedGeneListAction().setIconByName("document-save");
+    expOpts.getSaveSelectedGeneListAction().setIconText("Save Selected Genes");
+    expOpts.getSaveSelectedGeneListAction().setText("Save Selected Genes");
+    connect(&expOpts.getSaveSelectedGeneListAction(), &TriggerAction::triggered, this, [this]() {
+        saveSelectedGeneList();
+        });
+
 
     expOpts.getStoreCoordinatesAction().setToolTip("Store Coordinates");
     expOpts.getStoreCoordinatesAction().setIconByName("document-save");
@@ -122,6 +131,46 @@ void Experiments::setupExperimentActions()
 
     connect(&expOpts.getApplyFlipAction(), &TriggerAction::triggered, this, [this]() { applyFlip(); });
     connect(&expOpts.getFlipTypeAction(), &OptionAction::currentIndexChanged, this, [this]() { applyFlip(); });
+}
+
+void Experiments::saveSelectedGeneList()
+{
+    // Use the computed correlation values (from ComputationUtils)
+    // Only save genes where isWithinRange == true
+    if (_geneCorrValues0.empty()) {
+        QMessageBox::warning(_parentWidget, "Save Selected Genes", "No computed gene list available.");
+        return;
+    }
+
+    // Collect selected gene names
+    QStringList selectedGenes;
+    for (const auto& entry : _geneCorrValues0) {
+        if (entry.isWithinRange) {
+            selectedGenes << entry.geneName;
+        }
+    }
+
+    if (selectedGenes.isEmpty()) {
+        QMessageBox::warning(_parentWidget, "Save Selected Genes", "No genes are currently selected by computation.");
+        return;
+    }
+
+    QString fileName = QFileDialog::getSaveFileName(_parentWidget, "Save Selected Genes", QString(), "TXT Files (*.txt);;All Files (*)");
+    if (fileName.isEmpty()) return;
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(_parentWidget, "Save Selected Genes", "Failed to open file for writing.");
+        return;
+    }
+
+    QTextStream out(&file);
+    for (const QString& geneName : selectedGenes) {
+        out << geneName << "\n";
+    }
+    file.close();
+
+    QMessageBox::information(_parentWidget, "Save Selected Genes", "Selected genes saved to:\n" + fileName);
 }
 
 void Experiments::saveTables()

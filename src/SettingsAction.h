@@ -424,6 +424,9 @@ public:
         TriggerAction& getAutoComputationTriggerAction() { return _autoComputationTriggerAction; }
         const TriggerAction& getAutoComputationTriggerAction() const { return _autoComputationTriggerAction; }
 
+        TriggerAction& getSaveSelectedGeneListAction() { return _saveSelectedGeneListAction; }
+        const TriggerAction& getSaveSelectedGeneListAction() const { return _saveSelectedGeneListAction; }
+
     protected:
         SettingsAction& _settingsOptions;
         TriggerAction               _saveTablesAction;
@@ -439,6 +442,7 @@ public:
         OptionAction               _flipTypeAction;
         ToggleAction               _autoComputationAction;
         TriggerAction              _autoComputationTriggerAction;
+        TriggerAction              _saveSelectedGeneListAction;
     };
 
 

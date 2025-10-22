@@ -18,6 +18,7 @@ private:
     void setupExperimentActions();
 
     void saveTables();
+    void saveSelectedGeneList();
     void storeSelection();
     void loadSelection();
     void loadCoordinates();
