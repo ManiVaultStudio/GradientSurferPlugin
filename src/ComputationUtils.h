@@ -104,7 +104,7 @@ std::vector<int> getIndicesBySelectedClusters(
 StatusInfo parseStatusMessage(const QString& statusString);
 std::pair<QFont, int> getStatusLabelFontAndIconSize(const QString& labelText);
 std::pair<float,float> findDatasetLimits(QString datasetID);
-bool computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices);
+bool computeCorrelationGenePC(const mv::Dataset<Points>& fullDataset, const std::vector<float>& selectedPC, std::vector<float>& corrVector, std::vector<int>& allClusterFilteredIndices, QString corrType);
 void clearTable(QTableView* tableView);
 float computeGradientScore(const std::vector<float>& corrArray, const std::vector<float>& expArray);
 void normalizeVector(std::vector<float>& data, NormalizationType type);
@@ -116,7 +116,8 @@ void selectFirstRow(QTableView* tableView);
 void deselectAllRows(QTableView* tableView);
 void makeSelection(QString value, QTableView* tableView);
 QString wrapMessageWithBrCount(const QString& message, int& brCount, int maxLineLength = 100);
-void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, int topNRows, int bottomNRows, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, bool isMainTable);
+void populateGenesByCorrelationRange(const std::vector<float>& correlationVector, int topNRows, int bottomNRows, const std::vector<QString>& geneNameOrdered, std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices, bool isMainTable,
+    const QString& corrType);
 void setupTableModelAndSelection(QTableView* tableViewMain, std::vector<CorrelationGeneCoords>& geneCorrValues,DimensionPickerAction& geneSelectionAction,  QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2,bool isMainSelectionTable);
 void resetupCorrelationTable(std::vector<CorrelationGeneCoords>& geneCorrValues, std::vector<int>& geneOfInterestIndices,QTableView* tableViewMain, int topNRows, int bottomNRows, DimensionPickerAction& geneSelectionAction,  QTableView* tableViewOther1, QTableView* tableViewOther2, DimensionPickerAction& geneSelectionAction2, bool mainTable);
 bool computeCorrelationGeneCoords(const std::vector<int>& cellIndices, const mv::Dataset<Points> dataset, const std::vector<float>& coords, std::vector<float>& corrVector, QString corrType);
