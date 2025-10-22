@@ -994,26 +994,35 @@ void populateGenesByCorrelationRange(
     const std::vector<QString>& geneNameOrdered,
     std::vector<CorrelationGeneCoords>& geneCorrValues,
     std::vector<int>& geneOfInterestIndices,
-    bool isMainTable)
+    bool isMainTable,
+    const QString& corrType
+)
 {
     constexpr float epsilon = 1e-6f;
 
     geneCorrValues.clear();
     geneOfInterestIndices.clear();
 
-    // Main table: filter to common genes, otherwise use all
+    // Prepare filtered vectors and indices
     const std::vector<float>* corrVec = &correlationVector;
     const std::vector<QString>* geneVec = &geneNameOrdered;
     std::vector<float> filteredCorr;
     std::vector<QString> filteredGenes;
+    std::vector<int> indices;
     QSet<int> selectedRanks;
     int count = 0;
 
+    // Main table: filter to common genes, otherwise use all
     if (isMainTable) {
         for (size_t i = 0; i < geneNameOrdered.size() && i < correlationVector.size(); ++i) {
             if (_commonGenesAcrossDatasets.contains(geneNameOrdered[i])) {
+                // For Negative/Positive, skip zero correlations
+                float corr = correlationVector[i];
+                if ((corrType == "Negative" || corrType == "Positive") && std::abs(corr) < epsilon)
+                    continue;
                 filteredGenes.push_back(geneNameOrdered[i]);
-                filteredCorr.push_back(correlationVector[i]);
+                filteredCorr.push_back(corr);
+                indices.push_back(static_cast<int>(filteredGenes.size() - 1));
             }
         }
         corrVec = &filteredCorr;
@@ -1034,13 +1043,17 @@ void populateGenesByCorrelationRange(
         _commonSelectedGenesAcrossDatasetsInTables.clear();
     }
     else {
-        count = std::min(static_cast<int>(correlationVector.size()), static_cast<int>(geneNameOrdered.size()));
+        // For non-main tables, use all genes, but filter out zero correlations for Negative/Positive
+        for (size_t i = 0; i < correlationVector.size() && i < geneNameOrdered.size(); ++i) {
+            float corr = correlationVector[i];
+            if ((corrType == "Negative" || corrType == "Positive") && std::abs(corr) < epsilon)
+                continue;
+            indices.push_back(static_cast<int>(i));
+        }
+        count = static_cast<int>(indices.size());
     }
 
     if (count == 0 || topNRows < 0 || bottomNRows < 0) return;
-
-    std::vector<int> indices(count);
-    std::iota(indices.begin(), indices.end(), 0);
 
     // Sort indices by correlation value (descending)
     std::sort(indices.begin(), indices.end(),

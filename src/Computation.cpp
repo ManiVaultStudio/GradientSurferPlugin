@@ -1809,11 +1809,11 @@ void Computation::AutoCompute()
 
             if (_selectionDataset == 1)
             {
-                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames1, _geneCorrValues0, _geneOfInterestIndices0, true);
+                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames1, _geneCorrValues0, _geneOfInterestIndices0, true, corrType);
             }
             else if (_selectionDataset == 2)
             {
-                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames2, _geneCorrValues0, _geneOfInterestIndices0, true);
+                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames2, _geneCorrValues0, _geneOfInterestIndices0, true, corrType);
             }
             else
             {
@@ -2771,8 +2771,8 @@ void Computation::correlationAfterPCA()
     const auto dimensionNames1 = pointDataset1->getDimensionNames();
 
      try {
-        populateGenesByCorrelationRange(correlationGenePC2, topNRows, bottomNRows, dimensionNames2, _geneCorrValues2, _geneOfInterestIndices2,false);
-        populateGenesByCorrelationRange(correlationGenePC1, topNRows, bottomNRows, dimensionNames1, _geneCorrValues1, _geneOfInterestIndices1,false);
+        populateGenesByCorrelationRange(correlationGenePC2, topNRows, bottomNRows, dimensionNames2, _geneCorrValues2, _geneOfInterestIndices2,false, corrType);
+        populateGenesByCorrelationRange(correlationGenePC1, topNRows, bottomNRows, dimensionNames1, _geneCorrValues1, _geneOfInterestIndices1,false, corrType);
     }
     catch (const std::exception& ex) {
         qWarning() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
