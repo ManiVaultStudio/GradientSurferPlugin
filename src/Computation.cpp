@@ -1809,11 +1809,11 @@ void Computation::AutoCompute()
 
             if (_selectionDataset == 1)
             {
-                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames1, _geneCorrValues0, _geneOfInterestIndices0, true);
+                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames1, _geneCorrValues0, _geneOfInterestIndices0, true, corrType);
             }
             else if (_selectionDataset == 2)
             {
-                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames2, _geneCorrValues0, _geneOfInterestIndices0, true);
+                populateGenesByCorrelationRange(corrGeneCoords, topNRows, bottomNRows, dimensionNames2, _geneCorrValues0, _geneOfInterestIndices0, true, corrType);
             }
             else
             {
@@ -2747,15 +2747,15 @@ void Computation::correlationAfterPCA()
 
     std::vector<float> correlationGenePC2;
     std::vector<float> correlationGenePC1;
-
-    bool correlationSuccessful2= computeCorrelationGenePC(pointDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2);
+    const QString corrType = _settingsAction.getCommonOptionsHolder().getCorrelationCalculationTypeAction().getCurrentText();
+    bool correlationSuccessful2= computeCorrelationGenePC(pointDataset2, selectedPC2, correlationGenePC2, _selectedClusterIndices2, corrType);
     if (!correlationSuccessful2) {
         setStatusMessage("E", "Error occurred during correlation computation for dataset 2", "");
         qCritical() << selectedPC2.size() << "selectedPC2 size, numAllCells2:" << numAllCells2<< "_selectedClusterIndices2.size()"<< _selectedClusterIndices2.size();
         qCritical() << "Correlation computation failed for dataset 2";
         return;
     }
-    bool correlationSuccessful1 = computeCorrelationGenePC(pointDataset1, selectedPC1, correlationGenePC1, _selectedClusterIndices1);
+    bool correlationSuccessful1 = computeCorrelationGenePC(pointDataset1, selectedPC1, correlationGenePC1, _selectedClusterIndices1, corrType);
     
     if (!correlationSuccessful1) {
         setStatusMessage("E", "Error occurred during correlation computation for dataset 1", "");
@@ -2771,8 +2771,8 @@ void Computation::correlationAfterPCA()
     const auto dimensionNames1 = pointDataset1->getDimensionNames();
 
      try {
-        populateGenesByCorrelationRange(correlationGenePC2, topNRows, bottomNRows, dimensionNames2, _geneCorrValues2, _geneOfInterestIndices2,false);
-        populateGenesByCorrelationRange(correlationGenePC1, topNRows, bottomNRows, dimensionNames1, _geneCorrValues1, _geneOfInterestIndices1,false);
+        populateGenesByCorrelationRange(correlationGenePC2, topNRows, bottomNRows, dimensionNames2, _geneCorrValues2, _geneOfInterestIndices2,false, corrType);
+        populateGenesByCorrelationRange(correlationGenePC1, topNRows, bottomNRows, dimensionNames1, _geneCorrValues1, _geneOfInterestIndices1,false, corrType);
     }
     catch (const std::exception& ex) {
         qWarning() << "Exception in filterTopNGenesByCorrelation:" << ex.what();
