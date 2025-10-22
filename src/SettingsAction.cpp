@@ -572,13 +572,15 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     _applyFlipAction(this, "Apply Flip"),
     _flipTypeAction(this, "Flip Type"),
     _autoComputationAction(this, "Auto Compute"),
-    _autoComputationTriggerAction(this, "Compute")
+    _autoComputationTriggerAction(this, "Compute"),
+    _saveSelectedGeneListAction(this, "Save Selected Genes")
 {
     setText("Experiment Options");
     setIcon(mv::util::StyledIcon("flask"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_saveTablesAction);
+    addAction(&_saveSelectedGeneListAction);
     addAction(&_rotationDatasetAction);
     addAction(&_selectionDatasetAction);
     addAction(&_storeSelectionAction);
