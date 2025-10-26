@@ -113,7 +113,13 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setChecked(false);
 
 
-
+    //exp
+    _experimentOptionsHolder.getGeneListTableSaveBottomNAction().setMinimum(0);
+    _experimentOptionsHolder.getGeneListTableSaveBottomNAction().setMaximum(2);
+    _experimentOptionsHolder.getGeneListTableSaveBottomNAction().setValue(0);
+    _experimentOptionsHolder.getGeneListTableSaveTopNAction().setMinimum(0);
+    _experimentOptionsHolder.getGeneListTableSaveTopNAction().setMaximum(2);
+    _experimentOptionsHolder.getGeneListTableSaveTopNAction().setValue(0);
 
 
     _commonOptionsHolder.getBottomNRowsAction().setMinimum(0);
@@ -573,14 +579,20 @@ inline SettingsAction::ExperimentOptionsHolder::ExperimentOptionsHolder(Settings
     _flipTypeAction(this, "Flip Type"),
     _autoComputationAction(this, "Auto Compute"),
     _autoComputationTriggerAction(this, "Compute"),
-    _saveSelectedGeneListAction(this, "Save Selected Genes")
+    _saveGeneListAction(this, "Save Genes"),
+    _geneListTableSaveNumberAction(this, "Save Genes Table Number Selection"),
+    _geneListTableSaveBottomNAction(this, "Save Bottom N Genes"),
+    _geneListTableSaveTopNAction(this, "Save Top N Genes")
 {
     setText("Experiment Options");
     setIcon(mv::util::StyledIcon("flask"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
     addAction(&_saveTablesAction);
-    addAction(&_saveSelectedGeneListAction);
+    addAction(&_geneListTableSaveNumberAction);
+    addAction(&_geneListTableSaveTopNAction);
+    addAction(&_geneListTableSaveBottomNAction);
+    addAction(&_saveGeneListAction);
     addAction(&_rotationDatasetAction);
     addAction(&_selectionDatasetAction);
     addAction(&_storeSelectionAction);
