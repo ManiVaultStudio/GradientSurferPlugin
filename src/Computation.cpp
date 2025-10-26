@@ -3696,6 +3696,9 @@ void Computation::findCommonGenes()
     topNRowsAction.setMaximum(maxRankLimit);
     bottomNRowsAction.setMaximum(maxRankLimit);
 
+    _settingsAction.getExperimentOptionsHolder().getGeneListTableSaveTopNAction().setMaximum(maxRankLimit);
+    _settingsAction.getExperimentOptionsHolder().getGeneListTableSaveBottomNAction().setMaximum(maxRankLimit);
+
     int topValue = topNRowsAction.getValue();
     int bottomValue = bottomNRowsAction.getValue();
 

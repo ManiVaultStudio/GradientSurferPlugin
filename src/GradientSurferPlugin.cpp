@@ -45,13 +45,13 @@ void GradientSurferPlugin::init()
         if (visible) {
             groupForAction->addGroupAction(&_settingsAction.getDataset1OptionsHolder());
             groupForAction->addGroupAction(&_settingsAction.getDataset2OptionsHolder());
-            //groupForAction->addGroupAction(&_settingsAction.getExperimentOptionsHolder());
+            groupForAction->addGroupAction(&_settingsAction.getExperimentOptionsHolder());
 
         }
         else {
                         groupForAction->removeGroupAction(&_settingsAction.getDataset1OptionsHolder());
                         groupForAction->removeGroupAction(&_settingsAction.getDataset2OptionsHolder());
-                        //groupForAction->removeGroupAction(&_settingsAction.getExperimentOptionsHolder());
+                        groupForAction->removeGroupAction(&_settingsAction.getExperimentOptionsHolder());
         }
         //_settingsAction.getDataset1OptionsHolder().setVisible(visible);
         //_settingsAction.getDataset2OptionsHolder().setVisible(visible);
