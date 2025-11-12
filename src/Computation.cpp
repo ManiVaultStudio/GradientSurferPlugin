@@ -4030,8 +4030,8 @@ void Computation::colorScatterPlots()
             return;
         }
         const QString selectedPCADimensionName = commonOpts.getPcaDimensionForColoringAction().getCurrentDimensionName();
-        _scatterplotPointColoringDataset1->setGuiName("PCA "+ selectedPCADimensionName);
-        _scatterplotPointColoringDataset2->setGuiName("PCA " + selectedPCADimensionName);
+        _scatterplotPointColoringDataset1->setGuiName("PCA: "+ selectedPCADimensionName);
+        _scatterplotPointColoringDataset2->setGuiName("PCA: " + selectedPCADimensionName);
        auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             pcaDataset1ID, _embeddingDataset1->getNumPoints(),
             selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile);
@@ -4061,22 +4061,22 @@ void Computation::colorScatterPlots()
         const QString selectedGeneName2 = ds2Opts.getGeneSelectionAction().getCurrentDimensionName();
         if (!selectedGeneName1.trimmed().isEmpty())
         {
-            _scatterplotPointColoringDataset1->setGuiName("Gene " + selectedGeneName1);
+            _scatterplotPointColoringDataset1->setGuiName("Gene expression: " + selectedGeneName1);
             //_scatterplotPointColoringDataset1->setGuiName("Gene Coloring Dataset 1");
         }
         else
         {
-            _scatterplotPointColoringDataset1->setGuiName("Gene "+ selectedGeneName1 +" Unavailable");
+            _scatterplotPointColoringDataset1->setGuiName("Gene expression: Gene Unavailable");
             //_scatterplotPointColoringDataset1->setGuiName("Gene Unavailable Coloring Dataset 1");
         }
         if (!selectedGeneName2.trimmed().isEmpty())
         {
-            _scatterplotPointColoringDataset2->setGuiName("Gene " + selectedGeneName2);
+            _scatterplotPointColoringDataset2->setGuiName("Gene expression: " + selectedGeneName2);
             //_scatterplotPointColoringDataset2->setGuiName("Gene Coloring Dataset 2");
         }
         else
         {
-            _scatterplotPointColoringDataset2->setGuiName("Gene " + selectedGeneName2 + " Unavailable");
+            _scatterplotPointColoringDataset2->setGuiName("Gene expression: Gene Unavailable");
             //_scatterplotPointColoringDataset2->setGuiName("Gene Unavailable Coloring Dataset 2");
         }
         
