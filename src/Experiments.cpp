@@ -77,12 +77,12 @@ void Experiments::setupExperimentActions()
     expOpts.getAutoComputationTriggerAction().setText("Compute");
     connect(&expOpts.getAutoComputationTriggerAction(), &TriggerAction::triggered, this, [this]() { correctRangeAndAutoCompute(); });
 
-    expOpts.getSaveSelectedGeneListAction().setToolTip("Save Selected Genes");
-    expOpts.getSaveSelectedGeneListAction().setDefaultWidgetFlags(TriggerAction::IconText);
-    expOpts.getSaveSelectedGeneListAction().setIconByName("document-save");
-    expOpts.getSaveSelectedGeneListAction().setIconText("Save Selected Genes");
-    expOpts.getSaveSelectedGeneListAction().setText("Save Selected Genes");
-    connect(&expOpts.getSaveSelectedGeneListAction(), &TriggerAction::triggered, this, [this]() {
+    expOpts.getSaveGeneListAction().setToolTip("Save Selected Genes");
+    expOpts.getSaveGeneListAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    expOpts.getSaveGeneListAction().setIconByName("document-save");
+    expOpts.getSaveGeneListAction().setIconText("Save Selected Genes");
+    expOpts.getSaveGeneListAction().setText("Save Selected Genes");
+    connect(&expOpts.getSaveGeneListAction(), &TriggerAction::triggered, this, [this]() {
         saveSelectedGeneList();
         });
 
@@ -121,6 +121,23 @@ void Experiments::setupExperimentActions()
     expOpts.getFlipTypeAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     expOpts.getFlipTypeAction().initialize({ "horizontal", "vertical" },"horizontal");
 
+    expOpts.getGeneListTableSaveNumberAction().setToolTip("Select Gene List Table");
+    expOpts.getGeneListTableSaveNumberAction().setDefaultWidgetFlags(DatasetPickerAction::ComboBox);
+    expOpts.getGeneListTableSaveNumberAction().initialize({
+        "Gene Correlation Table 0",
+        "Gene Correlation Table 1",
+        "Gene Correlation Table 2"
+        }, "Gene Correlation Table 0");
+
+    expOpts.getGeneListTableSaveTopNAction().setToolTip("Top N Genes to Save");
+    expOpts.getGeneListTableSaveTopNAction().setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
+
+    expOpts.getGeneListTableSaveBottomNAction().setToolTip("Bottom N Genes to Save");
+    expOpts.getGeneListTableSaveBottomNAction().setDefaultWidgetFlags(IntegralAction::SpinBox | IntegralAction::Slider);
+
+
+
+
     connect(&expOpts.getSaveTablesAction(), &TriggerAction::triggered, this, [this]() { saveTables(); });
     connect(&expOpts.getStoreSelectionAction(), &TriggerAction::triggered, this, [this]() { storeSelection(); });
     connect(&expOpts.getLoadSelectionAction(), &TriggerAction::triggered, this, [this]() { loadSelection(); });
@@ -135,19 +152,55 @@ void Experiments::setupExperimentActions()
 
 void Experiments::saveSelectedGeneList()
 {
-    // Use the computed correlation values (from ComputationUtils)
-    // Only save genes where isWithinRange == true
-    if (_geneCorrValues0.empty()) {
+    const QString tableSelection = _settings->getExperimentOptionsHolder().getGeneListTableSaveNumberAction().getCurrentText();
+    if (tableSelection.isEmpty()) {
+        QMessageBox::warning(_parentWidget, "Save Selected Genes", "No gene correlation table selected.");
+        return;
+    }
+
+    const std::vector<CorrelationGeneCoords>* geneCorrValues = nullptr;
+    if (tableSelection == "Gene Correlation Table 0") {
+        geneCorrValues = &_geneCorrValues0;
+    }
+    else if (tableSelection == "Gene Correlation Table 1") {
+        geneCorrValues = &_geneCorrValues1;
+    }
+    else if (tableSelection == "Gene Correlation Table 2") {
+        geneCorrValues = &_geneCorrValues2;
+    }
+    else {
+        QMessageBox::warning(_parentWidget, "Save Selected Genes", "Invalid gene correlation table selected.");
+        return;
+    }
+
+    if (!geneCorrValues || geneCorrValues->empty()) {
         QMessageBox::warning(_parentWidget, "Save Selected Genes", "No computed gene list available.");
         return;
     }
 
-    // Collect selected gene names
+    int topN = _settings->getExperimentOptionsHolder().getGeneListTableSaveTopNAction().getValue();
+    int bottomN = _settings->getExperimentOptionsHolder().getGeneListTableSaveBottomNAction().getValue();
+
+    if (topN + bottomN <= 0) {
+        QMessageBox::warning(_parentWidget, "Save Selected Genes", "Top N and Bottom N must be greater than zero.");
+        return;
+    }
+
+
+    // Sort by correlationValue descending
+    std::vector<CorrelationGeneCoords> sortedGenes = *geneCorrValues;
+    std::sort(sortedGenes.begin(), sortedGenes.end(), [](const CorrelationGeneCoords& a, const CorrelationGeneCoords& b) {
+        return a.correlationValue > b.correlationValue;
+        });
+
     QStringList selectedGenes;
-    for (const auto& entry : _geneCorrValues0) {
-        if (entry.isWithinRange) {
-            selectedGenes << entry.geneName;
-        }
+    // Top N
+    for (int i = 0; i < std::min(topN, static_cast<int>(sortedGenes.size())); ++i) {
+        selectedGenes << sortedGenes[i].geneName;
+    }
+    // Bottom N
+    for (int i = 0; i < std::min(bottomN, static_cast<int>(sortedGenes.size())); ++i) {
+        selectedGenes << sortedGenes[sortedGenes.size() - 1 - i].geneName;
     }
 
     if (selectedGenes.isEmpty()) {
@@ -155,7 +208,7 @@ void Experiments::saveSelectedGeneList()
         return;
     }
 
-    QString fileName = QFileDialog::getSaveFileName(_parentWidget, "Save Selected Genes", QString(), "TXT Files (*.txt);;All Files (*)");
+    const QString fileName = QFileDialog::getSaveFileName(_parentWidget, "Save Selected Genes", QString(), "TXT Files (*.txt);;All Files (*)");
     if (fileName.isEmpty()) return;
 
     QFile file(fileName);
@@ -165,9 +218,8 @@ void Experiments::saveSelectedGeneList()
     }
 
     QTextStream out(&file);
-    for (const QString& geneName : selectedGenes) {
+    for (const QString& geneName : selectedGenes)
         out << geneName << "\n";
-    }
     file.close();
 
     QMessageBox::information(_parentWidget, "Save Selected Genes", "Selected genes saved to:\n" + fileName);

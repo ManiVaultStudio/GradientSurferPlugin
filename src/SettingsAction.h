@@ -424,8 +424,17 @@ public:
         TriggerAction& getAutoComputationTriggerAction() { return _autoComputationTriggerAction; }
         const TriggerAction& getAutoComputationTriggerAction() const { return _autoComputationTriggerAction; }
 
-        TriggerAction& getSaveSelectedGeneListAction() { return _saveSelectedGeneListAction; }
-        const TriggerAction& getSaveSelectedGeneListAction() const { return _saveSelectedGeneListAction; }
+        TriggerAction& getSaveGeneListAction() { return _saveGeneListAction; }
+        const TriggerAction& getSaveGeneListAction() const { return _saveGeneListAction; }
+
+        OptionAction& getGeneListTableSaveNumberAction() { return _geneListTableSaveNumberAction; }
+        const OptionAction& getGeneListTableSaveNumberAction() const { return _geneListTableSaveNumberAction; }
+
+        IntegralAction& getGeneListTableSaveTopNAction() { return _geneListTableSaveTopNAction; }
+        const IntegralAction& getGeneListTableSaveTopNAction() const { return _geneListTableSaveTopNAction; }
+
+        IntegralAction& getGeneListTableSaveBottomNAction() { return _geneListTableSaveBottomNAction; }
+        const IntegralAction& getGeneListTableSaveBottomNAction() const { return _geneListTableSaveBottomNAction; }
 
     protected:
         SettingsAction& _settingsOptions;
@@ -442,7 +451,10 @@ public:
         OptionAction               _flipTypeAction;
         ToggleAction               _autoComputationAction;
         TriggerAction              _autoComputationTriggerAction;
-        TriggerAction              _saveSelectedGeneListAction;
+        TriggerAction              _saveGeneListAction;
+        OptionAction               _geneListTableSaveNumberAction;
+        IntegralAction             _geneListTableSaveTopNAction;
+        IntegralAction             _geneListTableSaveBottomNAction;
     };
 
 
