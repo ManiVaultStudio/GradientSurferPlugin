@@ -4066,7 +4066,7 @@ void Computation::colorScatterPlots()
         }
         else
         {
-            _scatterplotPointColoringDataset1->setGuiName("Gene expression: Gene Unavailable");
+            _scatterplotPointColoringDataset1->setGuiName("Gene expression: Gene unavailable");
             //_scatterplotPointColoringDataset1->setGuiName("Gene Unavailable Coloring Dataset 1");
         }
         if (!selectedGeneName2.trimmed().isEmpty())
@@ -4076,7 +4076,7 @@ void Computation::colorScatterPlots()
         }
         else
         {
-            _scatterplotPointColoringDataset2->setGuiName("Gene expression: Gene Unavailable");
+            _scatterplotPointColoringDataset2->setGuiName("Gene expression: Gene unavailable");
             //_scatterplotPointColoringDataset2->setGuiName("Gene Unavailable Coloring Dataset 2");
         }
         
