@@ -35,7 +35,7 @@
 #include <actions/VerticalToolbarAction.h>
 #include "QStatusBar"
 #include "PcaFast.h"
-//#include "ComputationUtils.h"
+#include "ComputationUtils.h"
 
 using namespace mv::gui;
 class QMenu;
