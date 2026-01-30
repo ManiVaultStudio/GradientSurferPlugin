@@ -175,7 +175,7 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 
 void createScatterplotClusterColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue);
-std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax, float lowRangePercentileValue, float highRangePercentileValue);
+std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString opacityDataset,  QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax, float lowRangePercentileValue, float highRangePercentileValue, float lowOpacityValue, float highOpacityValue);
 
 void createClusterLineChartClusterColors(QString coloringChangeDataset, QString coloringReferenceDataset, std::vector<int>& selectedIndices);
 void createLineChartClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints, QString pcaDimensionVal, float minValue, float maxValue, bool useFulldata);

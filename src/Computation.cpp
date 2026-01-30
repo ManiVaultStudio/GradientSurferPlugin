@@ -2148,6 +2148,16 @@ bool Computation::createDatasetsIfNeeded()
         _scatterplotPointColoringDataset2->setGroupIndex(556);
         mv::events().notifyDatasetAdded(_scatterplotPointColoringDataset2);
     }
+    if( !_scatterplotPointOpacityDataset1.isValid()) {
+        _scatterplotPointOpacityDataset1 = mv::data().createDataset("Points", "Scatterplot Point Opacity Dataset 1");
+        _scatterplotPointOpacityDataset1->setGroupIndex(555);
+        mv::events().notifyDatasetAdded(_scatterplotPointOpacityDataset1);
+    }
+    if( !_scatterplotPointOpacityDataset2.isValid()) {
+        _scatterplotPointOpacityDataset2 = mv::data().createDataset("Points", "Scatterplot Point Opacity Dataset 2");
+        _scatterplotPointOpacityDataset2->setGroupIndex(556);
+        mv::events().notifyDatasetAdded(_scatterplotPointOpacityDataset2);
+    }
     if (!_scatterplotClusterColoringDataset1.isValid()) {
         _scatterplotClusterColoringDataset1 = mv::data().createDataset("Cluster", "Scatterplot Cluster Color Dataset 1", _scatterplotPointColoringDataset1);
         _scatterplotClusterColoringDataset1->setGroupIndex(555);
@@ -2197,7 +2207,7 @@ bool Computation::createDatasetsIfNeeded()
 
     }
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartClusterColoringDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedCellPointDataset.isValid() || !_scatterplotClusterColoringDataset1.isValid() || !_scatterplotClusterColoringDataset2.isValid() || !_scatterplotPointColoringDataset1.isValid() || !_scatterplotPointColoringDataset2.isValid() || !_pcaSelectedEmbeddingDataset.isValid() || !_pcaCommonGenesDataset1.isValid() || !_pcaCommonGenesDataset2.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartClusterColoringDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedCellPointDataset.isValid() || !_scatterplotClusterColoringDataset1.isValid() || !_scatterplotClusterColoringDataset2.isValid() || !_scatterplotPointColoringDataset1.isValid() || !_scatterplotPointColoringDataset2.isValid() || !_pcaSelectedEmbeddingDataset.isValid() || !_pcaCommonGenesDataset1.isValid() || !_pcaCommonGenesDataset2.isValid()||!_scatterplotPointOpacityDataset1.isValid() || !_scatterplotPointOpacityDataset2.isValid()) {
         qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -3971,6 +3981,7 @@ void Computation::colorScatterPlots()
 
     float minVal1 = 0.0f, maxVal1 = 0.0f, minVal2 = 0.0f, maxVal2 = 0.0f;
     QString coloringdimension;
+    QString opacitydimension;
 
     /*if (commonOpts.getSelectionModeAction().isChecked()) */
     if(_selectionModeEnable)
@@ -3997,11 +4008,24 @@ void Computation::colorScatterPlots()
         _isColoringScatterplots = false;
         return;
     }
+    if (!_scatterplotPointOpacityDataset1.isValid() || !_scatterplotPointOpacityDataset2.isValid()) {
+        setStatusMessage("E", "No valid opacity datasets", "");
+        _isColoringScatterplots = false;
+        return;
+    }
     const QString scatterplotColorDataset1Id = _scatterplotPointColoringDataset1.getDatasetId();
     const QString scatterplotColorDataset2Id = _scatterplotPointColoringDataset2.getDatasetId();
+    const QString scatterplotOpacityDataset1Id = _scatterplotPointOpacityDataset1.getDatasetId();
+    const QString scatterplotOpacityDataset2Id = _scatterplotPointOpacityDataset2.getDatasetId();
     coloringdimension = "ColorDim";
+    opacitydimension = "OpacityDim";
     if (scatterplotColorDataset1Id.isEmpty() || scatterplotColorDataset2Id.isEmpty()) {
         setStatusMessage("E", "No valid coloring datasets", "");
+        _isColoringScatterplots = false;
+        return;
+    }
+    if ( scatterplotOpacityDataset1Id.isEmpty() || scatterplotOpacityDataset2Id.isEmpty()) {
+        setStatusMessage("E", "No valid opacity datasets", "");
         _isColoringScatterplots = false;
         return;
     }
@@ -4032,12 +4056,12 @@ void Computation::colorScatterPlots()
         const QString selectedPCADimensionName = commonOpts.getPcaDimensionForColoringAction().getCurrentDimensionName();
         _scatterplotPointColoringDataset1->setGuiName("PCA: "+ selectedPCADimensionName);
         _scatterplotPointColoringDataset2->setGuiName("PCA: " + selectedPCADimensionName);
-       auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
+       auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, scatterplotOpacityDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             pcaDataset1ID, _embeddingDataset1->getNumPoints(),
-            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile);
-       auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
+            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile, 20.0, 100.0);
+       auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, scatterplotOpacityDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             pcaDataset2ID, _embeddingDataset2->getNumPoints(),
-            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
+            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2, lowRangePercentile, highRangePercentile,20.0,100.0);
        minVal1 = value1.first;
        maxVal1 = value1.second;
        minVal2 = value2.first;
@@ -4080,12 +4104,12 @@ void Computation::colorScatterPlots()
             //_scatterplotPointColoringDataset2->setGuiName("Gene Unavailable Coloring Dataset 2");
         }
         
-        auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
+        auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, scatterplotOpacityDataset1Id,colorMapStringValue, _selectedClusterIndices1,
             geneDataset1ID, _embeddingDataset1->getNumPoints(),
-            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile);
-        auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
+            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile, 20.0, 100.0);
+        auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, scatterplotOpacityDataset2Id,colorMapStringValue, _selectedClusterIndices2,
             geneDataset2ID, _embeddingDataset2->getNumPoints(),
-            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
+            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile, 20.0, 100.0);
         minVal1 = value1.first;
         maxVal1 = value1.second;
         minVal2 = value2.first;
