@@ -2233,12 +2233,13 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
 
     std::vector<float> finalData(static_cast<size_t>(numOfTotalPoints), sentinelValue);
     std::vector<float> opacityValues(static_cast<size_t>(numOfTotalPoints), lowOpacityValue); // Default: non-selected = lowOpacityValue
-
+    int selectedPointsCount = 0;
     for (size_t i = 0; i < selectedIndices.size(); ++i) {
         int idx = selectedIndices[i];
         if (idx >= 0 && idx < numOfTotalPoints) {
             finalData[static_cast<size_t>(idx)] = geneExpValues[i];
             opacityValues[static_cast<size_t>(idx)] = highOpacityValue; // Selected = highOpacityValue
+            selectedPointsCount++;
         }
         else {
             qWarning() << "Index out of bounds in selectedIndices:" << idx;
@@ -2252,6 +2253,8 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
     opacityDatasetFull->setData(opacityValues.data(), numOfTotalPoints, 1);
     opacityDatasetFull->setDimensionNames({ "OpacityDim" });
     events().notifyDatasetDataChanged(opacityDatasetFull);
+
+    opacityDatasetFull->setGuiName("Selected: " + QString::number(selectedPointsCount) + " / " + QString::number(numOfTotalPoints));
 
     return { computedMin, computedMax };
 }

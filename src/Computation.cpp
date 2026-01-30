@@ -2149,12 +2149,12 @@ bool Computation::createDatasetsIfNeeded()
         mv::events().notifyDatasetAdded(_scatterplotPointColoringDataset2);
     }
     if( !_scatterplotPointOpacityDataset1.isValid()) {
-        _scatterplotPointOpacityDataset1 = mv::data().createDataset("Points", "Scatterplot Point Opacity Dataset 1");
+        _scatterplotPointOpacityDataset1 = mv::data().createDataset("Points", "Scatterplot Point Opacity Dataset 1", _scatterplotPointColoringDataset1);
         _scatterplotPointOpacityDataset1->setGroupIndex(555);
         mv::events().notifyDatasetAdded(_scatterplotPointOpacityDataset1);
     }
     if( !_scatterplotPointOpacityDataset2.isValid()) {
-        _scatterplotPointOpacityDataset2 = mv::data().createDataset("Points", "Scatterplot Point Opacity Dataset 2");
+        _scatterplotPointOpacityDataset2 = mv::data().createDataset("Points", "Scatterplot Point Opacity Dataset 2", _scatterplotPointColoringDataset2);
         _scatterplotPointOpacityDataset2->setGroupIndex(556);
         mv::events().notifyDatasetAdded(_scatterplotPointOpacityDataset2);
     }
@@ -4056,12 +4056,13 @@ void Computation::colorScatterPlots()
         const QString selectedPCADimensionName = commonOpts.getPcaDimensionForColoringAction().getCurrentDimensionName();
         _scatterplotPointColoringDataset1->setGuiName("PCA: "+ selectedPCADimensionName);
         _scatterplotPointColoringDataset2->setGuiName("PCA: " + selectedPCADimensionName);
+        
        auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, scatterplotOpacityDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             pcaDataset1ID, _embeddingDataset1->getNumPoints(),
-            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile, 20.0, 100.0);
+            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile, 50.0, 100.0);
        auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, scatterplotOpacityDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             pcaDataset2ID, _embeddingDataset2->getNumPoints(),
-            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2, lowRangePercentile, highRangePercentile,20.0,100.0);
+            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2, lowRangePercentile, highRangePercentile,50.0,100.0);
        minVal1 = value1.first;
        maxVal1 = value1.second;
        minVal2 = value2.first;
@@ -4086,30 +4087,26 @@ void Computation::colorScatterPlots()
         if (!selectedGeneName1.trimmed().isEmpty())
         {
             _scatterplotPointColoringDataset1->setGuiName("Gene expression: " + selectedGeneName1);
-            //_scatterplotPointColoringDataset1->setGuiName("Gene Coloring Dataset 1");
         }
         else
         {
             _scatterplotPointColoringDataset1->setGuiName("Gene expression: Gene unavailable");
-            //_scatterplotPointColoringDataset1->setGuiName("Gene Unavailable Coloring Dataset 1");
         }
         if (!selectedGeneName2.trimmed().isEmpty())
         {
             _scatterplotPointColoringDataset2->setGuiName("Gene expression: " + selectedGeneName2);
-            //_scatterplotPointColoringDataset2->setGuiName("Gene Coloring Dataset 2");
         }
         else
         {
             _scatterplotPointColoringDataset2->setGuiName("Gene expression: Gene unavailable");
-            //_scatterplotPointColoringDataset2->setGuiName("Gene Unavailable Coloring Dataset 2");
         }
         
         auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, scatterplotOpacityDataset1Id,colorMapStringValue, _selectedClusterIndices1,
             geneDataset1ID, _embeddingDataset1->getNumPoints(),
-            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile, 20.0, 100.0);
+            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile, 50.0, 100.0);
         auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, scatterplotOpacityDataset2Id,colorMapStringValue, _selectedClusterIndices2,
             geneDataset2ID, _embeddingDataset2->getNumPoints(),
-            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile, 20.0, 100.0);
+            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile, 50.0, 100.0);
         minVal1 = value1.first;
         maxVal1 = value1.second;
         minVal2 = value2.first;
