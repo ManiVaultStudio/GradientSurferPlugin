@@ -562,7 +562,7 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
     }
 }
 
-void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue, float minValue, float maxValue)
+void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue, float minValue, float maxValue, QString opacityDatasetID)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
     mv::gui::OptionAction* colorDatasetPickerAltValueAction;
@@ -705,6 +705,25 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                         auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
                         if (geneSelectionValueAction) {
                             geneSelectionValueAction->setCurrentDimensionName(dimensionForColoring);
+                        }
+                    }
+                    if (opacityDatasetID != "")
+                    {
+                        auto opacityDatasetPickerValueAction = findActionByPath<OptionAction>(plugin, "Settings/Plot/Point/Plot opacity/Point opacity source/Source");
+                        if (opacityDatasetPickerValueAction)
+                        {
+                            if (opacityDatasetID == "Constant")
+                            {
+                                opacityDatasetPickerValueAction->setCurrentText("Constant");
+                            }
+                            else
+                            {
+                                auto opacityDataset = mv::data().getDataset(opacityDatasetID);
+                                if (opacityDataset.isValid())
+                                {
+                                    opacityDatasetPickerValueAction->setCurrentText(opacityDataset->getGuiName());
+                                }
+                            }
                         }
                     }
 

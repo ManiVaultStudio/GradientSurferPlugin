@@ -3992,11 +3992,11 @@ void Computation::colorScatterPlots()
 
         scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, colorDataset1ID,
             embeddingDimensionX1, embeddingDimensionY1, false,
-            coloringdimension, colorMapStringValue, minVal1, maxVal1);
+            coloringdimension, colorMapStringValue, minVal1, maxVal1, "Constant");
 
         scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, colorDataset2ID,
             embeddingDimensionX2, embeddingDimensionY2, false,
-            coloringdimension, colorMapStringValue, minVal2, maxVal2);
+            coloringdimension, colorMapStringValue, minVal2, maxVal2, "Constant");
         _isColoringScatterplots = false;
         return;
     }
@@ -4017,6 +4017,7 @@ void Computation::colorScatterPlots()
     const QString scatterplotColorDataset2Id = _scatterplotPointColoringDataset2.getDatasetId();
     const QString scatterplotOpacityDataset1Id = _scatterplotPointOpacityDataset1.getDatasetId();
     const QString scatterplotOpacityDataset2Id = _scatterplotPointOpacityDataset2.getDatasetId();
+
     coloringdimension = "ColorDim";
     opacitydimension = "OpacityDim";
     if (scatterplotColorDataset1Id.isEmpty() || scatterplotColorDataset2Id.isEmpty()) {
@@ -4059,10 +4060,10 @@ void Computation::colorScatterPlots()
         
        auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, scatterplotOpacityDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             pcaDataset1ID, _embeddingDataset1->getNumPoints(),
-            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile, 50.0, 100.0);
+            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile, 0.2, 1.0);
        auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, scatterplotOpacityDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             pcaDataset2ID, _embeddingDataset2->getNumPoints(),
-            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2, lowRangePercentile, highRangePercentile,50.0,100.0);
+            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2, lowRangePercentile, highRangePercentile, 0.2,1.0);
        minVal1 = value1.first;
        maxVal1 = value1.second;
        minVal2 = value2.first;
@@ -4103,10 +4104,10 @@ void Computation::colorScatterPlots()
         
         auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, scatterplotOpacityDataset1Id,colorMapStringValue, _selectedClusterIndices1,
             geneDataset1ID, _embeddingDataset1->getNumPoints(),
-            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile, 50.0, 100.0);
+            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile, 0.2, 1.0);
         auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, scatterplotOpacityDataset2Id,colorMapStringValue, _selectedClusterIndices2,
             geneDataset2ID, _embeddingDataset2->getNumPoints(),
-            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile, 50.0, 100.0);
+            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile, 0.2, 1.0);
         minVal1 = value1.first;
         maxVal1 = value1.second;
         minVal2 = value2.first;
@@ -4116,10 +4117,10 @@ void Computation::colorScatterPlots()
     // Apply coloring and update ranges
     scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, scatterplotColorDataset1Id,
         embeddingDimensionX1, embeddingDimensionY1, true,
-        coloringdimension, colorMapStringValue, minVal1, maxVal1);
+        coloringdimension, colorMapStringValue, minVal1, maxVal1, scatterplotOpacityDataset1Id);
     scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, scatterplotColorDataset2Id,
         embeddingDimensionX1, embeddingDimensionY1, true,
-        coloringdimension, colorMapStringValue, minVal2, maxVal2);
+        coloringdimension, colorMapStringValue, minVal2, maxVal2, scatterplotOpacityDataset2Id);
 
     minValScatter1.setValue(minVal1);
     maxValScatter1.setValue(maxVal1);
