@@ -902,14 +902,14 @@ void Computation::setupEmbeddingDatasetHandlers()
         //if (!_projectOpened) return;
         auto availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
         QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText().trimmed();
-        QString slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText().trimmed();
+        QString slice1 = _settingsAction.getCommonOptionsHolder().getSliceSelection1Action().getCurrentText().trimmed();
 
         QRegularExpression re(QString("\\b%1\\b").arg(QRegularExpression::escape(substring1)), QRegularExpression::CaseInsensitiveOption);
-        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice1)), QRegularExpression::CaseInsensitiveOption);
 
         for (const Dataset<Points>& dataset : availableDatasets1) {
             const QString& name = dataset->getGuiName();
-            if (re.match(name).hasMatch() && (slice.isEmpty() || reSlice.match(name).hasMatch())) {
+            if (re.match(name).hasMatch() && (slice1.isEmpty() || reSlice.match(name).hasMatch())) {
                 _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                 break;
             }
@@ -923,14 +923,14 @@ void Computation::setupEmbeddingDatasetHandlers()
 
         auto availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
         QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText().trimmed();
-        QString slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText().trimmed();
+        QString slice2 = _settingsAction.getCommonOptionsHolder().getSliceSelection2Action().getCurrentText().trimmed();
 
         QRegularExpression re(QString("\\b%1\\b").arg(QRegularExpression::escape(substring2)), QRegularExpression::CaseInsensitiveOption);
-        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice2)), QRegularExpression::CaseInsensitiveOption);
 
         for (const Dataset<Points>& dataset : availableDatasets2) {
             const QString& name = dataset->getGuiName();
-            if (re.match(name).hasMatch() && (slice.isEmpty() || reSlice.match(name).hasMatch())) {
+            if (re.match(name).hasMatch() && (slice2.isEmpty() || reSlice.match(name).hasMatch())) {
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                 break;
             }
@@ -967,43 +967,48 @@ void Computation::setupEmbeddingDatasetHandlers()
         });
 
 
-    connect(&_settingsAction.getCommonOptionsHolder().getSliceSelectionAction(), &OptionAction::currentIndexChanged, this, [this]() {
+    connect(&_settingsAction.getCommonOptionsHolder().getSliceSelection1Action(), &OptionAction::currentIndexChanged, this, [this]() {
+        auto slice1 = _settingsAction.getCommonOptionsHolder().getSliceSelection1Action().getCurrentText();
+        if (slice1.isEmpty())
+            return;
 
-        //if (!_projectOpened) return;
-        auto slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText();
-        if (!slice.isEmpty())
-        {
-            auto availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (!availableDatasets1.isEmpty()) {
-                QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText().trimmed();
-                QRegularExpression re(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring1)), QRegularExpression::CaseInsensitiveOption);
-                QRegularExpression reSlice(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
+        // Only update dataset 1 if a matching dataset is found
+        const auto& availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+        if (!availableDatasets1.isEmpty()) {
+            QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText().trimmed();
+            QRegularExpression re(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring1)), QRegularExpression::CaseInsensitiveOption);
+            QRegularExpression reSlice(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice1)), QRegularExpression::CaseInsensitiveOption);
 
-                for (const Dataset<Points>& dataset : availableDatasets1) {
-                    const QString& name = dataset->getGuiName();
-                    if (re.match(name).hasMatch() && reSlice.match(name).hasMatch()) {
-                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
-                        break;
-                    }
-                }
-            }
-
-            auto availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (!availableDatasets2.isEmpty()) {
-                QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText().trimmed();
-                QRegularExpression re2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring2)), QRegularExpression::CaseInsensitiveOption);
-                QRegularExpression reSlice2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
-
-                for (const Dataset<Points>& dataset : availableDatasets2) {
-                    const QString& name = dataset->getGuiName();
-                    if (re2.match(name).hasMatch() && reSlice2.match(name).hasMatch()) {
-                        _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
-                        break;
-                    }
+            for (const Dataset<Points>& dataset : availableDatasets1) {
+                const QString& name = dataset->getGuiName();
+                if (re.match(name).hasMatch() && reSlice.match(name).hasMatch()) {
+                    _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                    break;
                 }
             }
         }
+        });
 
+    connect(&_settingsAction.getCommonOptionsHolder().getSliceSelection2Action(), &OptionAction::currentIndexChanged, this, [this]() {
+        auto slice2 = _settingsAction.getCommonOptionsHolder().getSliceSelection2Action().getCurrentText();
+        if (slice2.isEmpty())
+            return;
+
+        // Only update dataset 2 if a matching dataset is found
+        const auto& availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+        if (!availableDatasets2.isEmpty()) {
+            QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText().trimmed();
+            QRegularExpression re2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring2)), QRegularExpression::CaseInsensitiveOption);
+            QRegularExpression reSlice2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice2)), QRegularExpression::CaseInsensitiveOption);
+
+            for (const Dataset<Points>& dataset : availableDatasets2) {
+                const QString& name = dataset->getGuiName();
+                if (re2.match(name).hasMatch() && reSlice2.match(name).hasMatch()) {
+                    _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                    break;
+                }
+            }
+        }
         });
 
 }
@@ -1013,7 +1018,8 @@ void Computation::datasetNamesCheck()
     if (!_projectOpened) return;
     auto& holder = _settingsAction.getCommonOptionsHolder();
 
-    QString currentSlice = holder.getSliceSelectionAction().getCurrentText();
+    QString currentSlice1 = holder.getSliceSelection1Action().getCurrentText();
+    QString currentSlice2 = holder.getSliceSelection2Action().getCurrentText();
 
     // parse semicolon-separated list, trimmed
     auto parseList = [](const QString& input) {
@@ -1030,7 +1036,8 @@ void Computation::datasetNamesCheck()
         holder.getComparatorDataset2SelectorAction().setOptions({});
         holder.getComparatorDataset1SelectorAction().setDisabled(true);
         holder.getComparatorDataset2SelectorAction().setDisabled(true);
-        holder.getSliceSelectionAction().setOptions({});
+        holder.getSliceSelection1Action().setOptions({});
+        holder.getSliceSelection2Action().setOptions({});
         };
 
     QStringList datasetSubstrings = parseList(holder.getDefaultDatasetNamesAction().getString());
@@ -1100,7 +1107,8 @@ void Computation::datasetNamesCheck()
     // apply to UI
     holder.getComparatorDataset1SelectorAction().setOptions(filteredDatasets);
     holder.getComparatorDataset2SelectorAction().setOptions(filteredDatasets);
-    holder.getSliceSelectionAction().setOptions(finalSlices);
+    holder.getSliceSelection1Action().setOptions(finalSlices);
+    holder.getSliceSelection2Action().setOptions(finalSlices);
 
     QString previous1 = holder.getComparatorDataset1SelectorAction().getCurrentText();
     QString previous2 = holder.getComparatorDataset2SelectorAction().getCurrentText();
@@ -1119,8 +1127,10 @@ void Computation::datasetNamesCheck()
     }
 
 
-    int sliceIndex = finalSlices.indexOf(currentSlice);
-    holder.getSliceSelectionAction().setCurrentIndex(sliceIndex >= 0 ? sliceIndex : (finalSlices.isEmpty() ? -1 : 0));
+    int sliceIndex1 = finalSlices.indexOf(currentSlice1);
+    holder.getSliceSelection1Action().setCurrentIndex(sliceIndex1 >= 0 ? sliceIndex1 : (finalSlices.isEmpty() ? -1 : 0));
+    int sliceIndex2 = finalSlices.indexOf(currentSlice2);
+    holder.getSliceSelection2Action().setCurrentIndex(sliceIndex2 >= 0 ? sliceIndex2 : (finalSlices.isEmpty() ? -1 : 0));
 }
 
 void Computation::setupEmbeddingDimensionHandlers()

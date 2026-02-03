@@ -217,9 +217,12 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getClusterDatasetSelectionAction().setToolTip("Cluster Dataset Selection Action");
     _commonOptionsHolder.getComparatorDataset1SelectorAction().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getComparatorDataset1SelectorAction().setToolTip("Comparator Dataset 1 Selector Action");
-    _commonOptionsHolder.getSliceSelectionAction().setDefaultWidgetFlags(OptionAction::ComboBox);
-    _commonOptionsHolder.getSliceSelectionAction().setToolTip("Slice Selection Action");
-    _commonOptionsHolder.getSliceSelectionAction().initialize({ "P1", "P2", "P3", "P4","P5", "P6", "P7", "P8","P9", "P10", "P11", "P12" }, "P6");
+    _commonOptionsHolder.getSliceSelection1Action().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getSliceSelection1Action().setToolTip("Slice Selection Action");
+    _commonOptionsHolder.getSliceSelection1Action().initialize({ "P1", "P2", "P3", "P4","P5", "P6", "P7", "P8","P9", "P10", "P11", "P12" }, "P6");
+    _commonOptionsHolder.getSliceSelection2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
+    _commonOptionsHolder.getSliceSelection2Action().setToolTip("Slice Selection Action");
+    _commonOptionsHolder.getSliceSelection2Action().initialize({ "P1", "P2", "P3", "P4","P5", "P6", "P7", "P8","P9", "P10", "P11", "P12" }, "P6");
     //_commonOptionsHolder.getComparatorDataset1SelectorAction().initialize({ "Human", "Marmoset", "Macaque" } , "Human");
     //_commonOptionsHolder.getComparatorDataset2SelectorAction().initialize({ "Human", "Marmoset", "Macaque" }, "Marmoset");
     _commonOptionsHolder.getComparatorDataset2SelectorAction().setDefaultWidgetFlags(OptionAction::ComboBox);
@@ -516,7 +519,8 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _comparatorDataset1SelectorAction(this, "Set 1"),
     _comparatorDataset2SelectorAction(this, "Set 2"),
     _defaultDatasetNamesAction(this, "Default Names"),
-    _sliceSelectionAction(this, "Slice"),
+    _sliceSelection1Action(this, "Slice 1"),
+    _sliceSelection2Action(this, "Slice 2"),
     _defaultSliceNamesAction(this, "Default Slice Names"),
 
     // Computation settings actions
@@ -527,7 +531,9 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     // Status and search actions
     _statusMessageAction(this, "Status"),
     _statusBarActionWidget(new StatusBarAction(this, "Status Bar")),
-    _tableSearchBoxAction(this, "Search")
+    _tableSearchBoxAction(this, "Search"),
+    //_colorAllCellsWithExpressionAction(this, "Color All Cells"),
+    _independentSelectionAction(this, "Independent Selection")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("gear"));
@@ -538,8 +544,9 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     //addAction(&_defaultSliceNamesAction);
     addAction(&_showAdvancedOptions);
     addAction(&_comparatorDataset1SelectorAction);
+    addAction(&_sliceSelection1Action);
     addAction(&_comparatorDataset2SelectorAction);
-    addAction(&_sliceSelectionAction);
+    addAction(&_sliceSelection2Action);
 
     addAction(&_clusterDatasetSelectionAction);
     addAction(&_clusterValueSelectionAction);
