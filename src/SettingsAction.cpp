@@ -219,7 +219,7 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getComparatorDataset1SelectorAction().setToolTip("Comparator Dataset 1 Selector Action");
     _commonOptionsHolder.getSliceSelection1Action().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getSliceSelection1Action().setToolTip("Slice Selection Action");
-    _commonOptionsHolder.getSliceSelection1Action().initialize({ "P1", "P2", "P3", "P4","P5", "P6", "P7", "P8","P9", "P10", "P11", "P12" }, "P6");
+    _commonOptionsHolder.getSliceSelection1Action().initialize({ "P1", "P2", "P3", "P4","P5", "P6", "P7", "P8","P9", "P10", "P11", "P12","P13","P14","P15","P16","P17","P18","P19","P20" }, "P6");
     _commonOptionsHolder.getSliceSelection2Action().setDefaultWidgetFlags(OptionAction::ComboBox);
     _commonOptionsHolder.getSliceSelection2Action().setToolTip("Slice Selection Action");
     _commonOptionsHolder.getSliceSelection2Action().initialize({ "P1", "P2", "P3", "P4","P5", "P6", "P7", "P8","P9", "P10", "P11", "P12" }, "P6");

@@ -709,19 +709,31 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                     }
                     if (opacityDatasetID != "")
                     {
-                        auto opacityDatasetPickerValueAction = findActionByPath<OptionAction>(plugin, "Settings/Plot/Point/Plot opacity/Point opacity source/Source");
-                        if (opacityDatasetPickerValueAction)
+                        auto opacityPickerValueAction = findActionByPath<OptionAction>(plugin, "Settings/Plot/Point/Plot opacity/Point opacity source/Source");
+                        auto opacityDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Point opacity");
+                        if (opacityDatasetPickerValueAction || opacityPickerValueAction)
                         {
                             if (opacityDatasetID == "Constant")
                             {
-                                opacityDatasetPickerValueAction->setCurrentText("Constant");
+                                
+                                if (opacityPickerValueAction)
+                                {
+                                    opacityPickerValueAction->setCurrentText("Constant");
+                                }
+
+
                             }
                             else
                             {
                                 auto opacityDataset = mv::data().getDataset(opacityDatasetID);
                                 if (opacityDataset.isValid())
                                 {
-                                    opacityDatasetPickerValueAction->setCurrentText(opacityDataset->getGuiName());
+                                    if (opacityPickerValueAction)
+                                    {
+                                        opacityDatasetPickerValueAction->setCurrentDataset(opacityDataset);
+                                    }
+                                   
+
                                 }
                             }
                         }
