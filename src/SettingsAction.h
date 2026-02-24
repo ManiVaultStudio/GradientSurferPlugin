@@ -296,8 +296,14 @@ public:
         const ToggleAction& getShowAdvancedOptions() const { return _showAdvancedOptions; }
         ToggleAction& getShowAdvancedOptions() { return _showAdvancedOptions; }
 
-        const OptionAction& getSliceSelectionAction() const { return _sliceSelectionAction; }
-        OptionAction& getSliceSelectionAction() { return _sliceSelectionAction; }
+        const ToggleAction& getIndependentSelectionAction() const { return _independentSelectionAction; }
+        ToggleAction& getIndependentSelectionAction() { return _independentSelectionAction; }
+
+        const OptionAction& getSliceSelection1Action() const { return _sliceSelection1Action; }
+        OptionAction& getSliceSelection1Action() { return _sliceSelection1Action; }
+        
+        const OptionAction& getSliceSelection2Action() const { return _sliceSelection2Action; }
+        OptionAction& getSliceSelection2Action() { return _sliceSelection2Action; }
 
         const StringAction& getDefaultSliceNamesAction() const { return _defaultSliceNamesAction; }
         StringAction& getDefaultSliceNamesAction() { return _defaultSliceNamesAction; }
@@ -335,8 +341,10 @@ public:
         OptionAction       _comparatorDataset1SelectorAction;
         OptionAction       _comparatorDataset2SelectorAction;
         StringAction       _defaultDatasetNamesAction;
-        OptionAction       _sliceSelectionAction;
+        OptionAction       _sliceSelection1Action;
+        OptionAction       _sliceSelection2Action;
         StringAction        _defaultSliceNamesAction;
+        ToggleAction        _independentSelectionAction;
 
     };
 

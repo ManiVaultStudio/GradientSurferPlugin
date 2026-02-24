@@ -562,7 +562,7 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
     }
 }
 
-void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue, float minValue, float maxValue)
+void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection, QString dimensionForColoring, QString colormapValue, float minValue, float maxValue, QString opacityDatasetID)
 {
     auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
     mv::gui::OptionAction* colorDatasetPickerAltValueAction;
@@ -705,6 +705,58 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                         auto geneSelectionValueAction = findActionByPath<DimensionPickerAction>(plugin, "Settings/Coloring/Dimension");
                         if (geneSelectionValueAction) {
                             geneSelectionValueAction->setCurrentDimensionName(dimensionForColoring);
+                        }
+                    }
+                    if (opacityDatasetID != "")
+                    {
+                        auto opacityPickerValueAction = findActionByPath<OptionAction>(plugin, "Settings/Plot/Point/Plot opacity/Point opacity source/Source");
+                        auto opacityDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Point opacity");
+                        
+                        auto pointOpacityValueAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity");
+                        auto pointOpacityOffsetAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity source/Offset");
+
+
+                        if (opacityDatasetPickerValueAction || opacityPickerValueAction)
+                        {
+                            if (opacityDatasetID == "Constant")
+                            {
+                                
+                                if (opacityPickerValueAction)
+                                {
+                                    opacityPickerValueAction->setCurrentText("Constant");
+                                }
+                                if (pointOpacityValueAction && pointOpacityOffsetAction) {
+                                    pointOpacityValueAction->setValue(85.0);
+                                    pointOpacityOffsetAction->setValue(90.0);
+                                }
+                                else {
+                                    qWarning() << "Point opacity actions not found";
+                                }
+
+                            }
+                            else
+                            {
+                                auto opacityDataset = mv::data().getDataset(opacityDatasetID);
+                                if (opacityDataset.isValid())
+                                {
+                                    if (opacityPickerValueAction)
+                                    {
+                                        opacityDatasetPickerValueAction->setCurrentDataset(opacityDataset);
+                                        if (pointOpacityValueAction && pointOpacityOffsetAction) {
+                                            pointOpacityValueAction->setValue(10.0);
+                                            pointOpacityOffsetAction->setValue(90.0);
+                                        }
+                                        else {
+                                            qWarning() << "Point opacity actions not found";
+                                        }
+                                    }
+                                   
+
+                                }
+                            }
+
+
+
                         }
                     }
 
@@ -2151,66 +2203,43 @@ QString wrapMessageWithBrCount(const QString& message, int& brCount, int maxLine
 
     return wrappedLines.join("<br>");
 }
-std::pair<float, float> createScatterplotPointColors(
-    QString coloringDataset,
-    QString colorMapValue,
-    std::vector<int>& selectedIndices,
-    QString pointValuesDataset,
-    int numOfTotalPoints,
-    QString dimensionVal,
-    float minValue,
-    float maxValue,
-    bool isFullData,
-    std::pair<float, float> sentinelMinMax,
-    float lowRangePercentileValue,
-    float highRangePercentileValue)
+std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString opacityDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax, float lowRangePercentileValue, float highRangePercentileValue, float lowOpacityValue, float highOpacityValue)
 {
     FunctionTimer timer(Q_FUNC_INFO);
 
-    // Helper to zero out coloringDatasetFull
-    auto zeroOutDataset = [&](auto& coloringDatasetFull) {
-        if (coloringDatasetFull.isValid() && numOfTotalPoints > 0) {
+    // Helper to zero out a dataset with a given dimension name
+    auto zeroOutDataset = [&](auto& datasetFull, const QString& dimName) {
+        if (datasetFull.isValid() && numOfTotalPoints > 0) {
             std::vector<float> zeros(static_cast<size_t>(numOfTotalPoints), 0.0f);
-            coloringDatasetFull->setData(zeros.data(), numOfTotalPoints, 1);
-            coloringDatasetFull->setDimensionNames({ "ColorDim" });
-            events().notifyDatasetDataChanged(coloringDatasetFull);
+            datasetFull->setData(zeros.data(), numOfTotalPoints, 1);
+            datasetFull->setDimensionNames({ dimName });
+            events().notifyDatasetDataChanged(datasetFull);
         }
         };
 
-    if (dimensionVal.trimmed().isEmpty())
-    {
-        auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
-        zeroOutDataset(coloringDatasetFull);
-        return { 0.0f, 0.0f };
-    }
-
-    if (coloringDataset.isEmpty() || colorMapValue.isEmpty() ||
-        selectedIndices.empty() || pointValuesDataset.isEmpty())
-    {
-        auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
-        zeroOutDataset(coloringDatasetFull);
-        qWarning() << "createScatterplotPointColors: Invalid parameters for scatterplot cluster colors creation. ";
-        return { 0.0f, 0.0f };
-    }
-    if (numOfTotalPoints <= 0) {
-        auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
-        zeroOutDataset(coloringDatasetFull);
-        qWarning() << "Invalid number of total points for scatterplot cluster colors creation.";
-        return { 0.0f, 0.0f };
-    }
-
+    // Fetch datasets once
     auto coloringDatasetFull = mv::data().getDataset<Points>(coloringDataset);
+    auto opacityDatasetFull = mv::data().getDataset<Points>(opacityDataset);
     auto pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
-    if (!coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid()) {
-        zeroOutDataset(coloringDatasetFull);
-        qWarning() << "Invalid datasets provided for scatterplot cluster colors creation.";
+
+    // Early exit and zero out both datasets if any critical parameter is missing/invalid
+    if (dimensionVal.trimmed().isEmpty() ||
+        coloringDataset.isEmpty() || colorMapValue.isEmpty() ||
+        selectedIndices.empty() || pointValuesDataset.isEmpty() ||
+        numOfTotalPoints <= 0 ||
+        !coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid() || !opacityDatasetFull.isValid())
+    {
+        zeroOutDataset(coloringDatasetFull, "ColorDim");
+        zeroOutDataset(opacityDatasetFull, "OpacityDim");
+        qWarning() << "createScatterplotPointColors: Invalid parameters or datasets for scatterplot cluster colors creation.";
         return { 0.0f, 0.0f };
     }
 
     auto getdimensionValues = pointValuesDatasetFull->getDimensionNames();
     int dimensionIndex = findDimensionIndexWithFallback(getdimensionValues, dimensionVal);
     if (dimensionIndex < 0) {
-        zeroOutDataset(coloringDatasetFull);
+        zeroOutDataset(coloringDatasetFull, "ColorDim");
+        zeroOutDataset(opacityDatasetFull, "OpacityDim");
         qWarning() << "Dimension" << dimensionVal << "not found in dataset" << pointValuesDataset;
         return { 0.0f, 0.0f };
     }
@@ -2219,7 +2248,8 @@ std::pair<float, float> createScatterplotPointColors(
 
     if (!isFullData) {
         if (pointValuesDatasetFull->getNumPoints() != static_cast<int>(selectedIndices.size())) {
-            zeroOutDataset(coloringDatasetFull);
+            zeroOutDataset(coloringDatasetFull, "ColorDim");
+            zeroOutDataset(opacityDatasetFull, "OpacityDim");
             qWarning() << "Data mismatch: number of points does not match selected indices.";
             return { 0.0f, 0.0f };
         }
@@ -2227,7 +2257,8 @@ std::pair<float, float> createScatterplotPointColors(
     }
     else {
         if (!selectedIndices.empty() && *std::max_element(selectedIndices.begin(), selectedIndices.end()) >= pointValuesDatasetFull->getNumPoints()) {
-            zeroOutDataset(coloringDatasetFull);
+            zeroOutDataset(coloringDatasetFull, "ColorDim");
+            zeroOutDataset(opacityDatasetFull, "OpacityDim");
             qWarning() << "Data mismatch: selected index out of range.";
             return { 0.0f, 0.0f };
         }
@@ -2236,7 +2267,8 @@ std::pair<float, float> createScatterplotPointColors(
     }
 
     if (geneExpValues.size() != selectedIndices.size()) {
-        zeroOutDataset(coloringDatasetFull);
+        zeroOutDataset(coloringDatasetFull, "ColorDim");
+        zeroOutDataset(opacityDatasetFull, "OpacityDim");
         qWarning() << "Data mismatch: geneExpValues and selectedIndices size differ.";
         return { 0.0f, 0.0f };
     }
@@ -2252,11 +2284,14 @@ std::pair<float, float> createScatterplotPointColors(
     float sentinelValue = globalMin - 100.0f;
 
     std::vector<float> finalData(static_cast<size_t>(numOfTotalPoints), sentinelValue);
-
+    std::vector<float> opacityValues(static_cast<size_t>(numOfTotalPoints), lowOpacityValue); // Default: non-selected = lowOpacityValue
+    int selectedPointsCount = 0;
     for (size_t i = 0; i < selectedIndices.size(); ++i) {
         int idx = selectedIndices[i];
         if (idx >= 0 && idx < numOfTotalPoints) {
             finalData[static_cast<size_t>(idx)] = geneExpValues[i];
+            opacityValues[static_cast<size_t>(idx)] = highOpacityValue; // Selected = highOpacityValue
+            selectedPointsCount++;
         }
         else {
             qWarning() << "Index out of bounds in selectedIndices:" << idx;
@@ -2266,6 +2301,12 @@ std::pair<float, float> createScatterplotPointColors(
     coloringDatasetFull->setData(finalData.data(), numOfTotalPoints, 1);
     coloringDatasetFull->setDimensionNames({ "ColorDim" });
     events().notifyDatasetDataChanged(coloringDatasetFull);
+
+    opacityDatasetFull->setData(opacityValues.data(), numOfTotalPoints, 1);
+    opacityDatasetFull->setDimensionNames({ "OpacityDim" });
+    events().notifyDatasetDataChanged(opacityDatasetFull);
+
+    opacityDatasetFull->setGuiName("Selected: " + QString::number(selectedPointsCount) + " / " + QString::number(numOfTotalPoints));
 
     return { computedMin, computedMax };
 }
