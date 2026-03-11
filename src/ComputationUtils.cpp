@@ -709,14 +709,14 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                     }
                     if (opacityDatasetID != "")
                     {
-                        auto opacityPickerValueAction = findActionByPath<OptionAction>(plugin, "Settings/Plot/Point/Plot opacity/Point opacity source/Source");
-                        auto opacityDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Opacity");
+                        auto opacityDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Plot/Point/Point opacity/Source dataset");
+                        auto opacityPickerValueAction = findActionByPath<OptionAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity source/Source");
                         
-                        auto pointOpacityValueAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity");
-                        auto pointOpacityOffsetAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity source/Offset");
-
-
+                        //auto pointOpacityValueAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity");
+                        //auto pointOpacityOffsetAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity source/Offset");
+                        
                         if (opacityDatasetPickerValueAction || opacityPickerValueAction)
+
                         {
                             if (opacityDatasetID == "Constant")
                             {
@@ -725,13 +725,13 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                                 {
                                     opacityPickerValueAction->setCurrentText("Constant");
                                 }
-                                if (pointOpacityValueAction && pointOpacityOffsetAction) {
-                                    pointOpacityValueAction->setValue(85.0);
-                                    pointOpacityOffsetAction->setValue(90.0);
-                                }
-                                else {
-                                    qWarning() << "Point opacity actions not found";
-                                }
+                                //if (pointOpacityValueAction && pointOpacityOffsetAction) {
+                                    //pointOpacityValueAction->setValue(85.0);
+                                    //pointOpacityOffsetAction->setValue(90.0);
+                                //}
+                                //else {
+                                    //qWarning() << "Point opacity actions not found";
+                                //}
 
                             }
                             else
@@ -742,13 +742,13 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                                     if (opacityPickerValueAction)
                                     {
                                         opacityDatasetPickerValueAction->setCurrentDataset(opacityDataset);
-                                        if (pointOpacityValueAction && pointOpacityOffsetAction) {
-                                            pointOpacityValueAction->setValue(10.0);
-                                            pointOpacityOffsetAction->setValue(90.0);
-                                        }
-                                        else {
-                                            qWarning() << "Point opacity actions not found";
-                                        }
+                                        //if (pointOpacityValueAction && pointOpacityOffsetAction) {
+                                            //pointOpacityValueAction->setValue(10.0);
+                                            //pointOpacityOffsetAction->setValue(90.0);
+                                        //}
+                                        //else {
+                                        //    qWarning() << "Point opacity actions not found";
+                                       // }
                                     }
                                    
 
