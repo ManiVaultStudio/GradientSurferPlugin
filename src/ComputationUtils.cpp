@@ -710,7 +710,7 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                     if (opacityDatasetID != "")
                     {
                         auto opacityPickerValueAction = findActionByPath<OptionAction>(plugin, "Settings/Plot/Point/Plot opacity/Point opacity source/Source");
-                        auto opacityDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Point opacity");
+                        auto opacityDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Opacity");
                         
                         auto pointOpacityValueAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity");
                         auto pointOpacityOffsetAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity source/Offset");
