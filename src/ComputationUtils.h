@@ -139,16 +139,16 @@ private:
 QString selectValidOption(const QStringList& options, const QString& current, int fallbackIndex = 0);
 
 // Checks if a dataset is a valid cluster dataset given a sibling embedding dataset.
-bool isValidClusterDataset(const mv::Dataset<DatasetImpl>& dataset, const mv::Dataset<Points>& sibling);
+bool isValidClusterDataset(const mv::Dataset<mv::DatasetImpl>& dataset, const mv::Dataset<Points>& sibling);
 
 // Checks if a dataset is a valid point dataset.
-bool isValidPointDataset(const mv::Dataset<DatasetImpl>& dataset);
-bool isValidPointChildDataset(const mv::Dataset<DatasetImpl>& dataset);
+bool isValidPointDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
+bool isValidPointChildDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
 // Checks if a dataset is a valid embedding dataset.
-bool isValidEmbeddingDataset(const mv::Dataset<DatasetImpl>& dataset);
+bool               isValidEmbeddingDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
 std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue);
 std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
-std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
+std::vector<int>   getSortedCellIndices(const std::vector<float>& yCoordinates);
 
 
 extern std::vector<CorrelationGeneCoords> _geneCorrValues0;
