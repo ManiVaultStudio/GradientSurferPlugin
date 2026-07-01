@@ -38,6 +38,7 @@
 #include <sys/sysinfo.h>
 #endif
 
+using namespace mv;
 
 struct RamInfo {
     std::uint64_t total;

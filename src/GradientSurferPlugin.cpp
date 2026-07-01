@@ -1,6 +1,9 @@
 #include "GradientSurferPlugin.h"
 
 #include <event/Event.h>
+
+#include <util/Serialization.h>
+
 #include <QApplication>
 #include <DatasetsMimeData.h>
 #include <QHeaderView>
