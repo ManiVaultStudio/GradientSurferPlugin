@@ -417,7 +417,7 @@ void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString
                 if (plugin->getGuiName() == linePlotName)
                 {
                     pluginfound = true;
-                    Dataset<Points> pointDataset = mv::data().getDataset<Points>(positionDatasetID);
+                    mv::Dataset<Points> pointDataset = mv::data().getDataset<Points>(positionDatasetID);
                     if (pointDataset.isValid())
                     {
                         mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "LinePlotViewPlugin/Dataset1 Options/Point dataset");
@@ -635,7 +635,7 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                                     QString colordatasetName = "";
                                     if (clusterDataset->getDataType()==PointType)
                                     {
-                                        Dataset<Points> pointDatasetcoloring = mv::data().getDataset<Points>(colorDatasetID);
+                                        mv::Dataset<Points> pointDatasetcoloring = mv::data().getDataset<Points>(colorDatasetID);
                                         if (pointDatasetcoloring.isValid())
                                         {
                                             colordatasetName = pointDatasetcoloring->getGuiName();
@@ -643,7 +643,7 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                                     }
                                     else if (clusterDataset->getDataType() == ClusterType)
                                     {
-                                        Dataset<Clusters> clusterDatasetcoloring = mv::data().getDataset<Clusters>(colorDatasetID);
+                                        mv::Dataset<Clusters> clusterDatasetcoloring = mv::data().getDataset<Clusters>(colorDatasetID);
                                         colordatasetName = clusterDatasetcoloring->getGuiName();
                                     }
 
@@ -1856,18 +1856,18 @@ StatusInfo parseStatusMessage(const QString& statusString) {
 
     return info;
 }
-bool isValidClusterDataset(const mv::Dataset<DatasetImpl>& dataset, const mv::Dataset<Points>& sibling) {
+bool isValidClusterDataset(const mv::Dataset<mv::DatasetImpl>& dataset, const mv::Dataset<Points>& sibling) {
     if (!sibling.isValid()) return false;
     return (sibling->getParent() == dataset->getParent()) &&
         (dataset->getDataType() == ClusterType) &&
         (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667);
 }
 
-bool isValidPointDataset(const mv::Dataset<DatasetImpl>& dataset) {
+bool isValidPointDataset(const mv::Dataset<mv::DatasetImpl>& dataset) {
     return dataset->getDataType() == PointType;
 }
 
-bool isValidPointChildDataset(const mv::Dataset<DatasetImpl>& dataset) {
+bool isValidPointChildDataset(const mv::Dataset<mv::DatasetImpl>& dataset) {
     const auto parentData = dataset->getParent();
     if (!parentData.isValid() || dataset->getDataType() != PointType)
         return false;
@@ -1877,7 +1877,7 @@ bool isValidPointChildDataset(const mv::Dataset<DatasetImpl>& dataset) {
     return !groupIndexList.contains(groupIndex);
 }
 
-bool isValidEmbeddingDataset(const mv::Dataset<DatasetImpl>& dataset) {
+bool isValidEmbeddingDataset(const mv::Dataset<mv::DatasetImpl>& dataset) {
     auto parent = dataset->getParent();
     bool checkGroup = (dataset->getGroupIndex() != 666 && dataset->getGroupIndex() != 667);
     return parent.isValid() && dataset->getDataType() == PointType && checkGroup;
@@ -1951,8 +1951,8 @@ void createLineChartClusterColors(QString coloringDataset, QString colorMapValue
         return;
     }
 
-    Dataset<Clusters> coloringDatasetFull = mv::data().getDataset<Clusters>(coloringDataset);
-    Dataset<Points> pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
+    mv::Dataset<Clusters> coloringDatasetFull = mv::data().getDataset<Clusters>(coloringDataset);
+    mv::Dataset<Points> pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
     if (!coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid()) {
         qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
         return;
@@ -2015,7 +2015,7 @@ void createLineChartClusterColors(QString coloringDataset, QString colorMapValue
     }
 
     coloringDatasetFull->getClusters() = newClusters;
-    events().notifyDatasetDataChanged(coloringDatasetFull);
+    mv::events().notifyDatasetDataChanged(coloringDatasetFull);
 }
 
 
@@ -2031,8 +2031,8 @@ void createClusterLineChartClusterColors(QString coloringChangeDataset, QString 
     }
 
 
-    Dataset<Clusters> coloringChangeDatasetFull = mv::data().getDataset<Clusters>(coloringChangeDataset);
-    Dataset<Clusters> coloringReferenceDatasetFull = mv::data().getDataset<Clusters>(coloringReferenceDataset);
+    mv::Dataset<Clusters> coloringChangeDatasetFull = mv::data().getDataset<Clusters>(coloringChangeDataset);
+    mv::Dataset<Clusters> coloringReferenceDatasetFull = mv::data().getDataset<Clusters>(coloringReferenceDataset);
     if (!coloringChangeDatasetFull.isValid() ||!coloringReferenceDatasetFull.isValid()) {
         qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
         return;
@@ -2065,7 +2065,7 @@ void createClusterLineChartClusterColors(QString coloringChangeDataset, QString 
 
 
         }
-        events().notifyDatasetDataChanged(coloringChangeDatasetFull);
+        mv::events().notifyDatasetDataChanged(coloringChangeDatasetFull);
     
 }
 
@@ -2084,8 +2084,8 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
         return;
     }
 
-    Dataset<Clusters> coloringDatasetFull = mv::data().getDataset<Clusters>(coloringDataset);
-    Dataset<Points> pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
+    mv::Dataset<Clusters> coloringDatasetFull = mv::data().getDataset<Clusters>(coloringDataset);
+    mv::Dataset<Points> pointValuesDatasetFull = mv::data().getDataset<Points>(pointValuesDataset);
     if (!coloringDatasetFull.isValid() || !pointValuesDatasetFull.isValid()) {
         qWarning() << "Invalid datasets provided for PCA cluster colors creation.";
         return;
@@ -2144,7 +2144,7 @@ void createScatterplotClusterColors(QString coloringDataset, QString colorMapVal
     }
 
     coloringDatasetFull->getClusters() = newClusters;
-    events().notifyDatasetDataChanged(coloringDatasetFull);
+    mv::events().notifyDatasetDataChanged(coloringDatasetFull);
 }
 // Helper: Compute the value at a given percentile in a vector
 float percentile(const std::vector<float>& data, float pct) {
@@ -2214,7 +2214,7 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
             std::vector<float> zeros(static_cast<size_t>(numOfTotalPoints), 0.0f);
             datasetFull->setData(zeros.data(), numOfTotalPoints, 1);
             datasetFull->setDimensionNames({ dimName });
-            events().notifyDatasetDataChanged(datasetFull);
+            mv::events().notifyDatasetDataChanged(datasetFull);
         }
         };
 
@@ -2301,11 +2301,11 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
 
     coloringDatasetFull->setData(finalData.data(), numOfTotalPoints, 1);
     coloringDatasetFull->setDimensionNames({ "ColorDim" });
-    events().notifyDatasetDataChanged(coloringDatasetFull);
+    mv::events().notifyDatasetDataChanged(coloringDatasetFull);
 
     opacityDatasetFull->setData(opacityValues.data(), numOfTotalPoints, 1);
     opacityDatasetFull->setDimensionNames({ "OpacityDim" });
-    events().notifyDatasetDataChanged(opacityDatasetFull);
+    mv::events().notifyDatasetDataChanged(opacityDatasetFull);
 
     opacityDatasetFull->setGuiName("Selected: " + QString::number(selectedPointsCount) + " / " + QString::number(numOfTotalPoints));
 

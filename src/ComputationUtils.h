@@ -145,7 +145,7 @@ bool isValidClusterDataset(const mv::Dataset<mv::DatasetImpl>& dataset, const mv
 bool isValidPointDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
 bool isValidPointChildDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
 // Checks if a dataset is a valid embedding dataset.
-bool               isValidEmbeddingDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
+bool isValidEmbeddingDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
 std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue);
 std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
 std::vector<int>   getSortedCellIndices(const std::vector<float>& yCoordinates);
