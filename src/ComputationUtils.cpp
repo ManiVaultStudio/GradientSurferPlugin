@@ -22,6 +22,10 @@
 #include <iostream>
 #include <QHeaderView>
 #include<set>
+#include <QStringList>
+#include "util/StyledIcon.h"
+#include <QStyledItemDelegate>
+#include <random>
 #include <cstdint>
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -305,8 +309,86 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
     isSyncing = false;
 }
 
+bool extractCurrentSelectionString(
+    const QString& selectionString,
+    QString& guiName,
+    QString& datasetId,
+    float& angle,
+    std::vector<std::seed_seq::result_type>& filtIndxs)
+{
+    filtIndxs.clear();
 
+    // Split primary components by "<sp1>"
+    const QStringList parts = selectionString.split("<sp1>");
 
+    if (parts.size() != 4)
+    {
+        return false;
+    }
+
+    guiName = parts[0];
+    datasetId = parts[1];
+
+    bool angleOk = false;
+    angle = parts[2].toFloat(&angleOk);
+
+    if (!angleOk)
+    {
+        return false;
+    }
+
+    // Split individual indices by "<sp2>"
+    const QStringList indexParts =
+        parts[3].split("<sp2>", Qt::SkipEmptyParts);
+
+    for (const QString& idxStr : indexParts)
+    {
+        bool ok = false;
+        const auto value = idxStr.toUInt(&ok);
+
+        if (!ok)
+        {
+            return false;
+        }
+
+        filtIndxs.push_back(
+            static_cast<std::seed_seq::result_type>(value));
+    }
+    //const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+    //const auto messageText = QStringLiteral("Selection applied");
+    //std::int32_t messageTimeout = 2000; // 2 seconds
+    //mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+    return true;
+}
+
+QString createCurrentSelectionString(
+    const QString& datasetGuiName,
+    const QString& datasetId,
+    const float& angle,
+    const std::vector<std::seed_seq::result_type>& filtIndxs)
+{
+    QString selectionString;
+
+    selectionString += datasetGuiName;
+    selectionString += "<sp1>";
+    selectionString += datasetId;
+    selectionString += "<sp1>";
+    selectionString += QString::number(angle);
+    selectionString += "<sp1>";
+
+    for (size_t i = 0; i < filtIndxs.size(); ++i)
+    {
+        if (i > 0)
+            selectionString += "<sp2>";
+
+        selectionString += QString::number(filtIndxs[i]);
+    }
+    //const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+//const auto messageText = QStringLiteral("Selection stored");
+//std::int32_t messageTimeout = 2000; // 2 seconds
+//mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+    return selectionString;
+}
 // natural (alphanumeric) comparator: non-digit segments compare case-insensitively,
 // digit segments compare by numeric value, and non-digit < digit when types differ.
 bool naturalLess(const QString& a, const QString& b)
