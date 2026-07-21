@@ -117,6 +117,7 @@ std::vector<CorrelationGeneCoords> _geneCorrValues1;
 std::vector<int> _geneOfInterestIndices0;
 std::vector<int> _geneOfInterestIndices2;
 std::vector<int> _geneOfInterestIndices1;
+bool _isOpacityEqual;
 //QList<QString> _commonGeneNames;
 //QStringList _commonGeneListSelectedInTables;
 QStringList _commonSelectedGenesAcrossDatasetsInTables;
@@ -824,16 +825,30 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                                 {
                                     if (opacityPickerValueAction)
                                     {
+                                        if (_isOpacityEqual)
+                                        {
+                                            opacityDatasetPickerValueAction->setCurrentDataset("");
+                                            if (pointOpacityValueAction && pointOpacityOffsetAction) {
+                                                pointOpacityValueAction->setValue(50.0);
+                                                pointOpacityOffsetAction->setValue(90.0);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            opacityDatasetPickerValueAction->setCurrentDataset(opacityDataset);
+                                            if (pointOpacityValueAction && pointOpacityOffsetAction) {
+                                                pointOpacityValueAction->setValue(20.0);
+                                                pointOpacityOffsetAction->setValue(60.0);
+                                            }
+                                        }
+                                        
                                         //opacityDatasetPickerValueAction->setCurrentDataset("");
-                                        opacityDatasetPickerValueAction->setCurrentDataset(opacityDataset);
+                                        
                                         //if (opacityPickerValueAction)
                                         //{
                                             //opacityPickerValueAction->setCurrentText(opacityDataset->getGuiName());
                                         //}
-                                        if (pointOpacityValueAction && pointOpacityOffsetAction) {
-                                            pointOpacityValueAction->setValue(20.0);
-                                            pointOpacityOffsetAction->setValue(60.0);
-                                        }
+
                                         else {
                                             qWarning() << "Point opacity actions not found";
                                         }
@@ -2386,6 +2401,12 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
             qWarning() << "Index out of bounds in selectedIndices:" << idx;
         }
     }
+
+
+    _isOpacityEqual =
+        (std::abs(lowOpacityValue - highOpacityValue) < 1e-6f) ||
+        (selectedPointsCount == 0) ||
+        (selectedPointsCount == numOfTotalPoints);
 
     coloringDatasetFull->setData(finalData.data(), numOfTotalPoints, 1);
     coloringDatasetFull->setDimensionNames({ "ColorDim" });
