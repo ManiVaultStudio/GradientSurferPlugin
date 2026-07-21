@@ -148,7 +148,9 @@ bool isValidPointChildDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
 bool isValidEmbeddingDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
 std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue);
 std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
-std::vector<int>   getSortedCellIndices(const std::vector<float>& yCoordinates);
+std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
+QString createCurrentSelectionString(const QString& datasetGuiName, const QString& datasetId, const float& angle, const std::vector<std::seed_seq::result_type>& filtIndxs);
+bool extractCurrentSelectionString(const QString& selectionString, QString& guiName, QString& datasetId, float& angle, std::vector<std::seed_seq::result_type>& filtIndxs);
 
 
 extern std::vector<CorrelationGeneCoords> _geneCorrValues0;
@@ -157,6 +159,7 @@ extern std::vector<CorrelationGeneCoords> _geneCorrValues1;
 extern std::vector<int> _geneOfInterestIndices0;
 extern std::vector<int> _geneOfInterestIndices2;
 extern std::vector<int> _geneOfInterestIndices1;
+extern bool _isOpacityEqual;
 //extern QStringList _commonGeneNames;
 //extern QStringList   _commonGeneListSelectedInTables;
 extern QStringList _commonSelectedGenesAcrossDatasetsInTables;

@@ -22,6 +22,10 @@
 #include <iostream>
 #include <QHeaderView>
 #include<set>
+#include <QStringList>
+#include "util/StyledIcon.h"
+#include <QStyledItemDelegate>
+#include <random>
 #include <cstdint>
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -113,6 +117,7 @@ std::vector<CorrelationGeneCoords> _geneCorrValues1;
 std::vector<int> _geneOfInterestIndices0;
 std::vector<int> _geneOfInterestIndices2;
 std::vector<int> _geneOfInterestIndices1;
+bool _isOpacityEqual;
 //QList<QString> _commonGeneNames;
 //QStringList _commonGeneListSelectedInTables;
 QStringList _commonSelectedGenesAcrossDatasetsInTables;
@@ -305,8 +310,86 @@ void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allT
     isSyncing = false;
 }
 
+bool extractCurrentSelectionString(
+    const QString& selectionString,
+    QString& guiName,
+    QString& datasetId,
+    float& angle,
+    std::vector<std::seed_seq::result_type>& filtIndxs)
+{
+    filtIndxs.clear();
 
+    // Split primary components by "<sp1>"
+    const QStringList parts = selectionString.split("<sp1>");
 
+    if (parts.size() != 4)
+    {
+        return false;
+    }
+
+    guiName = parts[0];
+    datasetId = parts[1];
+
+    bool angleOk = false;
+    angle = parts[2].toFloat(&angleOk);
+
+    if (!angleOk)
+    {
+        return false;
+    }
+
+    // Split individual indices by "<sp2>"
+    const QStringList indexParts =
+        parts[3].split("<sp2>", Qt::SkipEmptyParts);
+
+    for (const QString& idxStr : indexParts)
+    {
+        bool ok = false;
+        const auto value = idxStr.toUInt(&ok);
+
+        if (!ok)
+        {
+            return false;
+        }
+
+        filtIndxs.push_back(
+            static_cast<std::seed_seq::result_type>(value));
+    }
+    //const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+    //const auto messageText = QStringLiteral("Selection applied");
+    //std::int32_t messageTimeout = 2000; // 2 seconds
+    //mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+    return true;
+}
+
+QString createCurrentSelectionString(
+    const QString& datasetGuiName,
+    const QString& datasetId,
+    const float& angle,
+    const std::vector<std::seed_seq::result_type>& filtIndxs)
+{
+    QString selectionString;
+
+    selectionString += datasetGuiName;
+    selectionString += "<sp1>";
+    selectionString += datasetId;
+    selectionString += "<sp1>";
+    selectionString += QString::number(angle);
+    selectionString += "<sp1>";
+
+    for (size_t i = 0; i < filtIndxs.size(); ++i)
+    {
+        if (i > 0)
+            selectionString += "<sp2>";
+
+        selectionString += QString::number(filtIndxs[i]);
+    }
+    //const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+//const auto messageText = QStringLiteral("Selection stored");
+//std::int32_t messageTimeout = 2000; // 2 seconds
+//mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+    return selectionString;
+}
 // natural (alphanumeric) comparator: non-digit segments compare case-insensitively,
 // digit segments compare by numeric value, and non-digit < digit when types differ.
 bool naturalLess(const QString& a, const QString& b)
@@ -711,10 +794,10 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                     if (opacityDatasetID != "")
                     {
                         auto opacityDatasetPickerValueAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Plot/Point/Point opacity/Source dataset");
-                        auto opacityPickerValueAction = findActionByPath<OptionAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity source/Source");
+                        auto   opacityPickerValueAction = findActionByPath<OptionAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity source/Source");
                         
-                        //auto pointOpacityValueAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity");
-                        //auto pointOpacityOffsetAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity source/Offset");
+                        auto pointOpacityValueAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity");
+                        auto pointOpacityOffsetAction = findActionByPath<DecimalAction>(plugin, "Settings/Plot/Point/Point opacity/Point opacity source/Offset");
                         
                         if (opacityDatasetPickerValueAction || opacityPickerValueAction)
 
@@ -726,13 +809,13 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                                 {
                                     opacityPickerValueAction->setCurrentText("Constant");
                                 }
-                                //if (pointOpacityValueAction && pointOpacityOffsetAction) {
-                                    //pointOpacityValueAction->setValue(85.0);
-                                    //pointOpacityOffsetAction->setValue(90.0);
-                                //}
-                                //else {
-                                    //qWarning() << "Point opacity actions not found";
-                                //}
+                                if (pointOpacityValueAction && pointOpacityOffsetAction) {
+                                    pointOpacityValueAction->setValue(50.0);
+                                    pointOpacityOffsetAction->setValue(90.0);
+                                }
+                                else {
+                                    qWarning() << "Point opacity actions not found";
+                                }
 
                             }
                             else
@@ -742,14 +825,31 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                                 {
                                     if (opacityPickerValueAction)
                                     {
-                                        opacityDatasetPickerValueAction->setCurrentDataset(opacityDataset);
-                                        //if (pointOpacityValueAction && pointOpacityOffsetAction) {
-                                            //pointOpacityValueAction->setValue(10.0);
-                                            //pointOpacityOffsetAction->setValue(90.0);
+                                        if (_isOpacityEqual)
+                                        {
+                                            opacityDatasetPickerValueAction->setCurrentDataset("");
+                                            if (pointOpacityValueAction && pointOpacityOffsetAction) {
+                                                pointOpacityValueAction->setValue(50.0);
+                                                pointOpacityOffsetAction->setValue(90.0);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            opacityDatasetPickerValueAction->setCurrentDataset(opacityDataset);
+                                            if (pointOpacityValueAction && pointOpacityOffsetAction) {
+                                                pointOpacityValueAction->setValue(20.0);
+                                                pointOpacityOffsetAction->setValue(60.0);
+                                            }
+                                        }
+                                        
+                                        //opacityDatasetPickerValueAction->setCurrentDataset("");
+                                        
+                                        //if (opacityPickerValueAction)
+                                        //{
+                                            //opacityPickerValueAction->setCurrentText(opacityDataset->getGuiName());
                                         //}
-                                        //else {
-                                        //    qWarning() << "Point opacity actions not found";
-                                       // }
+
+
                                     }
                                    
 
@@ -2298,6 +2398,12 @@ std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QS
             qWarning() << "Index out of bounds in selectedIndices:" << idx;
         }
     }
+
+
+    _isOpacityEqual =
+        (std::abs(lowOpacityValue - highOpacityValue) < 1e-6f) ||
+        (selectedPointsCount == 0) ||
+        (selectedPointsCount == numOfTotalPoints);
 
     coloringDatasetFull->setData(finalData.data(), numOfTotalPoints, 1);
     coloringDatasetFull->setDimensionNames({ "ColorDim" });

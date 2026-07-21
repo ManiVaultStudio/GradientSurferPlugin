@@ -74,6 +74,9 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _customizationOptionsHolder.getHidePointSelectionOutlineAction().setToolTip("Hide Point Selection Outline Action");
     //_commonOptionsHolder.getColorAllCellsWithExpressionAction().setToolTip("Color All Cells With Expression Action");
     _commonOptionsHolder.getTableSearchBoxAction().setToolTip("Table Search Box Action");
+    _commonOptionsHolder.getSelectionStorageAction().setToolTip("Selection Storage Action");
+    _commonOptionsHolder.getSelectionStorageTriggerUpdateAction().setToolTip("Update current selection to selection storage");
+    _commonOptionsHolder.getSelectionStorageTriggerSelectAction().setToolTip("Stored indices not available");
 
     _commonOptionsHolder.getTopNRowsAction().setToolTip("Top N Rows Action");
     _dataset1OptionsHolder.getScatterplotUpperColoringRangeAction().setToolTip("Scatterplot Upper Coloring Range");
@@ -263,6 +266,15 @@ SettingsAction::SettingsAction(GradientSurferPlugin& GradientSurferPlugin) :
     _commonOptionsHolder.getTableSearchBoxAction().setIconByName("search");
     _commonOptionsHolder.getTableSearchBoxAction().setSearchMode(true);
 
+    _commonOptionsHolder.getSelectionStorageAction().setDefaultWidgetFlags(StringAction::Label);
+    _commonOptionsHolder.getSelectionStorageAction().setString("Not available");
+
+    _commonOptionsHolder.getCurrentSelectionStorageAction().setDefaultWidgetFlags(StringAction::Label);
+    _commonOptionsHolder.getCurrentSelectionStorageAction().setString("Not available");
+
+    _commonOptionsHolder.getSelectionStorageTriggerUpdateAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    _commonOptionsHolder.getSelectionStorageTriggerSelectAction().setDefaultWidgetFlags(TriggerAction::IconText);
+    _commonOptionsHolder.getSelectionStorageTriggerSelectAction().setDisabled(true);
     _commonOptionsHolder.getTopNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _commonOptionsHolder.getBottomNRowsAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
     _customizationOptionsHolder.getSmoothingWindowPercentageAction().setDefaultWidgetFlags(IntegralAction::Slider | IntegralAction::SpinBox);
@@ -533,13 +545,17 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     _statusBarActionWidget(new StatusBarAction(this, "Status Bar")),
     _tableSearchBoxAction(this, "Search"),
     //_colorAllCellsWithExpressionAction(this, "Color All Cells"),
-    _independentSelectionAction(this, "Independent Selection")
+    _independentSelectionAction(this, "Independent Selection"),
+    _selectionStorageAction(this, "Saved Selection Values"),
+    _currentSelectionStorageAction(this, "Current Selection Values"),
+    _selectionStorageTriggerUpdateAction(this, "Save Selection"),
+    _selectionStorageTriggerSelectAction(this, "Load Selection")
 {
     setText("Settings Options");
     setIcon(mv::util::StyledIcon("gear"));
     setPopupSizeHint(QSize(300, 0));
     setConfigurationFlag(WidgetAction::ConfigurationFlag::Default);
-
+    
     //addAction(&_defaultDatasetNamesAction);
     //addAction(&_defaultSliceNamesAction);
     addAction(&_showAdvancedOptions);
@@ -562,6 +578,21 @@ inline SettingsAction::CommonOptionsHolder::CommonOptionsHolder(SettingsAction& 
     addAction(&_correlationCalculationTypeAction);
 
     addAction(&_tableSearchBoxAction);
+   
+    addAction(&_selectionStorageTriggerUpdateAction);
+    //addAction(
+    //    &_selectionStorageAction,
+    //    -1,
+    //    [](mv::gui::WidgetAction*, QWidget* widget)
+    //    {
+    //        widget->setMaximumWidth(150);
+    //        widget->setSizePolicy(
+    //            QSizePolicy::Maximum,
+    //            QSizePolicy::Preferred
+    //        );
+    //    }
+    //);
+    addAction(&_selectionStorageTriggerSelectAction);
 
     addAction(&_computePCAAction);
     addAction(&_computeAction);
@@ -625,13 +656,15 @@ void SettingsAction::fromVariantMap(const QVariantMap& variantMap)
     _dataset1OptionsHolder.getLineplotViewSelectionAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionXAction().fromParentVariantMap(variantMap);
     _dataset1OptionsHolder.getEmbeddingDimensionYAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getSliceSelectionAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getClusterValueSelectionAction().fromParentVariantMap(variantMap);
+
+
     _commonOptionsHolder.getDefaultDatasetNamesAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getDefaultSliceNamesAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getClusterDatasetSelectionAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getComparatorDataset1SelectorAction().fromParentVariantMap(variantMap);
-    //_commonOptionsHolder.getComparatorDataset2SelectorAction().fromParentVariantMap(variantMap);
+
+    _commonOptionsHolder.getSelectionStorageAction().fromParentVariantMap(variantMap);
+    _commonOptionsHolder.getCurrentSelectionStorageAction().fromParentVariantMap(variantMap);
+
+
     _dataset1OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelectionAction().fromParentVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().fromParentVariantMap(variantMap);
@@ -668,6 +701,9 @@ QVariantMap SettingsAction::toVariantMap() const
     //_commonOptionsHolder.getClusterDatasetSelectionAction().insertIntoVariantMap(variantMap);
     //_commonOptionsHolder.getComparatorDataset1SelectorAction().insertIntoVariantMap(variantMap);
    // _commonOptionsHolder.getComparatorDataset2SelectorAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getSelectionStorageAction().insertIntoVariantMap(variantMap);
+    _commonOptionsHolder.getCurrentSelectionStorageAction().insertIntoVariantMap(variantMap);
+
     _dataset1OptionsHolder.getGeneSelectionAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getGeneSelection2Action().insertIntoVariantMap(variantMap);
     _commonOptionsHolder.getTopNRowsAction().insertIntoVariantMap(variantMap);
@@ -680,6 +716,7 @@ QVariantMap SettingsAction::toVariantMap() const
     _dataset2OptionsHolder.getScatterplotViewSelectionAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimensionXAction().insertIntoVariantMap(variantMap);
     _dataset2OptionsHolder.getEmbeddingDimensionYAction().insertIntoVariantMap(variantMap);
+
     //_commonOptionsHolder.getShowAdvancedOptions().insertIntoVariantMap(variantMap);
 
 

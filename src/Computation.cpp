@@ -1332,6 +1332,145 @@ void Computation::setupColoringHandlers()
                 }
         }
         });
+
+    connect(&_settingsAction.getCommonOptionsHolder().getSelectionStorageAction(), &StringAction::stringChanged, this, [this]() {
+                        const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+        const auto messageText = QStringLiteral("Current Selection Stored");
+        //std::int32_t messageTimeout = 2000; // 2 seconds
+        mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+        });
+
+    /*connect(&_settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction(), &StringAction::stringChanged, this, [this]() {
+                const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+        const auto messageText = QStringLiteral("Selection stored");
+        //std::int32_t messageTimeout = 2000; // 2 seconds
+        mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+        });*/
+    /*connect(&_settingsAction.getCommonOptionsHolder().getSelectionStorageStatusAction(), &StringAction::stringChanged, this, [this]() {
+        
+        });*/
+
+    connect(&_settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerUpdateAction(), &TriggerAction::triggered, this, [this]() {
+
+        
+             
+        QString selectionStorageValue = _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().getString();
+        _settingsAction.getCommonOptionsHolder().getSelectionStorageAction().setString(selectionStorageValue);
+        if (selectionStorageValue!=""|| selectionStorageValue!="Not available")
+        {
+            int pos = selectionStorageValue.lastIndexOf("<sp1>");
+            QString result = (pos >= 0) ? selectionStorageValue.left(pos) : selectionStorageValue;
+            result.replace("<sp1>", ", ");
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setEnabled(true);
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setToolTip("Stored indices available: " + result);
+
+        }
+        else {
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setDisabled(true);
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setToolTip("Stored indices not available");
+        }
+
+
+        });
+
+    connect(&_settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction(), &TriggerAction::triggered, this, [this]() {
+        QString guiName;
+        QString datasetId;
+        std::vector<std::seed_seq::result_type> filtIndxs;
+        bool selectionStorageValue = false;
+        float angleValue;
+        bool isActiveOpened = false;
+        QString stringValue = _settingsAction.getCommonOptionsHolder().getSelectionStorageAction().getString();
+        if (extractCurrentSelectionString(
+            stringValue,
+            guiName,
+            datasetId,
+            angleValue,
+            filtIndxs))
+        {
+
+            if (datasetId != "" && filtIndxs.size() > 0)
+            {
+                auto dataset = mv::data().getDataset(datasetId);
+                if (dataset.isValid())
+                {
+                    //qDebug() << "GUI Name:" << guiName;
+                    //qDebug() << "Dataset ID:" << datasetId;
+                    //qDebug() << "Filtered Indices:" << filtIndxs.size();
+                    //qDebug() << "Angle Value:" << angleValue;
+                    //need to set angle first ToDO
+                    dataset->setSelectionIndices(filtIndxs);
+                    mv::events().notifyDatasetDataSelectionChanged(dataset);
+                    selectionStorageValue = true;
+                    //check if the position dataset of the opened staccterplots is the same as the dataset of the selection, if yes, update the selection in the scatterplots
+                    
+                    QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+                    QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+                    if (scatterplot1Name.isEmpty()) {
+                        qWarning() << "No scatterplot view 1 selected";
+                        return;
+                    }
+                    if (scatterplot2Name.isEmpty()) {
+                        qWarning() << "No scatterplot view 2 selected";
+                        return;
+                    }
+                    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+                    if (scatterplotViewFactory) {
+                        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
+                            if (plugin->getGuiName() == scatterplot1Name || plugin->getGuiName() == scatterplot2Name) {
+                                mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
+                                if (pointDatasetAction) {
+                                    if (pointDatasetAction->getCurrentDatasetId() == datasetId)
+                                    {
+                                        
+                                        
+                                        auto* angleAction = findActionByPath<DecimalAction>(
+                                            plugin, "Settings/Selection/Point Selection/Line angle");
+                                        if (angleAction) {
+                                            isActiveOpened = true;
+                                            angleAction->setValue(angleValue);
+                                            const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+                                            const auto messageText = QStringLiteral("Stored Selection Applied");
+                                            mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+                                        }
+
+
+                                        break;
+                                    }
+                                }
+                            }
+                            else {
+                                qWarning() << "Point selection scale action not found";
+                            }
+
+                        }
+                    }
+
+
+                }
+
+            }
+        
+        }
+        if (selectionStorageValue)
+        {
+            int pos = stringValue.lastIndexOf("<sp1>");
+            QString result = (pos >= 0) ? stringValue.left(pos) : stringValue;
+            result.replace("<sp1>", ", ");
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setEnabled(true);
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setToolTip("Stored indices available: " + result);
+        }
+        else {
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setDisabled(true);
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setToolTip("Stored indices not available");
+        }
+        if (!isActiveOpened)
+        {
+            const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+            const auto messageText = QStringLiteral("Unable to apply stored selection. Set stored selection dataset in the scatterplot.");
+            mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+        }
+        });
 }
 void Computation::updateTableHeaders()
 {
@@ -1575,8 +1714,10 @@ void Computation::clearTables()
 
 void Computation::AutoCompute()
 {
-    if (!_projectOpened) return;
-    if (_isAutoComputeComputing) return;
+    if (!_projectOpened) {
+        _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString(""); return;
+    }
+    if (_isAutoComputeComputing) { _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");return; }
     _isAutoComputeComputing = true;
     auto guard = qScopeGuard([&] { _isAutoComputeComputing = false; });
 
@@ -1585,6 +1726,7 @@ void Computation::AutoCompute()
         // Reset state
         clearTables();
         clearLinePlots();
+        _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
         _numOfPointsInLine1 = 0;
         //std::cout << "\n**********************************\n";
         // Ensure normalized datasets are available
@@ -1595,13 +1737,14 @@ void Computation::AutoCompute()
         }*/
         if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() || !_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid()) {
             setStatusMessage("E", "No valid Point datasets", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
         auto pointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
         auto pointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
         if (!pointDataset1.isValid() || !pointDataset2.isValid()) {
             setStatusMessage("E", "No valid Point datasets", "");
-
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
         // Retrieve and validate required datasets and parameters
@@ -1613,16 +1756,22 @@ void Computation::AutoCompute()
             xEmbeddingIndex, yEmbeddingIndex,
             selectedIndices, scatterplotViewName,
             topNRows, bottomNRows))
+        {
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
+        }
 
         // Ensure all required datasets exist
         if (!createDatasetsIfNeeded())
+        {
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
+    }
 
         // Gather cluster and selection information
         const auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction().getSelectedOptions();
         std::vector < std::seed_seq::result_type> selectIndices;
-        if (_selectionDataset==1)
+        if (_selectionDataset == 1)
         {
             selectIndices = _embeddingDataset1->getSelectionIndices();
         }
@@ -1633,28 +1782,33 @@ void Computation::AutoCompute()
         else
         {
             setStatusMessage("E", "Invalid selection dataset", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
 
         }
 
-        
+
         const auto clusters1 = fullClusterDataset1->getClusters();
         const auto clusters2 = fullClusterDataset2->getClusters();
 
         if (selectedClusters.isEmpty() || clusters1.isEmpty() || clusters2.isEmpty()) {
             setStatusMessage("E", "No clusters selected for correlation computation", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
         if (selectIndices.empty()) {
             setStatusMessage("E", "No points selected for correlation computation", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
         std::vector < std::seed_seq::result_type> filtIndxs;
+        QString currentSelectionString = "";
         // Filter selection indices by clusters
         if (_selectionDataset == 1)
         {
             filtIndxs = filterSelectionIndicesByClusters(selectIndices, clusters1, selectedClusters);
+
         }
         else if (_selectionDataset == 2)
         {
@@ -1663,17 +1817,20 @@ void Computation::AutoCompute()
         else
         {
             setStatusMessage("E", "Invalid selection dataset", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
 
         }
-        
-        
+
+
         if (filtIndxs.empty()) {
             setStatusMessage("E", "No points selected for correlation computation after filtering by clusters", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
         if (filtIndxs.size() < 2) {
             setStatusMessage("E", "Not enough points selected for correlation computation after filtering by clusters", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
@@ -1685,7 +1842,7 @@ void Computation::AutoCompute()
 
         // Update filtered selection indices and notify
         _filteredSelectionIndices.assign(filtIndxs.begin(), filtIndxs.end());
-        
+
         //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         _blockSelectionTrigger = true;
         if (_selectionDataset == 1)
@@ -1701,25 +1858,30 @@ void Computation::AutoCompute()
         else
         {
             setStatusMessage("E", "Invalid selection dataset", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
 
         }
-        
+
 
         if (_filteredSelectionIndices.size() < 2) {
             setStatusMessage("E", "Not enough points selected for correlation computation", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
         // Get rotation angle for embedding
         float rotationAngle = 0.0f;
         if (!getRotationAngle(scatterplotViewName, rotationAngle))
-            return;
+        {       _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
+        return;
+    }
 
         // Populate embedding coordinates and rotate
         std::vector<float> XYCoordinates;
         if (!populateEmbeddingCoordinates(xEmbeddingIndex, yEmbeddingIndex, XYCoordinates)) {
             setStatusMessage("E", "Error occurred during embedding coordinates population", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
@@ -1730,6 +1892,7 @@ void Computation::AutoCompute()
         catch (const std::exception& ex) {
             qWarning() << "Exception in rotateAxis:" << ex.what();
             setStatusMessage("E", "Error occurred during point rotation", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
@@ -1741,8 +1904,43 @@ void Computation::AutoCompute()
         catch (const std::exception& ex) {
             qWarning() << "Exception in getCoordinatesOfCells:" << ex.what();
             setStatusMessage("E", "Error occurred during fetching coordinates", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
+
+        //set current indices to
+        if (_selectionDataset == 1)
+        {
+            const auto& currentDataset =
+                _settingsAction.getDataset1OptionsHolder()
+                .getEmbeddingDatasetAction()
+                .getCurrentDataset();
+
+            currentSelectionString = createCurrentSelectionString(
+                currentDataset.getDataset()->getGuiName(),
+                currentDataset.getDatasetId(),
+                rotationAngle,
+                filtIndxs);
+
+        }
+        else if (_selectionDataset == 2)
+        {
+            const auto& currentDataset =
+                _settingsAction.getDataset2OptionsHolder()
+                .getEmbeddingDatasetAction()
+                .getCurrentDataset();
+
+            currentSelectionString = createCurrentSelectionString(
+                currentDataset.getDataset()->getGuiName(),
+                currentDataset.getDatasetId(),
+                rotationAngle,
+                filtIndxs);
+        }
+        _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString(currentSelectionString);
+        //const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+        //const auto messageText = QStringLiteral("Selection stored");
+        //std::int32_t messageTimeout = 2000; // 2 seconds
+        ///mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
         /*
         std::vector<int> sortedCellIndices;
         try {
@@ -1983,6 +2181,33 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     } catch (...) {
         qWarning() << "Exception thrown in setStatusMessage when calling setString";
     }
+
+    /*QString notificationTitle = QStringLiteral("Gradient Surfer");
+    QString notificationMessage = message;
+    StyledIcon notificationIcon("info-circle");
+
+    if (status == "R") {
+        notificationTitle = QStringLiteral("Gradient Surfer Running");
+        notificationMessage = QStringLiteral("Computation started.");
+        notificationIcon = StyledIcon("play-circle");
+    }
+    else if (status == "M") {
+        notificationTitle = QStringLiteral("Gradient Surfer Progress");
+        notificationIcon = StyledIcon("spinner");
+    }
+    else if (status == "C") {
+        notificationTitle = QStringLiteral("Gradient Surfer Complete");
+        notificationMessage = QStringLiteral("Computation completed successfully.");
+        notificationIcon = StyledIcon("check-circle");
+    }
+    else if (status == "E") {
+        notificationTitle = QStringLiteral("Gradient Surfer Error");
+        notificationMessage = message;
+        notificationIcon = StyledIcon("exclamation-triangle");
+    }
+
+    mv::help().addNotification(notificationTitle, notificationMessage, notificationIcon);*/
+
 }
 
 
@@ -3596,6 +3821,7 @@ void Computation::setSelectionAndAutoCompute()
     AutoCompute();
     enableOptions();
     _blockSelectionTrigger = false;
+
 }
 
 void Computation::enableOptions()

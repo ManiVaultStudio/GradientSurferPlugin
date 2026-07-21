@@ -308,6 +308,18 @@ public:
         const StringAction& getDefaultSliceNamesAction() const { return _defaultSliceNamesAction; }
         StringAction& getDefaultSliceNamesAction() { return _defaultSliceNamesAction; }
 
+        const TriggerAction& getSelectionStorageTriggerUpdateAction() const { return _selectionStorageTriggerUpdateAction; }
+        TriggerAction& getSelectionStorageTriggerUpdateAction() { return _selectionStorageTriggerUpdateAction; }
+
+        const TriggerAction& getSelectionStorageTriggerSelectAction() const { return _selectionStorageTriggerSelectAction; }
+        TriggerAction& getSelectionStorageTriggerSelectAction() { return _selectionStorageTriggerSelectAction; }
+
+        const StringAction& getSelectionStorageAction() const { return _selectionStorageAction; }
+        StringAction& getSelectionStorageAction() { return _selectionStorageAction; }
+
+        const StringAction& getCurrentSelectionStorageAction() const { return _currentSelectionStorageAction; }
+        StringAction& getCurrentSelectionStorageAction() { return _currentSelectionStorageAction; }
+
 
 
     protected:
@@ -345,6 +357,11 @@ public:
         OptionAction       _sliceSelection2Action;
         StringAction        _defaultSliceNamesAction;
         ToggleAction        _independentSelectionAction;
+        TriggerAction       _selectionStorageTriggerUpdateAction;
+        TriggerAction       _selectionStorageTriggerSelectAction;
+        StringAction       _selectionStorageAction;
+        StringAction       _currentSelectionStorageAction;
+ 
 
     };
 
