@@ -849,9 +849,6 @@ void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, Q
                                             //opacityPickerValueAction->setCurrentText(opacityDataset->getGuiName());
                                         //}
 
-                                        else {
-                                            qWarning() << "Point opacity actions not found";
-                                        }
 
                                     }
                                    
