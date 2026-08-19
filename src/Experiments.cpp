@@ -21,12 +21,12 @@ void Experiments::setupExperimentActions()
     auto& expOpts = _settings->getExperimentOptionsHolder();
 
     expOpts.getRotationDatasetAction().setFilterFunction(
-        [this](mv::Dataset<DatasetImpl> dataset) {
+        [this](mv::Dataset<mv::DatasetImpl> dataset) {
             return isValidPointChildDataset(dataset);
         }
     );
     expOpts.getSelectionDatasetAction().setFilterFunction(
-        [this](mv::Dataset<DatasetImpl> dataset) {
+        [this](mv::Dataset<mv::DatasetImpl> dataset) {
             return isValidPointChildDataset(dataset);
         }
     );
@@ -305,7 +305,7 @@ void Experiments::saveTables()
 void Experiments::storeSelection()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();
-    Dataset<Points> dataset = expOpts.getSelectionDatasetAction().getCurrentDataset();
+    mv::Dataset<Points> dataset = expOpts.getSelectionDatasetAction().getCurrentDataset();
 
     if (!dataset.isValid()) {
         QMessageBox::warning(_parentWidget, "Save Selection", "No valid dataset selected for saving selections.");
@@ -343,7 +343,7 @@ void Experiments::storeSelection()
 void Experiments::loadSelection()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();
-    Dataset<Points> dataset = expOpts.getSelectionDatasetAction().getCurrentDataset();
+    mv::Dataset<Points> dataset = expOpts.getSelectionDatasetAction().getCurrentDataset();
 
     if (!dataset.isValid()) {
         QMessageBox::warning(_parentWidget, "Load Selection", "No valid dataset selected for loading selections.");
@@ -400,7 +400,7 @@ void Experiments::loadSelection()
 void Experiments::storeCoordinates()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();
-    Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
+    mv::Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
 
     if (!dataset.isValid()) {
         QMessageBox::warning(_parentWidget, "Save Rotation", "No valid dataset selected for saving coordinates.");
@@ -457,7 +457,7 @@ void Experiments::storeCoordinates()
 void Experiments::loadCoordinates()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();
-    Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
+    mv::Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
 
     if (!dataset.isValid()) {
         QMessageBox::warning(_parentWidget, "Load Rotation", "No valid dataset selected for loading coordinates.");
@@ -544,7 +544,7 @@ void Experiments::loadCoordinates()
 void Experiments::applyRotation()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();
-    Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
+    mv::Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
     float degree = expOpts.getRotationDegreeAction().getValue();
     if (degree == 0.0f) {
         qDebug() << "Rotation degree is 0, no rotation applied.";
@@ -613,7 +613,7 @@ void Experiments::applyRotation()
 void Experiments::applyFlip()
 {
     auto& expOpts = _settings->getExperimentOptionsHolder();
-    Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
+    mv::Dataset<Points> dataset = expOpts.getRotationDatasetAction().getCurrentDataset();
     const QString& flipType = "vertical"; // "horizontal" or "vertical"
 
     if (!dataset.isValid()) {
