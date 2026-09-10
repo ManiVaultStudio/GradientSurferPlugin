@@ -1,5 +1,5 @@
 #include "Computation.h"
-#include "ComputationUtils.h"
+//#include "ComputationUtils.h"
 
 #include <iostream>
 #include <set>
@@ -902,14 +902,14 @@ void Computation::setupEmbeddingDatasetHandlers()
         //if (!_projectOpened) return;
         auto availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
         QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText().trimmed();
-        QString slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText().trimmed();
+        QString slice1 = _settingsAction.getCommonOptionsHolder().getSliceSelection1Action().getCurrentText().trimmed();
 
         QRegularExpression re(QString("\\b%1\\b").arg(QRegularExpression::escape(substring1)), QRegularExpression::CaseInsensitiveOption);
-        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice1)), QRegularExpression::CaseInsensitiveOption);
 
         for (const Dataset<Points>& dataset : availableDatasets1) {
             const QString& name = dataset->getGuiName();
-            if (re.match(name).hasMatch() && (slice.isEmpty() || reSlice.match(name).hasMatch())) {
+            if (re.match(name).hasMatch() && (slice1.isEmpty() || reSlice.match(name).hasMatch())) {
                 _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                 break;
             }
@@ -923,14 +923,14 @@ void Computation::setupEmbeddingDatasetHandlers()
 
         auto availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
         QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText().trimmed();
-        QString slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText().trimmed();
+        QString slice2 = _settingsAction.getCommonOptionsHolder().getSliceSelection2Action().getCurrentText().trimmed();
 
         QRegularExpression re(QString("\\b%1\\b").arg(QRegularExpression::escape(substring2)), QRegularExpression::CaseInsensitiveOption);
-        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
+        QRegularExpression reSlice(QString("\\b%1\\b").arg(QRegularExpression::escape(slice2)), QRegularExpression::CaseInsensitiveOption);
 
         for (const Dataset<Points>& dataset : availableDatasets2) {
             const QString& name = dataset->getGuiName();
-            if (re.match(name).hasMatch() && (slice.isEmpty() || reSlice.match(name).hasMatch())) {
+            if (re.match(name).hasMatch() && (slice2.isEmpty() || reSlice.match(name).hasMatch())) {
                 _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
                 break;
             }
@@ -967,43 +967,48 @@ void Computation::setupEmbeddingDatasetHandlers()
         });
 
 
-    connect(&_settingsAction.getCommonOptionsHolder().getSliceSelectionAction(), &OptionAction::currentIndexChanged, this, [this]() {
+    connect(&_settingsAction.getCommonOptionsHolder().getSliceSelection1Action(), &OptionAction::currentIndexChanged, this, [this]() {
+        auto slice1 = _settingsAction.getCommonOptionsHolder().getSliceSelection1Action().getCurrentText();
+        if (slice1.isEmpty())
+            return;
 
-        //if (!_projectOpened) return;
-        auto slice = _settingsAction.getCommonOptionsHolder().getSliceSelectionAction().getCurrentText();
-        if (!slice.isEmpty())
-        {
-            auto availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (!availableDatasets1.isEmpty()) {
-                QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText().trimmed();
-                QRegularExpression re(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring1)), QRegularExpression::CaseInsensitiveOption);
-                QRegularExpression reSlice(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
+        // Only update dataset 1 if a matching dataset is found
+        const auto& availableDatasets1 = _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+        if (!availableDatasets1.isEmpty()) {
+            QString substring1 = _settingsAction.getCommonOptionsHolder().getComparatorDataset1SelectorAction().getCurrentText().trimmed();
+            QRegularExpression re(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring1)), QRegularExpression::CaseInsensitiveOption);
+            QRegularExpression reSlice(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice1)), QRegularExpression::CaseInsensitiveOption);
 
-                for (const Dataset<Points>& dataset : availableDatasets1) {
-                    const QString& name = dataset->getGuiName();
-                    if (re.match(name).hasMatch() && reSlice.match(name).hasMatch()) {
-                        _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
-                        break;
-                    }
-                }
-            }
-
-            auto availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
-            if (!availableDatasets2.isEmpty()) {
-                QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText().trimmed();
-                QRegularExpression re2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring2)), QRegularExpression::CaseInsensitiveOption);
-                QRegularExpression reSlice2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice)), QRegularExpression::CaseInsensitiveOption);
-
-                for (const Dataset<Points>& dataset : availableDatasets2) {
-                    const QString& name = dataset->getGuiName();
-                    if (re2.match(name).hasMatch() && reSlice2.match(name).hasMatch()) {
-                        _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
-                        break;
-                    }
+            for (const Dataset<Points>& dataset : availableDatasets1) {
+                const QString& name = dataset->getGuiName();
+                if (re.match(name).hasMatch() && reSlice.match(name).hasMatch()) {
+                    _settingsAction.getDataset1OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                    break;
                 }
             }
         }
+        });
 
+    connect(&_settingsAction.getCommonOptionsHolder().getSliceSelection2Action(), &OptionAction::currentIndexChanged, this, [this]() {
+        auto slice2 = _settingsAction.getCommonOptionsHolder().getSliceSelection2Action().getCurrentText();
+        if (slice2.isEmpty())
+            return;
+
+        // Only update dataset 2 if a matching dataset is found
+        const auto& availableDatasets2 = _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().getDatasets();
+        if (!availableDatasets2.isEmpty()) {
+            QString substring2 = _settingsAction.getCommonOptionsHolder().getComparatorDataset2SelectorAction().getCurrentText().trimmed();
+            QRegularExpression re2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(substring2)), QRegularExpression::CaseInsensitiveOption);
+            QRegularExpression reSlice2(QStringLiteral("\\b%1\\b").arg(QRegularExpression::escape(slice2)), QRegularExpression::CaseInsensitiveOption);
+
+            for (const Dataset<Points>& dataset : availableDatasets2) {
+                const QString& name = dataset->getGuiName();
+                if (re2.match(name).hasMatch() && reSlice2.match(name).hasMatch()) {
+                    _settingsAction.getDataset2OptionsHolder().getEmbeddingDatasetAction().setCurrentDataset(dataset);
+                    break;
+                }
+            }
+        }
         });
 
 }
@@ -1013,7 +1018,8 @@ void Computation::datasetNamesCheck()
     if (!_projectOpened) return;
     auto& holder = _settingsAction.getCommonOptionsHolder();
 
-    QString currentSlice = holder.getSliceSelectionAction().getCurrentText();
+    QString currentSlice1 = holder.getSliceSelection1Action().getCurrentText();
+    QString currentSlice2 = holder.getSliceSelection2Action().getCurrentText();
 
     // parse semicolon-separated list, trimmed
     auto parseList = [](const QString& input) {
@@ -1030,7 +1036,8 @@ void Computation::datasetNamesCheck()
         holder.getComparatorDataset2SelectorAction().setOptions({});
         holder.getComparatorDataset1SelectorAction().setDisabled(true);
         holder.getComparatorDataset2SelectorAction().setDisabled(true);
-        holder.getSliceSelectionAction().setOptions({});
+        holder.getSliceSelection1Action().setOptions({});
+        holder.getSliceSelection2Action().setOptions({});
         };
 
     QStringList datasetSubstrings = parseList(holder.getDefaultDatasetNamesAction().getString());
@@ -1100,7 +1107,8 @@ void Computation::datasetNamesCheck()
     // apply to UI
     holder.getComparatorDataset1SelectorAction().setOptions(filteredDatasets);
     holder.getComparatorDataset2SelectorAction().setOptions(filteredDatasets);
-    holder.getSliceSelectionAction().setOptions(finalSlices);
+    holder.getSliceSelection1Action().setOptions(finalSlices);
+    holder.getSliceSelection2Action().setOptions(finalSlices);
 
     QString previous1 = holder.getComparatorDataset1SelectorAction().getCurrentText();
     QString previous2 = holder.getComparatorDataset2SelectorAction().getCurrentText();
@@ -1119,8 +1127,10 @@ void Computation::datasetNamesCheck()
     }
 
 
-    int sliceIndex = finalSlices.indexOf(currentSlice);
-    holder.getSliceSelectionAction().setCurrentIndex(sliceIndex >= 0 ? sliceIndex : (finalSlices.isEmpty() ? -1 : 0));
+    int sliceIndex1 = finalSlices.indexOf(currentSlice1);
+    holder.getSliceSelection1Action().setCurrentIndex(sliceIndex1 >= 0 ? sliceIndex1 : (finalSlices.isEmpty() ? -1 : 0));
+    int sliceIndex2 = finalSlices.indexOf(currentSlice2);
+    holder.getSliceSelection2Action().setCurrentIndex(sliceIndex2 >= 0 ? sliceIndex2 : (finalSlices.isEmpty() ? -1 : 0));
 }
 
 void Computation::setupEmbeddingDimensionHandlers()
@@ -1320,6 +1330,145 @@ void Computation::setupColoringHandlers()
                 {
                     _settingsAction.getCommonOptionsHolder().getComputeAction().trigger();
                 }
+        }
+        });
+
+    connect(&_settingsAction.getCommonOptionsHolder().getSelectionStorageAction(), &StringAction::stringChanged, this, [this]() {
+                        const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+        const auto messageText = QStringLiteral("Current Selection Stored");
+        //std::int32_t messageTimeout = 2000; // 2 seconds
+        mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+        });
+
+    /*connect(&_settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction(), &StringAction::stringChanged, this, [this]() {
+                const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+        const auto messageText = QStringLiteral("Selection stored");
+        //std::int32_t messageTimeout = 2000; // 2 seconds
+        mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+        });*/
+    /*connect(&_settingsAction.getCommonOptionsHolder().getSelectionStorageStatusAction(), &StringAction::stringChanged, this, [this]() {
+        
+        });*/
+
+    connect(&_settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerUpdateAction(), &TriggerAction::triggered, this, [this]() {
+
+        
+             
+        QString selectionStorageValue = _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().getString();
+        _settingsAction.getCommonOptionsHolder().getSelectionStorageAction().setString(selectionStorageValue);
+        if (selectionStorageValue!=""|| selectionStorageValue!="Not available")
+        {
+            int pos = selectionStorageValue.lastIndexOf("<sp1>");
+            QString result = (pos >= 0) ? selectionStorageValue.left(pos) : selectionStorageValue;
+            result.replace("<sp1>", ", ");
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setEnabled(true);
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setToolTip("Stored indices available: " + result);
+
+        }
+        else {
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setDisabled(true);
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setToolTip("Stored indices not available");
+        }
+
+
+        });
+
+    connect(&_settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction(), &TriggerAction::triggered, this, [this]() {
+        QString guiName;
+        QString datasetId;
+        std::vector<std::seed_seq::result_type> filtIndxs;
+        bool selectionStorageValue = false;
+        float angleValue;
+        bool isActiveOpened = false;
+        QString stringValue = _settingsAction.getCommonOptionsHolder().getSelectionStorageAction().getString();
+        if (extractCurrentSelectionString(
+            stringValue,
+            guiName,
+            datasetId,
+            angleValue,
+            filtIndxs))
+        {
+
+            if (datasetId != "" && filtIndxs.size() > 0)
+            {
+                auto dataset = mv::data().getDataset(datasetId);
+                if (dataset.isValid())
+                {
+                    //qDebug() << "GUI Name:" << guiName;
+                    //qDebug() << "Dataset ID:" << datasetId;
+                    //qDebug() << "Filtered Indices:" << filtIndxs.size();
+                    //qDebug() << "Angle Value:" << angleValue;
+                    //need to set angle first ToDO
+                    dataset->setSelectionIndices(filtIndxs);
+                    mv::events().notifyDatasetDataSelectionChanged(dataset);
+                    selectionStorageValue = true;
+                    //check if the position dataset of the opened staccterplots is the same as the dataset of the selection, if yes, update the selection in the scatterplots
+                    
+                    QString scatterplot1Name = _settingsAction.getDataset1OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+                    QString scatterplot2Name = _settingsAction.getDataset2OptionsHolder().getScatterplotViewSelectionAction().getCurrentText();
+                    if (scatterplot1Name.isEmpty()) {
+                        qWarning() << "No scatterplot view 1 selected";
+                        return;
+                    }
+                    if (scatterplot2Name.isEmpty()) {
+                        qWarning() << "No scatterplot view 2 selected";
+                        return;
+                    }
+                    auto scatterplotViewFactory = mv::plugins().getPluginFactory("Scatterplot View");
+                    if (scatterplotViewFactory) {
+                        for (auto plugin : mv::plugins().getPluginsByFactory(scatterplotViewFactory)) {
+                            if (plugin->getGuiName() == scatterplot1Name || plugin->getGuiName() == scatterplot2Name) {
+                                mv::gui::DatasetPickerAction* pointDatasetAction = findActionByPath<DatasetPickerAction>(plugin, "Settings/Datasets/Position");
+                                if (pointDatasetAction) {
+                                    if (pointDatasetAction->getCurrentDatasetId() == datasetId)
+                                    {
+                                        
+                                        
+                                        auto* angleAction = findActionByPath<DecimalAction>(
+                                            plugin, "Settings/Selection/Point Selection/Line angle");
+                                        if (angleAction) {
+                                            isActiveOpened = true;
+                                            angleAction->setValue(angleValue);
+                                            const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+                                            const auto messageText = QStringLiteral("Stored Selection Applied");
+                                            mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
+                                        }
+
+
+                                        break;
+                                    }
+                                }
+                            }
+                            else {
+                                qWarning() << "Point selection scale action not found";
+                            }
+
+                        }
+                    }
+
+
+                }
+
+            }
+        
+        }
+        if (selectionStorageValue)
+        {
+            int pos = stringValue.lastIndexOf("<sp1>");
+            QString result = (pos >= 0) ? stringValue.left(pos) : stringValue;
+            result.replace("<sp1>", ", ");
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setEnabled(true);
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setToolTip("Stored indices available: " + result);
+        }
+        else {
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setDisabled(true);
+            _settingsAction.getCommonOptionsHolder().getSelectionStorageTriggerSelectAction().setToolTip("Stored indices not available");
+        }
+        if (!isActiveOpened)
+        {
+            const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+            const auto messageText = QStringLiteral("Unable to apply stored selection. Set stored selection dataset in the scatterplot.");
+            mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
         }
         });
 }
@@ -1565,8 +1714,10 @@ void Computation::clearTables()
 
 void Computation::AutoCompute()
 {
-    if (!_projectOpened) return;
-    if (_isAutoComputeComputing) return;
+    if (!_projectOpened) {
+        _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString(""); return;
+    }
+    if (_isAutoComputeComputing) { _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");return; }
     _isAutoComputeComputing = true;
     auto guard = qScopeGuard([&] { _isAutoComputeComputing = false; });
 
@@ -1575,6 +1726,7 @@ void Computation::AutoCompute()
         // Reset state
         clearTables();
         clearLinePlots();
+        _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
         _numOfPointsInLine1 = 0;
         //std::cout << "\n**********************************\n";
         // Ensure normalized datasets are available
@@ -1585,13 +1737,14 @@ void Computation::AutoCompute()
         }*/
         if (!_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid() || !_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().isValid()) {
             setStatusMessage("E", "No valid Point datasets", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
         auto pointDataset1 = mv::data().getDataset<Points>(_settingsAction.getDataset1OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
         auto pointDataset2 = mv::data().getDataset<Points>(_settingsAction.getDataset2OptionsHolder().getPointDatasetAction().getCurrentDataset().getDatasetId());
         if (!pointDataset1.isValid() || !pointDataset2.isValid()) {
             setStatusMessage("E", "No valid Point datasets", "");
-
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
         // Retrieve and validate required datasets and parameters
@@ -1603,16 +1756,22 @@ void Computation::AutoCompute()
             xEmbeddingIndex, yEmbeddingIndex,
             selectedIndices, scatterplotViewName,
             topNRows, bottomNRows))
+        {
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
+        }
 
         // Ensure all required datasets exist
         if (!createDatasetsIfNeeded())
+        {
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
+    }
 
         // Gather cluster and selection information
         const auto selectedClusters = _settingsAction.getCommonOptionsHolder().getClusterValueSelectionAction().getSelectedOptions();
         std::vector < std::seed_seq::result_type> selectIndices;
-        if (_selectionDataset==1)
+        if (_selectionDataset == 1)
         {
             selectIndices = _embeddingDataset1->getSelectionIndices();
         }
@@ -1623,28 +1782,33 @@ void Computation::AutoCompute()
         else
         {
             setStatusMessage("E", "Invalid selection dataset", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
 
         }
 
-        
+
         const auto clusters1 = fullClusterDataset1->getClusters();
         const auto clusters2 = fullClusterDataset2->getClusters();
 
         if (selectedClusters.isEmpty() || clusters1.isEmpty() || clusters2.isEmpty()) {
             setStatusMessage("E", "No clusters selected for correlation computation", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
         if (selectIndices.empty()) {
             setStatusMessage("E", "No points selected for correlation computation", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
         std::vector < std::seed_seq::result_type> filtIndxs;
+        QString currentSelectionString = "";
         // Filter selection indices by clusters
         if (_selectionDataset == 1)
         {
             filtIndxs = filterSelectionIndicesByClusters(selectIndices, clusters1, selectedClusters);
+
         }
         else if (_selectionDataset == 2)
         {
@@ -1653,17 +1817,20 @@ void Computation::AutoCompute()
         else
         {
             setStatusMessage("E", "Invalid selection dataset", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
 
         }
-        
-        
+
+
         if (filtIndxs.empty()) {
             setStatusMessage("E", "No points selected for correlation computation after filtering by clusters", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
         if (filtIndxs.size() < 2) {
             setStatusMessage("E", "Not enough points selected for correlation computation after filtering by clusters", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
@@ -1675,7 +1842,7 @@ void Computation::AutoCompute()
 
         // Update filtered selection indices and notify
         _filteredSelectionIndices.assign(filtIndxs.begin(), filtIndxs.end());
-        
+
         //_settingsAction.getCommonOptionsHolder().getSelectionModeAction().setChecked(false);
         _blockSelectionTrigger = true;
         if (_selectionDataset == 1)
@@ -1691,25 +1858,30 @@ void Computation::AutoCompute()
         else
         {
             setStatusMessage("E", "Invalid selection dataset", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
 
         }
-        
+
 
         if (_filteredSelectionIndices.size() < 2) {
             setStatusMessage("E", "Not enough points selected for correlation computation", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
         // Get rotation angle for embedding
         float rotationAngle = 0.0f;
         if (!getRotationAngle(scatterplotViewName, rotationAngle))
-            return;
+        {       _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
+        return;
+    }
 
         // Populate embedding coordinates and rotate
         std::vector<float> XYCoordinates;
         if (!populateEmbeddingCoordinates(xEmbeddingIndex, yEmbeddingIndex, XYCoordinates)) {
             setStatusMessage("E", "Error occurred during embedding coordinates population", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
@@ -1720,6 +1892,7 @@ void Computation::AutoCompute()
         catch (const std::exception& ex) {
             qWarning() << "Exception in rotateAxis:" << ex.what();
             setStatusMessage("E", "Error occurred during point rotation", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
 
@@ -1731,8 +1904,43 @@ void Computation::AutoCompute()
         catch (const std::exception& ex) {
             qWarning() << "Exception in getCoordinatesOfCells:" << ex.what();
             setStatusMessage("E", "Error occurred during fetching coordinates", "");
+            _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString("");
             return;
         }
+
+        //set current indices to
+        if (_selectionDataset == 1)
+        {
+            const auto& currentDataset =
+                _settingsAction.getDataset1OptionsHolder()
+                .getEmbeddingDatasetAction()
+                .getCurrentDataset();
+
+            currentSelectionString = createCurrentSelectionString(
+                currentDataset.getDataset()->getGuiName(),
+                currentDataset.getDatasetId(),
+                rotationAngle,
+                filtIndxs);
+
+        }
+        else if (_selectionDataset == 2)
+        {
+            const auto& currentDataset =
+                _settingsAction.getDataset2OptionsHolder()
+                .getEmbeddingDatasetAction()
+                .getCurrentDataset();
+
+            currentSelectionString = createCurrentSelectionString(
+                currentDataset.getDataset()->getGuiName(),
+                currentDataset.getDatasetId(),
+                rotationAngle,
+                filtIndxs);
+        }
+        _settingsAction.getCommonOptionsHolder().getCurrentSelectionStorageAction().setString(currentSelectionString);
+        //const auto messageTitle = QStringLiteral("Gradient Surfer Info");
+        //const auto messageText = QStringLiteral("Selection stored");
+        //std::int32_t messageTimeout = 2000; // 2 seconds
+        ///mv::help().addNotification(messageTitle, messageText, StyledIcon("info"));
         /*
         std::vector<int> sortedCellIndices;
         try {
@@ -1973,6 +2181,33 @@ void Computation::setStatusMessage(const QString& status, const QString& message
     } catch (...) {
         qWarning() << "Exception thrown in setStatusMessage when calling setString";
     }
+
+    /*QString notificationTitle = QStringLiteral("Gradient Surfer");
+    QString notificationMessage = message;
+    StyledIcon notificationIcon("info-circle");
+
+    if (status == "R") {
+        notificationTitle = QStringLiteral("Gradient Surfer Running");
+        notificationMessage = QStringLiteral("Computation started.");
+        notificationIcon = StyledIcon("play-circle");
+    }
+    else if (status == "M") {
+        notificationTitle = QStringLiteral("Gradient Surfer Progress");
+        notificationIcon = StyledIcon("spinner");
+    }
+    else if (status == "C") {
+        notificationTitle = QStringLiteral("Gradient Surfer Complete");
+        notificationMessage = QStringLiteral("Computation completed successfully.");
+        notificationIcon = StyledIcon("check-circle");
+    }
+    else if (status == "E") {
+        notificationTitle = QStringLiteral("Gradient Surfer Error");
+        notificationMessage = message;
+        notificationIcon = StyledIcon("exclamation-triangle");
+    }
+
+    mv::help().addNotification(notificationTitle, notificationMessage, notificationIcon);*/
+
 }
 
 
@@ -2148,6 +2383,16 @@ bool Computation::createDatasetsIfNeeded()
         _scatterplotPointColoringDataset2->setGroupIndex(556);
         mv::events().notifyDatasetAdded(_scatterplotPointColoringDataset2);
     }
+    if( !_scatterplotPointOpacityDataset1.isValid()) {
+        _scatterplotPointOpacityDataset1 = mv::data().createDataset("Points", "Scatterplot Point Opacity Dataset 1", _scatterplotPointColoringDataset1);
+        _scatterplotPointOpacityDataset1->setGroupIndex(555);
+        mv::events().notifyDatasetAdded(_scatterplotPointOpacityDataset1);
+    }
+    if( !_scatterplotPointOpacityDataset2.isValid()) {
+        _scatterplotPointOpacityDataset2 = mv::data().createDataset("Points", "Scatterplot Point Opacity Dataset 2", _scatterplotPointColoringDataset2);
+        _scatterplotPointOpacityDataset2->setGroupIndex(556);
+        mv::events().notifyDatasetAdded(_scatterplotPointOpacityDataset2);
+    }
     if (!_scatterplotClusterColoringDataset1.isValid()) {
         _scatterplotClusterColoringDataset1 = mv::data().createDataset("Cluster", "Scatterplot Cluster Color Dataset 1", _scatterplotPointColoringDataset1);
         _scatterplotClusterColoringDataset1->setGroupIndex(555);
@@ -2197,7 +2442,7 @@ bool Computation::createDatasetsIfNeeded()
 
     }
 
-    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartClusterColoringDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedCellPointDataset.isValid() || !_scatterplotClusterColoringDataset1.isValid() || !_scatterplotClusterColoringDataset2.isValid() || !_scatterplotPointColoringDataset1.isValid() || !_scatterplotPointColoringDataset2.isValid() || !_pcaSelectedEmbeddingDataset.isValid() || !_pcaCommonGenesDataset1.isValid() || !_pcaCommonGenesDataset2.isValid()) {
+    if (!_rotatedSelectedEmbeddingDataset.isValid() || !_selectedGenePointDataset1.isValid() || !_lineChartPointDataset1.isValid()||!_lineChartClusterColoringDataset1.isValid() || !_selectedGenePointDataset2.isValid() || !_selectedCellPointDataset.isValid() || !_scatterplotClusterColoringDataset1.isValid() || !_scatterplotClusterColoringDataset2.isValid() || !_scatterplotPointColoringDataset1.isValid() || !_scatterplotPointColoringDataset2.isValid() || !_pcaSelectedEmbeddingDataset.isValid() || !_pcaCommonGenesDataset1.isValid() || !_pcaCommonGenesDataset2.isValid()||!_scatterplotPointOpacityDataset1.isValid() || !_scatterplotPointOpacityDataset2.isValid()) {
         qWarning() << "Failed to create datasets";
         setStatusMessage("E", "Error occurred during dataset creation", "");
         return false;
@@ -3576,6 +3821,7 @@ void Computation::setSelectionAndAutoCompute()
     AutoCompute();
     enableOptions();
     _blockSelectionTrigger = false;
+
 }
 
 void Computation::enableOptions()
@@ -3971,6 +4217,7 @@ void Computation::colorScatterPlots()
 
     float minVal1 = 0.0f, maxVal1 = 0.0f, minVal2 = 0.0f, maxVal2 = 0.0f;
     QString coloringdimension;
+    QString opacitydimension;
 
     /*if (commonOpts.getSelectionModeAction().isChecked()) */
     if(_selectionModeEnable)
@@ -3981,11 +4228,11 @@ void Computation::colorScatterPlots()
 
         scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, colorDataset1ID,
             embeddingDimensionX1, embeddingDimensionY1, false,
-            coloringdimension, colorMapStringValue, minVal1, maxVal1);
+            coloringdimension, colorMapStringValue, minVal1, maxVal1, "Constant");
 
         scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, colorDataset2ID,
             embeddingDimensionX2, embeddingDimensionY2, false,
-            coloringdimension, colorMapStringValue, minVal2, maxVal2);
+            coloringdimension, colorMapStringValue, minVal2, maxVal2, "Constant");
         _isColoringScatterplots = false;
         return;
     }
@@ -3997,11 +4244,25 @@ void Computation::colorScatterPlots()
         _isColoringScatterplots = false;
         return;
     }
+    if (!_scatterplotPointOpacityDataset1.isValid() || !_scatterplotPointOpacityDataset2.isValid()) {
+        setStatusMessage("E", "No valid opacity datasets", "");
+        _isColoringScatterplots = false;
+        return;
+    }
     const QString scatterplotColorDataset1Id = _scatterplotPointColoringDataset1.getDatasetId();
     const QString scatterplotColorDataset2Id = _scatterplotPointColoringDataset2.getDatasetId();
+    const QString scatterplotOpacityDataset1Id = _scatterplotPointOpacityDataset1.getDatasetId();
+    const QString scatterplotOpacityDataset2Id = _scatterplotPointOpacityDataset2.getDatasetId();
+
     coloringdimension = "ColorDim";
+    opacitydimension = "OpacityDim";
     if (scatterplotColorDataset1Id.isEmpty() || scatterplotColorDataset2Id.isEmpty()) {
         setStatusMessage("E", "No valid coloring datasets", "");
+        _isColoringScatterplots = false;
+        return;
+    }
+    if ( scatterplotOpacityDataset1Id.isEmpty() || scatterplotOpacityDataset2Id.isEmpty()) {
+        setStatusMessage("E", "No valid opacity datasets", "");
         _isColoringScatterplots = false;
         return;
     }
@@ -4032,12 +4293,13 @@ void Computation::colorScatterPlots()
         const QString selectedPCADimensionName = commonOpts.getPcaDimensionForColoringAction().getCurrentDimensionName();
         _scatterplotPointColoringDataset1->setGuiName("PCA: "+ selectedPCADimensionName);
         _scatterplotPointColoringDataset2->setGuiName("PCA: " + selectedPCADimensionName);
-       auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
+        
+       auto value1= createScatterplotPointColors(scatterplotColorDataset1Id, scatterplotOpacityDataset1Id, colorMapStringValue, _selectedClusterIndices1,
             pcaDataset1ID, _embeddingDataset1->getNumPoints(),
-            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile);
-       auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
+            selectedPCADimensionName, minVal1, maxVal1, false, sentinelValMinMax1, lowRangePercentile,highRangePercentile, 0.2, 1.0);
+       auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, scatterplotOpacityDataset2Id, colorMapStringValue, _selectedClusterIndices2,
             pcaDataset2ID, _embeddingDataset2->getNumPoints(),
-            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
+            selectedPCADimensionName, minVal2, maxVal2, false, sentinelValMinMax2, lowRangePercentile, highRangePercentile, 0.2,1.0);
        minVal1 = value1.first;
        maxVal1 = value1.second;
        minVal2 = value2.first;
@@ -4062,30 +4324,26 @@ void Computation::colorScatterPlots()
         if (!selectedGeneName1.trimmed().isEmpty())
         {
             _scatterplotPointColoringDataset1->setGuiName("Gene expression: " + selectedGeneName1);
-            //_scatterplotPointColoringDataset1->setGuiName("Gene Coloring Dataset 1");
         }
         else
         {
             _scatterplotPointColoringDataset1->setGuiName("Gene expression: Gene unavailable");
-            //_scatterplotPointColoringDataset1->setGuiName("Gene Unavailable Coloring Dataset 1");
         }
         if (!selectedGeneName2.trimmed().isEmpty())
         {
             _scatterplotPointColoringDataset2->setGuiName("Gene expression: " + selectedGeneName2);
-            //_scatterplotPointColoringDataset2->setGuiName("Gene Coloring Dataset 2");
         }
         else
         {
             _scatterplotPointColoringDataset2->setGuiName("Gene expression: Gene unavailable");
-            //_scatterplotPointColoringDataset2->setGuiName("Gene Unavailable Coloring Dataset 2");
         }
         
-        auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, colorMapStringValue, _selectedClusterIndices1,
+        auto value1 = createScatterplotPointColors(scatterplotColorDataset1Id, scatterplotOpacityDataset1Id,colorMapStringValue, _selectedClusterIndices1,
             geneDataset1ID, _embeddingDataset1->getNumPoints(),
-            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile);
-        auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, colorMapStringValue, _selectedClusterIndices2,
+            selectedGeneName1, minVal1, maxVal1, true, sentinelValMinMax1, lowRangePercentile, highRangePercentile, 0.2, 1.0);
+        auto value2 = createScatterplotPointColors(scatterplotColorDataset2Id, scatterplotOpacityDataset2Id,colorMapStringValue, _selectedClusterIndices2,
             geneDataset2ID, _embeddingDataset2->getNumPoints(),
-            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile);
+            selectedGeneName2, minVal2, maxVal2, true, sentinelValMinMax2, lowRangePercentile, highRangePercentile, 0.2, 1.0);
         minVal1 = value1.first;
         maxVal1 = value1.second;
         minVal2 = value2.first;
@@ -4095,10 +4353,10 @@ void Computation::colorScatterPlots()
     // Apply coloring and update ranges
     scatterplotModeChange(scatterplot1Name, embeddingDataset1Id, scatterplotColorDataset1Id,
         embeddingDimensionX1, embeddingDimensionY1, true,
-        coloringdimension, colorMapStringValue, minVal1, maxVal1);
+        coloringdimension, colorMapStringValue, minVal1, maxVal1, scatterplotOpacityDataset1Id);
     scatterplotModeChange(scatterplot2Name, embeddingDataset2Id, scatterplotColorDataset2Id,
         embeddingDimensionX1, embeddingDimensionY1, true,
-        coloringdimension, colorMapStringValue, minVal2, maxVal2);
+        coloringdimension, colorMapStringValue, minVal2, maxVal2, scatterplotOpacityDataset2Id);
 
     minValScatter1.setValue(minVal1);
     maxValScatter1.setValue(maxVal1);

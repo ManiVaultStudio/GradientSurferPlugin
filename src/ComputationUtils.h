@@ -149,6 +149,8 @@ bool isValidEmbeddingDataset(const mv::Dataset<mv::DatasetImpl>& dataset);
 std::vector<float> rotateAxis(const std::vector<float>& xyCoordinates, float degreeValue);
 std::vector<float> getCoordinatesOfCells(const std::vector<float>& rotatedXYCoordinates, const std::string& axis);
 std::vector<int> getSortedCellIndices(const std::vector<float>& yCoordinates);
+QString createCurrentSelectionString(const QString& datasetGuiName, const QString& datasetId, const float& angle, const std::vector<std::seed_seq::result_type>& filtIndxs);
+bool extractCurrentSelectionString(const QString& selectionString, QString& guiName, QString& datasetId, float& angle, std::vector<std::seed_seq::result_type>& filtIndxs);
 
 
 extern std::vector<CorrelationGeneCoords> _geneCorrValues0;
@@ -157,6 +159,7 @@ extern std::vector<CorrelationGeneCoords> _geneCorrValues1;
 extern std::vector<int> _geneOfInterestIndices0;
 extern std::vector<int> _geneOfInterestIndices2;
 extern std::vector<int> _geneOfInterestIndices1;
+extern bool _isOpacityEqual;
 //extern QStringList _commonGeneNames;
 //extern QStringList   _commonGeneListSelectedInTables;
 extern QStringList _commonSelectedGenesAcrossDatasetsInTables;
@@ -169,13 +172,13 @@ class DimensionPickerAction;
 
 void syncTableSelections(QTableView* sourceTable, const QList<QTableView*>& allTables, const QList<DimensionPickerAction*>& allActions);
 float percentile(const std::vector<float>& data, float pct);
-void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection,QString dimensionForColoring,QString colormapValue, float minValue, float maxValue);
+void scatterplotModeChange(QString scatterplotName, QString positionDatasetID, QString colorDatasetID, QString xPositionString, QString yPositionString, bool disableSelection,QString dimensionForColoring,QString colormapValue, float minValue, float maxValue, QString opacityDatasetID);
 void lineplotModeChange(QString linePlotName, QString positionDatasetID, QString colorDatasetID, QString colordatasetType, int colorDatasetDimensionIndx, QString xPositionString, QString yPositionString, QString titleText, QString smoothingType, int smoothingWindow, QString colorMapStringValue, float minValue, float maxValue);
 
 void customMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 
 void createScatterplotClusterColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue);
-std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax, float lowRangePercentileValue, float highRangePercentileValue);
+std::pair<float, float> createScatterplotPointColors(QString coloringDataset, QString opacityDataset,  QString colorMapValue, std::vector<int>& selectedIndices, QString pointValuesDataset, int numOfTotalPoints, QString dimensionVal, float minValue, float maxValue, bool isFullData, std::pair<float, float> sentinelMinMax, float lowRangePercentileValue, float highRangePercentileValue, float lowOpacityValue, float highOpacityValue);
 
 void createClusterLineChartClusterColors(QString coloringChangeDataset, QString coloringReferenceDataset, std::vector<int>& selectedIndices);
 void createLineChartClusterColors(QString pcaColoringDataset, QString colorMapValue, std::vector<int>& selectedIndices, QString pcaValuesDataset, int numOfTotalPoints, QString pcaDimensionVal, float minValue, float maxValue, bool useFulldata);

@@ -145,6 +145,8 @@ protected:
     mv::Dataset<Clusters>       _scatterplotClusterColoringDataset2 = nullptr;
     mv::Dataset<Points>       _scatterplotPointColoringDataset1 = nullptr;
     mv::Dataset<Points>       _scatterplotPointColoringDataset2 = nullptr;
+    mv::Dataset<Points>         _scatterplotPointOpacityDataset1 = nullptr;
+    mv::Dataset<Points>         _scatterplotPointOpacityDataset2 = nullptr;
     //mv::Dataset<Points>         _normalizedFullDataset1 = nullptr;
     //mv::Dataset<Points>         _normalizedFullDataset2 = nullptr;
     QString                    _currentNormalizationMethod = "";

@@ -5,6 +5,8 @@
 #include "ComputationUtils.h"
 #include "Computation.h" 
 
+using namespace mv;
+
 Experiments::Experiments(GradientSurferPlugin& plugin, SettingsAction& settings, Computation& computation, QWidget* parent)
     : QObject(parent),
     _plugin(&plugin),
